@@ -110,7 +110,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{profile.name}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? "관리자" : `${profile.dept} ${profile.year}학년`}</div>
+                  <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? "관리자" : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
                 </div>
               </div>
             )}

@@ -21,7 +21,7 @@ export default function Login() {
   // 회원가입
   const [form, setForm] = useState({
     name: "", dept: "", studentId: "", phone: "",
-    email: "", pw: "", pwConfirm: "",
+    email: "", pw: "", pwConfirm: ""
   });
   const [signupErr, setSignupErr]           = useState("");
   const [signupDone, setSignupDone]         = useState(false);
@@ -54,6 +54,8 @@ export default function Login() {
         studentId: form.studentId,
         phone:     form.phone,
         email:     form.email,
+        admissionYear: form.studentId.slice(0, 2), // 학번 앞 2자리 자동 추출
+        license:   "",
         role:      "student",
         status:    "pending",
         rentals:   0,
@@ -156,7 +158,7 @@ export default function Login() {
                 </div>
 
                 {/* 학번 */}
-                <Inp label="학번 *" placeholder="20210001" value={form.studentId} onChange={e => setForm(p => ({ ...p, studentId: e.target.value }))} />
+                <Inp label="학번 *" placeholder="25237001" value={form.studentId} onChange={e => setForm(p => ({ ...p, studentId: e.target.value }))} />
 
                 {/* 전화번호 */}
                 <Inp label="전화번호 *" placeholder="010-0000-0000" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
