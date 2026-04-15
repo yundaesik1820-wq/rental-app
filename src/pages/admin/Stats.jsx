@@ -12,7 +12,7 @@ const MONTHLY = [
 
 export default function Stats() {
   const { data: rentals }    = useCollection("rentals", "rentDate");
-  const { data: equipments } = useCollection("equipments", "name");
+  const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: students }   = useCollection("users", "name");
 
   const stuList = students.filter(s => s.role === "student");

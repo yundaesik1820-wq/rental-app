@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth";
 
 export default function EquipList() {
   const { profile } = useAuth();
-  const { data: equipments } = useCollection("equipments", "name");
+  const { data: equipments } = useCollection("equipments", "createdAt");
 
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState("전체");
@@ -174,7 +174,7 @@ export default function EquipList() {
             <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 10 }}>선택한 장비</div>
             {cartItems.map(e => (
               <div key={e.id} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `1px solid ${C.border}`, fontSize: 13 }}>
-                <span style={{ color: C.text }}>{e.img} {e.name}</span>
+                <span style={{ color: C.text }}>{e.img || "📦"} {e.modelName || e.name}</span>
                 <span style={{ fontWeight: 700, color: C.teal }}>{cart[e.id]}개</span>
               </div>
             ))}

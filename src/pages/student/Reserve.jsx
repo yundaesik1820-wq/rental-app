@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth";
 export default function Reserve() {
   const { profile } = useAuth();
   const { data: reservations } = useCollection("reservations", "startDate");
-  const { data: equipments }   = useCollection("equipments", "name");
+  const { data: equipments }   = useCollection("equipments", "createdAt");
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ equipName: "", startDate: "", endDate: "", purpose: "" });
@@ -38,7 +38,7 @@ export default function Reserve() {
           <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 20 }}>예약 신청</div>
           <Select label="장비 선택" value={form.equipName} onChange={e => setForm(p => ({ ...p, equipName: e.target.value }))}>
             <option value="">장비를 선택하세요</option>
-            {equipments.map(e => <option key={e.id} value={e.name}>{e.img} {e.name} ({e.category})</option>)}
+            {equipments.map(e => <option key={e.id} value={e.modelName || e.name}>{e.img || ""} {e.modelName || e.name} ({e.majorCategory || e.category})</option>)}
           </Select>
           <Inp label="사용 목적" placeholder="예: 졸업작품 촬영" value={form.purpose} onChange={e => setForm(p => ({ ...p, purpose: e.target.value }))} />
           <div style={{ display: "flex", gap: 12 }}>

@@ -4,7 +4,7 @@ import { useCollection } from "../../hooks/useFirestore";
 
 export default function Dashboard() {
   const { data: rentals }      = useCollection("rentals", "rentDate");
-  const { data: equipments }   = useCollection("equipments", "name");
+  const { data: equipments }   = useCollection("equipments", "createdAt");
   const { data: reservations } = useCollection("reservations", "startDate");
   const { data: extensions }   = useCollection("extensions", "createdAt");
 
