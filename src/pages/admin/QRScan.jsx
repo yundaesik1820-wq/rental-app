@@ -63,21 +63,34 @@ export default function QRScan() {
   // QR 입력 파싱
   const parseQR = (text) => {
     const t = text.trim();
-    // 형식: "EQUIP-{id}:{modelName}" 또는 그냥 모델명
-    const match = t.match(/EQUIP[-_]?(\w+)[:\s](.+)/i);
+
+    // 1) 물품번호로 직접 검색 (가장 우선)
+    const byItemNo = equipments.find(e => e.itemNo && e.itemNo.trim() === t);
+    if (byItemNo) return byItemNo.modelName;
+
+    // 2) Firestore 문서 ID로 검색
+    const byId = equipments.find(e => e.id === t);
+    if (byId) return byId.modelName;
+
+    // 3) "EQUIP-xxxx:모델명" 형식 파싱
+    const match = t.match(/EQUIP[-_]?([\w-]+)[:\s](.+)/i);
     if (match) {
-      const equipId  = match[1];
+      const idPart   = match[1];
       const namePart = match[2].trim();
-      // id로 장비 찾기
-      const unit = equipments.find(e => e.id === equipId);
-      if (unit) return unit.modelName;
-      // 모델명으로
-      const model = grouped.find(g => g.modelName === namePart);
-      if (model) return model.modelName;
+      const byMatchId = equipments.find(e => e.id === idPart || (e.itemNo && e.itemNo.trim() === idPart));
+      if (byMatchId) return byMatchId.modelName;
+      const byMatchName = grouped.find(g => g.modelName === namePart);
+      if (byMatchName) return byMatchName.modelName;
     }
-    // QR 전체가 모델명인 경우
-    const model = grouped.find(g => g.modelName === t || t.includes(g.modelName));
-    if (model) return model.modelName;
+
+    // 4) 모델명 직접 일치
+    const byModel = grouped.find(g => g.modelName.trim() === t);
+    if (byModel) return byModel.modelName;
+
+    // 5) 부분 일치
+    const byPartial = grouped.find(g => t.includes(g.modelName) || g.modelName.includes(t));
+    if (byPartial) return byPartial.modelName;
+
     return null;
   };
 
