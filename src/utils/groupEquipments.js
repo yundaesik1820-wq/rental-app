@@ -1,0 +1,32 @@
+// 장비를 모델별로 묶어서 반환하는 유틸 함수
+// 개별 등록된 장비들을 학생에게 보여줄 때 사용
+
+export function groupEquipments(equipments) {
+  const map = {};
+  equipments.forEach(e => {
+    const key = e.modelName || e.name || "";
+    if (!key) return;
+    if (!map[key]) {
+      map[key] = {
+        modelName:     key,
+        itemName:      e.itemName      || "",
+        majorCategory: e.majorCategory || e.category || "",
+        minorCategory: e.minorCategory || "",
+        manufacturer:  e.manufacturer  || "",
+        img:           e.img           || "📦",
+        photoUrls:     e.photoUrls     || (e.photoUrl ? [e.photoUrl] : []),
+        units:         [],
+        total:         0,
+        available:     0,
+      };
+    }
+    map[key].units.push(e);
+    map[key].total++;
+    if ((e.status || "대여가능") === "대여가능") map[key].available++;
+    // 사진은 첫 번째 등록된 것 사용
+    if (map[key].photoUrls.length === 0 && (e.photoUrls?.length > 0 || e.photoUrl)) {
+      map[key].photoUrls = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
+    }
+  });
+  return Object.values(map).sort((a, b) => a.majorCategory.localeCompare(b.majorCategory) || a.modelName.localeCompare(b.modelName));
+}
