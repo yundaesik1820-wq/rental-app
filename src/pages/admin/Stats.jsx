@@ -22,21 +22,36 @@ export default function Stats() {
   const returned = rentals.filter(r => r.status === "반납완료").length;
 
   const deptMap = {};
-  rentals.forEach(r => { deptMap[r.dept] = (deptMap[r.dept] || 0) + 1; });
+  rentals.forEach(r => {
+    const dept = r.dept || "";
+    if (dept) deptMap[dept] = (deptMap[dept] || 0) + 1;
+  });
   const topDepts = Object.entries(deptMap).sort((a, b) => b[1] - a[1]);
   const maxD = Math.max(...topDepts.map(d => d[1]), 1);
 
   const utilMap = {};
-  rentals.forEach(r => { utilMap[r.equipName] = (utilMap[r.equipName] || 0) + 1; });
+  rentals.forEach(r => {
+    if (r.items && Array.isArray(r.items)) {
+      r.items.forEach(item => {
+        const name = item.equipName || "";
+        if (name) utilMap[name] = (utilMap[name] || 0) + (item.quantity || 1);
+      });
+    } else if (r.equipName) {
+      utilMap[r.equipName] = (utilMap[r.equipName] || 0) + 1;
+    }
+  });
   const utilData = Object.entries(utilMap).sort((a, b) => b[1] - a[1]).slice(0, 6)
     .map(([name, cnt]) => ({ name: name.length > 8 ? name.slice(0, 8) + "…" : name, cnt }));
 
   const doExport = () => {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rentals.map(r => ({
-      학생명: r.studentName, 학번: r.studentId, 학과: r.dept,
-      장비명: r.equipName, 대여일: r.rentDate, 반납예정: r.dueDate,
-      상태: r.status, 목적: r.purpose,
+      학생명: r.studentName, 학번: r.studentId, 계열: r.dept,
+      장비목록: (r.items || []).map(i => `${i.equipName} ${i.quantity}개`).join(", "),
+      대여시작: `${r.startDate} ${r.startTime || ""}`,
+      반납예정: `${r.endDate} ${r.endTime || ""}`,
+      사용목적: r.purpose, 세부내용: r.purposeDetail,
+      상태: r.status,
     }))), "대여내역");
     XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(equipments.map(e => ({
       장비명: e.name, 카테고리: e.category, 상태: e.status, 보유: e.total, 가능: e.available,
