@@ -89,6 +89,7 @@ function AppContent() {
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
         case "qrscan":   return <QRScan />;
+        case "inquiry":  return <AdminInquiry />;
         default:         return <Dashboard />;
       }
     } else {
@@ -100,6 +101,7 @@ function AppContent() {
         case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
+        case "inquiry":  return <StudentInquiry />;
         default:         return <StudentHome />;
       }
     }

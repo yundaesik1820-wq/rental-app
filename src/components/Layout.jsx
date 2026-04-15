@@ -11,6 +11,7 @@ const ADMIN_NAV = [
   { id: "stats",     icon: "📊", label: "통계"      },
   { id: "notices",   icon: "📢", label: "공지사항"  },
   { id: "qrscan",    icon: "📷", label: "QR스캔"   },
+  { id: "inquiry",   icon: "💬", label: "문의관리"  },
   { id: "settings",  icon: "⚙️", label: "설정"      },
 ];
 
@@ -21,6 +22,7 @@ const STU_NAV = [
   { id: "reserve",  icon: "📅", label: "예약 신청" },
   { id: "calendar", icon: "🗓️", label: "캘린더"   },
   { id: "notices",  icon: "📢", label: "공지사항" },
+  { id: "inquiry",  icon: "💬", label: "문의"     },
   { id: "profile",  icon: "👤", label: "내 정보"  },
 ];
 
