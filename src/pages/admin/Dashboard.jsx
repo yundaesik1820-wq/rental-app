@@ -66,7 +66,11 @@ export default function Dashboard() {
                 <span style={{ fontSize: 28 }}>{e.img || "📦"}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{e.name}</span>
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{e.modelName || e.name}</div>
+                      {e.itemName && <div style={{ fontSize: 11, color: C.muted, marginTop: 1 }}>{e.itemName}</div>}
+                      {(e.majorCategory || e.category) && <div style={{ fontSize: 11, color: C.muted }}>{[e.majorCategory, e.manufacturer].filter(Boolean).join(" · ")}</div>}
+                    </div>
                     <Badge label={e.status} />
                   </div>
                   <div style={{ background: C.border, borderRadius: 6, height: 6, marginTop: 8, overflow: "hidden" }}>
