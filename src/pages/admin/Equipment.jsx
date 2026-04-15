@@ -16,8 +16,72 @@ async function uploadImage(file) {
   return data.secure_url;
 }
 
-function ImageUploader({ value, onChange }) {
-  const inputRef = useRef();
+// ── 제품사진 업로더 (최대 4장) ────────────────────────────
+function MultiImageUploader({ values = [], onChange, max = 4 }) {
+  const inputRef  = useRef();
+  const [uploading, setUploading] = useState(false);
+
+  const handleFiles = async (e) => {
+    const files = Array.from(e.target.files).slice(0, max - values.length);
+    if (!files.length) return;
+    setUploading(true);
+    try {
+      const urls = await Promise.all(files.map(uploadImage));
+      onChange([...values, ...urls]);
+    } catch {
+      alert("업로드 실패. 다시 시도해주세요.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const remove = (idx) => onChange(values.filter((_, i) => i !== idx));
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>
+        제품 사진 <span style={{ color: C.muted, fontWeight: 400 }}>(최대 {max}장 · 선택)</span>
+      </div>
+
+      {/* 사진 미리보기 그리드 */}
+      {values.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 10 }}>
+          {values.map((url, i) => (
+            <div key={i} style={{ position: "relative", paddingTop: "75%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
+              <img src={url} alt={`사진${i+1}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+              <button onClick={() => remove(i)} style={{ position: "absolute", top: 4, right: 4, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>✕</button>
+              <div style={{ position: "absolute", bottom: 4, left: 4, background: "rgba(0,0,0,0.5)", color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10 }}>{i+1}/{max}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 추가 버튼 */}
+      {values.length < max && (
+        <div onClick={() => !uploading && inputRef.current.click()}
+          style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: "20px 0", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
+          {uploading ? (
+            <div style={{ color: C.blue, fontSize: 13, fontWeight: 600 }}>⏳ 업로드 중...</div>
+          ) : (
+            <>
+              <div style={{ fontSize: 28, marginBottom: 6 }}>📷</div>
+              <div style={{ fontSize: 13, color: C.muted }}>
+                클릭하여 사진 추가 ({values.length}/{max}장)
+              </div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 3 }}>여러 장 동시 선택 가능</div>
+            </>
+          )}
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" multiple onChange={handleFiles} style={{ display: "none" }} />
+    </div>
+  );
+}
+
+// ── S/N 사진 업로더 (1장) ─────────────────────────────────
+function SingleImageUploader({ label, value, onChange }) {
+  const inputRef  = useRef();
   const [uploading, setUploading] = useState(false);
 
   const handleFile = async (e) => {
@@ -36,23 +100,25 @@ function ImageUploader({ value, onChange }) {
   };
 
   return (
-    <div style={{ marginBottom: 12 }}>
-      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>제품 사진</div>
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>
+        {label} <span style={{ color: C.muted, fontWeight: 400 }}>(선택)</span>
+      </div>
       {value ? (
         <div style={{ position: "relative" }}>
-          <img src={value} alt="제품사진" style={{ width: "100%", maxHeight: 200, objectFit: "contain", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg }} />
-          <button onClick={() => onChange("")} style={{ position: "absolute", top: 8, right: 8, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", fontSize: 14, fontWeight: 700 }}>✕</button>
-          <button onClick={() => inputRef.current.click()} style={{ position: "absolute", bottom: 8, right: 8, background: C.navy, color: "#fff", border: "none", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 12, fontWeight: 600 }}>교체</button>
+          <img src={value} alt={label} style={{ width: "100%", maxHeight: 160, objectFit: "contain", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg }} />
+          <button onClick={() => onChange("")} style={{ position: "absolute", top: 6, right: 6, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer", fontSize: 13, fontWeight: 700 }}>✕</button>
+          <button onClick={() => inputRef.current.click()} style={{ position: "absolute", bottom: 6, right: 6, background: C.navy, color: "#fff", border: "none", borderRadius: 8, padding: "4px 10px", cursor: "pointer", fontSize: 11, fontWeight: 600 }}>교체</button>
         </div>
       ) : (
-        <div onClick={() => !uploading && inputRef.current.click()} style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: "30px 0", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
+        <div onClick={() => !uploading && inputRef.current.click()}
+          style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: "16px 0", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
           {uploading ? (
-            <div style={{ color: C.blue, fontSize: 14, fontWeight: 600 }}>⏳ 업로드 중...</div>
+            <div style={{ color: C.blue, fontSize: 13, fontWeight: 600 }}>⏳ 업로드 중...</div>
           ) : (
             <>
-              <div style={{ fontSize: 36, marginBottom: 8 }}>📷</div>
-              <div style={{ fontSize: 13, color: C.muted }}>클릭하여 사진 업로드</div>
-              <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>JPG, PNG, WEBP 지원</div>
+              <div style={{ fontSize: 24, marginBottom: 5 }}>🔍</div>
+              <div style={{ fontSize: 12, color: C.muted }}>클릭하여 사진 업로드</div>
             </>
           )}
         </div>
@@ -62,6 +128,7 @@ function ImageUploader({ value, onChange }) {
   );
 }
 
+// ── 점검 이력 모달 ─────────────────────────────────────────
 function InspModal({ item, inspections, onAdd, onClose }) {
   const [form, setForm] = useState({ type: "정기점검", note: "", result: "정상" });
   const mine = inspections.filter(i => i.equipId === item.id)
@@ -109,12 +176,14 @@ function InspModal({ item, inspections, onAdd, onClose }) {
   );
 }
 
+// ── 세부사항 모달 ──────────────────────────────────────────
 function DetailModal({ item, onClose, onSave }) {
   const [form, setForm] = useState({
-    location: item.location || "",
-    photoUrl: item.photoUrl || "",
-    serialNo: item.serialNo || "",
-    note:     item.note     || "",
+    location:  item.location  || "",
+    photoUrls: item.photoUrls || [],
+    snPhotoUrl: item.snPhotoUrl || "",
+    serialNo:  item.serialNo  || "",
+    note:      item.note      || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -126,12 +195,14 @@ function DetailModal({ item, onClose, onSave }) {
   };
 
   return (
-    <Modal onClose={onClose} width={480}>
+    <Modal onClose={onClose} width={500}>
       <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 4 }}>📋 세부사항</div>
       <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{item.modelName} · {item.itemName}</div>
-      <ImageUploader value={form.photoUrl} onChange={url => setForm(p => ({ ...p, photoUrl: url }))} />
+
+      <MultiImageUploader values={form.photoUrls} onChange={urls => setForm(p => ({ ...p, photoUrls: urls }))} max={4} />
       <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} />
       <Inp label="S/N (시리얼 넘버)" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} />
+      <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => setForm(p => ({ ...p, snPhotoUrl: url }))} />
       <div style={{ marginBottom: 12 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>특이사항</div>
         <textarea placeholder="특이사항 또는 관리 메모" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))}
@@ -145,7 +216,11 @@ function DetailModal({ item, onClose, onSave }) {
   );
 }
 
+// ── 장비 카드 ──────────────────────────────────────────────
 function EquipCard({ e, onDetail, onInsp, onDelete, onToggleStatus }) {
+  const [photoIdx, setPhotoIdx] = useState(0);
+  const photos = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
+
   return (
     <Card>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
@@ -168,20 +243,36 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onToggleStatus }) {
         <Badge label={e.status || "대여가능"} />
       </div>
 
-      {e.photoUrl && (
+      {/* 제품 사진 슬라이드 */}
+      {photos.length > 0 && (
         <div style={{ marginBottom: 12 }}>
-          <img src={e.photoUrl} alt="제품사진" style={{ width: "100%", maxHeight: 180, objectFit: "contain", borderRadius: 10, border: `1px solid ${C.border}`, background: C.bg }} />
+          <div style={{ position: "relative", paddingTop: "65%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
+            <img src={photos[photoIdx]} alt="제품사진" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+            {photos.length > 1 && (
+              <>
+                <button onClick={() => setPhotoIdx(i => (i - 1 + photos.length) % photos.length)}
+                  style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", color: "#fff", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", fontSize: 14 }}>‹</button>
+                <button onClick={() => setPhotoIdx(i => (i + 1) % photos.length)}
+                  style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.45)", color: "#fff", border: "none", borderRadius: "50%", width: 28, height: 28, cursor: "pointer", fontSize: 14 }}>›</button>
+                <div style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
+                  {photos.map((_, i) => (
+                    <div key={i} onClick={() => setPhotoIdx(i)} style={{ width: i === photoIdx ? 16 : 6, height: 6, borderRadius: 3, background: i === photoIdx ? "#fff" : "rgba(255,255,255,0.5)", cursor: "pointer", transition: "all 0.2s" }} />
+                  ))}
+                </div>
+              </>
+            )}
+            <div style={{ position: "absolute", top: 6, right: 6, background: "rgba(0,0,0,0.45)", color: "#fff", borderRadius: 6, padding: "2px 8px", fontSize: 11 }}>{photoIdx+1}/{photos.length}</div>
+          </div>
         </div>
       )}
 
+      {/* 재고 바 */}
       <div style={{ background: C.border, borderRadius: 6, height: 6, marginBottom: 4, overflow: "hidden" }}>
-        <div style={{ width: `${((e.available||0)/(e.total||1))*100}%`, background: (e.available||0)===0 ? C.red : C.teal, height: "100%", borderRadius: 6 }} />
+        <div style={{ width: `${((e.available||0)/(e.total||1))*100}%`, background: (e.available||0)===0?C.red:C.teal, height:"100%", borderRadius:6 }} />
       </div>
       <div style={{ fontSize: 12, color: C.muted, marginBottom: e.note ? 10 : 14 }}>재고 {e.available||0} / {e.total||0}</div>
 
-      {e.note && (
-        <div style={{ background: C.yellowLight, borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>💬 {e.note}</div>
-      )}
+      {e.note && <div style={{ background: C.yellowLight, borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>💬 {e.note}</div>}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Btn onClick={() => onDetail(e)} small color={C.blue}>📋 세부사항</Btn>
@@ -193,11 +284,12 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onToggleStatus }) {
   );
 }
 
-const EMPTY_FORM = {
-  majorCategory: "", minorCategory: "", manufacturer: "",
-  modelName: "", itemName: "", itemNo: "", total: "",
-  status: "대여가능",
-  location: "", photoUrl: "", serialNo: "", note: "",
+// ── 메인 ──────────────────────────────────────────────────
+const EMPTY = {
+  majorCategory:"", minorCategory:"", manufacturer:"",
+  modelName:"", itemName:"", itemNo:"", total:"",
+  status:"대여가능",
+  location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
 };
 
 export default function Equipment() {
@@ -207,7 +299,7 @@ export default function Equipment() {
   const [search, setSearch]         = useState("");
   const [filter, setFilter]         = useState("전체");
   const [showAdd, setShowAdd]       = useState(false);
-  const [form, setForm]             = useState(EMPTY_FORM);
+  const [form, setForm]             = useState(EMPTY);
   const [inspItem, setInspItem]     = useState(null);
   const [detailItem, setDetailItem] = useState(null);
 
@@ -223,72 +315,78 @@ export default function Equipment() {
     if (!form.modelName || !form.itemName || !form.total) return;
     const tot = +form.total;
     await addItem("equipments", { ...form, total: tot, available: tot });
-    setForm(EMPTY_FORM);
+    setForm(EMPTY);
     setShowAdd(false);
   };
 
   const cycleStatus = async (e) => {
-    const cycle = ["대여가능", "수리중", "대여불가"];
-    const next  = cycle[(cycle.indexOf(e.status || "대여가능") + 1) % cycle.length];
+    const cycle = ["대여가능","수리중","대여불가"];
+    const next  = cycle[(cycle.indexOf(e.status||"대여가능")+1) % cycle.length];
     await updateItem("equipments", e.id, { status: next });
   };
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>🔧 장비 관리</PageTitle>
         <Btn onClick={() => setShowAdd(true)}>+ 장비 추가</Btn>
       </div>
 
       {showAdd && (
-        <Modal onClose={() => { setShowAdd(false); setForm(EMPTY_FORM); }} width={520}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 20 }}>새 장비 등록</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
+        <Modal onClose={() => { setShowAdd(false); setForm(EMPTY); }} width={520}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>새 장비 등록</div>
+
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>대분류 *</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
               <input placeholder="예: 카메라, 캠코더" value={form.majorCategory} onChange={e => f("majorCategory", e.target.value)}
-                style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>소분류</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
               <input placeholder="예: 미러리스, DSLR" value={form.minorCategory} onChange={e => f("minorCategory", e.target.value)}
-                style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 14, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
           </div>
+
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" placeholder="예: PXW-Z150" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
           <Inp label="품명 *" placeholder="예: XDCAM 방송용 캠코더" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
           <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
           <Inp label="보유 수량 *" placeholder="예: 7" value={form.total} onChange={e => f("total", e.target.value)} />
-          <div style={{ border: `1px dashed ${C.border}`, borderRadius: 12, padding: 16, marginBottom: 16 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 14 }}>세부사항 (선택)</div>
-            <ImageUploader value={form.photoUrl} onChange={url => f("photoUrl", url)} />
+
+          <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항 (선택)</div>
+            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
             <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => f("location", e.target.value)} />
-            <Inp label="S/N" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
+            <Inp label="S/N (시리얼 넘버)" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
+            <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => f("snPhotoUrl", url)} />
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>특이사항</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>특이사항</div>
               <textarea placeholder="특이사항 또는 메모" value={form.note} onChange={e => f("note", e.target.value)}
-                style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", resize: "vertical", minHeight: 60, boxSizing: "border-box" }} />
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:60, boxSizing:"border-box" }} />
             </div>
           </div>
-          <div style={{ display: "flex", gap: 10 }}>
-            <Btn onClick={() => { setShowAdd(false); setForm(EMPTY_FORM); }} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={addEquip} full disabled={!form.modelName || !form.itemName || !form.total}>등록</Btn>
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={addEquip} full disabled={!form.modelName||!form.itemName||!form.total}>등록</Btn>
           </div>
         </Modal>
       )}
 
-      <div style={{ display: "flex", gap: 14, marginBottom: 16, flexWrap: "wrap" }}>
+      {/* 검색 + 필터 */}
+      <div style={{ display:"flex", gap:14, marginBottom:16, flexWrap:"wrap" }}>
         <input placeholder="🔍 모델명, 품명, 제조사, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 200, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 16px", fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          style={{ flex:1, minWidth:200, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
+        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {majorCats.map(c => (
-            <button key={c} onClick={() => setFilter(c)} style={{ background: filter === c ? C.navy : C.surface, color: filter === c ? "#fff" : C.muted, border: `1px solid ${filter === c ? C.navy : C.border}`, borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
+            <button key={c} onClick={() => setFilter(c)} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
           ))}
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(340px,1fr))", gap: 16 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(340px,1fr))", gap:16 }}>
         {filtered.map(e => (
           <EquipCard key={e.id} e={e}
             onDetail={setDetailItem}
