@@ -318,17 +318,35 @@ function ExcelImportModal({ onClose, onImport }) {
       const buf  = await file.arrayBuffer();
       const wb   = XLSX.read(buf, { type:"array" });
       const ws   = wb.Sheets[wb.SheetNames[0]];
-      const raw  = XLSX.utils.sheet_to_json(ws, { defval:"" });
-      const mapped = raw.map(r => {
-        const obj = { status:"대여가능", photoUrls:[], snPhotoUrl:"" };
-        for (const [kr, en] of Object.entries(COL_MAP)) {
-          obj[en] = r[kr] !== undefined ? String(r[kr]).trim() : "";
+
+      // 헤더 행 자동 탐색 (대분류 or 모델명이 있는 행을 헤더로 사용)
+      const allRows = XLSX.utils.sheet_to_json(ws, { header:1, defval:"" });
+      let headerRowIdx = -1;
+      for (let i = 0; i < Math.min(allRows.length, 10); i++) {
+        const row = allRows[i].map(c => String(c).trim());
+        if (row.includes("대분류") || row.includes("모델명")) {
+          headerRowIdx = i;
+          break;
         }
+      }
+      if (headerRowIdx === -1) {
+        setError("헤더를 찾을 수 없습니다. 템플릿 파일을 사용해주세요.");
+        setLoading(false); e.target.value = "";
+        return;
+      }
+      const hdrs = allRows[headerRowIdx].map(c => String(c).trim());
+      const dataRows = allRows.slice(headerRowIdx + 1);
+      const mapped = dataRows.map(row => {
+        const obj = { status:"대여가능", photoUrls:[], snPhotoUrl:"" };
+        hdrs.forEach((h, i) => {
+          const en = COL_MAP[h];
+          if (en) obj[en] = row[i] !== undefined ? String(row[i]).trim() : "";
+        });
         obj.total     = parseInt(obj.total) || 0;
         obj.available = obj.total;
         return obj;
       }).filter(r => r.modelName && r.itemName && r.total > 0);
-      if (!mapped.length) setError("데이터를 읽을 수 없습니다. 템플릿 형식을 확인해주세요.");
+      if (!mapped.length) setError("데이터를 읽을 수 없습니다. 모델명·품명·보유수량을 확인해주세요.");
       else setRows(mapped);
     } catch { setError("파일을 읽는 중 오류가 발생했습니다."); }
     finally { setLoading(false); e.target.value = ""; }
