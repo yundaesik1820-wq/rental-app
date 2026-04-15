@@ -86,23 +86,35 @@ export default function Rental() {
         }}>
           {/* 신청자 정보 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
-            <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 15, fontWeight: 800, color: C.navy }}>{r.studentName}</span>
-                <span style={{ fontSize: 12, color: C.muted }}>·</span>
                 <span style={{ fontSize: 12, color: C.muted }}>{r.studentId ? r.studentId.slice(0,2)+"학번" : ""}</span>
                 <span style={{ fontSize: 12, color: C.muted }}>·</span>
                 <span style={{ fontSize: 12, color: C.muted }}>{r.dept}</span>
+                {r.license && r.license !== "없음" && (
+                  <span style={{ background: C.blueLight, color: C.blue, borderRadius: 6, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>라이선스 {r.license}</span>
+                )}
               </div>
-              <div style={{ fontSize: 12, color: C.muted }}>📅 {r.startDate} ~ {r.endDate}</div>
-              <div style={{ fontSize: 12, color: C.muted }}>목적: {r.purpose}</div>
-              {r.license && r.license !== "없음" && (
-                <div style={{ display: "inline-block", background: C.blueLight, color: C.blue, borderRadius: 6, padding: "1px 8px", fontSize: 11, fontWeight: 700, marginTop: 4 }}>
-                  라이센스 {r.license}
+              <div style={{ display: "flex", gap: 16, marginBottom: 4, flexWrap: "wrap" }}>
+                {r.phone && <span style={{ fontSize: 12, color: C.muted }}>📞 {r.phone}</span>}
+                {r.emergencyContact && <span style={{ fontSize: 12, color: C.red }}>🚨 비상: {r.emergencyContact}</span>}
+              </div>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>
+                📅 {r.startDate} {r.startTime} ~ {r.endDate} {r.endTime}
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-start", marginBottom: 4, flexWrap: "wrap" }}>
+                {r.purpose && <span style={{ background: C.purpleLight, color: C.purple, borderRadius: 6, padding: "1px 8px", fontSize: 11, fontWeight: 700, whiteSpace: "nowrap" }}>{r.purpose}</span>}
+                {r.purposeDetail && <span style={{ fontSize: 12, color: C.text }}>{r.purposeDetail}</span>}
+              </div>
+              {r.participants && (
+                <div style={{ background: C.bg, borderRadius: 8, padding: "6px 10px", marginTop: 6 }}>
+                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 2 }}>참여인원</div>
+                  <div style={{ fontSize: 12, color: C.text, whiteSpace: "pre-line" }}>{r.participants}</div>
                 </div>
               )}
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 10 }}>
               <span style={{ fontSize: 18 }}>{STATUS_ICON[r.status]}</span>
               <Badge label={r.status} />
             </div>
