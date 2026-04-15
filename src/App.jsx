@@ -87,6 +87,7 @@ function AppContent() {
         case "stats":    return <Stats />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
+        case "qrscan":   return <QRScan />;
         default:         return <Dashboard />;
       }
     } else {
