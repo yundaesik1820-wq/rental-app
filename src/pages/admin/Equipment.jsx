@@ -285,6 +285,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onToggleStatus }) {
 }
 
 // ── 메인 ──────────────────────────────────────────────────
+
 const EMPTY = {
   majorCategory:"", minorCategory:"", manufacturer:"",
   modelName:"", itemName:"", itemNo:"", total:"",
@@ -292,16 +293,132 @@ const EMPTY = {
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
 };
 
+// ── 엑셀 임포트 모달 ──────────────────────────────────────
+function ExcelImportModal({ onClose, onImport }) {
+  const inputRef              = useRef();
+  const [rows, setRows]       = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving]   = useState(false);
+  const [error, setError]     = useState("");
+
+  const COL_MAP = {
+    "대분류":"majorCategory","소분류":"minorCategory",
+    "제조사":"manufacturer","모델명":"modelName",
+    "품명":"itemName","물품번호":"itemNo",
+    "보유수량":"total","보관위치":"location",
+    "S/N":"serialNo","특이사항":"note",
+  };
+
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setLoading(true); setError(""); setRows([]);
+    try {
+      const XLSX = await import("xlsx");
+      const buf  = await file.arrayBuffer();
+      const wb   = XLSX.read(buf, { type:"array" });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const raw  = XLSX.utils.sheet_to_json(ws, { defval:"" });
+      const mapped = raw.map(r => {
+        const obj = { status:"대여가능", photoUrls:[], snPhotoUrl:"" };
+        for (const [kr, en] of Object.entries(COL_MAP)) {
+          obj[en] = r[kr] !== undefined ? String(r[kr]).trim() : "";
+        }
+        obj.total     = parseInt(obj.total) || 0;
+        obj.available = obj.total;
+        return obj;
+      }).filter(r => r.modelName && r.itemName && r.total > 0);
+      if (!mapped.length) setError("데이터를 읽을 수 없습니다. 템플릿 형식을 확인해주세요.");
+      else setRows(mapped);
+    } catch { setError("파일을 읽는 중 오류가 발생했습니다."); }
+    finally { setLoading(false); e.target.value = ""; }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    await onImport(rows);
+    setSaving(false);
+    onClose();
+  };
+
+  return (
+    <Modal onClose={onClose} width={700}>
+      <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>📥 엑셀로 일괄 등록</div>
+      <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>템플릿 양식에 맞춰 작성한 엑셀 파일을 업로드하세요</div>
+
+      {rows.length === 0 && (
+        <div onClick={() => inputRef.current.click()}
+          style={{ border:`2px dashed ${C.border}`, borderRadius:12, padding:"36px 0", textAlign:"center", cursor:"pointer", background:C.bg, marginBottom:14 }}>
+          {loading
+            ? <div style={{ color:C.blue, fontSize:14, fontWeight:600 }}>⏳ 파일 읽는 중...</div>
+            : (<>
+                <div style={{ fontSize:44, marginBottom:10 }}>📊</div>
+                <div style={{ fontSize:14, color:C.text, fontWeight:600 }}>엑셀 파일 클릭하여 업로드</div>
+                <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>.xlsx 파일 지원 · 템플릿 양식 사용</div>
+              </>)
+          }
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept=".xlsx,.xls" onChange={handleFile} style={{ display:"none" }} />
+
+      {error && <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14 }}>⚠️ {error}</div>}
+
+      {rows.length > 0 && (
+        <>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:14, fontWeight:700, color:C.navy }}>✅ {rows.length}개 장비 인식됨</div>
+            <Btn onClick={() => { setRows([]); setError(""); }} small color={C.muted} outline>다시 선택</Btn>
+          </div>
+          <div style={{ maxHeight:300, overflowY:"auto", border:`1px solid ${C.border}`, borderRadius:10, marginBottom:16 }}>
+            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+              <thead>
+                <tr style={{ background:C.navy, position:"sticky", top:0 }}>
+                  {["대분류","소분류","제조사","모델명","품명","물품번호","수량"].map(h => (
+                    <th key={h} style={{ color:"#fff", padding:"8px 10px", textAlign:"left", fontWeight:700, whiteSpace:"nowrap" }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i} style={{ background:i%2===0?C.bg:C.surface, borderBottom:`1px solid ${C.border}` }}>
+                    <td style={{ padding:"7px 10px", color:C.blue, fontWeight:600 }}>{r.majorCategory}</td>
+                    <td style={{ padding:"7px 10px", color:C.muted }}>{r.minorCategory}</td>
+                    <td style={{ padding:"7px 10px", color:C.muted }}>{r.manufacturer}</td>
+                    <td style={{ padding:"7px 10px", color:C.text, fontWeight:600 }}>{r.modelName}</td>
+                    <td style={{ padding:"7px 10px", color:C.text }}>{r.itemName}</td>
+                    <td style={{ padding:"7px 10px", color:C.muted, fontFamily:"monospace" }}>{r.itemNo}</td>
+                    <td style={{ padding:"7px 10px", color:C.navy, fontWeight:700, textAlign:"center" }}>{r.total}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={onClose} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={handleSave} color={C.teal} full disabled={saving}>
+              {saving ? "등록 중..." : `📥 ${rows.length}개 장비 일괄 등록`}
+            </Btn>
+          </div>
+        </>
+      )}
+      {rows.length === 0 && !error && (
+        <div style={{ textAlign:"center" }}><Btn onClick={onClose} color={C.muted} outline>닫기</Btn></div>
+      )}
+    </Modal>
+  );
+}
+
 export default function Equipment() {
   const { data: equipments } = useCollection("equipments", "name");
   const { data: inspections } = useCollection("inspections", "createdAt");
 
-  const [search, setSearch]         = useState("");
-  const [filter, setFilter]         = useState("전체");
-  const [showAdd, setShowAdd]       = useState(false);
-  const [form, setForm]             = useState(EMPTY);
-  const [inspItem, setInspItem]     = useState(null);
-  const [detailItem, setDetailItem] = useState(null);
+  const [search, setSearch]           = useState("");
+  const [filter, setFilter]           = useState("전체");
+  const [showAdd, setShowAdd]         = useState(false);
+  const [showImport, setShowImport]   = useState(false);
+  const [form, setForm]               = useState(EMPTY);
+  const [inspItem, setInspItem]       = useState(null);
+  const [detailItem, setDetailItem]   = useState(null);
 
   const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
@@ -319,6 +436,10 @@ export default function Equipment() {
     setShowAdd(false);
   };
 
+  const importEquips = async (rows) => {
+    await Promise.all(rows.map(r => addItem("equipments", r)));
+  };
+
   const cycleStatus = async (e) => {
     const cycle = ["대여가능","수리중","대여불가"];
     const next  = cycle[(cycle.indexOf(e.status||"대여가능")+1) % cycle.length];
@@ -329,13 +450,15 @@ export default function Equipment() {
     <div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>🔧 장비 관리</PageTitle>
-        <Btn onClick={() => setShowAdd(true)}>+ 장비 추가</Btn>
+        <div style={{ display:"flex", gap:10 }}>
+          <Btn onClick={() => setShowImport(true)} color={C.teal}>📥 엑셀 일괄 등록</Btn>
+          <Btn onClick={() => setShowAdd(true)}>+ 장비 추가</Btn>
+        </div>
       </div>
 
       {showAdd && (
         <Modal onClose={() => { setShowAdd(false); setForm(EMPTY); }} width={520}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>새 장비 등록</div>
-
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
@@ -348,18 +471,16 @@ export default function Equipment() {
                 style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
           </div>
-
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" placeholder="예: PXW-Z150" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
           <Inp label="품명 *" placeholder="예: XDCAM 방송용 캠코더" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
           <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
           <Inp label="보유 수량 *" placeholder="예: 7" value={form.total} onChange={e => f("total", e.target.value)} />
-
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항 (선택)</div>
             <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
             <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => f("location", e.target.value)} />
-            <Inp label="S/N (시리얼 넘버)" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
+            <Inp label="S/N" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
             <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => f("snPhotoUrl", url)} />
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>특이사항</div>
@@ -367,13 +488,14 @@ export default function Equipment() {
                 style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:60, boxSizing:"border-box" }} />
             </div>
           </div>
-
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
             <Btn onClick={addEquip} full disabled={!form.modelName||!form.itemName||!form.total}>등록</Btn>
           </div>
         </Modal>
       )}
+
+      {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={importEquips} />}
 
       {/* 검색 + 필터 */}
       <div style={{ display:"flex", gap:14, marginBottom:16, flexWrap:"wrap" }}>
@@ -398,7 +520,7 @@ export default function Equipment() {
       </div>
       {filtered.length === 0 && <Empty icon="🔧" text="등록된 장비가 없습니다" />}
 
-      {inspItem && <InspModal item={inspItem} inspections={inspections} onAdd={d => addItem("inspections", d)} onClose={() => setInspItem(null)} />}
+      {inspItem   && <InspModal   item={inspItem}   inspections={inspections} onAdd={d => addItem("inspections", d)} onClose={() => setInspItem(null)} />}
       {detailItem && <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onSave={(id, data) => updateItem("equipments", id, data)} />}
     </div>
   );
