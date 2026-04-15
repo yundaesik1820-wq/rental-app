@@ -82,9 +82,9 @@ export default function Login() {
 
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ fontSize: 52, marginBottom: 10 }}>🎓</div>
-          <div style={{ fontSize: 26, fontWeight: 900, color: C.navy }}>장비대여실</div>
-          <div style={{ fontSize: 14, color: C.muted, marginTop: 6 }}>미디어센터 장비 관리 시스템</div>
+          <img src="/logo.png" alt="한예진 로고" style={{ width: 100, height: 100, objectFit: "contain", marginBottom: 10 }} />
+          <div style={{ fontSize: 22, fontWeight: 900, color: C.navy }}>한국방송예술진흥원 장비대여실</div>
+          <div style={{ fontSize: 14, color: C.muted, marginTop: 6 }}>한예진 장비관리시스템</div>
         </div>
 
         {/* 탭 */}
@@ -114,6 +114,7 @@ export default function Login() {
               <div style={{ fontWeight: 700, color: C.navy, marginBottom: 4 }}>💡 안내</div>
               <div>계정이 없으면 회원가입 탭에서 신청하세요.</div>
               <div>관리자 승인 후 로그인이 가능합니다.</div>
+              <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${C.border}` }}>오류문의는 윤대식 조교(010-9576-6028)로 연락 부탁드립니다.</div>
             </div>
           </>
         )}
