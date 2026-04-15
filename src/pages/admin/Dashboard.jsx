@@ -3,26 +3,27 @@ import { Card, Badge, StatBox, SectionTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 
 export default function Dashboard() {
-  const { data: rentals }      = useCollection("rentals", "rentDate");
+  const { data: requests }     = useCollection("rentalRequests", "createdAt");
   const { data: equipments }   = useCollection("equipments", "createdAt");
-  const { data: reservations } = useCollection("reservations", "startDate");
-  const { data: extensions }   = useCollection("extensions", "createdAt");
 
-  const renting  = rentals.filter(r => r.status === "대여중").length;
-  const overdue  = rentals.filter(r => r.status === "연체").length;
+  // rentalRequests 기반 통계
+  const renting  = requests.filter(r => r.status === "승인됨").length;
+  const overdue  = requests.filter(r => r.status === "연체").length;
   const avail    = equipments.reduce((a, e) => a + (e.available || 0), 0);
-  const pending  = reservations.filter(r => r.status === "승인대기").length;
-  const extWait  = extensions.filter(e => e.status === "신청중").length;
+  const pending  = requests.filter(r => r.status === "승인대기").length;
+  const held     = requests.filter(r => r.status === "보류").length;
+
+  // 대시보드용 rentals = requests 별칭
+  const rentals = requests;
 
   return (
     <div>
       {/* Stats */}
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
-        <StatBox icon="🔄" label="현재 대여중" value={renting} color={C.blue}   bg={C.blueLight}  />
-        <StatBox icon="⚠️" label="연체"       value={overdue} color={C.red}    bg={C.redLight}   />
-        <StatBox icon="✅" label="대여 가능"  value={avail}   color={C.green}  bg={C.greenLight} />
-        <StatBox icon="📅" label="예약 대기"  value={pending} color={C.yellow} bg={C.yellowLight}/>
-        <StatBox icon="🔄" label="연장 신청"  value={extWait} color={C.purple} bg={C.purpleLight}/>
+        <StatBox icon="✅" label="승인됨 (대여중)" value={renting} color={C.blue}   bg={C.blueLight}  />
+        <StatBox icon="⏳" label="승인 대기"       value={pending} color={C.yellow} bg={C.yellowLight}/>
+        <StatBox icon="⏸️" label="보류"            value={held}    color={C.orange} bg={C.orangeLight}/>
+        <StatBox icon="📦" label="총 대여가능"     value={avail}   color={C.green}  bg={C.greenLight} />
       </div>
 
       {/* Alerts */}
@@ -40,7 +41,7 @@ export default function Dashboard() {
         {/* Recent Rentals */}
         <div>
           <SectionTitle>📋 최근 대여 현황</SectionTitle>
-          {rentals.filter(r => r.status !== "반납완료").slice(0, 5).map(r => (
+          {requests.filter(r => r.status !== "반납완료" && r.status !== "거절됨").slice(0, 5).map(r => (
             <Card key={r.id}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>

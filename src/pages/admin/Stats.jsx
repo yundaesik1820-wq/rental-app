@@ -11,13 +11,13 @@ const MONTHLY = [
 ];
 
 export default function Stats() {
-  const { data: rentals }    = useCollection("rentals", "rentDate");
+  const { data: rentals }    = useCollection("rentalRequests", "createdAt");
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: students }   = useCollection("users", "name");
 
   const stuList = students.filter(s => s.role === "student");
   const total    = rentals.length;
-  const renting  = rentals.filter(r => r.status === "대여중").length;
+  const renting  = rentals.filter(r => r.status === "승인됨").length;
   const overdue  = rentals.filter(r => r.status === "연체").length;
   const returned = rentals.filter(r => r.status === "반납완료").length;
 
