@@ -13,14 +13,16 @@ import CalendarPage from "./pages/admin/Calendar";
 import Stats      from "./pages/admin/Stats";
 import Notices    from "./pages/admin/Notices";
 import Settings   from "./pages/admin/Settings";
-import QRScan     from "./pages/admin/QRScan";
+import QRScan       from "./pages/admin/QRScan";
+import AdminInquiry from "./pages/admin/Inquiry";
 
 // Student pages
 import StudentHome    from "./pages/student/Home";
 import EquipList      from "./pages/student/EquipList";
 import History        from "./pages/student/History";
 import Reserve        from "./pages/student/Reserve";
-import Profile        from "./pages/student/Profile";
+import Profile         from "./pages/student/Profile";
+import StudentInquiry from "./pages/student/Inquiry";
 
 // Shared
 import { useCollection } from "./hooks/useFirestore";
