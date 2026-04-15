@@ -16,10 +16,10 @@ export default function EquipList() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]       = useState(false);
 
-  const cats     = ["전체", ...new Set(equipments.map(e => e.category))];
+  const cats     = ["전체", ...new Set(equipments.map(e => e.majorCategory || e.category))];
   const filtered = equipments.filter(e =>
-    (filter === "전체" || e.category === filter) &&
-    (e.name?.includes(search) || e.category?.includes(search))
+    (filter === "전체" || e.majorCategory === filter) &&
+    (e.modelName?.includes(search) || e.itemName?.includes(search) || e.name?.includes(search))
   );
 
   const cartCount   = Object.values(cart).reduce((a, b) => a + b, 0);
@@ -40,8 +40,8 @@ export default function EquipList() {
       license:     profile.license || "없음",
       items: cartItems.map(e => ({
         equipId:   e.id,
-        equipName: e.name,
-        category:  e.category,
+        equipName: e.modelName || e.name,
+        category: e.majorCategory || e.category,
         img:       e.img || "📦",
         quantity:  cart[e.id],
       })),
@@ -128,10 +128,13 @@ export default function EquipList() {
                 <span style={{ fontSize: 36 }}>{e.img || "📦"}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{e.name}</div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: C.text }}>{e.modelName || e.name}</div>
                     <Badge label={e.status} />
                   </div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{e.category} · {e.desc}</div>
+                  <div style={{ fontSize: 13, color: C.text, marginTop: 2 }}>{e.itemName}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>
+                    {[e.majorCategory, e.minorCategory, e.manufacturer].filter(Boolean).join(" · ")}
+                  </div>
                   <div style={{ background: C.border, borderRadius: 6, height: 5, marginTop: 10, overflow: "hidden" }}>
                     <div style={{ width: `${(avail / (e.total || 1)) * 100}%`, background: avail === 0 ? C.red : C.teal, height: "100%", borderRadius: 6 }} />
                   </div>
