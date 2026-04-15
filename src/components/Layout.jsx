@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { id: "calendar",  icon: "📅", label: "캘린더"    },
   { id: "stats",     icon: "📊", label: "통계"      },
   { id: "notices",   icon: "📢", label: "공지사항"  },
+  { id: "qrscan",    icon: "📷", label: "QR스캔"   },
   { id: "settings",  icon: "⚙️", label: "설정"      },
 ];
 
