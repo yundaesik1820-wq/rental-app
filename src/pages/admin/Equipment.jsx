@@ -427,7 +427,7 @@ function ExcelImportModal({ onClose, onImport }) {
 }
 
 export default function Equipment() {
-  const { data: equipments } = useCollection("equipments", "name");
+  const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: inspections } = useCollection("inspections", "createdAt");
 
   const [search, setSearch]           = useState("");
@@ -449,13 +449,19 @@ export default function Equipment() {
   const addEquip = async () => {
     if (!form.modelName || !form.itemName || !form.total) return;
     const tot = +form.total;
-    await addItem("equipments", { ...form, total: tot, available: tot });
+    await addItem("equipments", { ...form, name: form.modelName, total: tot, available: tot });
     setForm(EMPTY);
     setShowAdd(false);
   };
 
   const importEquips = async (rows) => {
-    await Promise.all(rows.map(r => addItem("equipments", r)));
+    for (const r of rows) {
+      try {
+        await addItem("equipments", { ...r, name: r.modelName || "" });
+      } catch (err) {
+        console.error("등록 실패:", r.modelName, err);
+      }
+    }
   };
 
   const cycleStatus = async (e) => {
