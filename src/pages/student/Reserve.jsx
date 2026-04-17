@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
 
 const PURPOSE_OPTIONS = ["과제 및 스터디", "동아리", "작품제작", "학교행사"];

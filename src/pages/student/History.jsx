@@ -1,7 +1,7 @@
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle, StatBox } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 보류: "⏸️", 거절됨: "❌", 반납완료: "📦" };
 

@@ -1,7 +1,7 @@
 import { C, NOTICE_CAT } from "../../theme";
 import { Card, Badge, SectionTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
 export default function StudentHome() {
   const { profile } = useAuth();

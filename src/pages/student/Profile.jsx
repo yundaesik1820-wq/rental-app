@@ -1,7 +1,7 @@
 import { C } from "../../theme";
 import { Card, Avatar, PageTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
 export default function Profile() {
   const { profile, logout } = useAuth();

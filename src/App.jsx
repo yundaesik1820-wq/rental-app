@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import { Spinner } from "./components/UI";

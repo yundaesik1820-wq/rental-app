@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Btn, PageTitle, Badge, Empty } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
-import { useAuth } from "../../hooks/useAuth";
+import { useAuth } from "../../hooks/useAuth.jsx";
 
 const CATEGORIES = [
   { id: "일반 문의",     icon: "💬", desc: "대여 방법, 운영시간 등 일반적인 질문" },
