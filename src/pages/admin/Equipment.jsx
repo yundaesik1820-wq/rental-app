@@ -510,7 +510,7 @@ export default function Equipment() {
               <div>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록 *</div>
                 <textarea
-                  placeholder={"한 줄에 하나씩 입력하세요\n예)\nZoom F6 본체\n쇼크마운트\n윈드스크린\nXLR 케이블"}
+                  placeholder="한 줄에 하나씩 입력하세요 (예: Zoom F6 본체, 쇼크마운트, 윈드스크린)"
                   value={form.setItems}
                   onChange={e => f("setItems", e.target.value)}
                   style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:120, boxSizing:"border-box" }}
@@ -589,10 +589,7 @@ export default function Equipment() {
             {form.isSet && (
               <div>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록</div>
-                <textarea placeholder={"한 줄에 하나씩 입력
-예)
-Zoom F6 본체
-쇼크마운트"} value={form.setItems} onChange={e => f("setItems", e.target.value)}
+                <textarea placeholder="한 줄에 하나씩 입력 (예: Zoom F6 본체, 쇼크마운트...)" value={form.setItems} onChange={e => f("setItems", e.target.value)}
                   style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
               </div>
             )}
