@@ -171,7 +171,7 @@ function DetailModal({ item, onClose, onSave }) {
 }
 
 // ── 장비 카드 (1대) ────────────────────────────────────────
-function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus }) {
+function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   const photos = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
 
@@ -235,6 +235,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus }) {
       {e.note && <div style={{ background: C.yellowLight, borderRadius: 8, padding: "7px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>💬 {e.note}</div>}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <Btn onClick={() => onEdit(e)}    small color={C.green}>✏️ 수정</Btn>
         <Btn onClick={() => onDetail(e)} small color={C.blue}>📋 세부사항</Btn>
         <Btn onClick={() => onInsp(e)}   small color={C.purple}>🔧 점검이력</Btn>
         <Btn onClick={() => onCycleStatus(e)} small color={C.yellow} text={C.text} outline>상태변경</Btn>
@@ -371,6 +372,7 @@ export default function Equipment() {
   const [form, setForm]               = useState(EMPTY);
   const [inspItem, setInspItem]       = useState(null);
   const [detailItem, setDetailItem]   = useState(null);
+  const [editItem, setEditItem]       = useState(null); // 수정 대상
 
   const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
@@ -395,6 +397,35 @@ export default function Equipment() {
     if (!form.modelName) return;
     await addItem("equipments", { ...form, name: form.modelName });
     setForm(EMPTY); setShowAdd(false);
+  };
+
+  // 수정 시작 — 기존 데이터로 폼 채우기
+  const startEdit = (e) => {
+    setEditItem(e);
+    setForm({
+      majorCategory: e.majorCategory || "",
+      minorCategory: e.minorCategory || "",
+      manufacturer:  e.manufacturer  || "",
+      modelName:     e.modelName     || "",
+      itemName:      e.itemName      || "",
+      unitNo:        e.unitNo        || "",
+      itemNo:        e.itemNo        || "",
+      status:        e.status        || "대여가능",
+      location:      e.location      || "",
+      photoUrls:     e.photoUrls     || [],
+      snPhotoUrl:    e.snPhotoUrl    || "",
+      serialNo:      e.serialNo      || "",
+      note:          e.note          || "",
+      isSet:         e.isSet         || false,
+      setItems:      e.setItems      || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!form.modelName || !editItem) return;
+    await updateItem("equipments", editItem.id, { ...form, name: form.modelName });
+    setEditItem(null);
+    setForm(EMPTY);
   };
 
   const cycleStatus = async (e) => {
@@ -494,6 +525,86 @@ export default function Equipment() {
         </Modal>
       )}
 
+      {/* 수정 모달 */}
+      {editItem && (
+        <Modal onClose={() => { setEditItem(null); setForm(EMPTY); }} width={520}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>✏️ 장비 수정</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:18 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
+              <input value={form.majorCategory} onChange={e => f("majorCategory", e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
+              <input value={form.minorCategory} onChange={e => f("minorCategory", e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+          </div>
+          <Inp label="제조사" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
+          <Inp label="모델명 *" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
+          <Inp label="품명" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+            <Inp label="호기" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
+            <Inp label="물품번호" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
+          </div>
+
+          {/* 상태 선택 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>상태</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {["대여가능","수리중","대여불가","대여중"].map(s => (
+                <button key={s} onClick={() => f("status", s)} style={{ flex:1, padding:"8px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
+                  background: form.status===s ? C.navy : C.bg,
+                  color:      form.status===s ? "#fff" : C.muted,
+                  border:     `1.5px solid ${form.status===s ? C.navy : C.border}`,
+                }}>{s}</button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항</div>
+            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
+            <Inp label="보관 위치" value={form.location} onChange={e => f("location", e.target.value)} />
+            <Inp label="S/N" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
+            <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => f("snPhotoUrl", url)} />
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>특이사항</div>
+              <textarea value={form.note} onChange={e => f("note", e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:60, boxSizing:"border-box" }} />
+            </div>
+          </div>
+
+          {/* 세트 구성 */}
+          <div style={{ border:`1px dashed ${C.orange}`, borderRadius:12, padding:16, marginBottom:16, background:form.isSet?C.orangeLight:"transparent" }}>
+            <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", marginBottom: form.isSet ? 14 : 0 }}>
+              <input type="checkbox" checked={form.isSet} onChange={e => f("isSet", e.target.checked)} style={{ width:18, height:18, cursor:"pointer" }} />
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.orange }}>📦 세트 장비</div>
+                <div style={{ fontSize:11, color:C.muted }}>체크 시 구성품 전체가 세트로만 대여 가능</div>
+              </div>
+            </label>
+            {form.isSet && (
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록</div>
+                <textarea placeholder={"한 줄에 하나씩 입력
+예)
+Zoom F6 본체
+쇼크마운트"} value={form.setItems} onChange={e => f("setItems", e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
+              </div>
+            )}
+          </div>
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => { setEditItem(null); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={saveEdit} color={C.green} full disabled={!form.modelName}>저장</Btn>
+          </div>
+        </Modal>
+      )}
+
       {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
 
       {/* 검색 + 필터 */}
@@ -514,6 +625,7 @@ export default function Equipment() {
             onInsp={setInspItem}
             onDelete={id => deleteItem("equipments", id)}
             onCycleStatus={cycleStatus}
+            onEdit={startEdit}
           />
         ))}
       </div>
