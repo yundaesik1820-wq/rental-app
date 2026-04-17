@@ -182,6 +182,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus }) {
       {/* 상태 + 분류 태그 */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {e.isSet && <span style={{ background: C.orangeLight, color: C.orange, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, border: `1px solid ${C.orange}40` }}>📦 세트</span>}
           {e.majorCategory && <span style={{ background: C.blueLight, color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{e.majorCategory}</span>}
           {e.minorCategory && <span style={{ background: C.bg, color: C.muted, borderRadius: 6, padding: "2px 8px", fontSize: 11, border: `1px solid ${C.border}` }}>{e.minorCategory}</span>}
         </div>
@@ -221,6 +222,16 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus }) {
         </div>
       )}
 
+      {e.isSet && e.setItems && (
+        <div style={{ background: C.orangeLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, border: `1px solid ${C.orange}30` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 6 }}>📦 세트 구성품</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+            {e.setItems.split("\n").filter(Boolean).map((item, i) => (
+              <span key={i} style={{ background: C.surface, color: C.text, borderRadius: 6, padding: "2px 8px", fontSize: 11, border: `1px solid ${C.border}` }}>{item.trim()}</span>
+            ))}
+          </div>
+        </div>
+      )}
       {e.note && <div style={{ background: C.yellowLight, borderRadius: 8, padding: "7px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>💬 {e.note}</div>}
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -344,6 +355,8 @@ const EMPTY = {
   modelName:"", itemName:"", unitNo:"", itemNo:"",
   status:"대여가능",
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
+  isSet: false,
+  setItems: "",  // 구성품 목록 (줄바꿈 구분)
 };
 
 // ── 메인 ──────────────────────────────────────────────────
@@ -451,6 +464,28 @@ export default function Equipment() {
               <textarea placeholder="특이사항 또는 메모" value={form.note} onChange={e => f("note", e.target.value)}
                 style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:60, boxSizing:"border-box" }} />
             </div>
+          </div>
+
+          {/* 세트 구성 */}
+          <div style={{ border:`1px dashed ${C.orange}`, borderRadius:12, padding:16, marginBottom:16, background:form.isSet?C.orangeLight:"transparent" }}>
+            <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", marginBottom: form.isSet ? 14 : 0 }}>
+              <input type="checkbox" checked={form.isSet} onChange={e => f("isSet", e.target.checked)} style={{ width:18, height:18, cursor:"pointer" }} />
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.orange }}>📦 세트 장비로 등록</div>
+                <div style={{ fontSize:11, color:C.muted }}>체크 시 구성품 전체가 세트로만 대여 가능</div>
+              </div>
+            </label>
+            {form.isSet && (
+              <div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록 *</div>
+                <textarea
+                  placeholder={"한 줄에 하나씩 입력하세요\n예)\nZoom F6 본체\n쇼크마운트\n윈드스크린\nXLR 케이블"}
+                  value={form.setItems}
+                  onChange={e => f("setItems", e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:120, boxSizing:"border-box" }}
+                />
+              </div>
+            )}
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>

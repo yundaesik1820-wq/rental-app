@@ -14,50 +14,93 @@ for (let h = 0; h < 24; h++) {
   }
 }
 
+// 세트 그룹화 (modelName 기준)
+function groupSets(equipments) {
+  const map = {};
+  equipments.filter(e => e.isSet).forEach(e => {
+    const key = e.modelName || "";
+    if (!key) return;
+    if (!map[key]) {
+      map[key] = {
+        modelName:     key,
+        itemName:      e.itemName      || "",
+        majorCategory: e.majorCategory || "",
+        minorCategory: e.minorCategory || "",
+        manufacturer:  e.manufacturer  || "",
+        setItems:      e.setItems      || "",
+        photoUrls:     e.photoUrls     || [],
+        units: [], total: 0, available: 0,
+      };
+    }
+    map[key].units.push(e);
+    map[key].total++;
+    if ((e.status || "대여가능") === "대여가능") map[key].available++;
+    if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
+    if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
+  });
+  return Object.values(map);
+}
+
 export default function Reserve() {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
 
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("전체");
-  const [cart, setCart]     = useState({}); // { modelName: quantity }
-  const [showForm, setShowForm] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [done, setDone]     = useState(false);
-  const [errors, setErrors] = useState({});
+  const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
+  const [search, setSearch]   = useState("");
+  const [filter, setFilter]   = useState("전체");
 
-  const [form, setForm] = useState({
-    emergencyContact: "",
-    participants:     "",
-    purpose:          "",
-    purposeDetail:    "",
-    startDate:        "",
-    startTime:        "09:00",
-    endDate:          "",
-    endTime:          "18:00",
-  });
+  // 단품 장비 (세트 아닌 것)
+  const unitEquips = equipments.filter(e => !e.isSet);
+  const grouped    = groupEquipments(unitEquips);
 
-  // 모델별로 묶기
-  const grouped  = groupEquipments(equipments);
-  const cats     = ["전체", ...new Set(grouped.map(e => e.majorCategory).filter(Boolean))];
-  const filtered = grouped.filter(e =>
+  // 세트 장비
+  const setEquips  = groupSets(equipments);
+
+  // 카테고리
+  const unitCats = ["전체", ...new Set(grouped.map(e => e.majorCategory).filter(Boolean))];
+  const setCats  = ["전체", ...new Set(setEquips.map(e => e.majorCategory).filter(Boolean))];
+
+  const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
-    (e.modelName?.includes(search) || e.itemName?.includes(search) || e.manufacturer?.includes(search))
+    (e.modelName?.includes(search) || e.itemName?.includes(search))
+  );
+  const filteredSets = setEquips.filter(e =>
+    (filter === "전체" || e.majorCategory === filter) &&
+    (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
-  const cartModels  = grouped.filter(e => (cart[e.modelName] || 0) > 0);
-  const cartTotal   = Object.values(cart).reduce((a, b) => a + b, 0);
+  // 장바구니 { modelName: qty } (단품), { modelName: true } (세트)
+  const [cart, setCart]         = useState({});
+  const [cartSets, setCartSets] = useState({});
+  const [expandedSet, setExpandedSet] = useState(null);
+
+  const [showForm, setShowForm]   = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone]           = useState(false);
+  const [errors, setErrors]       = useState({});
+
+  const [form, setForm] = useState({
+    emergencyContact:"", participants:"", purpose:"", purposeDetail:"",
+    startDate:"", startTime:"09:00", endDate:"", endTime:"18:00",
+  });
 
   const setQty = (modelName, qty, max) => {
-    const clamped = Math.max(0, Math.min(qty, max));
-    setCart(p => ({ ...p, [modelName]: clamped }));
+    const c = Math.max(0, Math.min(qty, max));
+    setCart(p => ({ ...p, [modelName]: c }));
+  };
+  const toggleSet = (modelName) => {
+    setCartSets(p => ({ ...p, [modelName]: !p[modelName] }));
   };
 
-  const f = (key, val) => { setForm(p => ({ ...p, [key]: val })); setErrors(p => ({ ...p, [key]: "" })); };
+  const cartUnitItems = grouped.filter(e => (cart[e.modelName] || 0) > 0);
+  const cartSetItems  = setEquips.filter(e => cartSets[e.modelName]);
+  const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0) + cartSetItems.length;
+
+  const f = (key, val) => { setForm(p=>({...p,[key]:val})); setErrors(p=>({...p,[key]:""})); };
 
   const validate = () => {
     const errs = {};
-    if (cartModels.length === 0)  errs.cart = "장비를 1개 이상 선택하세요";
+    if (cartTotal === 0)          errs.cart = "장비를 1개 이상 선택하세요";
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
     if (!form.purposeDetail)      errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
@@ -72,38 +115,39 @@ export default function Reserve() {
     if (!validate()) return;
     setSubmitting(true);
     try {
-      await addItem("rentalRequests", {
-        studentId:   profile.studentId,
-        studentName: profile.name,
-        phone:       profile.phone   || "",
-        dept:        profile.dept    || "",
-        license:     profile.license || "없음",
-        items: cartModels.map(e => ({
-          modelName: e.modelName,
-          equipName: e.modelName,
-          itemName:  e.itemName,
-          category:  e.majorCategory,
-          quantity:  cart[e.modelName],
+      const items = [
+        ...cartUnitItems.map(e => ({
+          modelName: e.modelName, equipName: e.modelName,
+          itemName: e.itemName, category: e.majorCategory,
+          quantity: cart[e.modelName], isSet: false,
         })),
-        emergencyContact: form.emergencyContact,
-        participants:     form.participants,
-        purpose:          form.purpose,
-        purposeDetail:    form.purposeDetail,
-        startDate:        form.startDate,
-        startTime:        form.startTime,
-        endDate:          form.endDate,
-        endTime:          form.endTime,
-        status:           "승인대기",
-        reason:           "",
+        ...cartSetItems.map(e => ({
+          modelName: e.modelName, equipName: e.modelName,
+          itemName: e.itemName, category: e.majorCategory,
+          quantity: 1, isSet: true,
+          setItems: e.setItems,
+        })),
+      ];
+      await addItem("rentalRequests", {
+        studentId: profile.studentId, studentName: profile.name,
+        phone: profile.phone || "", dept: profile.dept || "",
+        license: profile.license || "없음",
+        items, emergencyContact: form.emergencyContact,
+        participants: form.participants, purpose: form.purpose,
+        purposeDetail: form.purposeDetail,
+        startDate: form.startDate, startTime: form.startTime,
+        endDate: form.endDate, endTime: form.endTime,
+        status: "승인대기", reason: "",
       });
-      setCart({});
+      setCart({}); setCartSets({});
       setForm({ emergencyContact:"", participants:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
-      setShowForm(false);
-      setDone(true);
+      setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
-    } catch (e) { console.error(e); }
+    } catch(e) { console.error(e); }
     finally { setSubmitting(false); }
   };
+
+  const cats = tabView === "단품" ? unitCats : setCats;
 
   return (
     <div>
@@ -119,34 +163,52 @@ export default function Reserve() {
 
       {done && <div style={{ background:C.greenLight, color:C.green, borderRadius:12, padding:"14px 18px", marginBottom:16, fontWeight:700, fontSize:14, border:`1px solid ${C.green}30` }}>✅ 대여 신청이 완료됐어요! 관리자 승인을 기다려 주세요.</div>}
 
-      {/* 선택된 장비 요약 */}
+      {/* 선택 장바구니 */}
       {cartTotal > 0 && (
         <Card style={{ border:`2px solid ${C.teal}40`, marginBottom:20 }}>
-          <div style={{ fontSize:14, fontWeight:800, color:C.teal, marginBottom:12 }}>📋 선택한 장비 ({cartTotal}개)</div>
-          {cartModels.map(e => (
+          <div style={{ fontSize:14, fontWeight:800, color:C.teal, marginBottom:12 }}>📋 선택한 장비</div>
+          {cartUnitItems.map(e => (
             <div key={e.modelName} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
-              <div>
-                <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</div>
-                <div style={{ fontSize:11, color:C.muted }}>{e.majorCategory}</div>
-              </div>
+              <div><div style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</div><div style={{ fontSize:11, color:C.muted }}>{e.majorCategory}</div></div>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <button onClick={() => setQty(e.modelName, (cart[e.modelName]||0)-1, e.available)} style={{ width:28, height:28, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16, fontWeight:700 }}>−</button>
-                <span style={{ fontSize:14, fontWeight:700, color:C.navy, minWidth:24, textAlign:"center" }}>{cart[e.modelName]}</span>
-                <button onClick={() => setQty(e.modelName, (cart[e.modelName]||0)+1, e.available)} style={{ width:28, height:28, borderRadius:8, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, fontWeight:700, color:C.teal }}>+</button>
-                <span style={{ fontSize:11, color:C.muted }}>/ {e.available}대</span>
+                <button onClick={() => setQty(e.modelName,(cart[e.modelName]||0)-1,e.available)} style={{ width:28,height:28,borderRadius:8,border:`1px solid ${C.border}`,background:C.bg,cursor:"pointer",fontSize:16,fontWeight:700 }}>−</button>
+                <span style={{ fontSize:14,fontWeight:700,color:C.navy,minWidth:24,textAlign:"center" }}>{cart[e.modelName]}</span>
+                <button onClick={() => setQty(e.modelName,(cart[e.modelName]||0)+1,e.available)} style={{ width:28,height:28,borderRadius:8,border:`1px solid ${C.teal}`,background:C.tealLight,cursor:"pointer",fontSize:16,fontWeight:700,color:C.teal }}>+</button>
+                <span style={{ fontSize:11,color:C.muted }}>/ {e.available}대</span>
+              </div>
+            </div>
+          ))}
+          {cartSetItems.map(e => (
+            <div key={e.modelName} style={{ padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.majorCategory}</div>
+                </div>
+                <button onClick={() => toggleSet(e.modelName)} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, cursor:"pointer" }}>취소</button>
               </div>
             </div>
           ))}
           <div style={{ display:"flex", gap:10, marginTop:12 }}>
-            <Btn onClick={() => setCart({})} color={C.muted} outline full small>전체 취소</Btn>
+            <Btn onClick={() => { setCart({}); setCartSets({}); }} color={C.muted} outline full small>전체 취소</Btn>
             <Btn onClick={() => setShowForm(true)} color={C.teal} full>신청서 작성 →</Btn>
           </div>
         </Card>
       )}
 
-      {/* 검색 + 필터 */}
+      {/* 단품 / 세트 탭 */}
+      <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:16, border:`1px solid ${C.border}`, width:"fit-content" }}>
+        {["단품", "세트"].map(t => (
+          <button key={t} onClick={() => { setTabView(t); setFilter("전체"); setSearch(""); }} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>{t} {t==="세트" ? `(${setEquips.length})` : `(${grouped.length})`}</button>
+        ))}
+      </div>
+
+      {/* 검색 + 카테고리 */}
       <div style={{ display:"flex", gap:12, marginBottom:14, flexWrap:"wrap" }}>
-        <input placeholder="🔍 모델명, 품명, 제조사 검색" value={search} onChange={e => setSearch(e.target.value)}
+        <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex:1, minWidth:180, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {cats.map(c => (
@@ -157,53 +219,117 @@ export default function Reserve() {
 
       {errors.cart && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {errors.cart}</div>}
 
-      {/* 장비 목록 (모델별) */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
-        {filtered.map(e => {
-          const avail    = e.available;
-          const qty      = cart[e.modelName] || 0;
-          const selected = qty > 0;
-          return (
-            <Card key={e.modelName} style={{ border:`2px solid ${selected?C.teal:C.border}`, transition:"border 0.15s" }}>
-              <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
-                {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{e.majorCategory}</span>}
-                {e.minorCategory && <span style={{ background:C.bg, color:C.muted, borderRadius:6, padding:"2px 8px", fontSize:11, border:`1px solid ${C.border}` }}>{e.minorCategory}</span>}
-              </div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
-                <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>{e.modelName}</div>
-                <Badge label={avail > 0 ? "대여가능" : "대여불가"} />
-              </div>
-              {e.itemName     && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
-              {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>🏭 {e.manufacturer}</div>}
-
-              <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
-                <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:6 }} />
-              </div>
-              <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:12 }}>
-                대여 가능 {avail}대 / 전체 {e.total}대{avail===0?" · 현재 대여 불가":""}
-              </div>
-
-              {/* 수량 선택 */}
-              {avail === 0 ? (
-                <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
-              ) : selected ? (
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <button onClick={() => setQty(e.modelName, qty-1, avail)} style={{ width:34, height:34, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:18, fontWeight:700 }}>−</button>
-                  <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:20, fontWeight:800, color:C.teal, minWidth:36 }}>{qty}</div>
-                    <div style={{ fontSize:9, color:C.muted }}>최대 {avail}대</div>
-                  </div>
-                  <button onClick={() => setQty(e.modelName, qty+1, avail)} style={{ width:34, height:34, borderRadius:8, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:18, fontWeight:700, color:C.teal }}>+</button>
-                  <button onClick={() => setQty(e.modelName, 0, avail)} style={{ marginLeft:4, background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer", textDecoration:"underline" }}>취소</button>
+      {/* ── 단품 목록 ── */}
+      {tabView === "단품" && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
+          {filteredUnits.map(e => {
+            const avail = e.available;
+            const qty   = cart[e.modelName] || 0;
+            return (
+              <Card key={e.modelName} style={{ border:`2px solid ${qty>0?C.teal:C.border}`, transition:"border 0.15s" }}>
+                <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
+                  {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{e.majorCategory}</span>}
+                  {e.minorCategory && <span style={{ background:C.bg, color:C.muted, borderRadius:6, padding:"2px 8px", fontSize:11, border:`1px solid ${C.border}` }}>{e.minorCategory}</span>}
                 </div>
-              ) : (
-                <Btn onClick={() => setQty(e.modelName, 1, avail)} color={C.teal} small>+ 선택</Btn>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-      {filtered.length === 0 && <Empty icon="🔍" text="장비가 없습니다" />}
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                  <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>{e.modelName}</div>
+                  <Badge label={avail>0?"대여가능":"대여불가"} />
+                </div>
+                {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>🏭 {e.manufacturer}</div>}
+                <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
+                  <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:6 }} />
+                </div>
+                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:12 }}>
+                  대여 가능 {avail}대 / 전체 {e.total}대
+                </div>
+                {avail === 0 ? (
+                  <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
+                ) : qty > 0 ? (
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <button onClick={() => setQty(e.modelName, qty-1, avail)} style={{ width:34,height:34,borderRadius:8,border:`1px solid ${C.border}`,background:C.bg,cursor:"pointer",fontSize:18,fontWeight:700 }}>−</button>
+                    <div style={{ textAlign:"center" }}>
+                      <div style={{ fontSize:20,fontWeight:800,color:C.teal,minWidth:36 }}>{qty}</div>
+                      <div style={{ fontSize:9,color:C.muted }}>최대 {avail}대</div>
+                    </div>
+                    <button onClick={() => setQty(e.modelName, qty+1, avail)} style={{ width:34,height:34,borderRadius:8,border:`1px solid ${C.teal}`,background:C.tealLight,cursor:"pointer",fontSize:18,fontWeight:700,color:C.teal }}>+</button>
+                    <button onClick={() => setQty(e.modelName, 0, avail)} style={{ marginLeft:4,background:"none",border:"none",color:C.muted,fontSize:12,cursor:"pointer",textDecoration:"underline" }}>취소</button>
+                  </div>
+                ) : (
+                  <Btn onClick={() => setQty(e.modelName,1,avail)} color={C.teal} small>+ 선택</Btn>
+                )}
+              </Card>
+            );
+          })}
+          {filteredUnits.length === 0 && <Empty icon="🔍" text="단품 장비가 없습니다" />}
+        </div>
+      )}
+
+      {/* ── 세트 목록 ── */}
+      {tabView === "세트" && (
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
+          {filteredSets.map(e => {
+            const avail    = e.available;
+            const selected = !!cartSets[e.modelName];
+            const items    = (e.setItems || "").split("\n").filter(Boolean);
+            const expanded = expandedSet === e.modelName;
+            return (
+              <Card key={e.modelName} style={{ border:`2px solid ${selected?C.orange:C.border}`, transition:"border 0.15s" }}>
+                {/* 세트 배지 */}
+                <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
+                  <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700, border:`1px solid ${C.orange}40` }}>📦 세트</span>
+                  {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{e.majorCategory}</span>}
+                </div>
+
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
+                  <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>{e.modelName}</div>
+                  <Badge label={avail>0?"대여가능":"대여불가"} />
+                </div>
+                {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>🏭 {e.manufacturer}</div>}
+
+                <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
+                  <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:6 }} />
+                </div>
+                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:10 }}>
+                  대여 가능 {avail}세트 / 전체 {e.total}세트
+                </div>
+
+                {/* 구성품 보기 */}
+                {items.length > 0 && (
+                  <div style={{ marginBottom:12 }}>
+                    <button onClick={() => setExpandedSet(expanded ? null : e.modelName)} style={{ background:"none", border:"none", color:C.blue, fontSize:12, fontWeight:600, cursor:"pointer", padding:0, display:"flex", alignItems:"center", gap:4 }}>
+                      📋 구성품 {items.length}개 {expanded?"▲":"▼"}
+                    </button>
+                    {expanded && (
+                      <div style={{ marginTop:8, display:"flex", flexWrap:"wrap", gap:4 }}>
+                        {items.map((item, i) => (
+                          <span key={i} style={{ background:C.orangeLight, color:"#92400E", borderRadius:6, padding:"2px 8px", fontSize:11, border:`1px solid ${C.orange}30` }}>{item.trim()}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 선택 버튼 */}
+                {avail === 0 ? (
+                  <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
+                ) : selected ? (
+                  <div style={{ display:"flex", gap:8 }}>
+                    <div style={{ flex:1, background:C.orangeLight, borderRadius:10, padding:"8px 14px", textAlign:"center", border:`1px solid ${C.orange}40` }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.orange }}>✅ 선택됨</span>
+                    </div>
+                    <button onClick={() => toggleSet(e.modelName)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 14px", fontSize:12, color:C.muted, cursor:"pointer" }}>취소</button>
+                  </div>
+                ) : (
+                  <Btn onClick={() => toggleSet(e.modelName)} color={C.orange} full>📦 세트 선택</Btn>
+                )}
+              </Card>
+            );
+          })}
+          {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
+        </div>
+      )}
 
       {/* 신청서 모달 */}
       {showForm && (
@@ -211,11 +337,11 @@ export default function Reserve() {
           <div style={{ fontSize:18, fontWeight:800, color:C.navy, marginBottom:4 }}>📋 장비 대여 신청서</div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>아래 정보를 확인하고 신청해주세요</div>
 
-          {/* 신청자 정보 (자동입력) */}
+          {/* 신청자 정보 */}
           <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
             <div style={{ fontSize:13, fontWeight:800, color:C.navy, marginBottom:12 }}>👤 신청자 정보 (자동입력)</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {[["이름", profile?.name], ["학번", profile?.studentId], ["연락처", profile?.phone || "-"], ["계열", profile?.dept || "-"], ["라이선스", profile?.license || "없음"]].map(([k,v]) => (
+              {[["이름",profile?.name],["학번",profile?.studentId],["연락처",profile?.phone||"-"],["계열",profile?.dept||"-"],["라이선스",profile?.license||"없음"]].map(([k,v]) => (
                 <div key={k} style={{ background:C.surface, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
                   <div style={{ fontSize:10, color:C.muted, marginBottom:2 }}>{k}</div>
                   <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{v}</div>
@@ -224,16 +350,34 @@ export default function Reserve() {
             </div>
           </div>
 
-          {/* 선택 장비 */}
+          {/* 신청 장비 */}
           <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
             <div style={{ fontSize:13, fontWeight:800, color:C.navy, marginBottom:10 }}>🔧 신청 장비</div>
-            {cartModels.map(e => (
+            {cartUnitItems.map(e => (
               <div key={e.modelName} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"6px 0", borderBottom:`1px solid ${C.border}` }}>
                 <div>
                   <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</div>
                   <div style={{ fontSize:11, color:C.muted }}>가능 {e.available}대 중</div>
                 </div>
                 <span style={{ fontSize:15, fontWeight:800, color:C.teal }}>{cart[e.modelName]}대</span>
+              </div>
+            ))}
+            {cartSetItems.map(e => (
+              <div key={e.modelName} style={{ padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
+                  </div>
+                  <span style={{ fontSize:15, fontWeight:800, color:C.orange }}>1세트</span>
+                </div>
+                {e.setItems && (
+                  <div style={{ fontSize:11, color:C.muted, paddingLeft:4 }}>
+                    {e.setItems.split("\n").filter(Boolean).map((i,idx) => (
+                      <span key={idx}>{i.trim()}{idx < e.setItems.split("\n").filter(Boolean).length-1 ? " · " : ""}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -243,7 +387,7 @@ export default function Reserve() {
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>
               비상연락처 <span style={{ color:cartTotal>=2?C.red:C.muted, fontSize:11 }}>{cartTotal>=2?"* 2인 이상 필수":"(선택)"}</span>
             </div>
-            <input placeholder="예: 010-0000-0000" value={form.emergencyContact} onChange={e => f("emergencyContact", e.target.value)}
+            <input placeholder="예: 010-0000-0000" value={form.emergencyContact} onChange={e => f("emergencyContact",e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.emergencyContact?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             {errors.emergencyContact && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.emergencyContact}</div>}
           </div>
@@ -251,7 +395,7 @@ export default function Reserve() {
           {/* 참여인원 */}
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
-            <textarea placeholder={"예:\n20210001 홍길동\n20220042 이서연"} value={form.participants} onChange={e => f("participants", e.target.value)}
+            <textarea placeholder={"예:\n20210001 홍길동\n20220042 이서연"} value={form.participants} onChange={e => f("participants",e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
           </div>
 
@@ -260,11 +404,11 @@ export default function Reserve() {
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>사용 목적 *</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
               {PURPOSE_OPTIONS.map(p => (
-                <button key={p} onClick={() => f("purpose", p)} style={{ background:form.purpose===p?C.navy:C.bg, color:form.purpose===p?"#fff":C.muted, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{p}</button>
+                <button key={p} onClick={() => f("purpose",p)} style={{ background:form.purpose===p?C.navy:C.bg, color:form.purpose===p?"#fff":C.muted, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{p}</button>
               ))}
             </div>
             {errors.purpose && <div style={{ color:C.red, fontSize:11, marginBottom:8 }}>⚠️ {errors.purpose}</div>}
-            <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail", e.target.value)}
+            <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.purposeDetail?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
             {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.purposeDetail}</div>}
           </div>
@@ -275,21 +419,21 @@ export default function Reserve() {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
               <div>
                 <div style={{ fontSize:11, color:C.muted, marginBottom:5 }}>📅 대여 시작</div>
-                <input type="date" value={form.startDate} onChange={e => f("startDate", e.target.value)}
+                <input type="date" value={form.startDate} onChange={e => f("startDate",e.target.value)}
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.startDate?C.red:C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
-                <select value={form.startTime} onChange={e => f("startTime", e.target.value)}
+                <select value={form.startTime} onChange={e => f("startTime",e.target.value)}
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
-                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                  {TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
                 {errors.startDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.startDate}</div>}
               </div>
               <div>
                 <div style={{ fontSize:11, color:C.muted, marginBottom:5 }}>📅 반납</div>
-                <input type="date" value={form.endDate} onChange={e => f("endDate", e.target.value)}
+                <input type="date" value={form.endDate} onChange={e => f("endDate",e.target.value)}
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.endDate?C.red:C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
-                <select value={form.endTime} onChange={e => f("endTime", e.target.value)}
+                <select value={form.endTime} onChange={e => f("endTime",e.target.value)}
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
-                  {TIME_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                  {TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
                 {errors.endDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.endDate}</div>}
               </div>
