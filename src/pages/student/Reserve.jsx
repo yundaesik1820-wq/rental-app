@@ -149,7 +149,7 @@ export default function Reserve() {
   const [errors, setErrors]       = useState({});
 
   const [form, setForm] = useState({
-    emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[],
+    emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[],
     startDate:"", startTime:"09:00", endDate:"", endTime:"18:00",
   });
 
@@ -257,7 +257,8 @@ export default function Reserve() {
 
     if (!form.participants.trim()) errs.participants = "참여인원 학번 및 이름을 입력하세요";
     if (!form.emergencyContact.trim()) errs.emergencyContact = "비상연락처를 입력하세요";
-    if (!form.location.trim())    errs.location = "사용 장소를 입력하세요";
+    if (!form.locationType)       errs.location = "교내/교외를 선택하세요";
+    else if (!form.location.trim()) errs.location = form.locationType==="교내" ? "층/호실을 입력하세요" : "정확한 주소를 입력하세요";
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
     if (form.purpose === "강의" && profile?.role !== "professor") errs.purpose = "강의는 교수님만 선택 가능합니다";
     if (form.purpose === "동아리스터디" && !form.club) errs.purposeDetail = "동아리를 선택하세요";
@@ -314,6 +315,7 @@ export default function Reserve() {
         dept:        profile.role === "professor" ? "교수" : (profile.dept || ""),
         license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
         items, storageForm: getWeekendDays().length > 0 ? storageForm : null, emergencyContact: form.emergencyContact,
+        locationType: form.locationType,
         participants: form.participants, location: form.location, purpose: form.purpose,
         club: form.club === "직접입력" ? form.clubDirect : form.club,
         courseName: form.courseName, professorName: form.professorName,
@@ -325,7 +327,7 @@ export default function Reserve() {
         status: "승인대기", reason: "",
       });
       setCart({}); setCartSets({});
-      setForm({ emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
+      setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
     } catch(e) {
@@ -828,7 +830,7 @@ export default function Reserve() {
 
           {/* 참여인원 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 *</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 * <span style={{ color:C.muted, fontWeight:400, fontSize:11 }}>(본인 제외)</span></div>
             <textarea placeholder={"예:\n20210001 홍길동\n20220042 이서연"} value={form.participants} onChange={e => f("participants",e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
             {errors.participants && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.participants}</div>}
@@ -844,9 +846,26 @@ export default function Reserve() {
 
           {/* 사용 장소 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>사용 장소 *</div>
-            <input placeholder="예: 실습실 A, 외부 촬영지" value={form.location} onChange={e => f("location",e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.location?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>사용 장소 *</div>
+            <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+              {["교내","교외"].map(t => (
+                <button key={t} onClick={() => { f("locationType",t); f("location",""); }}
+                  style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit",
+                    background: form.locationType===t ? C.navy : C.bg,
+                    color:      form.locationType===t ? "#fff"  : C.muted,
+                    border:    `1.5px solid ${form.locationType===t ? C.navy : C.border}` }}>
+                  {t === "교내" ? "🏫 교내" : "🌍 교외"}
+                </button>
+              ))}
+            </div>
+            {form.locationType === "교내" && (
+              <input placeholder="예: 3층 301호, 1층 스튜디오" value={form.location} onChange={e => f("location",e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.location?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            )}
+            {form.locationType === "교외" && (
+              <input placeholder="정확한 주소를 입력해주세요 (예: 서울시 강남구 테헤란로 123)" value={form.location} onChange={e => f("location",e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.location?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            )}
             {errors.location && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.location}</div>}
           </div>
 
