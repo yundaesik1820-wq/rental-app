@@ -7,12 +7,12 @@ export default function Notices({ isAdmin = true }) {
   const { data: notices } = useCollection("notices", "createdAt");
   const [showAdd, setShowAdd] = useState(false);
   const [detail, setDetail]   = useState(null);
-  const [form, setForm] = useState({ title: "", content: "", category: "공지", pinned: false });
+  const [form, setForm] = useState({ title: "", content: "", category: "공지", pinned: true });
 
   const addNotice = async () => {
     if (!form.title || !form.content) return;
     await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: "관리자" });
-    setForm({ title: "", content: "", category: "공지", pinned: false });
+    setForm({ title: "", content: "", category: "공지", pinned: true });
     setShowAdd(false);
   };
 

@@ -12,6 +12,7 @@ export default function StudentHome() {
   const myRentals = rentals.filter(r => r.studentId === profile?.studentId && (r.status === "대여중" || r.status === "연체"));
   const myRes     = reservations.filter(r => r.studentId === profile?.studentId);
   const pinned    = notices.filter(n => n.pinned).slice(0, 3);
+  const recentNotices = pinned.length > 0 ? pinned : [...notices].sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,3);
 
   return (
     <div>
@@ -71,8 +72,8 @@ export default function StudentHome() {
         {/* Pinned notices */}
         <div>
           <SectionTitle>📌 공지사항</SectionTitle>
-          {pinned.length === 0 && <div style={{ fontSize: 13, color: C.muted, padding: "10px 0" }}>공지사항이 없습니다</div>}
-          {pinned.map(n => {
+          {recentNotices.length === 0 && <div style={{ fontSize: 13, color: C.muted, padding: "10px 0" }}>공지사항이 없습니다</div>}
+          {recentNotices.map(n => {
             const cat = NOTICE_CAT[n.category] || { bg: C.bg, col: C.muted };
             return (
               <Card key={n.id}>
