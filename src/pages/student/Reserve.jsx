@@ -166,9 +166,12 @@ export default function Reserve() {
         })),
       ];
       await addItem("rentalRequests", {
-        studentId: profile.studentId, studentName: profile.name,
-        phone: profile.phone || "", dept: profile.dept || "",
-        license: profile.license || "없음",
+        studentId:   profile.role === "professor" ? (profile.profId || profile.email) : (profile.studentId || ""),
+        studentName: profile.name,
+        role:        profile.role || "student",
+        phone:       profile.phone || "",
+        dept:        profile.role === "professor" ? "교수" : (profile.dept || ""),
+        license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
         items, emergencyContact: form.emergencyContact,
         participants: form.participants, purpose: form.purpose,
         purposeDetail: form.purposeDetail,
@@ -180,7 +183,10 @@ export default function Reserve() {
       setForm({ emergencyContact:"", participants:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
-    } catch(e) { console.error(e); }
+    } catch(e) {
+      console.error(e);
+      alert("신청 중 오류가 발생했습니다: " + e.message);
+    }
     finally { setSubmitting(false); }
   };
 
@@ -440,7 +446,10 @@ export default function Reserve() {
           <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
             <div style={{ fontSize:13, fontWeight:800, color:C.navy, marginBottom:12 }}>👤 신청자 정보 (자동입력)</div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {[["이름",profile?.name],["학번",profile?.studentId],["연락처",profile?.phone||"-"],["계열",profile?.dept||"-"],["라이선스",profile?.license||"없음"]].map(([k,v]) => (
+              {(profile?.role === "professor"
+                ? [["이름", profile?.name ? profile.name + " 교수님" : "-"], ["구분", "교수"], ["연락처", profile?.phone || "-"]]
+                : [["이름",profile?.name],["학번",profile?.studentId],["연락처",profile?.phone||"-"],["계열",profile?.dept||"-"],["라이선스",profile?.license||"없음"]]
+              ).map(([k,v]) => (
                 <div key={k} style={{ background:C.surface, borderRadius:8, padding:"8px 12px", border:`1px solid ${C.border}` }}>
                   <div style={{ fontSize:10, color:C.muted, marginBottom:2 }}>{k}</div>
                   <div style={{ fontSize:13, fontWeight:600, color:C.text }}>{v}</div>
