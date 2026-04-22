@@ -101,6 +101,11 @@ export default function Reserve() {
     setCart(p => ({ ...p, [modelName]: c }));
   };
   const toggleSet = (modelName) => {
+    const isProf   = profile?.role === "professor";
+    const myLicNum = licenseToNum(profile?.license);
+    const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === modelName);
+    const eqLic    = rawEquip?.licenseLevel || 0;
+    if (!isProf && myLicNum < eqLic) return; // 라이센스 부족 시 차단
     setCartSets(p => ({ ...p, [modelName]: !p[modelName] }));
   };
 
@@ -119,6 +124,12 @@ export default function Reserve() {
     if (!isProf) {
       const lockedNames = [];
       cartUnitItems.forEach(item => {
+        const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
+        const eqLic = raw?.licenseLevel || 0;
+        if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
+      });
+      // 세트 라이센스 체크
+      cartSetItems.forEach(item => {
         const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
         const eqLic = raw?.licenseLevel || 0;
         if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
@@ -322,12 +333,18 @@ export default function Reserve() {
             const selected = !!cartSets[e.modelName];
             const items    = (e.setItems || "").split("\n").filter(Boolean);
             const expanded = expandedSet === e.modelName;
+            const myLicNum = licenseToNum(profile?.license);
+            const isProf   = profile?.role === "professor";
+            const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
+            const eqLicNum = rawEquip?.licenseLevel || 0;
+            const isLocked = !isProf && myLicNum < eqLicNum;
             return (
-              <Card key={e.modelName} style={{ border:`2px solid ${selected?C.orange:C.border}`, transition:"border 0.15s" }}>
+              <Card key={e.modelName} style={{ border:`2px solid ${isLocked?"#FCA5A5":selected?C.orange:C.border}`, transition:"border 0.15s", opacity: isLocked ? 0.75 : 1 }}>
                 {/* 세트 배지 */}
                 <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
                   <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700, border:`1px solid ${C.orange}40` }}>📦 세트</span>
                   {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{e.majorCategory}</span>}
+                  {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{isLocked?"🔒":"✅"} {eqLicNum}단계 필요</span>}
                 </div>
 
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
@@ -372,7 +389,11 @@ export default function Reserve() {
                 )}
 
                 {/* 선택 버튼 */}
-                {avail === 0 ? (
+                {isLocked ? (
+                  <div style={{ background:"#FEF2F2", borderRadius:10, padding:"8px 12px", fontSize:12, color:"#EF4444", fontWeight:600 }}>
+                    🔒 라이센스 {eqLicNum}단계 이상 필요 (현재: {profile?.license || "없음"})
+                  </div>
+                ) : avail === 0 ? (
                   <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
                 ) : selected ? (
                   <div style={{ display:"flex", gap:8 }}>
