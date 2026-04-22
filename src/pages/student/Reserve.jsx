@@ -6,7 +6,19 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
 import RentalTimeline from "../../components/RentalTimeline";
 
-const PURPOSE_OPTIONS = ["과제 및 스터디", "동아리", "작품제작", "학교행사"];
+const PURPOSE_OPTIONS = ["강의", "개인스터디", "동아리스터디", "수업과제", "작품제작", "학교행사"];
+const CLUBS = ["라온", "올드보이", "행가레", "클리퍼", "마스터보이스", "유성우", "직접입력"];
+const CLOUD_NAME    = "dnotsiasc";
+const UPLOAD_PRESET = "equipment_photos";
+async function uploadFile(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", UPLOAD_PRESET);
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:"POST", body:fd });
+  const data = await res.json();
+  if (!data.secure_url) throw new Error("업로드 실패");
+  return { url: data.secure_url, name: file.name };
+}
 
 // 라이센스 문자열 → 숫자
 const licenseToNum = (lic) => {
@@ -47,6 +59,41 @@ function groupSets(equipments) {
     if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
   });
   return Object.values(map);
+}
+
+// 파일 첨부 컴포넌트
+function FileAttachSection({ form, f }) {
+  const [uploading, setUploading] = useState(false);
+  const handleFile = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const result = await uploadFile(file);
+      f("attachments", [...(form.attachments || []), result]);
+    } catch(err) { alert("파일 업로드 실패: " + err.message); }
+    finally { setUploading(false); e.target.value = ""; }
+  };
+  return (
+    <div style={{ marginTop:10 }}>
+      <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>📎 파일 첨부 (일일촬영표, 시나리오 등)</div>
+      <label style={{ display:"inline-flex", alignItems:"center", gap:8, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.muted }}>
+        <span>{uploading ? "⏳ 업로드 중..." : "+ 파일 추가"}</span>
+        <input type="file" accept=".pdf,.doc,.docx,.hwp,.jpg,.jpeg,.png" onChange={handleFile} style={{ display:"none" }} disabled={uploading} />
+      </label>
+      {(form.attachments || []).length > 0 && (
+        <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
+          {form.attachments.map((att, i) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:C.bg, borderRadius:8, padding:"6px 12px", border:`1px solid ${C.border}` }}>
+              <a href={att.url} target="_blank" rel="noreferrer" style={{ fontSize:13, color:C.blue, textDecoration:"none" }}>📄 {att.name}</a>
+              <button onClick={() => f("attachments", form.attachments.filter((_,j)=>j!==i))}
+                style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16 }}>✕</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Reserve() {
@@ -94,7 +141,7 @@ export default function Reserve() {
   const [errors, setErrors]       = useState({});
 
   const [form, setForm] = useState({
-    emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"",
+    emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[],
     startDate:"", startTime:"09:00", endDate:"", endTime:"18:00",
   });
 
@@ -185,7 +232,14 @@ export default function Reserve() {
     if (!form.emergencyContact.trim()) errs.emergencyContact = "비상연락처를 입력하세요";
     if (!form.location.trim())    errs.location = "사용 장소를 입력하세요";
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
-    if (!form.purposeDetail)      errs.purposeDetail = "세부 내용을 입력하세요";
+    if (form.purpose === "강의" && profile?.role !== "professor") errs.purpose = "강의는 교수님만 선택 가능합니다";
+    if (form.purpose === "동아리스터디" && !form.club) errs.purposeDetail = "동아리를 선택하세요";
+    if (form.purpose === "동아리스터디" && form.club === "직접입력" && !form.clubDirect.trim()) errs.purposeDetail = "동아리명을 입력하세요";
+    if (form.purpose === "수업과제" && !form.courseName.trim()) errs.purposeDetail = "수업명을 입력하세요";
+    if (form.purpose === "수업과제" && !form.professorName.trim()) errs.purposeDetail = "교수님 성함을 입력하세요";
+    if (form.purpose === "학교행사" && !form.eventName.trim()) errs.purposeDetail = "행사명을 입력하세요";
+    if (form.purpose === "학교행사" && !form.eventProfessor.trim()) errs.purposeDetail = "담당교수님 성함을 입력하세요";
+    if (!["강의","학교행사"].includes(form.purpose) && !form.purposeDetail.trim()) errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
     if (!form.endDate)            errs.endDate = "반납일을 선택하세요";
     if (form.startDate && form.endDate && form.startDate > form.endDate) errs.endDate = "반납일이 대여일보다 빠릅니다";
@@ -220,13 +274,17 @@ export default function Reserve() {
         license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
         items, emergencyContact: form.emergencyContact,
         participants: form.participants, location: form.location, purpose: form.purpose,
+        club: form.club === "직접입력" ? form.clubDirect : form.club,
+        courseName: form.courseName, professorName: form.professorName,
+        eventName: form.eventName, eventProfessor: form.eventProfessor,
+        attachments: form.attachments,
         purposeDetail: form.purposeDetail,
         startDate: form.startDate, startTime: form.startTime,
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
       });
       setCart({}); setCartSets({});
-      setForm({ emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
+      setForm({ emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
     } catch(e) {
@@ -628,15 +686,110 @@ export default function Reserve() {
           {/* 사용 목적 */}
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>사용 목적 *</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:10 }}>
-              {PURPOSE_OPTIONS.map(p => (
-                <button key={p} onClick={() => f("purpose",p)} style={{ background:form.purpose===p?C.navy:C.bg, color:form.purpose===p?"#fff":C.muted, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{p}</button>
-              ))}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:10 }}>
+              {PURPOSE_OPTIONS.map(p => {
+                const isProf   = profile?.role === "professor";
+                const disabled = p === "강의" && !isProf;
+                return (
+                  <button key={p} onClick={() => { if(disabled) return; f("purpose",p); f("club",""); f("clubDirect",""); f("courseName",""); f("professorName",""); f("eventName",""); f("eventProfessor",""); f("purposeDetail",""); f("attachments",[]); }}
+                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
+                    {p}{disabled?" (교수님 전용)":""}
+                  </button>
+                );
+              })}
             </div>
             {errors.purpose && <div style={{ color:C.red, fontSize:11, marginBottom:8 }}>⚠️ {errors.purpose}</div>}
-            <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.purposeDetail?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
-            {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.purposeDetail}</div>}
+
+            {/* 강의: 세부내용 없음 */}
+            {form.purpose === "강의" && (
+              <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.blue }}>
+                📚 강의 목적 대여입니다. 별도 세부내용 없이 신청 가능합니다.
+              </div>
+            )}
+
+            {/* 개인스터디: 세부내용만 */}
+            {form.purpose === "개인스터디" && (
+              <>
+                <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.purposeDetail?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.purposeDetail}</div>}
+              </>
+            )}
+
+            {/* 동아리스터디: 동아리 선택 + 세부내용 */}
+            {form.purpose === "동아리스터디" && (
+              <>
+                <div style={{ marginBottom:10 }}>
+                  <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>동아리 선택 *</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+                    {CLUBS.map(c => (
+                      <button key={c} onClick={() => { f("club",c); if(c!=="직접입력") f("clubDirect",""); }}
+                        style={{ background:form.club===c?C.navy:C.bg, color:form.club===c?"#fff":C.muted, border:`1.5px solid ${form.club===c?C.navy:C.border}`, borderRadius:8, padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                  {form.club === "직접입력" && (
+                    <input placeholder="동아리명을 입력하세요" value={form.clubDirect} onChange={e => f("clubDirect",e.target.value)}
+                      style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:8 }} />
+                  )}
+                  {errors.purposeDetail && !form.purposeDetail && <div style={{ color:C.red, fontSize:11 }}>⚠️ {errors.purposeDetail}</div>}
+                </div>
+                <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+              </>
+            )}
+
+            {/* 수업과제: 수업명 + 교수님 + 파일첨부 */}
+            {form.purpose === "수업과제" && (
+              <>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+                  <div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:5 }}>수업명 *</div>
+                    <input placeholder="예: 영상제작실습" value={form.courseName} onChange={e => f("courseName",e.target.value)}
+                      style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:5 }}>교수님 성함 *</div>
+                    <input placeholder="예: 홍길동 교수님" value={form.professorName} onChange={e => f("professorName",e.target.value)}
+                      style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                </div>
+                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginBottom:6 }}>⚠️ {errors.purposeDetail}</div>}
+                <FileAttachSection form={form} f={f} />
+              </>
+            )}
+
+            {/* 작품제작: 세부내용 + 파일첨부 */}
+            {form.purpose === "작품제작" && (
+              <>
+                <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.purposeDetail?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box", marginBottom:10 }} />
+                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginBottom:6 }}>⚠️ {errors.purposeDetail}</div>}
+                <FileAttachSection form={form} f={f} />
+              </>
+            )}
+
+            {/* 학교행사: 행사명 + 담당교수님 + 세부내용 */}
+            {form.purpose === "학교행사" && (
+              <>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
+                  <div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:5 }}>행사명 *</div>
+                    <input placeholder="예: 졸업작품 발표회" value={form.eventName} onChange={e => f("eventName",e.target.value)}
+                      style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, color:C.muted, marginBottom:5 }}>담당교수님 성함 *</div>
+                    <input placeholder="예: 홍길동 교수님" value={form.eventProfessor} onChange={e => f("eventProfessor",e.target.value)}
+                      style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                </div>
+                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginBottom:6 }}>⚠️ {errors.purposeDetail}</div>}
+                <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+              </>
+            )}
           </div>
 
           {/* 대여 기간 */}
