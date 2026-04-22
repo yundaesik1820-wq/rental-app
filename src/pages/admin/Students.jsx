@@ -16,11 +16,13 @@ export default function Students() {
   const { data: allUsers } = useCollection("users", "createdAt");
 
   const pendingList  = allUsers.filter(s => s.role === "student" && s.status === "pending");
+  const adminList    = allUsers.filter(s => s.role === "admin");
   const approvedList = allUsers.filter(s => s.role === "student" && s.status === "approved");
   const rejectedList = allUsers.filter(s => s.role === "student" && s.status === "rejected");
 
   const [tab, setTab]           = useState("pending");
-  const [showAdd, setShowAdd]   = useState(false);
+  const [showAdd, setShowAdd]         = useState(false);
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
   const [search, setSearch]     = useState("");
   const [loading, setLoading]   = useState(false);
   const [err, setErr]           = useState("");
@@ -30,7 +32,10 @@ export default function Students() {
   const [license, setLicense]             = useState("없음");
 
   // 직접 추가 폼
-  const [form, setForm] = useState({ name:"", dept:"", studentId:"", phone:"", email:"", pw:"", license:"없음" });
+  const [form, setForm]           = useState({ name:"", dept:"", studentId:"", phone:"", email:"", pw:"", license:"없음" });
+  const [adminForm, setAdminForm] = useState({ name:"", email:"", pw:"" });
+  const [adminErr, setAdminErr]   = useState("");
+  const [adminLoading, setAdminLoading] = useState(false);
 
   const handleAdd = async () => {
     if (!form.name || !form.dept || !form.studentId || !form.email || !form.pw) {
@@ -56,6 +61,31 @@ export default function Students() {
     }
   };
 
+  // 관리자 계정 추가
+  const handleAddAdmin = async () => {
+    if (!adminForm.name || !adminForm.email || !adminForm.pw) {
+      setAdminErr("모든 항목을 입력하세요"); return;
+    }
+    if (adminForm.pw.length < 6) { setAdminErr("비밀번호는 6자리 이상이어야 합니다"); return; }
+    setAdminLoading(true); setAdminErr("");
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, adminForm.email, adminForm.pw);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        name:  adminForm.name,
+        email: adminForm.email,
+        role:  "admin",
+        status:"approved",
+        createdAt: serverTimestamp(),
+      });
+      setAdminForm({ name:"", email:"", pw:"" });
+      setShowAddAdmin(false);
+    } catch(e) {
+      setAdminErr(e.code === "auth/email-already-in-use" ? "이미 사용 중인 이메일입니다" : "생성 실패: " + e.message);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
   // 승인 (라이센스 포함)
   const confirmApprove = async () => {
     await updateItem("users", approveTarget.id, {
@@ -71,9 +101,10 @@ export default function Students() {
   const reapprove = s => { setApproveTarget(s); setLicense(s.license || "없음"); };
 
   const tabs = [
-    { id:"pending",  label:`승인 대기 (${pendingList.length})`,  color:C.yellow },
-    { id:"approved", label:`승인됨 (${approvedList.length})`,    color:C.green  },
-    { id:"rejected", label:`거절됨 (${rejectedList.length})`,    color:C.red    },
+    { id:"pending",  label:`승인 대기 (${pendingList.length})`,  color:C.yellow  },
+    { id:"approved", label:`승인됨 (${approvedList.length})`,    color:C.green   },
+    { id:"rejected", label:`거절됨 (${rejectedList.length})`,    color:C.red     },
+    { id:"admin",    label:`관리자 (${adminList.length})`,       color:C.purple  },
   ];
 
   const currentList = { pending:pendingList, approved:approvedList, rejected:rejectedList }[tab] || [];
@@ -85,7 +116,10 @@ export default function Students() {
     <div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>👥 학생 관리</PageTitle>
-        <Btn onClick={() => setShowAdd(true)} color={C.purple}>+ 학생 직접 추가</Btn>
+        <div style={{ display:"flex", gap:10 }}>
+          <Btn onClick={() => setShowAddAdmin(true)} color={C.navy}>+ 관리자 추가</Btn>
+          <Btn onClick={() => setShowAdd(true)} color={C.purple}>+ 학생 직접 추가</Btn>
+        </div>
       </div>
 
       {/* 승인 대기 알림 */}
@@ -97,6 +131,25 @@ export default function Students() {
             <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>가입 신청한 학생이 있습니다. 확인 후 승인해주세요.</div>
           </div>
         </div>
+      )}
+
+      {/* 관리자 추가 모달 */}
+      {showAddAdmin && (
+        <Modal onClose={() => { setShowAddAdmin(false); setAdminForm({ name:"", email:"", pw:"" }); setAdminErr(""); }}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>👑 관리자 계정 추가</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>관리자는 모든 기능에 접근할 수 있습니다</div>
+          {adminErr && <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14 }}>⚠️ {adminErr}</div>}
+          <Inp label="이름 *" placeholder="홍길동" value={adminForm.name} onChange={e => setAdminForm(p=>({...p,name:e.target.value}))} />
+          <Inp label="이메일 *" placeholder="admin@email.com" value={adminForm.email} onChange={e => setAdminForm(p=>({...p,email:e.target.value}))} type="email" />
+          <Inp label="비밀번호 * (6자리 이상)" placeholder="비밀번호 입력" value={adminForm.pw} onChange={e => setAdminForm(p=>({...p,pw:e.target.value}))} type="password" />
+          <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
+            ⚠️ 관리자 계정은 장비 등록, 대여 승인, 학생 관리 등 모든 기능을 사용할 수 있습니다. 신중하게 추가해주세요.
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => { setShowAddAdmin(false); setAdminForm({ name:"", email:"", pw:"" }); setAdminErr(""); }} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={handleAddAdmin} color={C.navy} full disabled={adminLoading}>{adminLoading ? "처리 중..." : "관리자 추가"}</Btn>
+          </div>
+        </Modal>
       )}
 
       {/* 직접 추가 모달 */}
@@ -174,9 +227,30 @@ export default function Students() {
         ))}
       </div>
 
+      {/* 관리자 목록 */}
+      {tab === "admin" && (
+        <>
+          {adminList.length === 0 && <Empty icon="👑" text="등록된 관리자가 없습니다" />}
+          {adminList.map(s => (
+            <Card key={s.id} style={{ border:`2px solid ${C.purple}20` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                <div style={{ width:46, height:46, borderRadius:"50%", background:`linear-gradient(135deg,${C.navy},#2D4A9B)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>👑</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                    <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</span>
+                    <span style={{ background:C.purpleLight, color:C.purple, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>관리자</span>
+                  </div>
+                  <div style={{ fontSize:12, color:C.muted }}>{s.email}</div>
+                </div>
+              </div>
+            </Card>
+          ))}
+        </>
+      )}
+
       {/* 검색 */}
-      <input placeholder="🔍 이름, 학번, 계열 검색" value={search} onChange={e => setSearch(e.target.value)}
-        style={{ width:"100%", maxWidth:400, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:20, display:"block" }} />
+      {tab !== "admin" && <input placeholder="🔍 이름, 학번, 계열 검색" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ width:"100%", maxWidth:400, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:20, display:"block" }} />}
 
       {/* 승인 대기 */}
       {tab==="pending" && (
