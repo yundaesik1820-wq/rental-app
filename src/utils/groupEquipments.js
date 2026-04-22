@@ -15,6 +15,7 @@ export function groupEquipments(equipments) {
         manufacturer:  e.manufacturer  || "",
         img:           e.img           || "📦",
         photoUrls:     e.photoUrls     || (e.photoUrl ? [e.photoUrl] : []),
+        licenseLevel:  e.licenseLevel  || 0,
         units:         [],
         total:         0,
         available:     0,
@@ -23,6 +24,10 @@ export function groupEquipments(equipments) {
     map[key].units.push(e);
     map[key].total++;
     if ((e.status || "대여가능") === "대여가능") map[key].available++;
+    // 같은 모델 중 가장 높은 라이센스 단계로 설정
+    if ((e.licenseLevel || 0) > map[key].licenseLevel) {
+      map[key].licenseLevel = e.licenseLevel || 0;
+    }
     // 사진은 첫 번째 등록된 것 사용
     if (map[key].photoUrls.length === 0 && (e.photoUrls?.length > 0 || e.photoUrl)) {
       map[key].photoUrls = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);

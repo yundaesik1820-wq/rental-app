@@ -113,6 +113,15 @@ export default function Reserve() {
   const validate = () => {
     const errs = {};
     if (cartTotal === 0)          errs.cart = "장비를 1개 이상 선택하세요";
+    // 라이센스 체크
+    const myLicNum = licenseToNum(profile?.license);
+    const isProf   = profile?.role === "professor";
+    if (!isProf) {
+      const lockedItems = cartUnitItems.filter(e => (e.licenseLevel || 0) > myLicNum);
+      if (lockedItems.length > 0) {
+        errs.cart = `라이센스 부족: ${lockedItems.map(e => e.modelName).join(", ")} (${e.licenseLevel}단계 필요)`;
+      }
+    }
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
     if (!form.purposeDetail)      errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
