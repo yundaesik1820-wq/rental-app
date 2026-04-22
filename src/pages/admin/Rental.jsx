@@ -46,7 +46,7 @@ export default function Rental() {
 
   const approve = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "" });
-    await updateAvailable(r.items, -1); // 재고 감소
+    // 재고는 신청 시점에 이미 감소됨 → 추가 변경 없음
   };
 
   const confirmAction = async () => {
@@ -57,8 +57,8 @@ export default function Rental() {
       status: actionTarget.type,
       reason: reason,
     });
-    // 이전에 승인됨 상태였으면 재고 복구
-    if (prevStatus === "승인됨") {
+    // 승인대기 또는 승인됨 상태였으면 재고 복구
+    if (prevStatus === "승인됨" || prevStatus === "승인대기") {
       await updateAvailable(actionTarget.request.items, +1);
     }
     setActionTarget(null);
