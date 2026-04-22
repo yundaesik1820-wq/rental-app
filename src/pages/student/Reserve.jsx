@@ -341,7 +341,7 @@ export default function Reserve() {
           ))}
           <div style={{ display:"flex", gap:10, marginTop:12 }}>
             <Btn onClick={() => { setCart({}); setCartSets({}); }} color={C.muted} outline full small>전체 취소</Btn>
-            <Btn onClick={() => setShowForm(true)} color={C.teal} full>신청서 작성 →</Btn>
+            <Btn onClick={() => { setAgreed(false); setShowNotice(true); }} color={C.teal} full>신청서 작성 →</Btn>
           </div>
         </Card>
       )}
