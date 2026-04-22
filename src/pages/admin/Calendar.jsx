@@ -15,7 +15,7 @@ const STATUS_COLOR = {
   "거절됨":   C.red,
 };
 
-export default function CalendarPage({ isAdmin = true, userId = null }) {
+export default function CalendarPage({ isAdmin = true, userId = null, userEmail = null, userName = null }) {
   const today = new Date();
   const [year,  setYear]  = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
@@ -32,7 +32,13 @@ export default function CalendarPage({ isAdmin = true, userId = null }) {
   const getEvents = d => {
     const ds = toStr(d);
     return requests.filter(r => {
-      if (userId && r.studentId !== userId) return false;
+      // 학생 캘린더: 본인 신청만 표시
+      if (!isAdmin) {
+        const isMine = (userId && r.studentId === userId)
+          || (userEmail && r.phone === userEmail)
+          || (userName && r.studentName === userName);
+        if (!isMine) return false;
+      }
       if (["거절됨","반납완료"].includes(r.status)) return false;
       return r.startDate <= ds && r.endDate >= ds;
     });

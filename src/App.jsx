@@ -100,7 +100,7 @@ function AppContent() {
         case "equip":    return <EquipList />;
         case "history":  return <History />;
         case "reserve":  return <Reserve />;
-        case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} />;
+        case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} userEmail={profile.email} userName={profile.name} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
         case "inquiry":  return <StudentInquiry />;
