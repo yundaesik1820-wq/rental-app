@@ -92,7 +92,7 @@ export default function Reserve() {
   const [errors, setErrors]       = useState({});
 
   const [form, setForm] = useState({
-    emergencyContact:"", participants:"", purpose:"", purposeDetail:"",
+    emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"",
     startDate:"", startTime:"09:00", endDate:"", endTime:"18:00",
   });
 
@@ -179,12 +179,15 @@ export default function Reserve() {
     }
     // ─────────────────────────────────────────────────────────
 
+    if (!form.participants.trim()) errs.participants = "참여인원 학번 및 이름을 입력하세요";
+    if (!form.emergencyContact.trim()) errs.emergencyContact = "비상연락처를 입력하세요";
+    if (!form.location.trim())    errs.location = "사용 장소를 입력하세요";
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
     if (!form.purposeDetail)      errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
     if (!form.endDate)            errs.endDate = "반납일을 선택하세요";
     if (form.startDate && form.endDate && form.startDate > form.endDate) errs.endDate = "반납일이 대여일보다 빠릅니다";
-    if (cartTotal >= 2 && !form.emergencyContact) errs.emergencyContact = "2인 이상 대여 시 비상연락처 필수";
+    // 비상연락처는 항상 필수 (위에서 처리)
     setErrors(errs);
     return Object.keys(errs).length === 0;
   };
@@ -214,14 +217,14 @@ export default function Reserve() {
         dept:        profile.role === "professor" ? "교수" : (profile.dept || ""),
         license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
         items, emergencyContact: form.emergencyContact,
-        participants: form.participants, purpose: form.purpose,
+        participants: form.participants, location: form.location, purpose: form.purpose,
         purposeDetail: form.purposeDetail,
         startDate: form.startDate, startTime: form.startTime,
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
       });
       setCart({}); setCartSets({});
-      setForm({ emergencyContact:"", participants:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
+      setForm({ emergencyContact:"", participants:"", location:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
     } catch(e) {
@@ -538,21 +541,30 @@ export default function Reserve() {
             ))}
           </div>
 
+          {/* 참여인원 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 *</div>
+            <textarea placeholder={"예:
+20210001 홍길동
+20220042 이서연"} value={form.participants} onChange={e => f("participants",e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+            {errors.participants && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.participants}</div>}
+          </div>
+
           {/* 비상연락처 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>
-              비상연락처 <span style={{ color:cartTotal>=2?C.red:C.muted, fontSize:11 }}>{cartTotal>=2?"* 2인 이상 필수":"(선택)"}</span>
-            </div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>비상연락처 *</div>
             <input placeholder="예: 010-0000-0000" value={form.emergencyContact} onChange={e => f("emergencyContact",e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.emergencyContact?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             {errors.emergencyContact && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.emergencyContact}</div>}
           </div>
 
-          {/* 참여인원 */}
+          {/* 사용 장소 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
-            <textarea placeholder={"예:\n20210001 홍길동\n20220042 이서연"} value={form.participants} onChange={e => f("participants",e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>사용 장소 *</div>
+            <input placeholder="예: 실습실 A, 외부 촬영지" value={form.location} onChange={e => f("location",e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.location?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            {errors.location && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.location}</div>}
           </div>
 
           {/* 사용 목적 */}
