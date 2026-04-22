@@ -133,8 +133,16 @@ export default function Reserve() {
   const getIdx = (key) => photoIdx[key] || 0;
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
-  const [showNotice, setShowNotice] = useState(false); // 주의사항 모달
-  const [agreed, setAgreed]         = useState(false);   // 동의 여부
+  const [showNotice, setShowNotice]         = useState(false);
+  const [agreed, setAgreed]                 = useState(false);
+  const [showWeekendNotice, setShowWeekendNotice] = useState(false);
+  const [weekendAgreed, setWeekendAgreed]   = useState(false);
+  const [showStoragePlan, setShowStoragePlan] = useState(false);
+  const [storageForm, setStorageForm] = useState({
+    keeper1: { name:"", dept:"", studentId:"", phone:"" },
+    keeper2: { name:"", dept:"", studentId:"", phone:"" },
+    days: [],  // [{ day:"금", date:"", keeper:"", equipment:"", location:"", storageTime:"", outTime:"" }, ...]
+  });
   const [showForm, setShowForm]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]           = useState(false);
@@ -163,6 +171,25 @@ export default function Reserve() {
   const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0) + cartSetItems.length;
 
   const f = (key, val) => { setForm(p=>({...p,[key]:val})); setErrors(p=>({...p,[key]:""})); };
+
+  // 주말 포함 여부 + 해당 요일 반환
+  const getWeekendDays = () => {
+    if (!form.startDate || !form.endDate) return [];
+    const DAY_NAMES = ["일","월","화","수","목","금","토"];
+    const days = [];
+    const start = new Date(form.startDate);
+    const end   = new Date(form.endDate);
+    for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      const dow = d.getDay();
+      if (dow === 0 || dow === 5 || dow === 6) { // 일,금,토
+        days.push({
+          day:  DAY_NAMES[dow],
+          date: d.toISOString().slice(0,10),
+        });
+      }
+    }
+    return days;
+  };
 
   const validate = () => {
     const errs = {};
@@ -250,6 +277,20 @@ export default function Reserve() {
 
   const handleSubmit = async () => {
     if (!validate()) return;
+    // 주말 포함 시 보관계획서 먼저
+    const weekendDays = getWeekendDays();
+    if (weekendDays.length > 0 && !showStoragePlan) {
+      setStorageForm(prev => ({
+        ...prev,
+        days: weekendDays.map(d => ({
+          day: d.day, date: d.date,
+          keeper:"", equipment:"", location:"", storageTime:"", outTime:"",
+        })),
+      }));
+      setWeekendAgreed(false);
+      setShowWeekendNotice(true);
+      return;
+    }
     setSubmitting(true);
     try {
       const items = [
@@ -272,7 +313,7 @@ export default function Reserve() {
         phone:       profile.phone || "",
         dept:        profile.role === "professor" ? "교수" : (profile.dept || ""),
         license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
-        items, emergencyContact: form.emergencyContact,
+        items, storageForm: getWeekendDays().length > 0 ? storageForm : null, emergencyContact: form.emergencyContact,
         participants: form.participants, location: form.location, purpose: form.purpose,
         club: form.club === "직접입력" ? form.clubDirect : form.club,
         courseName: form.courseName, professorName: form.professorName,
@@ -600,6 +641,132 @@ export default function Reserve() {
             <Btn onClick={() => setShowNotice(false)} color={C.muted} outline full>닫기</Btn>
             <Btn onClick={() => { if (!agreed) { alert("안내사항에 동의해주세요"); return; } setShowNotice(false); setShowForm(true); }} color={agreed ? C.teal : C.muted} full disabled={!agreed}>
               동의 후 신청서 작성 →
+            </Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* 주말보관 주의사항 모달 */}
+      {showWeekendNotice && (
+        <Modal onClose={() => setShowWeekendNotice(false)} width={540}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>🏠 주말 장비 보관 안내</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>신청 기간에 주말이 포함되어 있습니다. 아래 안내사항을 확인해주세요.</div>
+          <div style={{ background:C.bg, borderRadius:12, padding:"16px 18px", marginBottom:16, fontSize:13, lineHeight:1.9, color:C.text, border:`1px solid ${C.border}` }}>
+            {[
+              "해당 계획서는 주말 대여를 하는 경우 반드시 작성해야 합니다.",
+              "보관은 최대 2명이 나눠서 진행하며, 대여된 모든 장비에 대한 보관 계획을 상세히 기재하여야 합니다.",
+              "주말의 경우 장비 대여 업무가 진행되지 않으므로 조기반납은 불가하며, 반드시 월요일 9시까지 반납해야 합니다.",
+              "장비 보관 과정에서 장비가 파손되거나 분실되는 경우, 대여자 및 보관자에게 변상 책임을 부여합니다.",
+            ].map((t,i) => (
+              <div key={i} style={{ display:"flex", gap:8, marginBottom:6 }}>
+                <span style={{ color:C.red, fontWeight:700, flexShrink:0 }}>{i+1}.</span>
+                <span>{t}</span>
+              </div>
+            ))}
+          </div>
+          <label style={{ display:"flex", alignItems:"flex-start", gap:12, cursor:"pointer", background:weekendAgreed?C.greenLight:C.bg, borderRadius:12, padding:"12px 16px", border:`2px solid ${weekendAgreed?C.green:C.border}`, marginBottom:16, transition:"all 0.2s" }}>
+            <input type="checkbox" checked={weekendAgreed} onChange={e => setWeekendAgreed(e.target.checked)}
+              style={{ width:20, height:20, cursor:"pointer", marginTop:1, flexShrink:0, accentColor:C.green }} />
+            <span style={{ fontSize:13, color:weekendAgreed?C.green:C.text, fontWeight:weekendAgreed?700:400, lineHeight:1.6 }}>
+              위 안내사항을 모두 확인하였으며, 보관 중 발생된 문제에 대한 책임은 대여자 및 보관자에게 있음을 확인합니다.
+            </span>
+          </label>
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => setShowWeekendNotice(false)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={() => { if(!weekendAgreed){alert("안내사항에 동의해주세요"); return;} setShowWeekendNotice(false); setShowStoragePlan(true); }} color={weekendAgreed?C.blue:C.muted} full disabled={!weekendAgreed}>
+              동의 후 보관계획서 작성 →
+            </Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* 장비보관계획서 모달 */}
+      {showStoragePlan && (
+        <Modal onClose={() => setShowStoragePlan(false)} width={620}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>📋 장비보관계획서</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>주말 보관 계획을 상세히 입력해주세요</div>
+
+          {/* 대여자 */}
+          <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:16, border:`1px solid ${C.border}` }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:6 }}>대여자 (자동입력)</div>
+            <div style={{ fontSize:13, color:C.text }}>{profile?.name} · {profile?.dept} · {profile?.studentId} · {profile?.phone}</div>
+          </div>
+
+          {/* 보관자 2명 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>보관자 정보</div>
+            {[1,2].map(n => {
+              const key = `keeper${n}`;
+              const k   = storageForm[key];
+              return (
+                <div key={n} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.muted, marginBottom:8 }}>보관자 {n}</div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                    {[["name","이름"],["dept","계열"],["studentId","학번"],["phone","연락처"]].map(([field,label]) => (
+                      <div key={field}>
+                        <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{label}</div>
+                        <input placeholder={label} value={k[field]} onChange={e => setStorageForm(p=>({...p,[key]:{...p[key],[field]:e.target.value}}))}
+                          style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 요일별 보관 계획 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>일자별 보관 계획</div>
+            {storageForm.days.map((day, i) => (
+              <div key={i} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                  <span style={{ background:day.day==="일"?"#FEF2F2":day.day==="토"?"#EFF6FF":"#F0FDF4", color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
+                  <span style={{ fontSize:12, color:C.muted }}>{day.date}</span>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관자</div>
+                    <select value={day.keeper} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,keeper:e.target.value}:d)}))}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:day.keeper?C.text:C.muted, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
+                      <option value="">보관자 선택</option>
+                      {storageForm.keeper1.name && <option value={storageForm.keeper1.name}>{storageForm.keeper1.name} (보관자1)</option>}
+                      {storageForm.keeper2.name && <option value={storageForm.keeper2.name}>{storageForm.keeper2.name} (보관자2)</option>}
+                    </select>
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 장소</div>
+                    <input placeholder="보관 장소" value={day.location} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,location:e.target.value}:d)}))}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 장비</div>
+                    <input placeholder="보관할 장비명" value={day.equipment} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,equipment:e.target.value}:d)}))}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 일시</div>
+                    <input placeholder="예: 18:00" value={day.storageTime} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,storageTime:e.target.value}:d)}))}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                  <div style={{ gridColumn:"1/-1" }}>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>불출 일시</div>
+                    <input placeholder="예: 09:00" value={day.outTime} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,outTime:e.target.value}:d)}))}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
+            ⚠️ 모든 안내사항을 확인하였으며 보관 중 발생된 문제에 대한 책임은 대여자 및 보관자에게 있음을 확인합니다.
+          </div>
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => { setShowStoragePlan(false); setShowWeekendNotice(true); }} color={C.muted} outline full>이전</Btn>
+            <Btn onClick={() => { setShowStoragePlan(false); handleSubmit(); }} color={C.blue} full disabled={submitting}>
+              {submitting ? "신청 중..." : "✅ 최종 제출"}
             </Btn>
           </div>
         </Modal>
