@@ -138,18 +138,32 @@ export default function Reserve() {
         errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
     }
-    // ── 재고 체크 (현재 available 기준) ─────────────────────
+    // ── 재고 체크 (status 기반 + 승인대기 차감) ─────────────
+    const calcAvail = (modelName, isSet) => {
+      const units = equipments.filter(e =>
+        (e.modelName || e.name) === modelName && (isSet ? e.isSet : !e.isSet)
+      );
+      // status "대여가능"인 것만 카운트
+      const availByStatus = units.filter(e => (e.status || "대여가능") === "대여가능").length;
+      // 승인대기 중인 요청 수량 차감
+      const pendingQty = allRequests
+        .filter(r => r.status === "승인대기")
+        .reduce((sum, r) => {
+          const found = r.items?.find(i => (i.modelName || i.equipName) === modelName);
+          return sum + (found?.quantity || 0);
+        }, 0);
+      return Math.max(0, availByStatus - pendingQty);
+    };
+
     cartUnitItems.forEach(item => {
-      const raw     = equipments.find(e => (e.modelName || e.name) === item.modelName);
-      const avail   = raw?.available ?? 0;
-      const reqQty  = cart[item.modelName] || 0;
+      const avail  = calcAvail(item.modelName, false);
+      const reqQty = cart[item.modelName] || 0;
       if (reqQty > avail) {
         errs.cart = `${item.modelName}: 현재 대여 가능 수량은 ${avail}대입니다 (신청 ${reqQty}대)`;
       }
     });
     cartSetItems.forEach(item => {
-      const raws  = equipments.filter(e => (e.modelName || e.name) === item.modelName);
-      const avail = raws.filter(e => (e.status || "대여가능") === "대여가능").length;
+      const avail = calcAvail(item.modelName, true);
       if (avail <= 0) {
         errs.cart = `${item.modelName} 세트: 현재 대여 가능한 세트가 없습니다`;
       }
@@ -197,25 +211,6 @@ export default function Reserve() {
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
       });
-      // 신청 시 available 즉시 감소
-      const allItems = [
-        ...cartUnitItems.map(e => ({ modelName: e.modelName, quantity: cart[e.modelName] })),
-        ...cartSetItems.map(e => ({ modelName: e.modelName, quantity: 1 })),
-      ];
-      for (const item of allItems) {
-        const units = equipments.filter(e => (e.modelName || e.name) === item.modelName);
-        let remaining = item.quantity;
-        for (const unit of units) {
-          if (remaining <= 0) break;
-          const cur    = unit.available ?? 0;
-          const newVal = Math.max(0, cur - 1);
-          if (newVal !== cur) {
-            await updateItem("equipments", unit.id, { available: newVal });
-            remaining--;
-          }
-        }
-      }
-
       setCart({}); setCartSets({});
       setForm({ emergencyContact:"", participants:"", purpose:"", purposeDetail:"", startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
@@ -303,9 +298,14 @@ export default function Reserve() {
       {tabView === "단품" && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
           {filteredUnits.map(e => {
-            // 실시간 available: raw equipments에서 직접 계산
+            // status 기반 + 승인대기 차감
             const rawUnits   = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName && !eq.isSet);
-            const avail      = rawUnits.reduce((sum, u) => sum + (u.available ?? 0), 0) || e.available;
+            const statusAvail = rawUnits.filter(u => (u.status || "대여가능") === "대여가능").length;
+            const pendingUsed = allRequests.filter(r => r.status === "승인대기").reduce((sum, r) => {
+              const f = r.items?.find(i => (i.modelName || i.equipName) === e.modelName);
+              return sum + (f?.quantity || 0);
+            }, 0);
+            const avail = Math.max(0, statusAvail - pendingUsed) || e.available;
             const qty        = cart[e.modelName] || 0;
             const myLicNum   = licenseToNum(profile?.license);
             const isProf     = profile?.role === "professor";

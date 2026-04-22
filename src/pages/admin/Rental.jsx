@@ -18,27 +18,34 @@ export default function Rental() {
   const filtered = tab === "전체" ? requests : requests.filter(r => r.status === tab);
   const sorted   = [...filtered].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
-  // 장비 available 수량 업데이트
+  // 장비 status 업데이트 (대여가능 ↔ 대여중)
   const updateAvailable = async (items, delta) => {
     if (!items) return;
-    // 모델명별로 수량 합산
     const modelQty = {};
     items.forEach(item => {
       const key = item.modelName || item.equipName || "";
       if (key) modelQty[key] = (modelQty[key] || 0) + (item.quantity || 1);
     });
-    // 해당 모델의 모든 장비 문서 업데이트
     for (const [modelName, qty] of Object.entries(modelQty)) {
       const units = equipments.filter(e => (e.modelName || e.name) === modelName);
-      // 단위 장비들의 available을 골고루 조정
       let remaining = Math.abs(qty);
-      for (const unit of units) {
-        if (remaining <= 0) break;
-        const cur = unit.available ?? unit.total ?? 0;
-        const newVal = Math.max(0, Math.min(unit.total || 0, cur + delta));
-        if (newVal !== cur) {
-          await updateItem("equipments", unit.id, { available: newVal });
-          remaining--;
+      if (delta < 0) {
+        // 대여 나감: 대여가능 → 대여중
+        for (const unit of units) {
+          if (remaining <= 0) break;
+          if ((unit.status || "대여가능") === "대여가능") {
+            await updateItem("equipments", unit.id, { status: "대여중", available: 0 });
+            remaining--;
+          }
+        }
+      } else {
+        // 반납: 대여중 → 대여가능
+        for (const unit of units) {
+          if (remaining <= 0) break;
+          if (unit.status === "대여중") {
+            await updateItem("equipments", unit.id, { status: "대여가능", available: 1 });
+            remaining--;
+          }
         }
       }
     }
@@ -46,7 +53,7 @@ export default function Rental() {
 
   const approve = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "" });
-    // 재고는 신청 시점에 이미 감소됨 → 추가 변경 없음
+    await updateAvailable(r.items, -1); // 장비 status → 대여중
   };
 
   const confirmAction = async () => {
@@ -57,8 +64,8 @@ export default function Rental() {
       status: actionTarget.type,
       reason: reason,
     });
-    // 승인대기 또는 승인됨 상태였으면 재고 복구
-    if (prevStatus === "승인됨" || prevStatus === "승인대기") {
+    // 승인됨 상태였으면 재고 복구 (승인대기는 status 변경 없었으므로 복구 불필요)
+    if (prevStatus === "승인됨") {
       await updateAvailable(actionTarget.request.items, +1);
     }
     setActionTarget(null);
