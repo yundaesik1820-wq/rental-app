@@ -113,13 +113,18 @@ export default function Reserve() {
   const validate = () => {
     const errs = {};
     if (cartTotal === 0)          errs.cart = "장비를 1개 이상 선택하세요";
-    // 라이센스 체크
+    // 라이센스 체크 - 원본 equipments 데이터 기반
     const myLicNum = licenseToNum(profile?.license);
     const isProf   = profile?.role === "professor";
     if (!isProf) {
-      const lockedItems = cartUnitItems.filter(item => (item.licenseLevel || 0) > myLicNum);
-      if (lockedItems.length > 0) {
-        errs.cart = `라이센스 부족: ${lockedItems.map(item => `${item.modelName}(${item.licenseLevel}단계 필요)`).join(", ")}`;
+      const lockedNames = [];
+      cartUnitItems.forEach(item => {
+        const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
+        const eqLic = raw?.licenseLevel || 0;
+        if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
+      });
+      if (lockedNames.length > 0) {
+        errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
     }
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
@@ -247,8 +252,10 @@ export default function Reserve() {
             const avail      = e.available;
             const qty        = cart[e.modelName] || 0;
             const myLicNum   = licenseToNum(profile?.license);
-            const eqLicNum   = e.licenseLevel || 0;
             const isProf     = profile?.role === "professor";
+            // 원본 equipments에서 직접 licenseLevel 읽기
+            const rawEquip   = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
+            const eqLicNum   = rawEquip?.licenseLevel || 0;
             const isLocked   = !isProf && myLicNum < eqLicNum;
             return (
               <Card key={e.modelName} style={{ border:`2px solid ${isLocked ? "#FCA5A5" : qty>0?C.teal:C.border}`, transition:"border 0.15s", opacity: isLocked ? 0.75 : 1 }}>
