@@ -27,12 +27,16 @@ import StudentInquiry from "./pages/student/Inquiry";
 // Shared
 import { useCollection } from "./hooks/useFirestore";
 
-function NotifPanel({ onClose, isAdmin, rentals, reservations, extensions }) {
+function NotifPanel({ onClose, isAdmin, rentalRequests }) {
   const { C } = { C: { red: "#F05252", redLight: "#FEF2F2", yellow: "#F59E0B", yellowLight: "#FFFBEB", blue: "#3B6CF8", blueLight: "#EEF2FF", navy: "#1A2B6B", text: "#1E293B", muted: "#94A3B8", border: "#E2E8F0", surface: "#FFFFFF" } };
+  const getLabel = (r) => {
+    if (!r.items || r.items.length === 0) return r.equipName || "-";
+    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
+    return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
+  };
   const alerts = [
-    ...(isAdmin ? rentals.filter(r => r.status === "연체").map(r => ({ type: "danger", icon: "⚠️", title: `연체: ${r.equipName}`, desc: `${r.studentName} · ${r.dueDate}` })) : []),
-    ...(isAdmin ? reservations.filter(r => r.status === "승인대기").map(r => ({ type: "warning", icon: "📅", title: `예약 승인대기: ${r.equipName}`, desc: `${r.studentName}` })) : []),
-    ...(isAdmin ? extensions.filter(e => e.status === "신청중").map(e => ({ type: "warning", icon: "🔄", title: `연장 신청: ${e.equipName}`, desc: `${e.studentName}` })) : []),
+    ...(isAdmin ? rentalRequests.filter(r => r.status === "연체").map(r => ({ type: "danger", icon: "⚠️", title: `연체: ${getLabel(r)}`, desc: `${r.studentName} · 반납예정 ${r.endDate}` })) : []),
+    ...(isAdmin ? rentalRequests.filter(r => r.status === "승인대기").map(r => ({ type: "warning", icon: "📅", title: `승인대기: ${getLabel(r)}`, desc: `${r.studentName}` })) : []),
   ];
   const bg  = t => ({ danger: "#FEF2F2", warning: "#FFFBEB", info: "#EEF2FF" }[t]);
   const col = t => ({ danger: "#F05252", warning: "#F59E0B", info: "#3B6CF8" }[t]);
@@ -65,18 +69,15 @@ function AppContent() {
   const [tab,       setTab]       = useState("home");
   const [showNotif, setShowNotif] = useState(false);
 
-  const { data: rentals }      = useCollection("rentals", "rentDate");
-  const { data: reservations } = useCollection("reservations", "startDate");
-  const { data: extensions }   = useCollection("extensions", "createdAt");
+  const { data: rentalRequests } = useCollection("rentalRequests", "createdAt");
 
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
 
   const isAdmin = profile.role === "admin";
   const notifCount = isAdmin
-    ? rentals.filter(r => r.status === "연체").length
-    + reservations.filter(r => r.status === "승인대기").length
-    + extensions.filter(e => e.status === "신청중").length
+    ? rentalRequests.filter(r => r.status === "연체").length
+    + rentalRequests.filter(r => r.status === "승인대기").length
     : 0;
 
   const renderPage = () => {
@@ -118,9 +119,7 @@ function AppContent() {
         <NotifPanel
           onClose={() => setShowNotif(false)}
           isAdmin={isAdmin}
-          rentals={rentals}
-          reservations={reservations}
-          extensions={extensions}
+          rentalRequests={rentalRequests}
         />
       )}
     </>

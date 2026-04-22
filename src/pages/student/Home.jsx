@@ -5,14 +5,34 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 
 export default function StudentHome() {
   const { profile } = useAuth();
-  const { data: rentals }      = useCollection("rentals", "rentDate");
-  const { data: reservations } = useCollection("reservations", "startDate");
-  const { data: notices }      = useCollection("notices", "createdAt");
+  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
+  const { data: notices }     = useCollection("notices", "createdAt");
 
-  const myRentals = rentals.filter(r => r.studentId === profile?.studentId && (r.status === "대여중" || r.status === "연체"));
-  const myRes     = reservations.filter(r => r.studentId === profile?.studentId);
-  const pinned    = notices.filter(n => n.pinned).slice(0, 3);
-  const recentNotices = pinned.length > 0 ? pinned : [...notices].sort((a,b)=>(b.createdAt?.seconds||0)-(a.createdAt?.seconds||0)).slice(0,3);
+  const myId = profile?.studentId || profile?.email || "";
+
+  // 현재 대여중 / 연체
+  const myRentals = allRequests.filter(r =>
+    (r.studentId === myId || r.studentId === profile?.uid) &&
+    (r.status === "대여중" || r.status === "연체")
+  );
+
+  // 예약 현황 (승인대기 + 승인됨)
+  const myRes = allRequests.filter(r =>
+    (r.studentId === myId || r.studentId === profile?.uid) &&
+    (r.status === "승인대기" || r.status === "승인됨")
+  );
+
+  const pinned = notices.filter(n => n.pinned).slice(0, 3);
+  const recentNotices = pinned.length > 0
+    ? pinned
+    : [...notices].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0, 3);
+
+  // 장비명 표시 헬퍼
+  const getEquipLabel = (r) => {
+    if (!r.items || r.items.length === 0) return r.equipName || "-";
+    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
+    return names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : names[0] || "-";
+  };
 
   return (
     <div>
@@ -45,8 +65,8 @@ export default function StudentHome() {
             <Card key={r.id}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.equipName}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>반납예정: {r.dueDate}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{getEquipLabel(r)}</div>
+                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>반납예정: {r.endDate}</div>
                   <div style={{ fontSize: 12, color: C.muted }}>목적: {r.purpose}</div>
                 </div>
                 <Badge label={r.status} />
@@ -60,7 +80,7 @@ export default function StudentHome() {
             <Card key={r.id}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.equipName}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{getEquipLabel(r)}</div>
                   <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{r.startDate} ~ {r.endDate}</div>
                 </div>
                 <Badge label={r.status} />

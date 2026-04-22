@@ -5,14 +5,14 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 
 export default function Profile() {
   const { profile, logout } = useAuth();
-  const { data: rentals } = useCollection("rentals", "rentDate");
+  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
-  const mine   = rentals.filter(r => r.studentId === profile?.studentId);
+  const myId   = profile?.studentId || profile?.email || "";
+  const mine   = allRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
   const active = mine.filter(r => r.status === "대여중" || r.status === "연체").length;
 
   if (!profile) return null;
 
-  // 학번 앞 2자리 추출
   const isProf  = profile.role === "professor";
   const admYear = isProf ? "교수" : (profile.studentId ? `${profile.studentId.slice(0, 2)}학번` : "-");
 
@@ -74,7 +74,7 @@ export default function Profile() {
           ["계열/소속",  profile.dept || (isProf ? "교수" : "-")],
           ["연락처",     profile.phone || "-"],
           ["이메일",     profile.email || "-"],
-          ["누적 대여",  `${profile.rentals || 0}회`],
+          ["누적 대여",  `${profile.rentals || mine.filter(r => r.status === "반납완료").length}회`],
           ["현재 대여중", `${active}개`],
         ].map(([k, v]) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${C.border}` }}>
