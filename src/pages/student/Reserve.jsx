@@ -14,7 +14,10 @@ async function uploadFile(file) {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
-  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/auto/upload`, { method:"POST", body:fd });
+  // PDF/문서는 raw로, 이미지는 image로 업로드
+  const isImage = file.type.startsWith("image/");
+  const endpoint = isImage ? "image" : "raw";
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`, { method:"POST", body:fd });
   const data = await res.json();
   if (!data.secure_url) throw new Error("업로드 실패");
   return { url: data.secure_url, name: file.name };
