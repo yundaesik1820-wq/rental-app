@@ -443,8 +443,7 @@ export default function Equipment() {
       "보관위치": e.location      || "",
       "S/N":      e.serialNo      || "",
       "세트여부": e.isSet ? "O" : "",
-      "구성품":   e.isSet ? (e.setItems || "").replace(/
-/g, ", ") : "",
+      "구성품":   e.isSet ? (e.setItems || "").split("\n").join(", ") : "",
       "특이사항": e.note          || "",
     }));
     const wb = XLSX.utils.book_new();
