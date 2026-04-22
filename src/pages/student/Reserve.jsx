@@ -10,20 +10,16 @@ const PURPOSE_OPTIONS = ["강의", "개인스터디", "동아리스터디", "수
 const CLUBS = ["라온", "올드보이", "행가레", "클리퍼", "마스터보이스", "유성우", "직접입력"];
 const CLOUD_NAME    = "dnotsiasc";
 const UPLOAD_PRESET = "equipment_photos";
+
+// 모든 파일을 image/upload로 올림 (raw는 401 오류 발생)
 async function uploadFile(file) {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("upload_preset", UPLOAD_PRESET);
-  fd.append("access_mode", "public");
-  // PDF/문서는 raw로, 이미지는 image로 업로드
-  const isImage = file.type.startsWith("image/");
-  const endpoint = isImage ? "image" : "raw";
-  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/${endpoint}/upload`, { method:"POST", body:fd });
+  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:"POST", body:fd });
   const data = await res.json();
-  if (!data.secure_url) throw new Error("업로드 실패");
-  // raw 파일은 URL에서 fl_attachment 추가해서 바로 다운로드 가능하게
-  const url = isImage ? data.secure_url : data.secure_url;
-  return { url, name: file.name };
+  if (!data.secure_url) throw new Error("업로드 실패: " + (data.error?.message || ""));
+  return { url: data.secure_url, name: file.name };
 }
 
 // 라이센스 문자열 → 숫자
