@@ -289,7 +289,8 @@ export default function Reserve() {
         })),
       }));
       setWeekendAgreed(false);
-      setShowWeekendNotice(true);
+      setShowForm(false);        // 신청서 모달 먼저 닫기
+      setShowWeekendNotice(true); // 그 다음 주말 주의사항 열기
       return;
     }
     setSubmitting(true);
@@ -675,7 +676,7 @@ export default function Reserve() {
           </label>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowWeekendNotice(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={() => { if(!weekendAgreed){alert("안내사항에 동의해주세요"); return;} setShowWeekendNotice(false); setShowStoragePlan(true); }} color={weekendAgreed?C.blue:C.muted} full disabled={!weekendAgreed}>
+            <Btn onClick={() => { if(!weekendAgreed){alert("안내사항에 동의해주세요"); return;} setShowWeekendNotice(false); setShowForm(false); setShowStoragePlan(true); }} color={weekendAgreed?C.blue:C.muted} full disabled={!weekendAgreed}>
               동의 후 보관계획서 작성 →
             </Btn>
           </div>
@@ -766,8 +767,8 @@ export default function Reserve() {
           </div>
 
           <div style={{ display:"flex", gap:10 }}>
-            <Btn onClick={() => { setShowStoragePlan(false); setShowWeekendNotice(true); }} color={C.muted} outline full>이전</Btn>
-            <Btn onClick={() => { setShowStoragePlan(false); handleSubmit(); }} color={C.blue} full disabled={submitting}>
+            <Btn onClick={() => { setShowStoragePlan(false); setWeekendAgreed(false); setShowWeekendNotice(true); }} color={C.muted} outline full>이전</Btn>
+            <Btn onClick={async () => { setShowStoragePlan(false); await new Promise(r=>setTimeout(r,50)); handleSubmit(); }} color={C.blue} full disabled={submitting}>
               {submitting ? "신청 중..." : "✅ 최종 제출"}
             </Btn>
           </div>
