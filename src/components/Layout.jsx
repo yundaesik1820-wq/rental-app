@@ -131,22 +131,36 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         @media (max-width: 768px) {
           aside { display: none !important; }
           .mobile-nav { display: flex !important; }
-          main { padding: 16px !important; padding-bottom: 80px !important; }
+          .mobile-topbar-logout { display: flex !important; }
+          main { padding: 16px !important; padding-bottom: 90px !important; }
         }
         @media (min-width: 769px) {
           .mobile-nav { display: none !important; }
+          .mobile-topbar-logout { display: none !important; }
         }
       `}</style>
+
+      {/* 모바일 탑바 로그아웃 버튼 */}
+      <button className="mobile-topbar-logout" onClick={logout}
+        style={{ display:"none", position:"fixed", top:12, right:12, zIndex:200, background:C.red, color:"#fff", border:"none", borderRadius:10, padding:"7px 14px", fontSize:13, fontWeight:700, cursor:"pointer", alignItems:"center", gap:6, boxShadow:"0 2px 8px rgba(0,0,0,0.15)" }}>
+        🚪 로그아웃
+      </button>
+
       <div className="mobile-nav" style={{
         position: "fixed", bottom: 0, left: 0, right: 0,
         background: C.surface, borderTop: `1px solid ${C.border}`,
         padding: "8px 0 16px", zIndex: 100, display: "none",
         boxShadow: "0 -4px 20px rgba(0,0,0,0.06)",
+        overflowX: "auto",
       }}>
-        {nav.map(n => (
-          <button key={n.id} onClick={() => setTab(n.id)} style={{ flex: 1, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+        {/* 관리자는 주요 탭만 표시 */}
+        {(profile?.role === "admin"
+          ? nav.filter(n => ["home","equip","rental","students","qrscan","inquiry"].includes(n.id))
+          : nav
+        ).map(n => (
+          <button key={n.id} onClick={() => setTab(n.id)} style={{ flex: "0 0 auto", minWidth: 56, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "0 4px" }}>
             <div style={{ width: 32, height: 32, borderRadius: 9, background: tab === n.id ? C.blueLight : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{n.icon}</div>
-            <span style={{ fontSize: 9, fontWeight: tab === n.id ? 800 : 500, color: tab === n.id ? C.blue : C.muted }}>{n.label}</span>
+            <span style={{ fontSize: 9, fontWeight: tab === n.id ? 800 : 500, color: tab === n.id ? C.blue : C.muted, whiteSpace: "nowrap" }}>{n.label}</span>
           </button>
         ))}
       </div>
