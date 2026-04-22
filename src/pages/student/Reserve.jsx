@@ -2,6 +2,8 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem } from "../../hooks/useFirestore";
+import { storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
 import RentalTimeline from "../../components/RentalTimeline";
@@ -10,17 +12,6 @@ const PURPOSE_OPTIONS = ["강의", "개인스터디", "동아리스터디", "수
 const CLUBS = ["라온", "올드보이", "행가레", "클리퍼", "마스터보이스", "유성우", "직접입력"];
 const CLOUD_NAME    = "dnotsiasc";
 const UPLOAD_PRESET = "equipment_photos";
-
-// 모든 파일을 image/upload로 올림 (raw는 401 오류 발생)
-async function uploadFile(file) {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method:"POST", body:fd });
-  const data = await res.json();
-  if (!data.secure_url) throw new Error("업로드 실패: " + (data.error?.message || ""));
-  return { url: data.secure_url, name: file.name };
-}
 
 // 라이센스 문자열 → 숫자
 const licenseToNum = (lic) => {
@@ -63,26 +54,41 @@ function groupSets(equipments) {
   return Object.values(map);
 }
 
-// 파일 첨부 컴포넌트
+// Firebase Storage 파일 첨부 컴포넌트
 function FileAttachSection({ form, f }) {
   const [uploading, setUploading] = useState(false);
-  const handleFile = async (e) => {
+  const [progress, setProgress]   = useState(0);
+
+  const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    setUploading(true);
-    try {
-      const result = await uploadFile(file);
-      f("attachments", [...(form.attachments || []), result]);
-    } catch(err) { alert("파일 업로드 실패: " + err.message); }
-    finally { setUploading(false); e.target.value = ""; }
+    setUploading(true); setProgress(0);
+    const storageRef  = ref(storage, `attachments/${Date.now()}_${file.name}`);
+    const uploadTask  = uploadBytesResumable(storageRef, file);
+    uploadTask.on("state_changed",
+      snap => setProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+      err  => { alert("업로드 실패: " + err.message); setUploading(false); },
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        f("attachments", [...(form.attachments || []), { url, name: file.name }]);
+        setUploading(false); setProgress(0);
+      }
+    );
+    e.target.value = "";
   };
+
   return (
     <div style={{ marginTop:10 }}>
       <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>📎 파일 첨부 (일일촬영표, 시나리오 등)</div>
-      <label style={{ display:"inline-flex", alignItems:"center", gap:8, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"8px 16px", cursor:"pointer", fontSize:13, color:C.muted }}>
-        <span>{uploading ? "⏳ 업로드 중..." : "+ 파일 추가"}</span>
+      <label style={{ display:"inline-flex", alignItems:"center", gap:8, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"8px 16px", cursor: uploading?"not-allowed":"pointer", fontSize:13, color:C.muted, opacity: uploading?0.6:1 }}>
+        <span>{uploading ? `⏳ 업로드 중... ${progress}%` : "+ 파일 추가"}</span>
         <input type="file" accept=".pdf,.doc,.docx,.hwp,.jpg,.jpeg,.png" onChange={handleFile} style={{ display:"none" }} disabled={uploading} />
       </label>
+      {uploading && (
+        <div style={{ marginTop:6, background:C.border, borderRadius:6, height:6, overflow:"hidden" }}>
+          <div style={{ width:`${progress}%`, background:C.blue, height:"100%", borderRadius:6, transition:"width 0.3s" }} />
+        </div>
+      )}
       {(form.attachments || []).length > 0 && (
         <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:6 }}>
           {form.attachments.map((att, i) => (
