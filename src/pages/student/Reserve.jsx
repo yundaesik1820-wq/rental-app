@@ -343,7 +343,7 @@ export default function Reserve() {
         startDate: form.startDate, startTime: form.startTime,
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
-        studentSignature,
+        studentSignature: finalSig,
       });
       setCart({}); setCartSets({});
       setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
@@ -675,7 +675,6 @@ export default function Reserve() {
             onSave={(sig) => {
               setStudentSignature(sig);
               setShowSignature(false);
-              // 주말이면 주말 주의사항으로, 아니면 바로 제출
               const weekendDays = getWeekendDays();
               if (weekendDays.length > 0) {
                 setStorageForm(prev => ({
@@ -688,7 +687,7 @@ export default function Reserve() {
                 setWeekendAgreed(false);
                 setShowWeekendNotice(true);
               } else {
-                handleSubmit();
+                handleSubmit(sig); // sig 직접 전달
               }
             }}
             onCancel={() => { setShowSignature(false); setShowForm(true); }}
@@ -815,7 +814,7 @@ export default function Reserve() {
 
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowStoragePlan(false); setWeekendAgreed(false); setShowWeekendNotice(true); }} color={C.muted} outline full>이전</Btn>
-            <Btn onClick={async () => { setShowStoragePlan(false); await new Promise(r=>setTimeout(r,50)); handleSubmit(); }} color={C.blue} full disabled={submitting}>
+            <Btn onClick={async () => { setShowStoragePlan(false); await new Promise(r=>setTimeout(r,50)); handleSubmit(studentSignature); }} color={C.blue} full disabled={submitting}>
               {submitting ? "신청 중..." : "✅ 최종 제출"}
             </Btn>
           </div>
