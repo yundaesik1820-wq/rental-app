@@ -15,6 +15,132 @@ export default function Rental() {
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // 신청서 출력
+  const printRequest = (r) => {
+    const storageRows = r.storageForm?.days?.map(d => `
+      <tr>
+        <td style="background:#fff9db;font-weight:bold;text-align:center">${d.day}<br/><small>${d.date}</small></td>
+        <td>${d.keeper || ""}</td>
+        <td>${d.equipment || ""}</td>
+        <td>${d.location || ""}</td>
+        <td>${d.storageTime || ""}</td>
+        <td>${d.outTime || ""}</td>
+      </tr>`).join("") || "";
+
+    const html = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<title>장비대여 신청서</title>
+<style>
+  body { font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; font-size: 13px; padding: 30px; color: #111; }
+  h2 { text-align: center; font-size: 20px; margin-bottom: 4px; }
+  .sub { text-align: center; color: #666; margin-bottom: 24px; font-size: 12px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+  th, td { border: 1px solid #bbb; padding: 7px 10px; }
+  th { background: #2C3E6B; color: #fff; text-align: center; font-size: 12px; }
+  .section-title { background: #f0f4ff; font-weight: bold; color: #2C3E6B; font-size: 13px; padding: 6px 10px; border-left: 4px solid #2C3E6B; margin: 18px 0 8px; }
+  .label { color: #555; font-size: 12px; width: 110px; }
+  .sign-area { display: flex; justify-content: flex-end; gap: 40px; margin-top: 30px; font-size: 13px; }
+  .sign-box { text-align: center; }
+  .sign-line { width: 80px; border-bottom: 1px solid #111; margin: 30px auto 4px; }
+  @media print { body { padding: 15px; } button { display: none; } }
+</style>
+</head>
+<body>
+<h2>장비 대여 신청서</h2>
+<p class="sub">한국방송예술진흥원 미디어센터 장비대여실</p>
+
+<div class="section-title">신청자 정보</div>
+<table>
+  <tr>
+    <td class="label">이름</td><td>${r.studentName || ""}</td>
+    <td class="label">학번</td><td>${r.studentId || ""}</td>
+  </tr>
+  <tr>
+    <td class="label">계열</td><td>${r.dept || ""}</td>
+    <td class="label">연락처</td><td>${r.phone || ""}</td>
+  </tr>
+  <tr>
+    <td class="label">라이센스</td><td>${r.license || "없음"}</td>
+    <td class="label">신청일</td><td>${r.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || ""}</td>
+  </tr>
+</table>
+
+<div class="section-title">대여 장비</div>
+<table>
+  <tr><th>장비명</th><th>카테고리</th><th>수량</th><th>비고</th></tr>
+  ${(r.items||[]).map(i=>`<tr><td>${i.equipName||i.modelName||""}</td><td>${i.category||""}</td><td style="text-align:center">${i.quantity||1}${i.isSet?" (세트)":""}</td><td>${i.setItems||""}</td></tr>`).join("")}
+</table>
+
+<div class="section-title">대여 정보</div>
+<table>
+  <tr>
+    <td class="label">대여 시작</td><td>${r.startDate || ""} ${r.startTime || ""}</td>
+    <td class="label">반납</td><td>${r.endDate || ""} ${r.endTime || ""}</td>
+  </tr>
+  <tr>
+    <td class="label">사용 장소</td><td>${r.locationType ? r.locationType + " - " : ""}${r.location || ""}</td>
+    <td class="label">사용 목적</td><td>${r.purpose || ""}</td>
+  </tr>
+  ${r.courseName ? `<tr><td class="label">수업명</td><td>${r.courseName}</td><td class="label">담당교수</td><td>${r.professorName||""}</td></tr>` : ""}
+  ${r.eventName ? `<tr><td class="label">행사명</td><td>${r.eventName}</td><td class="label">담당교수</td><td>${r.eventProfessor||""}</td></tr>` : ""}
+  ${r.club ? `<tr><td class="label">동아리</td><td colspan="3">${r.club}</td></tr>` : ""}
+  <tr><td class="label">세부내용</td><td colspan="3">${r.purposeDetail || ""}</td></tr>
+</table>
+
+<div class="section-title">참여인원 및 비상연락처</div>
+<table>
+  <tr>
+    <td class="label">참여인원<br/>(본인 제외)</td>
+    <td style="white-space:pre-line">${r.participants || ""}</td>
+    <td class="label">비상연락처</td>
+    <td>${r.emergencyContact || ""}</td>
+  </tr>
+</table>
+
+${r.storageForm ? `
+<div class="section-title">장비보관계획서 (주말)</div>
+<table>
+  <tr>
+    <td class="label">대여자</td><td>${r.studentName} / ${r.dept} / ${r.studentId} / ${r.phone}</td>
+  </tr>
+  <tr>
+    <td class="label">보관자 1</td>
+    <td>${r.storageForm.keeper1?.name||""} / ${r.storageForm.keeper1?.dept||""} / ${r.storageForm.keeper1?.studentId||""} / ${r.storageForm.keeper1?.phone||""}</td>
+  </tr>
+  <tr>
+    <td class="label">보관자 2</td>
+    <td>${r.storageForm.keeper2?.name||""} / ${r.storageForm.keeper2?.dept||""} / ${r.storageForm.keeper2?.studentId||""} / ${r.storageForm.keeper2?.phone||""}</td>
+  </tr>
+</table>
+<table>
+  <tr><th>요일</th><th>보관자</th><th>보관 장비</th><th>보관 장소</th><th>보관 일시</th><th>불출 일시</th></tr>
+  ${storageRows}
+</table>
+<p style="text-align:center;font-size:11px;color:#555">모든 안내사항을 확인하였으며 보관 중 발생된 문제에 대한 책임은 대여자 및 보관자에게 있음을 확인합니다.</p>
+` : ""}
+
+${r.attachments?.length > 0 ? `
+<div class="section-title">첨부 파일</div>
+<table>
+  ${r.attachments.map((a,i)=>`<tr><td>${i+1}. ${a.name}</td><td><a href="${a.url}">${a.url}</a></td></tr>`).join("")}
+</table>` : ""}
+
+<div class="sign-area">
+  <div class="sign-box"><div class="sign-line"></div>신청자 서명</div>
+  <div class="sign-box"><div class="sign-line"></div>담당자 확인</div>
+</div>
+
+<div style="text-align:center;margin-top:30px">
+  <button onclick="window.print()" style="padding:10px 30px;background:#2C3E6B;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">🖨️ 인쇄 / PDF 저장</button>
+</div>
+</body></html>`;
+    const w = window.open("", "_blank");
+    w.document.write(html);
+    w.document.close();
+  };
+
   const filtered = tab === "전체" ? requests : requests.filter(r => r.status === tab);
   const sorted   = [...filtered].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
@@ -190,6 +316,11 @@ export default function Rental() {
               <div style={{ fontSize: 13, color: C.text }}>{r.reason}</div>
             </div>
           )}
+
+          {/* 출력 버튼 */}
+          <div style={{ marginBottom:8 }}>
+            <Btn onClick={() => printRequest(r)} color={C.muted} outline full small>🖨️ 신청서 출력</Btn>
+          </div>
 
           {/* 액션 버튼 */}
           {r.status === "승인대기" && (
