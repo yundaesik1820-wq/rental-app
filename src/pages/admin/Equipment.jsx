@@ -428,6 +428,36 @@ export default function Equipment() {
     setForm(EMPTY);
   };
 
+  // 엑셀 내보내기
+  const exportExcel = async () => {
+    const XLSX = await import("xlsx");
+    const rows = equipments.map(e => ({
+      "대분류":   e.majorCategory || "",
+      "소분류":   e.minorCategory || "",
+      "제조사":   e.manufacturer  || "",
+      "모델명":   e.modelName     || "",
+      "품명":     e.itemName      || "",
+      "호기":     e.unitNo        || "",
+      "물품번호": e.itemNo        || "",
+      "상태":     e.status        || "대여가능",
+      "보관위치": e.location      || "",
+      "S/N":      e.serialNo      || "",
+      "세트여부": e.isSet ? "O" : "",
+      "구성품":   e.isSet ? (e.setItems || "").replace(/
+/g, ", ") : "",
+      "특이사항": e.note          || "",
+    }));
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(rows);
+    // 컬럼 너비 설정
+    ws["!cols"] = [
+      {wch:10},{wch:12},{wch:10},{wch:18},{wch:22},
+      {wch:8},{wch:12},{wch:10},{wch:20},{wch:16},{wch:8},{wch:30},{wch:20}
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, "장비목록");
+    XLSX.writeFile(wb, `장비현황_${new Date().toISOString().slice(0,10)}.xlsx`);
+  };
+
   const cycleStatus = async (e) => {
     const cycle = ["대여가능","수리중","대여불가","대여중"];
     const next  = cycle[(cycle.indexOf(e.status || "대여가능") + 1) % cycle.length];
@@ -439,6 +469,7 @@ export default function Equipment() {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>🔧 장비 관리 <span style={{ fontSize:14, color:C.muted, fontWeight:400 }}>— 1대 = 1행</span></PageTitle>
         <div style={{ display:"flex", gap:10 }}>
+          <Btn onClick={exportExcel} color={C.green}>📤 엑셀 내보내기</Btn>
           <Btn onClick={() => setShowImport(true)} color={C.teal}>📥 엑셀 일괄 등록</Btn>
           <Btn onClick={() => setShowAdd(true)}>+ 장비 추가</Btn>
         </div>
