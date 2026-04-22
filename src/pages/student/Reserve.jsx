@@ -138,36 +138,45 @@ export default function Reserve() {
         errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
     }
-    // ── 재고 체크 (status 기반 + 승인대기 차감) ─────────────
-    const calcAvail = (modelName, isSet) => {
-      const units = equipments.filter(e =>
-        (e.modelName || e.name) === modelName && (isSet ? e.isSet : !e.isSet)
-      );
-      // status "대여가능"인 것만 카운트
-      const availByStatus = units.filter(e => (e.status || "대여가능") === "대여가능").length;
-      // 승인대기 중인 요청 수량 차감
-      const pendingQty = allRequests
-        .filter(r => r.status === "승인대기")
-        .reduce((sum, r) => {
-          const found = r.items?.find(i => (i.modelName || i.equipName) === modelName);
-          return sum + (found?.quantity || 0);
-        }, 0);
-      return Math.max(0, availByStatus - pendingQty);
-    };
+    // ── 기간 겹침 기반 재고 체크 ────────────────────────────
+    if (form.startDate && form.endDate) {
+      const toStr = (date, time) => `${date} ${time || "00:00"}`;
+      const myS   = toStr(form.startDate, form.startTime);
+      const myE   = toStr(form.endDate,   form.endTime);
 
-    cartUnitItems.forEach(item => {
-      const avail  = calcAvail(item.modelName, false);
-      const reqQty = cart[item.modelName] || 0;
-      if (reqQty > avail) {
-        errs.cart = `${item.modelName}: 현재 대여 가능 수량은 ${avail}대입니다 (신청 ${reqQty}대)`;
-      }
-    });
-    cartSetItems.forEach(item => {
-      const avail = calcAvail(item.modelName, true);
-      if (avail <= 0) {
-        errs.cart = `${item.modelName} 세트: 현재 대여 가능한 세트가 없습니다`;
-      }
-    });
+      const calcAvail = (modelName, isSet) => {
+        const units      = equipments.filter(e =>
+          (e.modelName || e.name) === modelName && (isSet ? !!e.isSet : !e.isSet)
+        );
+        const totalUnits = units.length;
+        // 겹치는 요청의 수량 합산 (승인대기 + 승인됨 + 대여중)
+        const usedQty = allRequests
+          .filter(r => ["승인대기","승인됨","대여중"].includes(r.status))
+          .reduce((sum, r) => {
+            const rS = toStr(r.startDate, r.startTime);
+            const rE = toStr(r.endDate,   r.endTime);
+            // 시간 겹침: 내 시작 < 상대 끝 AND 상대 시작 < 내 끝
+            if (!(myS < rE && rS < myE)) return sum;
+            const found = r.items?.find(i => (i.modelName || i.equipName) === modelName);
+            return sum + (found?.quantity || 0);
+          }, 0);
+        return Math.max(0, totalUnits - usedQty);
+      };
+
+      cartUnitItems.forEach(item => {
+        const avail  = calcAvail(item.modelName, false);
+        const reqQty = cart[item.modelName] || 0;
+        if (reqQty > avail) {
+          errs.cart = `${item.modelName}: 해당 기간 대여 가능 수량은 ${avail}대입니다 (신청 ${reqQty}대)`;
+        }
+      });
+      cartSetItems.forEach(item => {
+        const avail = calcAvail(item.modelName, true);
+        if (avail <= 0) {
+          errs.cart = `${item.modelName} 세트: 해당 기간 대여 가능한 세트가 없습니다`;
+        }
+      });
+    }
     // ─────────────────────────────────────────────────────────
 
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
@@ -587,6 +596,11 @@ export default function Reserve() {
             </div>
           </div>
 
+          {errors.cart && (
+            <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"12px 16px", fontSize:13, fontWeight:600, marginBottom:12, border:`1px solid ${C.red}30` }}>
+              ⚠️ {errors.cart}
+            </div>
+          )}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowForm(false)} color={C.muted} outline full>취소</Btn>
             <Btn onClick={handleSubmit} color={C.teal} full disabled={submitting}>{submitting?"신청 중...":"✅ 신청 완료"}</Btn>
