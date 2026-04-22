@@ -138,6 +138,59 @@ export default function Reserve() {
         errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
     }
+    // ── 기간 중복 체크 ──────────────────────────────────────
+    if (form.startDate && form.endDate) {
+      const sDate = form.startDate;
+      const eDate = form.endDate;
+
+      // 단품 체크
+      cartUnitItems.forEach(item => {
+        const raw      = equipments.find(e => (e.modelName || e.name) === item.modelName);
+        const total    = raw?.total || 1;
+        const reqQty   = cart[item.modelName] || 0;
+
+        // 같은 기간에 겹치는 승인됨/승인대기/대여중 요청의 수량 합산
+        const usedQty = allRequests
+          .filter(r => ["승인됨","승인대기","대여중"].includes(r.status))
+          .reduce((sum, r) => {
+            // 날짜 겹침 확인
+            const rStart = r.startDate || "";
+            const rEnd   = r.endDate   || "";
+            const overlaps = rStart <= eDate && rEnd >= sDate;
+            if (!overlaps) return sum;
+            const rItem = r.items?.find(i => (i.modelName || i.equipName) === item.modelName);
+            return sum + (rItem?.quantity || 0);
+          }, 0);
+
+        const available = total - usedQty;
+        if (reqQty > available) {
+          errs.cart = `${item.modelName}: 해당 기간 대여 가능 수량은 ${Math.max(0,available)}대입니다 (신청 ${reqQty}대)`;
+        }
+      });
+
+      // 세트 체크
+      cartSetItems.forEach(item => {
+        const raw    = equipments.filter(e => (e.modelName || e.name) === item.modelName);
+        const total  = raw.length || 1;
+
+        const usedQty = allRequests
+          .filter(r => ["승인됨","승인대기","대여중"].includes(r.status))
+          .reduce((sum, r) => {
+            const rStart = r.startDate || "";
+            const rEnd   = r.endDate   || "";
+            const overlaps = rStart <= eDate && rEnd >= sDate;
+            if (!overlaps) return sum;
+            const rItem = r.items?.find(i => (i.modelName || i.equipName) === item.modelName);
+            return sum + (rItem?.quantity || 0);
+          }, 0);
+
+        if (usedQty >= total) {
+          errs.cart = `${item.modelName} 세트: 해당 기간에 대여 가능한 세트가 없습니다`;
+        }
+      });
+    }
+    // ────────────────────────────────────────────────────────
+
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
     if (!form.purposeDetail)      errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
