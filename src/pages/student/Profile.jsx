@@ -61,7 +61,7 @@ export default function Profile() {
             </div>
           </div>
         </div>
-      </Card>
+      </Card>}
 
       {/* 계정 정보 */}
       <Card style={{ marginBottom: 16 }}>
