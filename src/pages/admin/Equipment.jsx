@@ -420,6 +420,7 @@ export default function Equipment() {
       unitNo:        e.unitNo        || "",
       itemNo:        e.itemNo        || "",
       status:        e.status        || "대여가능",
+      licenseLevel:  e.licenseLevel  || 0,
       location:      e.location      || "",
       photoUrls:     e.photoUrls     || [],
       snPhotoUrl:    e.snPhotoUrl    || "",

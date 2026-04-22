@@ -117,9 +117,9 @@ export default function Reserve() {
     const myLicNum = licenseToNum(profile?.license);
     const isProf   = profile?.role === "professor";
     if (!isProf) {
-      const lockedItems = cartUnitItems.filter(e => (e.licenseLevel || 0) > myLicNum);
+      const lockedItems = cartUnitItems.filter(item => (item.licenseLevel || 0) > myLicNum);
       if (lockedItems.length > 0) {
-        errs.cart = `라이센스 부족: ${lockedItems.map(e => e.modelName).join(", ")} (${e.licenseLevel}단계 필요)`;
+        errs.cart = `라이센스 부족: ${lockedItems.map(item => `${item.modelName}(${item.licenseLevel}단계 필요)`).join(", ")}`;
       }
     }
     if (!form.purpose)            errs.purpose = "사용 목적을 선택하세요";
