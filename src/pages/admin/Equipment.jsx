@@ -183,6 +183,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
           {e.isSet && <span style={{ background: C.orangeLight, color: C.orange, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, border: `1px solid ${C.orange}40` }}>📦 세트</span>}
+          {e.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[e.licenseLevel]; return lv ? <span style={{ background:lv.bg, color:lv.color, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>🔒 {lv.label}</span> : null; })()}
           {e.majorCategory && <span style={{ background: C.blueLight, color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{e.majorCategory}</span>}
           {e.minorCategory && <span style={{ background: C.bg, color: C.muted, borderRadius: 6, padding: "2px 8px", fontSize: 11, border: `1px solid ${C.border}` }}>{e.minorCategory}</span>}
         </div>
@@ -355,10 +356,18 @@ const EMPTY = {
   majorCategory:"", minorCategory:"", manufacturer:"",
   modelName:"", itemName:"", unitNo:"", itemNo:"",
   status:"대여가능",
+  licenseLevel: 0,  // 0~3단계
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
   isSet: false,
-  setItems: "",  // 구성품 목록 (줄바꿈 구분)
+  setItems: "",
 };
+
+const LICENSE_LEVELS = [
+  { val:0, label:"0단계", desc:"누구나 대여 가능", color:"#10B981", bg:"#D1FAE5" },
+  { val:1, label:"1단계", desc:"1단계 이상",       color:"#3B6CF8", bg:"#EEF2FF" },
+  { val:2, label:"2단계", desc:"2단계 이상",       color:"#F59E0B", bg:"#FFFBEB" },
+  { val:3, label:"3단계", desc:"3단계만",          color:"#EF4444", bg:"#FEF2F2" },
+];
 
 // ── 메인 ──────────────────────────────────────────────────
 export default function Equipment() {
@@ -442,6 +451,7 @@ export default function Equipment() {
       "상태":     e.status        || "대여가능",
       "보관위치": e.location      || "",
       "S/N":      e.serialNo      || "",
+      "라이센스제한": `${e.licenseLevel || 0}단계`,
       "세트여부": e.isSet ? "O" : "",
       "구성품":   e.isSet ? (e.setItems || "").split("\n").join(", ") : "",
       "특이사항": e.note          || "",
@@ -509,6 +519,24 @@ export default function Equipment() {
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" placeholder="예: PXW-Z150" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
           <Inp label="품명" placeholder="예: XDCAM 방송용 캠코더" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
+
+          {/* 라이센스 제한 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이센스 제한 단계</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {LICENSE_LEVELS.map(lv => (
+                <button key={lv.val} onClick={() => f("licenseLevel", lv.val)} style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", textAlign:"center",
+                  background: form.licenseLevel===lv.val ? lv.color : C.bg,
+                  color:      form.licenseLevel===lv.val ? "#fff"    : C.muted,
+                  border:    `1.5px solid ${form.licenseLevel===lv.val ? lv.color : C.border}`,
+                }}>
+                  {lv.label}
+                  <div style={{ fontSize:9, marginTop:2, opacity:0.8 }}>{lv.desc}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Inp label="호기 (구분번호)" placeholder="예: 1호기, A, No.1" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
             <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
@@ -578,6 +606,23 @@ export default function Equipment() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Inp label="호기" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
             <Inp label="물품번호" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
+          </div>
+
+          {/* 라이센스 제한 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이센스 제한 단계</div>
+            <div style={{ display:"flex", gap:8 }}>
+              {LICENSE_LEVELS.map(lv => (
+                <button key={lv.val} onClick={() => f("licenseLevel", lv.val)} style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", textAlign:"center",
+                  background: form.licenseLevel===lv.val ? lv.color : C.bg,
+                  color:      form.licenseLevel===lv.val ? "#fff"    : C.muted,
+                  border:    `1.5px solid ${form.licenseLevel===lv.val ? lv.color : C.border}`,
+                }}>
+                  {lv.label}
+                  <div style={{ fontSize:9, marginTop:2, opacity:0.8 }}>{lv.desc}</div>
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* 상태 선택 */}

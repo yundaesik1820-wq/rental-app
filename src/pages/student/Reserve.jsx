@@ -8,6 +8,13 @@ import RentalTimeline from "../../components/RentalTimeline";
 
 const PURPOSE_OPTIONS = ["과제 및 스터디", "동아리", "작품제작", "학교행사"];
 
+// 라이센스 문자열 → 숫자
+const licenseToNum = (lic) => {
+  if (!lic || lic === "없음") return 0;
+  const n = parseInt(lic);
+  return isNaN(n) ? 0 : n;
+};
+
 const TIME_OPTIONS = [];
 for (let h = 0; h < 24; h++) {
   for (let m of [0, 30]) {
@@ -228,17 +235,22 @@ export default function Reserve() {
       {tabView === "단품" && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
           {filteredUnits.map(e => {
-            const avail = e.available;
-            const qty   = cart[e.modelName] || 0;
+            const avail      = e.available;
+            const qty        = cart[e.modelName] || 0;
+            const myLicNum   = licenseToNum(profile?.license);
+            const eqLicNum   = e.licenseLevel || 0;
+            const isProf     = profile?.role === "professor";
+            const isLocked   = !isProf && myLicNum < eqLicNum;
             return (
-              <Card key={e.modelName} style={{ border:`2px solid ${qty>0?C.teal:C.border}`, transition:"border 0.15s" }}>
+              <Card key={e.modelName} style={{ border:`2px solid ${isLocked ? "#FCA5A5" : qty>0?C.teal:C.border}`, transition:"border 0.15s", opacity: isLocked ? 0.75 : 1 }}>
                 <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
                   {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{e.majorCategory}</span>}
                   {e.minorCategory && <span style={{ background:C.bg, color:C.muted, borderRadius:6, padding:"2px 8px", fontSize:11, border:`1px solid ${C.border}` }}>{e.minorCategory}</span>}
+                  {eqLicNum > 0 && <span style={{ background: isLocked?"#FEF2F2":"#EEF2FF", color: isLocked?"#EF4444":"#3B6CF8", borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{isLocked?"🔒":"✅"} {eqLicNum}단계 필요</span>}
                 </div>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:4 }}>
                   <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>{e.modelName}</div>
-                  <Badge label={avail>0?"대여가능":"대여불가"} />
+                  <Badge label={isLocked ? "대여불가" : avail>0?"대여가능":"대여불가"} />
                 </div>
                 {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
                 {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>🏭 {e.manufacturer}</div>}
@@ -260,7 +272,11 @@ export default function Reserve() {
                   대여 가능 {avail}대 / 전체 {e.total}대
                 </div>
                 <RentalTimeline modelName={e.modelName} requests={allRequests} />
-                {avail === 0 ? (
+                {isLocked ? (
+                  <div style={{ background:"#FEF2F2", borderRadius:10, padding:"8px 12px", fontSize:12, color:"#EF4444", fontWeight:600 }}>
+                    🔒 라이센스 {eqLicNum}단계 이상 필요 (현재: {profile?.license || "없음"})
+                  </div>
+                ) : avail === 0 ? (
                   <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
                 ) : qty > 0 ? (
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>

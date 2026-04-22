@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
 import { groupEquipments } from "../../utils/groupEquipments";
 
@@ -32,7 +33,14 @@ function groupSets(equipments) {
   return Object.values(map);
 }
 
+const licenseToNum = (lic) => {
+  if (!lic || lic === "없음") return 0;
+  const n = parseInt(lic);
+  return isNaN(n) ? 0 : n;
+};
+
 export default function EquipList() {
+  const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
 
