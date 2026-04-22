@@ -267,7 +267,7 @@ export default function Reserve() {
     if (form.purpose === "수업과제" && !form.professorName.trim()) errs.purposeDetail = "교수님 성함을 입력하세요";
     if (form.purpose === "학교행사" && !form.eventName.trim()) errs.purposeDetail = "행사명을 입력하세요";
     if (form.purpose === "학교행사" && !form.eventProfessor.trim()) errs.purposeDetail = "담당교수님 성함을 입력하세요";
-    if (!["강의","학교행사"].includes(form.purpose) && !form.purposeDetail.trim()) errs.purposeDetail = "세부 내용을 입력하세요";
+    if (!["강의","학교행사","수업과제"].includes(form.purpose) && !form.purposeDetail.trim()) errs.purposeDetail = "세부 내용을 입력하세요";
     if (!form.startDate)          errs.startDate = "대여 시작일을 선택하세요";
     if (!form.endDate)            errs.endDate = "반납일을 선택하세요";
     if (form.startDate && form.endDate && form.startDate > form.endDate) errs.endDate = "반납일이 대여일보다 빠릅니다";
@@ -942,7 +942,12 @@ export default function Reserve() {
                       style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
                   </div>
                 </div>
-                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginBottom:6 }}>⚠️ {errors.purposeDetail}</div>}
+                <div style={{ marginTop:10 }}>
+                  <div style={{ fontSize:12, color:C.muted, marginBottom:5 }}>세부 내용</div>
+                  <textarea placeholder="세부 내용을 입력해주세요" value={form.purposeDetail} onChange={e => f("purposeDetail",e.target.value)}
+                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+                </div>
+                {errors.purposeDetail && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.purposeDetail}</div>}
                 <FileAttachSection form={form} f={f} />
               </>
             )}
