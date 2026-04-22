@@ -13,7 +13,8 @@ export default function Profile() {
   if (!profile) return null;
 
   // 학번 앞 2자리 추출
-  const admYear = profile.studentId ? `${profile.studentId.slice(0, 2)}학번` : "-";
+  const isProf  = profile.role === "professor";
+  const admYear = isProf ? "교수" : (profile.studentId ? `${profile.studentId.slice(0, 2)}학번` : "-");
 
   const licenseColor = () => {
     if (!profile.license || profile.license === "없음") return { bg: C.bg, col: C.muted };
@@ -45,8 +46,8 @@ export default function Profile() {
         </div>
       </Card>
 
-      {/* 라이센스 카드 */}
-      <Card style={{ marginBottom: 16, border: `2px solid ${lc.col}30` }}>
+      {/* 라이센스 카드 - 교수님은 숨김 */}
+      {profile.role !== "professor" && <Card style={{ marginBottom: 16, border: `2px solid ${lc.col}30` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 6 }}>🎖️ 장비 사용 라이센스</div>
@@ -66,9 +67,11 @@ export default function Profile() {
       <Card style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 14 }}>계정 정보</div>
         {[
-          ["학번",       profile.studentId || "-"],
-          ["입학년도",   admYear],
-          ["계열",       profile.dept || "-"],
+          ...(isProf ? [] : [
+            ["학번",     profile.studentId || "-"],
+            ["입학년도", admYear],
+          ]),
+          ["계열/소속",  profile.dept || (isProf ? "교수" : "-")],
           ["연락처",     profile.phone || "-"],
           ["이메일",     profile.email || "-"],
           ["누적 대여",  `${profile.rentals || 0}회`],

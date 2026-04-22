@@ -17,8 +17,14 @@ export default function StudentHome() {
     <div>
       {/* Welcome banner */}
       <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "28px 28px", marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>{profile?.dept} · {profile?.year}학년</div>
-        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>안녕하세요, {profile?.name}님 👋</div>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>
+          {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
+        </div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>
+          {profile?.role === "professor"
+            ? `${profile?.name} 교수님 안녕하세요 👋`
+            : `안녕하세요, ${profile?.name}님 👋`}
+        </div>
         <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
           {[["현재 대여중", myRentals.length, "#93C5FD"], ["예약 현황", myRes.length, "#6EE7B7"]].map(([l, v, col]) => (
             <div key={l} style={{ background: "rgba(255,255,255,0.15)", borderRadius: 14, padding: "14px 20px" }}>
