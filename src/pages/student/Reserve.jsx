@@ -86,7 +86,9 @@ export default function Reserve() {
   const getIdx = (key) => photoIdx[key] || 0;
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
-  const [showForm, setShowForm]   = useState(false);
+  const [showNotice, setShowNotice] = useState(false); // 주의사항 모달
+  const [agreed, setAgreed]         = useState(false);   // 동의 여부
+  const [showForm, setShowForm]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]           = useState(false);
   const [errors, setErrors]       = useState({});
@@ -241,7 +243,7 @@ export default function Reserve() {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>📅 장비 예약 신청</PageTitle>
         {cartTotal > 0 && (
-          <button onClick={() => setShowForm(true)} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:12, padding:"10px 20px", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit" }}>
+          <button onClick={() => { setAgreed(false); setShowNotice(true); }} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:12, padding:"10px 20px", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", gap:8, fontFamily:"inherit" }}>
             📋 신청서 작성
             <span style={{ background:"rgba(255,255,255,0.25)", borderRadius:20, padding:"2px 10px" }}>{cartTotal}개</span>
           </button>
@@ -485,6 +487,64 @@ export default function Reserve() {
           })}
           {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
         </div>
+      )}
+
+      {/* 주의사항 모달 */}
+      {showNotice && (
+        <Modal onClose={() => setShowNotice(false)} width={580}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>📋 대여 안내사항</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>아래 내용을 끝까지 읽고 동의 후 진행해주세요</div>
+
+          <div style={{ maxHeight:400, overflowY:"auto", background:C.bg, borderRadius:12, padding:"16px 18px", marginBottom:16, fontSize:13, lineHeight:1.9, color:C.text, border:`1px solid ${C.border}` }}>
+            <p style={{ marginBottom:12 }}>안녕하세요 장비대여실입니다.<br/>원활한 장비 대여 및 반납을 위해 아래 안내사항을 반드시 확인해주시기 바랍니다.</p>
+
+            <div style={{ fontWeight:800, color:C.navy, marginBottom:8 }}>[신청 관련 주의사항]</div>
+            {[
+              "장비대여실 운영시간은 평일 09:00~18:00이며, 운영시간 외에는 빠른 업무처리가 어려울 수 있습니다.",
+              "장비 대여 가능 시간은 평일 09:00~17:00입니다.",
+              "주말 대여는 금요일 17:00부터 월요일 09:00 반납 기준으로만 운영되며, 대여 및 반납 시간 조정은 불가합니다.",
+              "평일 중 연일 대여는 불가하며, 당일 반납 후 익일 대여로만 가능합니다.",
+              "장비는 최소 7일 전 신청해야 하며, 학교 행사 관련 장비는 최소 2일 전까지 신청해야 합니다.",
+              "모든 장비의 우선 사용 순위는 학생 여러분의 강의이며, 교수님의 수업 관련 장비 신청이 우선될 수 있습니다.",
+            ].map((t,i) => (
+              <div key={i} style={{ display:"flex", gap:8, marginBottom:6 }}>
+                <span style={{ color:C.blue, fontWeight:700, flexShrink:0 }}>{i+1}.</span>
+                <span>{t}</span>
+              </div>
+            ))}
+
+            <div style={{ fontWeight:800, color:C.navy, margin:"14px 0 8px" }}>[대여/반납 시 주의사항]</div>
+            {[
+              "대여 및 반납은 반드시 대여자 본인 주도 하에 진행되어야 합니다.",
+              "대여 시 대여자는 대여하려는 장비의 점검을 1층에서 마친 뒤 수령해야 하며, 문제 발견 시 즉시 보고해야 합니다.",
+              "반납 시 대여자는 반납 장비의 점검이 끝날 때까지 대기해야 하며, 점검 완료 후 이동이 가능합니다.",
+              "반납은 대여 당시와 동일한 구성으로만 가능하며, 가방에 임의로 넣거나 세트 장비를 각개로 반납하는 것은 불가합니다.",
+              "대여/반납 시간 초과 시 10분당 1,000원의 장비 유지비 패널티가 부여됩니다.",
+              "개인 과실로 인한 분실 및 파손 시 대여자에게 변상 책임이 부여됩니다.",
+            ].map((t,i) => (
+              <div key={i} style={{ display:"flex", gap:8, marginBottom:6 }}>
+                <span style={{ color:C.blue, fontWeight:700, flexShrink:0 }}>{i+1}.</span>
+                <span>{t}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* 동의 체크박스 */}
+          <label style={{ display:"flex", alignItems:"flex-start", gap:12, cursor:"pointer", background: agreed ? C.greenLight : C.bg, borderRadius:12, padding:"12px 16px", border:`2px solid ${agreed ? C.green : C.border}`, marginBottom:16, transition:"all 0.2s" }}>
+            <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+              style={{ width:20, height:20, cursor:"pointer", marginTop:1, flexShrink:0, accentColor:C.green }} />
+            <span style={{ fontSize:13, color: agreed ? C.green : C.text, fontWeight: agreed ? 700 : 400, lineHeight:1.6 }}>
+              위 안내사항을 모두 확인하였으며, 미숙지로 인해 발생하는 책임은 대여자 본인에게 있음을 확인합니다.
+            </span>
+          </label>
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => setShowNotice(false)} color={C.muted} outline full>닫기</Btn>
+            <Btn onClick={() => { if (!agreed) { alert("안내사항에 동의해주세요"); return; } setShowNotice(false); setShowForm(true); }} color={agreed ? C.teal : C.muted} full disabled={!agreed}>
+              동의 후 신청서 작성 →
+            </Btn>
+          </div>
+        </Modal>
       )}
 
       {/* 신청서 모달 */}
