@@ -73,6 +73,9 @@ export default function Reserve() {
   const [cart, setCart]         = useState({});
   const [cartSets, setCartSets] = useState({});
   const [expandedSet, setExpandedSet] = useState(null);
+  const [photoIdx, setPhotoIdx]       = useState({});
+  const getIdx = (key) => photoIdx[key] || 0;
+  const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
   const [showForm, setShowForm]   = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -236,7 +239,18 @@ export default function Reserve() {
                   <Badge label={avail>0?"대여가능":"대여불가"} />
                 </div>
                 {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
-                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>🏭 {e.manufacturer}</div>}
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>🏭 {e.manufacturer}</div>}
+                {/* 대표사진 */}
+                {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName); return photos.length > 0 ? (
+                  <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
+                    <img src={photos[idx]} alt="제품사진" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain" }} />
+                    {photos.length > 1 && (<>
+                      <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
+                      <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
+                      <div style={{ position:"absolute", bottom:4, right:6, background:"rgba(0,0,0,0.45)", color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10 }}>{idx+1}/{photos.length}</div>
+                    </>)}
+                  </div>
+                ) : null; })()}
                 <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:6 }} />
                 </div>
@@ -286,8 +300,18 @@ export default function Reserve() {
                   <Badge label={avail>0?"대여가능":"대여불가"} />
                 </div>
                 {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
-                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:10 }}>🏭 {e.manufacturer}</div>}
-
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>🏭 {e.manufacturer}</div>}
+                {/* 대표사진 */}
+                {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
+                  <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
+                    <img src={photos[idx]} alt="세트사진" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain" }} />
+                    {photos.length > 1 && (<>
+                      <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
+                      <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
+                      <div style={{ position:"absolute", bottom:4, right:6, background:"rgba(0,0,0,0.45)", color:"#fff", borderRadius:4, padding:"1px 6px", fontSize:10 }}>{idx+1}/{photos.length}</div>
+                    </>)}
+                  </div>
+                ) : null; })()}
                 <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:6 }} />
                 </div>
