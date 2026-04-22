@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
+import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
 
 const STATUS_TABS = ["전체", "승인대기", "승인됨", "보류", "거절됨", "반납완료"];
@@ -11,7 +12,8 @@ export default function Rental() {
   const { data: equipments } = useCollection("equipments", "createdAt");
 
   const [tab, setTab]             = useState("승인대기");
-  const [actionTarget, setActionTarget] = useState(null); // { request, type: "보류"|"거절" }
+  const [actionTarget, setActionTarget] = useState(null);
+  const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -128,8 +130,14 @@ ${r.attachments?.length > 0 ? `
 </table>` : ""}
 
 <div class="sign-area">
-  <div class="sign-box"><div class="sign-line"></div>신청자 서명</div>
-  <div class="sign-box"><div class="sign-line"></div>담당자 확인</div>
+  <div class="sign-box">
+    ${r.studentSignature ? `<img src="${r.studentSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>` : `<div class="sign-line"></div>`}
+    신청자 서명
+  </div>
+  <div class="sign-box">
+    ${r.adminSignature ? `<img src="${r.adminSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>` : `<div class="sign-line"></div>`}
+    담당자 확인
+  </div>
 </div>
 
 <div style="text-align:center;margin-top:30px">
@@ -177,9 +185,9 @@ ${r.attachments?.length > 0 ? `
     }
   };
 
-  const approve = async (r) => {
-    await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "" });
-    await updateAvailable(r.items, -1); // 장비 status → 대여중
+  const approve = async (r, adminSignature) => {
+    await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
+    await updateAvailable(r.items, -1);
   };
 
   const confirmAction = async () => {
@@ -325,14 +333,14 @@ ${r.attachments?.length > 0 ? `
           {/* 액션 버튼 */}
           {r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => approve(r)} color={C.green} full>✅ 승인</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full>⏸️ 보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
           {r.status === "보류" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => approve(r)} color={C.green} full>✅ 승인으로 변경</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인으로 변경</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
@@ -341,6 +349,20 @@ ${r.attachments?.length > 0 ? `
           )}
         </Card>
       ))}
+
+      {/* 관리자 서명 모달 */}
+      {signTarget && (
+        <Modal onClose={() => setSignTarget(null)} width={520}>
+          <SignaturePad
+            title="✍️ 관리자 서명"
+            onSave={async (sig) => {
+              await approve(signTarget, sig);
+              setSignTarget(null);
+            }}
+            onCancel={() => setSignTarget(null)}
+          />
+        </Modal>
+      )}
 
       {/* 보류/거절 사유 입력 모달 */}
       {actionTarget && (
@@ -391,4 +413,3 @@ ${r.attachments?.length > 0 ? `
     </div>
   );
 }
-

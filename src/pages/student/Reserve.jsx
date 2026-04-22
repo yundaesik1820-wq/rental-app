@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem } from "../../hooks/useFirestore";
+import SignaturePad from "../../components/SignaturePad";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -142,6 +143,8 @@ export default function Reserve() {
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
   const [showNotice, setShowNotice]         = useState(false);
+  const [showSignature, setShowSignature]   = useState(false);
+  const [studentSignature, setStudentSignature] = useState("");
   const [agreed, setAgreed]                 = useState(false);
   const [showWeekendNotice, setShowWeekendNotice] = useState(false);
   const [weekendAgreed, setWeekendAgreed]   = useState(false);
@@ -301,6 +304,12 @@ export default function Reserve() {
       setShowWeekendNotice(true); // 그 다음 주말 주의사항 열기
       return;
     }
+    // 서명 없으면 서명 먼저
+    if (!studentSignature) {
+      setShowForm(false);
+      setShowSignature(true);
+      return;
+    }
     setSubmitting(true);
     try {
       const items = [
@@ -334,6 +343,7 @@ export default function Reserve() {
         startDate: form.startDate, startTime: form.startTime,
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
+        studentSignature,
       });
       setCart({}); setCartSets({});
       setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
@@ -654,6 +664,35 @@ export default function Reserve() {
               동의 후 신청서 작성 →
             </Btn>
           </div>
+        </Modal>
+      )}
+
+      {/* 학생 서명 모달 */}
+      {showSignature && (
+        <Modal onClose={() => { setShowSignature(false); setShowForm(true); }} width={520}>
+          <SignaturePad
+            title="✍️ 대여자 서명"
+            onSave={(sig) => {
+              setStudentSignature(sig);
+              setShowSignature(false);
+              // 주말이면 주말 주의사항으로, 아니면 바로 제출
+              const weekendDays = getWeekendDays();
+              if (weekendDays.length > 0) {
+                setStorageForm(prev => ({
+                  ...prev,
+                  days: weekendDays.map(d => ({
+                    day: d.day, date: d.date,
+                    keeper:"", equipment:"", location:"", storageTime:"", outTime:"",
+                  })),
+                }));
+                setWeekendAgreed(false);
+                setShowWeekendNotice(true);
+              } else {
+                handleSubmit();
+              }
+            }}
+            onCancel={() => { setShowSignature(false); setShowForm(true); }}
+          />
         </Modal>
       )}
 
