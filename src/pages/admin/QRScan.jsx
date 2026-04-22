@@ -42,7 +42,6 @@ function ConfirmModal({ request, actionType, modelName, onConfirm, onClose }) {
 export default function QRScan() {
   const { data: equipments } = useCollection("equipments",    "createdAt");
   const { data: requests }   = useCollection("rentalRequests","createdAt");
-  const { data: equipments } = useCollection("equipments","createdAt");
 
   const inputRef = useRef(null);
   const [qrInput, setQrInput]   = useState("");
