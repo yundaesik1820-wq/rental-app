@@ -287,8 +287,15 @@ export default function Reserve() {
     return Object.keys(errs).length === 0;
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (sigOverride) => {
+    const finalSig = sigOverride || studentSignature;
     if (!validate()) return;
+    // 서명 없으면 서명 먼저
+    if (!finalSig) {
+      setShowForm(false);
+      setShowSignature(true);
+      return;
+    }
     // 주말 포함 시 보관계획서 먼저
     const weekendDays = getWeekendDays();
     if (weekendDays.length > 0 && !showStoragePlan) {
@@ -300,14 +307,8 @@ export default function Reserve() {
         })),
       }));
       setWeekendAgreed(false);
-      setShowForm(false);        // 신청서 모달 먼저 닫기
-      setShowWeekendNotice(true); // 그 다음 주말 주의사항 열기
-      return;
-    }
-    // 서명 없으면 서명 먼저
-    if (!studentSignature) {
       setShowForm(false);
-      setShowSignature(true);
+      setShowWeekendNotice(true);
       return;
     }
     setSubmitting(true);
