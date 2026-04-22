@@ -280,7 +280,16 @@ export default function Reserve() {
                   <Badge label={isLocked ? "대여불가" : avail>0?"대여가능":"대여불가"} />
                 </div>
                 {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
-                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>🏭 {e.manufacturer}</div>}
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>🏭 {e.manufacturer}</div>}
+                {/* 라이센스 단계 표시 */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"6px 10px", borderRadius:8, background: eqLicNum===0 ? "#F0FDF4" : isLocked ? "#FEF2F2" : "#EFF6FF", border:`1px solid ${eqLicNum===0?"#BBF7D0":isLocked?"#FECACA":"#BFDBFE"}` }}>
+                  <span style={{ fontSize:13 }}>{eqLicNum===0?"🟢":isLocked?"🔴":"🔵"}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color: eqLicNum===0?"#16A34A":isLocked?"#DC2626":"#2563EB" }}>
+                    {eqLicNum===0 ? "라이센스 제한 없음" : `${eqLicNum}단계 이상 필요`}
+                  </span>
+                  {eqLicNum > 0 && !isLocked && <span style={{ fontSize:11, color:"#2563EB" }}>(대여 가능)</span>}
+                  {isLocked && <span style={{ fontSize:11, color:"#DC2626" }}>(내 라이센스: {profile?.license || "없음"})</span>}
+                </div>
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
@@ -352,7 +361,16 @@ export default function Reserve() {
                   <Badge label={avail>0?"대여가능":"대여불가"} />
                 </div>
                 {e.itemName && <div style={{ fontSize:13, color:C.text, marginBottom:2 }}>{e.itemName}</div>}
-                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>🏭 {e.manufacturer}</div>}
+                {e.manufacturer && <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>🏭 {e.manufacturer}</div>}
+                {/* 라이센스 단계 표시 */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"6px 10px", borderRadius:8, background: eqLicNum===0 ? "#F0FDF4" : isLocked ? "#FEF2F2" : "#EFF6FF", border:`1px solid ${eqLicNum===0?"#BBF7D0":isLocked?"#FECACA":"#BFDBFE"}` }}>
+                  <span style={{ fontSize:13 }}>{eqLicNum===0?"🟢":isLocked?"🔴":"🔵"}</span>
+                  <span style={{ fontSize:12, fontWeight:700, color: eqLicNum===0?"#16A34A":isLocked?"#DC2626":"#2563EB" }}>
+                    {eqLicNum===0 ? "라이센스 제한 없음" : `${eqLicNum}단계 이상 필요`}
+                  </span>
+                  {eqLicNum > 0 && !isLocked && <span style={{ fontSize:11, color:"#2563EB" }}>(대여 가능)</span>}
+                  {isLocked && <span style={{ fontSize:11, color:"#DC2626" }}>(내 라이센스: {profile?.license || "없음"})</span>}
+                </div>
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>

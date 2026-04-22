@@ -118,8 +118,23 @@ export default function EquipList() {
                     <Badge label={e.available > 0 ? "대여가능" : "대여불가"} />
                   </div>
                   {e.itemName     && <div style={{ fontSize: 13, color: C.text, marginBottom: 2 }}>{e.itemName}</div>}
-                  {e.manufacturer && <div style={{ fontSize: 12, color: C.muted, marginBottom: 10 }}>🏭 {e.manufacturer}</div>}
-
+                  {e.manufacturer && <div style={{ fontSize: 12, color: C.muted, marginBottom: 6 }}>🏭 {e.manufacturer}</div>}
+                  {/* 라이센스 단계 */}
+                  {(() => {
+                    const myLic  = licenseToNum(profile?.license);
+                    const isProf = profile?.role === "professor";
+                    const eqLic  = e.licenseLevel || 0;
+                    const locked = !isProf && myLic < eqLic;
+                    return (
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:8, padding:"5px 10px", borderRadius:8, background: eqLic===0?"#F0FDF4":locked?"#FEF2F2":"#EFF6FF", border:`1px solid ${eqLic===0?"#BBF7D0":locked?"#FECACA":"#BFDBFE"}` }}>
+                        <span style={{ fontSize:12 }}>{eqLic===0?"🟢":locked?"🔴":"🔵"}</span>
+                        <span style={{ fontSize:11, fontWeight:700, color: eqLic===0?"#16A34A":locked?"#DC2626":"#2563EB" }}>
+                          {eqLic===0 ? "라이센스 제한 없음" : `${eqLic}단계 이상 필요`}
+                        </span>
+                        {locked && <span style={{ fontSize:10, color:"#DC2626" }}>(내 라이센스: {profile?.license || "없음"})</span>}
+                      </div>
+                    );
+                  })()}
                   {photos.length > 0 && (
                     <div style={{ position: "relative", paddingTop: "65%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg, marginBottom: 12 }}>
                       <img src={photos[idx]} alt="제품사진" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
