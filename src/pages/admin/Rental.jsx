@@ -18,17 +18,49 @@ export default function Rental() {
   const filtered = tab === "전체" ? requests : requests.filter(r => r.status === tab);
   const sorted   = [...filtered].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
+  // 장비 available 수량 업데이트
+  const updateAvailable = async (items, delta) => {
+    if (!items) return;
+    // 모델명별로 수량 합산
+    const modelQty = {};
+    items.forEach(item => {
+      const key = item.modelName || item.equipName || "";
+      if (key) modelQty[key] = (modelQty[key] || 0) + (item.quantity || 1);
+    });
+    // 해당 모델의 모든 장비 문서 업데이트
+    for (const [modelName, qty] of Object.entries(modelQty)) {
+      const units = equipments.filter(e => (e.modelName || e.name) === modelName);
+      // 단위 장비들의 available을 골고루 조정
+      let remaining = Math.abs(qty);
+      for (const unit of units) {
+        if (remaining <= 0) break;
+        const cur = unit.available ?? unit.total ?? 0;
+        const newVal = Math.max(0, Math.min(unit.total || 0, cur + delta));
+        if (newVal !== cur) {
+          await updateItem("equipments", unit.id, { available: newVal });
+          remaining--;
+        }
+      }
+    }
+  };
+
   const approve = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "" });
+    await updateAvailable(r.items, -1); // 재고 감소
   };
 
   const confirmAction = async () => {
     if (!reason.trim()) return;
     setSubmitting(true);
+    const prevStatus = actionTarget.request.status;
     await updateItem("rentalRequests", actionTarget.request.id, {
       status: actionTarget.type,
       reason: reason,
     });
+    // 이전에 승인됨 상태였으면 재고 복구
+    if (prevStatus === "승인됨") {
+      await updateAvailable(actionTarget.request.items, +1);
+    }
     setActionTarget(null);
     setReason("");
     setSubmitting(false);
@@ -36,6 +68,7 @@ export default function Rental() {
 
   const returnDone = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "반납완료" });
+    await updateAvailable(r.items, +1); // 재고 복구
   };
 
   const counts = STATUS_TABS.reduce((acc, s) => {

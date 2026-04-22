@@ -42,6 +42,7 @@ function ConfirmModal({ request, actionType, modelName, onConfirm, onClose }) {
 export default function QRScan() {
   const { data: equipments } = useCollection("equipments",    "createdAt");
   const { data: requests }   = useCollection("rentalRequests","createdAt");
+  const { data: equipments } = useCollection("equipments","createdAt");
 
   const inputRef = useRef(null);
   const [qrInput, setQrInput]   = useState("");
@@ -127,6 +128,27 @@ export default function QRScan() {
     const { request, actionType, modelName } = confirm;
     const newStatus = actionType === "출고" ? "대여중" : "반납완료";
     await updateItem("rentalRequests", request.id, { status: newStatus });
+    // 반납 시 재고 복구
+    if (actionType === "반납" && request.items) {
+      const modelQty = {};
+      request.items.forEach(item => {
+        const key = item.modelName || item.equipName || "";
+        if (key) modelQty[key] = (modelQty[key] || 0) + (item.quantity || 1);
+      });
+      for (const [mn, qty] of Object.entries(modelQty)) {
+        const units = equipments.filter(e => (e.modelName || e.name) === mn);
+        let remaining = qty;
+        for (const unit of units) {
+          if (remaining <= 0) break;
+          const cur = unit.available ?? 0;
+          const newVal = Math.min(unit.total || 0, cur + 1);
+          if (newVal !== cur) {
+            await updateItem("equipments", unit.id, { available: newVal });
+            remaining--;
+          }
+        }
+      }
+    }
     const msg = `${actionType === "출고" ? "📤" : "📥"} ${request.studentName} — ${modelName} ${actionType} 완료`;
     setHistory(p => [{ msg, time: new Date().toLocaleTimeString(), ok: true }, ...p].slice(0, 10));
     showToast(msg);
