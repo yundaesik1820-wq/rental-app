@@ -347,6 +347,7 @@ export default function Reserve() {
         studentSignature: typeof finalSig === "string" ? finalSig : "",
       });
       setCart({}); setCartSets({});
+      setStudentSignature("");
       setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
       setTimeout(() => setDone(false), 4000);
