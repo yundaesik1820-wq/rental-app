@@ -356,8 +356,13 @@ ${r.attachments?.length > 0 ? `
           <SignaturePad
             title="✍️ 관리자 서명"
             onSave={async (sig) => {
-              await approve(signTarget, sig);
-              setSignTarget(null);
+              try {
+                await approve(signTarget, sig);
+              } catch(e) {
+                console.error("승인 오류:", e);
+              } finally {
+                setSignTarget(null);
+              }
             }}
             onCancel={() => setSignTarget(null)}
           />
