@@ -144,22 +144,28 @@ export default function Reserve() {
       const myS   = toStr(form.startDate, form.startTime);
       const myE   = toStr(form.endDate,   form.endTime);
 
+      console.log("[재고체크] 신청기간:", myS, "~", myE);
+      console.log("[재고체크] allRequests 수:", allRequests.length);
+      console.log("[재고체크] 활성 요청:", allRequests.filter(r=>["승인대기","승인됨","대여중"].includes(r.status)).map(r=>({status:r.status,start:r.startDate,end:r.endDate,items:r.items?.map(i=>i.modelName||i.equipName)})));
+
       const calcAvail = (modelName, isSet) => {
         const units      = equipments.filter(e =>
           (e.modelName || e.name) === modelName && (isSet ? !!e.isSet : !e.isSet)
         );
         const totalUnits = units.length;
-        // 겹치는 요청의 수량 합산 (승인대기 + 승인됨 + 대여중)
+        console.log("[재고체크]", modelName, "총 유닛:", totalUnits);
         const usedQty = allRequests
           .filter(r => ["승인대기","승인됨","대여중"].includes(r.status))
           .reduce((sum, r) => {
             const rS = toStr(r.startDate, r.startTime);
             const rE = toStr(r.endDate,   r.endTime);
-            // 시간 겹침: 내 시작 < 상대 끝 AND 상대 시작 < 내 끝
-            if (!(myS < rE && rS < myE)) return sum;
+            const overlaps = myS < rE && rS < myE;
             const found = r.items?.find(i => (i.modelName || i.equipName) === modelName);
+            if (found) console.log("[재고체크] 겹침:", overlaps, "| 요청기간:", rS, "~", rE, "| 수량:", found.quantity);
+            if (!overlaps) return sum;
             return sum + (found?.quantity || 0);
           }, 0);
+        console.log("[재고체크]", modelName, "사용중:", usedQty, "→ 가능:", totalUnits - usedQty);
         return Math.max(0, totalUnits - usedQty);
       };
 
