@@ -876,11 +876,15 @@ export default function Reserve() {
             ))}
           </div>
 
-          {/* 참여인원 */}
+          {/* 참여인원 - ✅ 수정된 부분: placeholder 줄바꿈을 \n으로 처리 */}
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 * <span style={{ color:C.muted, fontWeight:400, fontSize:11 }}>(본인 제외)</span></div>
-            <textarea placeholder={"예:\n20210001 홍길동\n20220042 이서연"} value={form.participants} onChange={e => f("participants",e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+            <textarea
+              placeholder={"예:\n20210001 홍길동\n20220042 이서연"}
+              value={form.participants}
+              onChange={e => f("participants", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }}
+            />
             {errors.participants && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.participants}</div>}
           </div>
 
@@ -1072,4 +1076,3 @@ export default function Reserve() {
     </div>
   );
 }
-// updated
