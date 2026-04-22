@@ -2,18 +2,21 @@ import { useState, useRef } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
-
-const CLOUD_NAME    = "dnotsiasc";
-const UPLOAD_PRESET = "equipment_photos";
+import { storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
 async function uploadImage(file) {
-  const fd = new FormData();
-  fd.append("file", file);
-  fd.append("upload_preset", UPLOAD_PRESET);
-  const res  = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
-  const data = await res.json();
-  if (!data.secure_url) throw new Error("업로드 실패");
-  return data.secure_url;
+  return new Promise((resolve, reject) => {
+    const storageRef = ref(storage, `equipment/${Date.now()}_${file.name}`);
+    const uploadTask = uploadBytesResumable(storageRef, file);
+    uploadTask.on("state_changed", null,
+      err  => reject(err),
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        resolve(url);
+      }
+    );
+  });
 }
 
 // ── 이미지 업로더 (최대 N장) ──────────────────────────────
