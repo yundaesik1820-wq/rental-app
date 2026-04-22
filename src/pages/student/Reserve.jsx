@@ -4,6 +4,7 @@ import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
+import RentalTimeline from "../../components/RentalTimeline";
 
 const PURPOSE_OPTIONS = ["과제 및 스터디", "동아리", "작품제작", "학교행사"];
 
@@ -44,6 +45,7 @@ function groupSets(equipments) {
 export default function Reserve() {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
+  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [search, setSearch]   = useState("");
@@ -254,9 +256,10 @@ export default function Reserve() {
                 <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:6 }} />
                 </div>
-                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:12 }}>
+                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:6 }}>
                   대여 가능 {avail}대 / 전체 {e.total}대
                 </div>
+                <RentalTimeline modelName={e.modelName} requests={allRequests} />
                 {avail === 0 ? (
                   <span style={{ fontSize:12, color:C.muted }}>재고 없음</span>
                 ) : qty > 0 ? (
@@ -315,9 +318,10 @@ export default function Reserve() {
                 <div style={{ background:C.border, borderRadius:6, height:5, overflow:"hidden", marginBottom:4 }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:6 }} />
                 </div>
-                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:10 }}>
+                <div style={{ fontSize:12, color:avail===0?C.red:C.muted, fontWeight:avail===0?700:400, marginBottom:6 }}>
                   대여 가능 {avail}세트 / 전체 {e.total}세트
                 </div>
+                <RentalTimeline modelName={e.modelName} requests={allRequests} />
 
                 {/* 구성품 보기 */}
                 {items.length > 0 && (

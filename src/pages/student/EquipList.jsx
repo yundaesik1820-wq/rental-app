@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
+import RentalTimeline from "../../components/RentalTimeline";
 import { groupEquipments } from "../../utils/groupEquipments";
 
 // 세트 그룹화
@@ -33,6 +34,7 @@ function groupSets(equipments) {
 
 export default function EquipList() {
   const { data: equipments } = useCollection("equipments", "createdAt");
+  const { data: requests }   = useCollection("rentalRequests", "createdAt");
 
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState("전체");
