@@ -333,7 +333,7 @@ export default function Reserve() {
         phone:       profile.phone || "",
         dept:        profile.role === "professor" ? "교수" : (profile.dept || ""),
         license:     profile.role === "professor" ? "교수" : (profile.license || "없음"),
-        items, storageForm: getWeekendDays().length > 0 ? storageForm : null, emergencyContact: form.emergencyContact,
+        items, storageForm: getWeekendDays().length > 0 ? JSON.parse(JSON.stringify(storageForm)) : null, emergencyContact: form.emergencyContact,
         locationType: form.locationType,
         participants: form.participants, location: form.location, purpose: form.purpose,
         club: form.club === "직접입력" ? form.clubDirect : form.club,
@@ -344,7 +344,7 @@ export default function Reserve() {
         startDate: form.startDate, startTime: form.startTime,
         endDate: form.endDate, endTime: form.endTime,
         status: "승인대기", reason: "",
-        studentSignature: finalSig,
+        studentSignature: typeof finalSig === "string" ? finalSig : "",
       });
       setCart({}); setCartSets({});
       setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
