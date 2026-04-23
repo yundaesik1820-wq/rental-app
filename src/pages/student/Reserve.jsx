@@ -188,15 +188,33 @@ export default function Reserve() {
     if (!form.startDate || !form.endDate) return [];
     const DAY_NAMES = ["일","월","화","수","목","금","토"];
     const days = [];
-    const start = new Date(form.startDate);
-    const end   = new Date(form.endDate);
+
+    // "YYYY-MM-DD"를 로컬 시간 기준으로 안전하게 파싱
+    const parseLocal = (str) => {
+      const [y, m, d] = str.split("-").map(Number);
+      return new Date(y, m - 1, d); // 로컬 자정
+    };
+    // 날짜 → "YYYY-MM-DD" 문자열 (로컬 기준)
+    const toDateStr = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+
+    const start = parseLocal(form.startDate);
+    const end   = parseLocal(form.endDate);
+
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-      const dow = d.getDay();
-      if (dow === 0 || dow === 5 || dow === 6) { // 일,금,토
-        days.push({
-          day:  DAY_NAMES[dow],
-          date: d.toISOString().slice(0,10),
-        });
+      const dow      = d.getDay();
+      const dateStr  = toDateStr(d);
+      const isLast   = dateStr === form.endDate;
+
+      if (dow === 6 || dow === 0) {
+        // 토·일은 무조건 포함
+        days.push({ day: DAY_NAMES[dow], date: dateStr });
+      } else if (dow === 5) {
+        // 금요일: 반납일이고 반납시간이 17:00 이하(포함)이면 당일 반납 → 제외
+        const safeFriday = isLast && (form.endTime || "18:00") <= "17:00";
+        if (!safeFriday) {
+          days.push({ day: DAY_NAMES[dow], date: dateStr });
+        }
       }
     }
     return days;

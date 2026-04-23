@@ -4,8 +4,8 @@ import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components
 import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
 
-const STATUS_TABS = ["전체", "승인대기", "승인됨", "보류", "거절됨", "반납완료"];
-const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 보류: "⏸️", 거절됨: "❌", 반납완료: "📦" };
+const STATUS_TABS = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
+const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: "⏸️", 거절됨: "❌", 반납완료: "📦" };
 
 export default function Rental() {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
@@ -185,9 +185,15 @@ ${r.attachments?.length > 0 ? `
     }
   };
 
+  // 예약 확정 (equipment.status 변경 없음 - 아직 물리 대여 전)
   const approve = async (r, adminSignature) => {
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
-    await updateAvailable(r.items, -1);
+  };
+
+  // 실제 장비 수령 시 대여 시작 처리
+  const startRental = async (r) => {
+    await updateItem("rentalRequests", r.id, { status: "대여중" });
+    await updateAvailable(r.items, -1); // 이 시점에 equipment.status → "대여중"
   };
 
   const confirmAction = async () => {
@@ -198,8 +204,8 @@ ${r.attachments?.length > 0 ? `
       status: actionTarget.type,
       reason: reason,
     });
-    // 승인됨 상태였으면 재고 복구 (승인대기는 status 변경 없었으므로 복구 불필요)
-    if (prevStatus === "승인됨") {
+    // 대여중이었으면 재고 복구 (승인됨은 equipment.status 미변경이므로 복구 불필요)
+    if (prevStatus === "대여중") {
       await updateAvailable(actionTarget.request.items, +1);
     }
     setActionTarget(null);
@@ -255,7 +261,8 @@ ${r.attachments?.length > 0 ? `
             r.status === "승인대기" ? C.yellow + "50" :
             r.status === "보류"    ? C.orange + "50" :
             r.status === "거절됨"  ? C.red    + "40" :
-            r.status === "승인됨"  ? C.teal   + "40" : C.border
+            r.status === "승인됨"  ? C.teal   + "40" :
+            r.status === "대여중"  ? C.blue   + "50" : C.border
           }`
         }}>
           {/* 신청자 정보 */}
@@ -345,7 +352,13 @@ ${r.attachments?.length > 0 ? `
             </div>
           )}
           {r.status === "승인됨" && (
-            <Btn onClick={() => returnDone(r)} color={C.muted} outline full>📦 반납 완료 처리</Btn>
+            <div style={{ display: "flex", gap: 8 }}>
+              <Btn onClick={() => startRental(r)} color={C.blue} full>🚀 대여 시작</Btn>
+              <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>
+            </div>
+          )}
+          {r.status === "대여중" && (
+            <Btn onClick={() => returnDone(r)} color={C.teal} full>📦 반납 완료</Btn>
           )}
         </Card>
       ))}
