@@ -1088,7 +1088,7 @@ export default function Reserve() {
           )}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowForm(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={handleSubmit} color={C.teal} full disabled={submitting}>{submitting?"신청 중...":"✅ 신청 완료"}</Btn>
+            <Btn onClick={() => handleSubmit()} color={C.teal} full disabled={submitting}>{submitting?"신청 중...":"✅ 신청 완료"}</Btn>
           </div>
         </Modal>
       )}
