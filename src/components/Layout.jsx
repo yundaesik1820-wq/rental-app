@@ -26,10 +26,30 @@ const STU_NAV = [
   { id: "profile",  icon: "👤", label: "내 정보"  },
 ];
 
+// 모바일에서 보여줄 탭
+const ADMIN_MOBILE_NAV = [
+  { id: "home",      icon: "🏠", label: "대시보드" },
+  { id: "equip",     icon: "🔧", label: "장비"     },
+  { id: "rental",    icon: "📋", label: "대여"     },
+  { id: "students",  icon: "👥", label: "학생"     },
+  { id: "calendar",  icon: "📅", label: "캘린더"   },
+  { id: "stats",     icon: "📊", label: "통계"     },
+  { id: "notices",   icon: "📢", label: "공지"     },
+  { id: "qrscan",    icon: "📷", label: "QR"       },
+  { id: "inquiry",   icon: "💬", label: "문의"     },
+  { id: "settings",  icon: "⚙️", label: "설정"     },
+];
+
 export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const { profile, logout } = useAuth();
   const [sideOpen, setSideOpen] = useState(true);
   const nav = profile?.role === "admin" ? ADMIN_NAV : STU_NAV;
+  const mobileNav = profile?.role === "admin" ? ADMIN_MOBILE_NAV : STU_NAV;
+
+  // 2줄 그리드: 절반씩 나눔
+  const half = Math.ceil(mobileNav.length / 2);
+  const row1 = mobileNav.slice(0, half);
+  const row2 = mobileNav.slice(half);
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
@@ -126,13 +146,13 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         </main>
       </div>
 
-      {/* ── Bottom Nav (mobile only) ── */}
+      {/* ── Bottom Nav (mobile 2줄 그리드) ── */}
       <style>{`
         @media (max-width: 768px) {
           aside { display: none !important; }
-          .mobile-nav { display: flex !important; }
+          .mobile-nav { display: block !important; }
           .mobile-topbar-logout { display: flex !important; }
-          main { padding: 16px !important; padding-bottom: 90px !important; }
+          main { padding: 16px !important; padding-bottom: 110px !important; }
         }
         @media (min-width: 769px) {
           .mobile-nav { display: none !important; }
@@ -146,22 +166,53 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         🚪 로그아웃
       </button>
 
+      {/* 모바일 하단 2줄 네비게이션 */}
       <div className="mobile-nav" style={{
+        display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0,
-        background: C.surface, borderTop: `1px solid ${C.border}`,
-        padding: "8px 0 16px", zIndex: 100, display: "none",
-        boxShadow: "0 -4px 20px rgba(0,0,0,0.06)",
-        overflowX: "auto",
+        background: C.surface,
+        borderTop: `1px solid ${C.border}`,
+        boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
+        zIndex: 100,
+        paddingBottom: "env(safe-area-inset-bottom, 8px)",
       }}>
-        {/* 관리자는 주요 탭만 표시 */}
-        {(profile?.role === "admin"
-          ? nav.filter(n => ["home","equip","rental","students","qrscan","inquiry"].includes(n.id))
-          : nav
-        ).map(n => (
-          <button key={n.id} onClick={() => setTab(n.id)} style={{ flex: "0 0 auto", minWidth: 56, background: "none", border: "none", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, padding: "0 4px" }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: tab === n.id ? C.blueLight : "transparent", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>{n.icon}</div>
-            <span style={{ fontSize: 9, fontWeight: tab === n.id ? 800 : 500, color: tab === n.id ? C.blue : C.muted, whiteSpace: "nowrap" }}>{n.label}</span>
-          </button>
+        {[row1, row2].map((row, rowIdx) => (
+          <div key={rowIdx} style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${row.length}, 1fr)`,
+            borderTop: rowIdx === 1 ? `1px solid ${C.border}` : "none",
+          }}>
+            {row.map(n => {
+              const active = tab === n.id;
+              return (
+                <button
+                  key={n.id}
+                  onClick={() => setTab(n.id)}
+                  style={{
+                    background: active ? C.blueLight : "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "7px 2px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 2,
+                    transition: "background 0.15s",
+                  }}
+                >
+                  <span style={{ fontSize: 18, lineHeight: 1 }}>{n.icon}</span>
+                  <span style={{
+                    fontSize: 9,
+                    fontWeight: active ? 800 : 500,
+                    color: active ? C.blue : C.muted,
+                    whiteSpace: "nowrap",
+                    letterSpacing: "-0.3px",
+                  }}>{n.label}</span>
+                </button>
+              );
+            })}
+          </div>
         ))}
       </div>
     </div>
