@@ -14,7 +14,7 @@ export function groupEquipments(equipments) {
         minorCategory: e.minorCategory || "",
         manufacturer:  e.manufacturer  || "",
         img:           e.img           || "📦",
-        photoUrls:     e.photoUrls     || (e.photoUrl ? [e.photoUrl] : []),
+        photoUrls:     [],  // 빈 배열로 시작, 아래에서 합산
         licenseLevel:  e.licenseLevel  || 0,
         units:         [],
         total:         0,
@@ -28,11 +28,11 @@ export function groupEquipments(equipments) {
     if ((e.licenseLevel || 0) > map[key].licenseLevel) {
       map[key].licenseLevel = e.licenseLevel || 0;
     }
-    // 같은 모델의 모든 사진 합치기
+    // 같은 모델의 모든 사진 합치기 (중복 제거)
     const ePhotos = e.photoUrls?.length > 0 ? e.photoUrls : (e.photoUrl ? [e.photoUrl] : []);
-    if (ePhotos.length > 0) {
-      map[key].photoUrls = [...map[key].photoUrls, ...ePhotos];
-    }
+    ePhotos.forEach(url => {
+      if (!map[key].photoUrls.includes(url)) map[key].photoUrls.push(url);
+    });
   });
   return Object.values(map).sort((a, b) => a.majorCategory.localeCompare(b.majorCategory) || a.modelName.localeCompare(b.modelName));
 }
