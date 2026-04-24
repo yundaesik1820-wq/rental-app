@@ -29,7 +29,7 @@ export default function Notices({ isAdmin = true }) {
       noticeId:   detail.id,
       authorId:   profile?.uid || "",
       authorName: profile?.name || "익명",
-      authorRole: profile?.role || "student",
+      authorRole: profile?.role === "admin" ? (profile?.adminRole || "super") : "student",
       content:    commentText.trim(),
     });
     setCommentText("");
@@ -176,8 +176,10 @@ export default function Notices({ isAdmin = true }) {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{c.authorName}</span>
-                            {c.authorRole === "admin" && (
-                              <span style={{ background: C.navy, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>관리자</span>
+                            {["super","teacher","assistant"].includes(c.authorRole) && (
+                              <span style={{ background: c.authorRole === "super" ? C.navy : c.authorRole === "teacher" ? C.blue : C.teal, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                                {c.authorRole === "super" ? "관리자" : c.authorRole === "teacher" ? "교사" : "조교"}
+                              </span>
                             )}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
