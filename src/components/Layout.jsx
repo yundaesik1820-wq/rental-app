@@ -36,7 +36,13 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const { profile, logout } = useAuth();
   const [sideOpen, setSideOpen] = useState(true);
 
-  const nav = profile?.role === "admin" ? ADMIN_NAV : STU_NAV;
+  const adminRole = profile?.adminRole || "super";
+  const isSuper   = profile?.role === "admin" && adminRole === "super";
+
+  // 일반 직원(교사/조교)은 대여/반납 숨김
+  const nav = profile?.role === "admin"
+    ? (isSuper ? ADMIN_NAV : ADMIN_NAV.filter(n => n.id !== "rental"))
+    : STU_NAV;
 
   // 모바일 하단 2줄 그리드
   const half = Math.ceil(nav.length / 2);

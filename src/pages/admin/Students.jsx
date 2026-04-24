@@ -10,13 +10,22 @@ const DEPTS    = ["영상계열","성우계열","엔터테인먼트계열","음�
 const LICENSES = ["없음","1단계","2단계","3단계"];
 const admYear  = id => id ? `${id.slice(0,2)}학번` : "";
 
-export default function Students() {
+export default function Students({ readOnly = false }) {
   const { data: allUsers }    = useCollection("users", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
   // studentId 기준 대여 횟수 실시간 집계
   const getRentalCount = (studentId) =>
     allRequests.filter(r => r.studentId === studentId).length;
+
+  // readOnly(일반직원)일 때 탭을 승인학생 목록만 표시
+  const TABS_ALL = [
+    { id:"pending",  label:`승인대기 (${allUsers.filter(s=>s.role==="student"&&s.status==="pending").length})`,   color:C.yellow },
+    { id:"approved", label:`승인학생 (${allUsers.filter(s=>s.role==="student"&&s.status==="approved").length})`,  color:C.teal   },
+    { id:"rejected", label:`거절됨 (${allUsers.filter(s=>s.role==="student"&&s.status==="rejected").length})`,    color:C.red    },
+    { id:"admin",    label:`직원 (${allUsers.filter(s=>s.role==="admin").length})`,                               color:C.purple },
+  ];
+  const TABS = readOnly ? TABS_ALL.filter(t => t.id === "approved") : TABS_ALL;
 
   const pendingList  = allUsers.filter(s => s.role === "student" && s.status === "pending");
   const approvedList = allUsers.filter(s => s.role === "student" && s.status === "approved");
@@ -57,7 +66,7 @@ export default function Students() {
 
   // ── 관리자 추가 ─────────────────────────────────────────
   const [showAddAdmin, setShowAddAdmin] = useState(false);
-  const [adminForm, setAdminForm]       = useState({ name:"", email:"", pw:"" });
+  const [adminForm, setAdminForm]       = useState({ name:"", email:"", pw:"", adminRole:"teacher" });
   const [adminErr, setAdminErr]         = useState("");
   const [adminLoading, setAdminLoading] = useState(false);
 
@@ -69,10 +78,11 @@ export default function Students() {
       const cred = await createUserWithEmailAndPassword(auth, adminForm.email, adminForm.pw);
       await setDoc(doc(db, "users", cred.user.uid), {
         name: adminForm.name, email: adminForm.email,
-        role: "admin", status: "approved",
+        role: "admin", adminRole: adminForm.adminRole,
+        status: "approved",
         createdAt: serverTimestamp(),
       });
-      setAdminForm({ name:"", email:"", pw:"" });
+      setAdminForm({ name:"", email:"", pw:"", adminRole:"teacher" });
       setShowAddAdmin(false);
     } catch(e) {
       setAdminErr(e.code === "auth/email-already-in-use" ? "이미 사용 중인 이메일" : "생성 실패: " + e.message);
@@ -136,13 +146,14 @@ export default function Students() {
   const reapprove = s  => { setApproveTarget(s); setLicense(s.license || "없음"); };
 
   // ── 탭 + 필터 ───────────────────────────────────────────
-  const tabs = [
+  const allTabs = [
     { id:"pending",   label:`승인 대기 (${pendingList.length})`,  color:C.yellow  },
     { id:"approved",  label:`승인됨 (${approvedList.length})`,    color:C.green   },
     { id:"rejected",  label:`거절됨 (${rejectedList.length})`,    color:C.red     },
     { id:"professor", label:`교수 (${profList.length})`,          color:C.blue    },
-    { id:"admin",     label:`관리자 (${adminList.length})`,       color:C.purple  },
+    { id:"admin",     label:`직원 (${adminList.length})`,         color:C.purple  },
   ];
+  const tabs = readOnly ? allTabs.filter(t => t.id === "approved") : allTabs;
 
   const listMap = { pending:pendingList, approved:approvedList, rejected:rejectedList };
   const filtered = (listMap[tab] || []).filter(s =>
@@ -156,7 +167,7 @@ export default function Students() {
         <PageTitle>👥 학생 관리</PageTitle>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           <Btn onClick={() => setShowAddProf(true)}  color={C.blue}>🎓 교수 계정 생성</Btn>
-          <Btn onClick={() => setShowAddAdmin(true)}  color={C.navy}>👑 관리자 추가</Btn>
+          {!readOnly && <Btn onClick={() => setShowAddAdmin(true)} color={C.navy}>직원 추가</Btn>}
           <Btn onClick={() => setShowAdd(true)}       color={C.purple}>+ 학생 직접 추가</Btn>
         </div>
       </div>
@@ -232,18 +243,35 @@ export default function Students() {
       {/* ── 관리자 추가 모달 ── */}
       {showAddAdmin && (
         <Modal onClose={() => { setShowAddAdmin(false); setAdminErr(""); }}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>👑 관리자 계정 추가</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>관리자는 모든 기능에 접근할 수 있습니다</div>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>직원 계정 추가</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>역할을 선택하고 계정을 생성하세요</div>
           {adminErr && <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14 }}>⚠️ {adminErr}</div>}
           <Inp label="이름 *" placeholder="홍길동" value={adminForm.name} onChange={e => setAdminForm(p=>({...p,name:e.target.value}))} />
           <Inp label="이메일 *" placeholder="admin@email.com" value={adminForm.email} onChange={e => setAdminForm(p=>({...p,email:e.target.value}))} type="email" />
           <Inp label="비밀번호 *" placeholder="6자리 이상" value={adminForm.pw} onChange={e => setAdminForm(p=>({...p,pw:e.target.value}))} type="password" />
+
+          {/* 역할 선택 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>역할 *</div>
+            <div style={{ display:"flex", gap:10 }}>
+              {[["teacher","교사"],["assistant","조교"]].map(([val, label]) => (
+                <button key={val} onClick={() => setAdminForm(p=>({...p, adminRole:val}))}
+                  style={{ flex:1, padding:"10px 0", borderRadius:10, border:`2px solid ${adminForm.adminRole===val ? C.navy : C.border}`, background: adminForm.adminRole===val ? C.navy : C.bg, color: adminForm.adminRole===val ? "#fff" : C.muted, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:8, lineHeight:1.6 }}>
+              {adminForm.adminRole === "teacher" ? "📚 교사: 장비관리, 캘린더, 통계, 공지, QR, 문의(답변), 설정 접근 가능" : "🔧 조교: 장비관리, 캘린더, 통계, 공지, QR, 문의(답변), 설정 접근 가능"}
+            </div>
+          </div>
+
           <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
-            ⚠️ 관리자 계정은 장비 등록, 대여 승인, 학생 관리 등 모든 기능을 사용할 수 있습니다.
+            ⚠️ 대여/반납 및 학생 관리 기능은 최고관리자만 사용 가능합니다.
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAddAdmin(false); setAdminErr(""); }} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={handleAddAdmin} color={C.navy} full disabled={adminLoading}>{adminLoading ? "처리 중..." : "관리자 추가"}</Btn>
+            <Btn onClick={handleAddAdmin} color={C.navy} full disabled={adminLoading}>{adminLoading ? "처리 중..." : "직원 계정 추가"}</Btn>
           </div>
         </Modal>
       )}
@@ -363,7 +391,7 @@ export default function Students() {
                     <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
                       <span style={{ fontSize:11, color:C.muted }}>라이센스:</span>
                       <span style={{ background:s.license&&s.license!=="없음"?C.blueLight:C.bg, color:s.license&&s.license!=="없음"?C.blue:C.muted, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{s.license||"없음"}</span>
-                      <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>변경</button>
+                      {!readOnly && <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>변경</button>}
                     </div>
                   </div>
                   <div style={{ textAlign:"center" }}>
@@ -441,7 +469,9 @@ export default function Students() {
                 <div style={{ flex:1 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                     <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</span>
-                    <span style={{ background:C.purpleLight, color:C.purple, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>관리자</span>
+                    <span style={{ background: s.adminRole==="teacher" ? C.blueLight : s.adminRole==="assistant" ? C.tealLight : C.purpleLight, color: s.adminRole==="teacher" ? C.blue : s.adminRole==="assistant" ? C.teal : C.purple, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>
+                      {s.adminRole==="teacher" ? "교사" : s.adminRole==="assistant" ? "조교" : "관리자"}
+                    </span>
                   </div>
                   <div style={{ fontSize:12, color:C.muted }}>{s.email}</div>
                 </div>

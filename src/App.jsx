@@ -74,7 +74,11 @@ function AppContent() {
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
 
-  const isAdmin = profile.role === "admin";
+  const isAdmin    = profile.role === "admin";
+  const adminRole  = profile.adminRole || "super"; // super | teacher | assistant
+  const isSuper    = isAdmin && adminRole === "super";
+  const isSubAdmin = isAdmin && (adminRole === "teacher" || adminRole === "assistant");
+
   const notifCount = isAdmin
     ? rentalRequests.filter(r => r.status === "연체").length
     + rentalRequests.filter(r => r.status === "승인대기").length
@@ -85,14 +89,14 @@ function AppContent() {
       switch (tab) {
         case "home":     return <Dashboard />;
         case "equip":    return <Equipment />;
-        case "rental":   return <Rental />;
-        case "students": return <Students />;
+        case "rental":   return isSuper ? <Rental /> : <Dashboard />;
+        case "students": return isSuper ? <Students /> : <Students readOnly={true} />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
         case "qrscan":   return <QRScan />;
-        case "inquiry":  return <AdminInquiry />;
+        case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         default:         return <Dashboard />;
       }
     } else {
