@@ -42,7 +42,7 @@ function groupSets(equipments) {
         minorCategory: e.minorCategory || "",
         manufacturer:  e.manufacturer  || "",
         setItems:      e.setItems      || "",
-        photoUrls:     e.photoUrls     || [],
+        photoUrls:     [],
         units: [], total: 0, available: 0,
       };
     }
@@ -50,7 +50,12 @@ function groupSets(equipments) {
     map[key].total++;
     if ((e.status || "대여가능") === "대여가능") map[key].available++;
     if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
-    if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
+    // 같은 세트 모델의 모든 사진 합치기 (중복 제거)
+    if (e.photoUrls?.length > 0) {
+      e.photoUrls.forEach(url => {
+        if (!map[key].photoUrls.includes(url)) map[key].photoUrls.push(url);
+      });
+    }
   });
   return Object.values(map);
 }
