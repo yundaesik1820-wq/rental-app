@@ -499,7 +499,7 @@ export default function Reserve() {
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
-                    <img src={photos[idx]} alt="제품사진" onClick={() => setLightbox({ photos, idx })} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
+                    <img src={photos[idx]} alt="제품사진" onClick={ev => { ev.stopPropagation(); setLightbox({ photos, idx }); }} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
@@ -580,7 +580,7 @@ export default function Reserve() {
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
-                    <img src={photos[idx]} alt="세트사진" onClick={() => setLightbox({ photos, idx })} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
+                    <img src={photos[idx]} alt="세트사진" onClick={ev => { ev.stopPropagation(); setLightbox({ photos, idx }); }} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
