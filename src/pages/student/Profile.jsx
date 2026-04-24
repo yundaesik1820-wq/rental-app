@@ -2,6 +2,7 @@ import { C } from "../../theme";
 import { Card, Avatar, PageTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { Award } from "lucide-react";
 
 export default function Profile() {
   const { profile, logout } = useAuth();
@@ -27,7 +28,7 @@ export default function Profile() {
 
   return (
     <div style={{ maxWidth: 500 }}>
-      <PageTitle>👤 내 정보</PageTitle>
+      <PageTitle>내 정보</PageTitle>
 
       {/* 프로필 카드 */}
       <Card style={{ textAlign: "center", padding: "32px 24px", marginBottom: 16 }}>
@@ -50,7 +51,7 @@ export default function Profile() {
       {profile.role !== "professor" && <Card style={{ marginBottom: 16, border: `2px solid ${lc.col}30` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 6 }}>🎖️ 장비 사용 라이센스</div>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><Award size={14} /> 장비 사용 라이센스</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ background: lc.bg, color: lc.col, borderRadius: 8, padding: "6px 16px", fontSize: 16, fontWeight: 800 }}>
                 {profile.license || "없음"}
