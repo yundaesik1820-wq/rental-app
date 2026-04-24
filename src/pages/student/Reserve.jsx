@@ -50,11 +50,12 @@ function groupSets(equipments) {
     map[key].total++;
     if ((e.status || "대여가능") === "대여가능") map[key].available++;
     if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
-    // 같은 세트 모델의 모든 사진 합치기 (중복 제거)
+    // itemNo가 01인 장비 사진 우선 사용
     if (e.photoUrls?.length > 0) {
-      e.photoUrls.forEach(url => {
-        if (!map[key].photoUrls.includes(url)) map[key].photoUrls.push(url);
-      });
+      const isFirst = (e.itemNo || "").endsWith("01") || (e.itemNo || "").endsWith("1");
+      if (isFirst || map[key].photoUrls.length === 0) {
+        map[key].photoUrls = e.photoUrls;
+      }
     }
   });
   return Object.values(map);
@@ -147,6 +148,7 @@ export default function Reserve() {
   const getIdx = (key) => photoIdx[key] || 0;
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
+  const [lightbox, setLightbox] = useState(null); // { photos: [], idx: 0 }
   const [showNotice, setShowNotice]         = useState(false);
   const [showSignature, setShowSignature]   = useState(false);
   const [studentSignature, setStudentSignature] = useState("");
@@ -497,7 +499,7 @@ export default function Reserve() {
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
-                    <img src={photos[idx]} alt="제품사진" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain" }} />
+                    <img src={photos[idx]} alt="제품사진" onClick={() => setLightbox({ photos, idx })} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName, idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
@@ -578,7 +580,7 @@ export default function Reserve() {
                 {/* 대표사진 */}
                 {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
-                    <img src={photos[idx]} alt="세트사진" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain" }} />
+                    <img src={photos[idx]} alt="세트사진" onClick={() => setLightbox({ photos, idx })} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx-1, photos.length); }} style={{ position:"absolute", left:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>‹</button>
                       <button onClick={ev => { ev.stopPropagation(); setIdx(e.modelName+"_set", idx+1, photos.length); }} style={{ position:"absolute", right:4, top:"50%", transform:"translateY(-50%)", background:"rgba(0,0,0,0.4)", color:"#fff", border:"none", borderRadius:"50%", width:24, height:24, cursor:"pointer", fontSize:13 }}>›</button>
@@ -631,6 +633,25 @@ export default function Reserve() {
             );
           })}
           {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
+        </div>
+      )}
+
+      {/* 라이트박스 */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.92)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <div onClick={e => e.stopPropagation()} style={{ position:"relative", maxWidth:"90vw", maxHeight:"90vh", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <img src={lightbox.photos[lightbox.idx]} alt="확대사진"
+              style={{ maxWidth:"90vw", maxHeight:"85vh", objectFit:"contain", borderRadius:12, userSelect:"none" }} />
+            {lightbox.photos.length > 1 && (<>
+              <button onClick={() => setLightbox(p => ({ ...p, idx: Math.max(0, p.idx-1) }))}
+                style={{ position:"absolute", left:-48, top:"50%", transform:"translateY(-50%)", background:"rgba(255,255,255,0.15)", color:"#fff", border:"none", borderRadius:"50%", width:40, height:40, cursor:"pointer", fontSize:22 }}>‹</button>
+              <button onClick={() => setLightbox(p => ({ ...p, idx: Math.min(p.photos.length-1, p.idx+1) }))}
+                style={{ position:"absolute", right:-48, top:"50%", transform:"translateY(-50%)", background:"rgba(255,255,255,0.15)", color:"#fff", border:"none", borderRadius:"50%", width:40, height:40, cursor:"pointer", fontSize:22 }}>›</button>
+              <div style={{ position:"absolute", bottom:-36, left:"50%", transform:"translateX(-50%)", color:"rgba(255,255,255,0.7)", fontSize:13 }}>{lightbox.idx+1} / {lightbox.photos.length}</div>
+            </>)}
+            <button onClick={() => setLightbox(null)}
+              style={{ position:"absolute", top:-44, right:0, background:"none", border:"none", color:"#fff", fontSize:28, cursor:"pointer", lineHeight:1 }}>✕</button>
+          </div>
         </div>
       )}
 

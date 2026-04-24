@@ -28,11 +28,14 @@ export function groupEquipments(equipments) {
     if ((e.licenseLevel || 0) > map[key].licenseLevel) {
       map[key].licenseLevel = e.licenseLevel || 0;
     }
-    // 같은 모델의 모든 사진 합치기 (중복 제거)
+    // itemNo가 01인 장비 사진 우선 사용
     const ePhotos = e.photoUrls?.length > 0 ? e.photoUrls : (e.photoUrl ? [e.photoUrl] : []);
-    ePhotos.forEach(url => {
-      if (!map[key].photoUrls.includes(url)) map[key].photoUrls.push(url);
-    });
+    if (ePhotos.length > 0) {
+      const isFirst = (e.itemNo || "").endsWith("01") || (e.itemNo || "").endsWith("1");
+      if (isFirst || map[key].photoUrls.length === 0) {
+        map[key].photoUrls = ePhotos;
+      }
+    }
   });
   return Object.values(map).sort((a, b) => a.majorCategory.localeCompare(b.majorCategory) || a.modelName.localeCompare(b.modelName));
 }
