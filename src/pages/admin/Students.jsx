@@ -11,7 +11,12 @@ const LICENSES = ["없음","1단계","2단계","3단계"];
 const admYear  = id => id ? `${id.slice(0,2)}학번` : "";
 
 export default function Students() {
-  const { data: allUsers } = useCollection("users", "createdAt");
+  const { data: allUsers }    = useCollection("users", "createdAt");
+  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
+
+  // studentId 기준 대여 횟수 실시간 집계
+  const getRentalCount = (studentId) =>
+    allRequests.filter(r => r.studentId === studentId).length;
 
   const pendingList  = allUsers.filter(s => s.role === "student" && s.status === "pending");
   const approvedList = allUsers.filter(s => s.role === "student" && s.status === "approved");
@@ -362,7 +367,7 @@ export default function Students() {
                     </div>
                   </div>
                   <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>{s.rentals||0}</div>
+                    <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>{getRentalCount(s.studentId)}</div>
                     <div style={{ fontSize:9, color:C.muted }}>누적 대여</div>
                   </div>
                 </div>
