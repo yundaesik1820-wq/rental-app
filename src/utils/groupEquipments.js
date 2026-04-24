@@ -28,9 +28,16 @@ export function groupEquipments(equipments) {
     if ((e.licenseLevel || 0) > map[key].licenseLevel) {
       map[key].licenseLevel = e.licenseLevel || 0;
     }
-    // 사진은 첫 번째 등록된 것 사용
-    if (map[key].photoUrls.length === 0 && (e.photoUrls?.length > 0 || e.photoUrl)) {
-      map[key].photoUrls = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
+    // 사진은 대여가능한 장비 우선, 없으면 아무거나
+    const ePhotos = e.photoUrls?.length > 0 ? e.photoUrls : (e.photoUrl ? [e.photoUrl] : []);
+    if (ePhotos.length > 0) {
+      const isAvailable = (e.status || "대여가능") === "대여가능";
+      const hasNoPhoto  = map[key].photoUrls.length === 0;
+      const currentFromBroken = map[key]._photoFromBroken;
+      if (hasNoPhoto || (isAvailable && currentFromBroken)) {
+        map[key].photoUrls = ePhotos;
+        map[key]._photoFromBroken = !isAvailable;
+      }
     }
   });
   return Object.values(map).sort((a, b) => a.majorCategory.localeCompare(b.majorCategory) || a.modelName.localeCompare(b.modelName));
