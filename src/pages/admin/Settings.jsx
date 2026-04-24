@@ -28,7 +28,7 @@ export default function Settings() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <PageTitle>⚙️ 대여 규칙 설정</PageTitle>
+      <PageTitle>설정 · 대여 규칙</PageTitle>
 
       {saved && (
         <div style={{ background: C.greenLight, color: C.green, borderRadius: 12, padding: "12px 18px", marginBottom: 20, border: `1px solid ${C.green}30`, fontWeight: 700, fontSize: 14 }}>
