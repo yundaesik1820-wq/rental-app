@@ -3,9 +3,10 @@ import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
+import { PauseCircle } from "lucide-react";
 
 const STATUS_TABS = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
-const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: "⏸️", 거절됨: "❌", 반납완료: "📦" };
+const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
 export default function Rental() {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
@@ -296,7 +297,7 @@ ${r.attachments?.length > 0 ? `
               )}
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 10 }}>
-              <span style={{ fontSize: 18 }}>{STATUS_ICON[r.status]}</span>
+              <span style={{ fontSize: 18, display: "flex", alignItems: "center" }}>{r.status === "보류" ? <PauseCircle size={20} color={C.orange} /> : STATUS_ICON[r.status]}</span>
               <Badge label={r.status} />
             </div>
           </div>
@@ -326,7 +327,7 @@ ${r.attachments?.length > 0 ? `
               borderLeft: `4px solid ${r.status === "보류" ? C.yellow : C.red}`,
             }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: r.status === "보류" ? "#92400E" : C.red, marginBottom: 4 }}>
-                {r.status === "보류" ? "⏸️ 보류 사유" : "❌ 거절 사유"}
+                {r.status === "보류" ? "보류 사유" : "❌ 거절 사유"}
               </div>
               <div style={{ fontSize: 13, color: C.text }}>{r.reason}</div>
             </div>
@@ -341,7 +342,7 @@ ${r.attachments?.length > 0 ? `
           {r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
-              <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full>⏸️ 보류</Btn>
+              <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full><PauseCircle size={14} style={{ marginRight: 4 }} />보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
@@ -386,7 +387,7 @@ ${r.attachments?.length > 0 ? `
       {actionTarget && (
         <Modal onClose={() => { setActionTarget(null); setReason(""); }}>
           <div style={{ fontSize: 17, fontWeight: 800, color: actionTarget.type === "보류" ? "#92400E" : C.red, marginBottom: 6 }}>
-            {actionTarget.type === "보류" ? "⏸️ 보류 처리" : "❌ 거절 처리"}
+            {actionTarget.type === "보류" ? "보류 처리" : "❌ 거절 처리"}
           </div>
           <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>
             {actionTarget.request.studentName} · {actionTarget.request.purpose}
