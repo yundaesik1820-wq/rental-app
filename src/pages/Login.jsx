@@ -116,6 +116,7 @@ export default function Login() {
               <div style={{ fontWeight: 700, color: C.navy, marginBottom: 4 }}>💡 안내</div>
               <div>계정이 없으면 회원가입 탭에서 신청하세요.</div>
               <div>관리자 승인 후 로그인이 가능합니다.</div>
+              <div style={{ marginTop: 4, color: C.orange }}>⏳ 가입 신청 후 승인까지 다소 시간이 소요될 수 있습니다. 승인 완료 후 다시 로그인해 주세요.</div>
               <div style={{ marginTop: 6, paddingTop: 6, borderTop: `1px solid ${C.border}` }}>오류문의는 윤대식 조교(010-9576-6028)로 연락 부탁드립니다.</div>
             </div>
           </>
