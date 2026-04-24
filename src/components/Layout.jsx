@@ -38,6 +38,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
   const adminRole = profile?.adminRole || "super";
   const isSuper   = profile?.role === "admin" && adminRole === "super";
+  const roleLabel = profile?.role === "admin"
+    ? (adminRole === "teacher" ? "교사" : adminRole === "assistant" ? "조교" : "관리자")
+    : null;
 
   // 일반 직원(교사/조교)은 대여/반납 숨김
   const nav = profile?.role === "admin"
@@ -106,7 +109,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
               </div>
               <div style={{ overflow: "hidden" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{profile.name}</div>
-                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{profile.role === "admin" ? "관리자" : profile.studentId}</div>
+                <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>{profile.role === "admin" ? roleLabel : profile.studentId}</div>
               </div>
             </div>
           )}
@@ -142,7 +145,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{profile.name}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? "관리자" : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
+                  <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? roleLabel : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
                 </div>
               </div>
             )}
