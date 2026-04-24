@@ -65,8 +65,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           <div style={{ width: 36, height: 36, background: "rgba(255,255,255,0.15)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🎓</div>
           {sideOpen && (
             <div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>장비대여실</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>미디어센터</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#fff" }}>한국방송예술진흥원</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.5)" }}>장비대여실</div>
             </div>
           )}
         </div>
