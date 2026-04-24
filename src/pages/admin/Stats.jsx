@@ -170,7 +170,22 @@ export default function Stats() {
           {topStudents.length === 0 && <div style={{ fontSize: 13, color: C.muted }}>데이터 없음</div>}
           {topStudents.map(([studentId, info], i) => (
             <div key={studentId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
-              <div style={{ fontSize: 22, width: 30 }}>{["🥇","🥈","🥉","4위","5위"][i]}</div>
+              <div style={{
+                width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
+                background: [
+                  "linear-gradient(135deg,#FFD700,#FFA500)",
+                  "linear-gradient(135deg,#C0C0C0,#A8A8A8)",
+                  "linear-gradient(135deg,#CD7F32,#A0522D)",
+                  C.bg, C.bg
+                ][i],
+                border: i >= 3 ? `2px solid ${C.border}` : "none",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: i >= 3 ? 12 : 14,
+                fontWeight: 800,
+                color: i >= 3 ? C.muted : "#fff",
+              }}>
+                {i + 1}
+              </div>
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{info.name}</div>
                 <div style={{ fontSize: 12, color: C.muted }}>{info.dept} · {studentId}</div>
