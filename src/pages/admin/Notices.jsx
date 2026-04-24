@@ -17,7 +17,9 @@ export default function Notices({ isAdmin = true }) {
 
   const addNotice = async () => {
     if (!form.title || !form.content) return;
-    await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: "관리자" });
+    const authorRole = profile?.adminRole || "super";
+    const authorLabel = authorRole === "teacher" ? "교사" : authorRole === "assistant" ? "조교" : "관리자";
+    await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
     setForm({ title: "", content: "", category: "공지", pinned: true });
     setShowAdd(false);
   };
