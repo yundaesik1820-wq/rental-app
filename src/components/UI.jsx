@@ -85,9 +85,12 @@ export function Modal({ children, onClose, width = 420 }) {
 }
 
 export function StatBox({ icon, label, value, color, bg }) {
+  const Icon = icon;
   return (
     <div style={{ background: bg || C.blueLight, borderRadius: 16, padding: "20px", border: `1px solid ${color}20`, flex: 1, minWidth: 120 }}>
-      <div style={{ fontSize: 28 }}>{icon}</div>
+      <div style={{ fontSize: 28, display: "flex", alignItems: "center" }}>
+        {typeof icon === "string" ? icon : <Icon size={28} color={color} />}
+      </div>
       <div style={{ fontSize: 32, fontWeight: 900, color: color || C.blue, marginTop: 8 }}>{value}</div>
       <div style={{ fontSize: 13, color: C.muted, marginTop: 4 }}>{label}</div>
     </div>

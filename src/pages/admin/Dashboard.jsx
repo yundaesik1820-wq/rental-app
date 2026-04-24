@@ -1,6 +1,7 @@
 import { C } from "../../theme";
 import { Card, Badge, StatBox, SectionTitle } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
+import { PauseCircle } from "lucide-react";
 
 export default function Dashboard() {
   const { data: requests }     = useCollection("rentalRequests", "createdAt");
@@ -22,7 +23,7 @@ export default function Dashboard() {
       <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
         <StatBox icon="✅" label="승인됨 (대여중)" value={renting} color={C.blue}   bg={C.blueLight}  />
         <StatBox icon="⏳" label="승인 대기"       value={pending} color={C.yellow} bg={C.yellowLight}/>
-        <StatBox icon="⏸️" label="보류"            value={held}    color={C.orange} bg={C.orangeLight}/>
+        <StatBox icon={PauseCircle} label="보류"            value={held}    color={C.orange} bg={C.orangeLight}/>
         <StatBox icon="📦" label="총 대여가능"     value={avail}   color={C.green}  bg={C.greenLight} />
       </div>
 
