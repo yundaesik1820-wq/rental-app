@@ -12,16 +12,21 @@ const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 
 
 // ── QR 체크리스트 컴포넌트 (카메라 + 리더기 겸용) ─────────
 function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
-  const inputRef  = useRef(null);
-  const videoRef  = useRef(null);
-  const canvasRef = useRef(null);
-  const rafRef    = useRef(null);
-  const streamRef = useRef(null);
+  const inputRef     = useRef(null);
+  const videoRef     = useRef(null);
+  const canvasRef    = useRef(null);
+  const rafRef       = useRef(null);
+  const streamRef    = useRef(null);
+  const cooldownRef  = useRef(false);    // 스캔 쿨다운
+  const checklistRef = useRef(checklist); // 항상 최신 checklist 참조
 
-  const [mode, setMode]       = useState("camera"); // "camera" | "reader"
-  const [qrInput, setQrInput] = useState("");
-  const [lastMsg, setLastMsg] = useState(null);
-  const [camErr, setCamErr]   = useState(null);
+  // checklist prop 변경 시 ref 동기화
+  useEffect(() => { checklistRef.current = checklist; }, [checklist]);
+
+  const [mode, setMode]         = useState("camera");
+  const [qrInput, setQrInput]   = useState("");
+  const [lastMsg, setLastMsg]   = useState(null);
+  const [camErr, setCamErr]     = useState(null);
   const [scanning, setScanning] = useState(false);
 
   const allDone   = checklist.every(c => c.checked);
@@ -32,20 +37,37 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
     setTimeout(() => setLastMsg(null), ok ? 2000 : 3000);
   };
 
+  // handleScan: checklistRef로 항상 최신값 참조 → stale closure 방지
   const handleScan = useCallback((raw) => {
+    if (cooldownRef.current) return; // 쿨다운 중이면 무시
     const val = raw.trim();
     if (!val) return;
-    const idx = checklist.findIndex(c =>
-      !c.checked && (c.itemNo === val || c.unitId === val || c.itemNo?.includes(val) || val.includes(c.itemNo || "___"))
+
+    const cl  = checklistRef.current;
+    const idx = cl.findIndex(c =>
+      !c.checked && (
+        c.itemNo === val ||
+        c.unitId === val ||
+        (c.itemNo && val.includes(c.itemNo)) ||
+        (c.itemNo && c.itemNo.includes(val))
+      )
     );
+
+    // 쿨다운 시작 (성공/실패 무관하게 1.5초 차단)
+    cooldownRef.current = true;
+    setTimeout(() => { cooldownRef.current = false; }, 1500);
+
     if (idx === -1) {
+      // 이미 전부 체크됐으면 메시지 안 띄움
+      if (cl.every(c => c.checked)) return;
       showMsg(`"${val}" — 목록에 없는 장비예요`, false);
       return;
     }
-    const newCL = checklist.map((c, i) => i === idx ? { ...c, checked: true } : c);
+
+    const newCL = cl.map((c, i) => i === idx ? { ...c, checked: true } : c);
     onUpdate(newCL);
-    showMsg(`✅ ${checklist[idx].label} ${checklist[idx].itemNo} 확인!`, true);
-  }, [checklist, onUpdate]);
+    showMsg(`✅ ${cl[idx].label} ${cl[idx].itemNo} 확인!`, true);
+  }, [onUpdate]); // onUpdate만 의존 → checklist 변경에 영향받지 않음
 
   // 카메라 시작
   const startCamera = useCallback(async () => {
@@ -72,7 +94,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
     setScanning(false);
   }, []);
 
-  // QR 프레임 분석
+  // QR 프레임 분석 - handleScan만 의존하므로 재생성 최소화
   const tick = useCallback(() => {
     const video  = videoRef.current;
     const canvas = canvasRef.current;
@@ -88,9 +110,6 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
     const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
     if (code?.data) {
       handleScan(code.data);
-      // 연속 스캔 방지 - 1초 대기
-      setTimeout(() => { rafRef.current = requestAnimationFrame(tick); }, 1000);
-      return;
     }
     rafRef.current = requestAnimationFrame(tick);
   }, [handleScan]);
@@ -106,7 +125,9 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
   }, [mode]);
 
   useEffect(() => {
-    if (scanning) rafRef.current = requestAnimationFrame(tick);
+    if (scanning) {
+      rafRef.current = requestAnimationFrame(tick);
+    }
     return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [scanning, tick]);
 
