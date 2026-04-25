@@ -11,7 +11,7 @@ const STATUS_TABS_SUB   = ["승인됨", "대여중", "반납완료", "연체"];
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
 // ── QR 체크리스트 컴포넌트 (카메라 + 리더기 겸용) ─────────
-function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
+function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode = "rental" }) {
   const inputRef     = useRef(null);
   const videoRef     = useRef(null);
   const canvasRef    = useRef(null);
@@ -133,7 +133,9 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
 
   return (
     <>
-      <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 QR 체크</div>
+      <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>
+        {mode === "return" ? "반납 QR 체크" : "장비 QR 체크"}
+      </div>
 
       {/* 진행바 */}
       <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
@@ -232,14 +234,14 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
 
       {allDone && (
         <div style={{ background:C.greenLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.green, fontWeight:700, marginBottom:14, textAlign:"center" }}>
-          ✅ 모든 장비 확인 완료!
+          {mode === "return" ? "✅ 모든 장비 반납 확인 완료!" : "✅ 모든 장비 확인 완료!"}
         </div>
       )}
 
       <div style={{ display:"flex", gap:10 }}>
-        <Btn onClick={onPrev} color={C.muted} outline full>← 이전</Btn>
-        <Btn onClick={onConfirm} color={C.green} full disabled={submitting || !allDone}>
-          {submitting ? "처리중..." : "🚀 대여 시작"}
+        <Btn onClick={onPrev} color={C.muted} outline full>{mode === "return" ? "취소" : "← 이전"}</Btn>
+        <Btn onClick={onConfirm} color={mode === "return" ? C.teal : C.green} full disabled={submitting || !allDone}>
+          {submitting ? "처리중..." : mode === "return" ? "📦 반납 완료" : "🚀 대여 시작"}
         </Btn>
       </div>
     </>
@@ -257,6 +259,7 @@ export default function Rental({ subAdmin = false }) {
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
+  const [returnModal, setReturnModal] = useState(null);   // 반납 QR 체크 모달 { request, checklist }
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
   const [swapReason, setSwapReason]   = useState("");      // 교체 사유
 
@@ -566,6 +569,27 @@ ${r.attachments?.length > 0 ? `
     setSubmitting(false);
   };
 
+  // 반납 QR 체크 모달 열기
+  const openReturnModal = (r) => {
+    const checklist = (r.assignedUnits || []).map(u => ({
+      label:     u.itemName || u.modelName,
+      itemNo:    u.itemNo || "",
+      unitId:    u.unitId,
+      modelName: u.modelName,
+      checked:   false,
+    }));
+    // assignedUnits 없으면 items 기반으로 생성
+    if (checklist.length === 0) {
+      (r.items || []).forEach(item => {
+        const name = item.modelName || item.equipName || "";
+        for (let i = 0; i < (item.quantity || 1); i++) {
+          checklist.push({ label: name, itemNo: "", unitId: "", modelName: name, checked: false });
+        }
+      });
+    }
+    setReturnModal({ request: r, checklist });
+  };
+
   const returnDone = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "반납완료" });
     // assignedUnits 기준 복구 (없으면 기존 방식)
@@ -745,7 +769,7 @@ ${r.attachments?.length > 0 ? `
                   </div>
                 </div>
               )}
-              <Btn onClick={() => returnDone(r)} color={C.teal} full>📦 반납 완료</Btn>
+              <Btn onClick={() => openReturnModal(r)} color={C.teal} full>📦 반납 처리</Btn>
             </div>
           )}
           {r.status === "반납완료" && r.assignedUnits?.length > 0 && (
@@ -834,6 +858,23 @@ ${r.attachments?.length > 0 ? `
               {submitting ? "처리 중..." : actionTarget.type === "보류" ? "보류 처리" : "거절 처리"}
             </Btn>
           </div>
+        </Modal>
+      )}
+
+      {/* ── 반납 QR 체크 모달 ── */}
+      {returnModal && (
+        <Modal onClose={() => setReturnModal(null)} width={520}>
+          <QRChecklist
+            checklist={returnModal.checklist}
+            mode="return"
+            onUpdate={newCL => setReturnModal(p => ({ ...p, checklist: newCL }))}
+            onPrev={() => setReturnModal(null)}
+            onConfirm={async () => {
+              await returnDone(returnModal.request);
+              setReturnModal(null);
+            }}
+            submitting={submitting}
+          />
         </Modal>
       )}
 
