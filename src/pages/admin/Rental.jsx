@@ -201,7 +201,7 @@ ${r.attachments?.length > 0 ? `
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
   };
 
-  // 배치 선택 모달 열기 (자동배치 기본값)
+  // 배치 선택 모달 열기 (자동배치 기본값 + 체크리스트)
   const openAssignModal = (r) => {
     const assignments = [];
     const modelQty = {};
@@ -217,7 +217,22 @@ ${r.attachments?.length > 0 ? `
         assignments.push({ modelName, selectedUnit: availUnits[i] || null, availUnits });
       }
     }
-    setAssignModal({ request: r, assignments });
+    // 체크리스트 생성 (장비별 + 세트 구성품)
+    const checklist = [];
+    (r.items || []).forEach(item => {
+      const name = item.modelName || item.equipName || "";
+      if (item.isSet && item.setItems) {
+        item.setItems.split("
+").filter(Boolean).forEach(sub => {
+          checklist.push({ label: sub.trim(), checked: false, parent: name });
+        });
+      } else {
+        for (let i = 0; i < (item.quantity || 1); i++) {
+          checklist.push({ label: `${name}${item.quantity > 1 ? ` (${i+1}번째)` : ""}`, checked: false, parent: null });
+        }
+      }
+    });
+    setAssignModal({ request: r, assignments, checklist, checkStep: false });
   };
 
   // 배치 확정 → 대여 시작
@@ -593,46 +608,121 @@ ${r.attachments?.length > 0 ? `
       {/* ── 배치 선택 모달 ── */}
       {assignModal && (
         <Modal onClose={() => setAssignModal(null)} width={520}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>🚀 배치 장비 선택</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>대여할 장비를 확인하고 필요시 변경하세요</div>
-          {assignModal.assignments.map((a, i) => (
-            <div key={i} style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:12, border:`1px solid ${C.border}` }}>
-              <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>{a.modelName} ({i+1}번째)</div>
-              {a.availUnits.length === 0 ? (
-                <div style={{ fontSize:13, color:C.red }}>대여 가능한 유닛이 없습니다</div>
-              ) : (
-                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
-                  {a.availUnits.map(unit => (
-                    <button key={unit.id} onClick={() => {
-                      const newA = assignModal.assignments.map((x, j) =>
-                        j === i ? { ...x, selectedUnit: unit } : x
+          {!assignModal.checkStep ? (
+            <>
+              <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>배치 장비 선택</div>
+              <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>대여할 장비를 확인하고 필요시 변경하세요</div>
+              {assignModal.assignments.map((a, i) => (
+                <div key={i} style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:12, border:`1px solid ${C.border}` }}>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>{a.modelName} ({i+1}번째)</div>
+                  {a.availUnits.length === 0 ? (
+                    <div style={{ fontSize:13, color:C.red }}>대여 가능한 유닛이 없습니다</div>
+                  ) : (
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                      {a.availUnits.map(unit => (
+                        <button key={unit.id} onClick={() => {
+                          const newA = assignModal.assignments.map((x, j) =>
+                            j === i ? { ...x, selectedUnit: unit } : x
+                          );
+                          setAssignModal(p => ({ ...p, assignments: newA }));
+                        }} style={{
+                          padding:"8px 16px", borderRadius:10, border:`2px solid ${a.selectedUnit?.id === unit.id ? C.blue : C.border}`,
+                          background: a.selectedUnit?.id === unit.id ? C.blueLight : "#fff",
+                          color: a.selectedUnit?.id === unit.id ? C.blue : C.text,
+                          fontSize:13, fontWeight:600, cursor:"pointer",
+                        }}>
+                          {unit.itemNo || unit.id.slice(-4)}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {a.selectedUnit && (
+                    <div style={{ marginTop:8, fontSize:12, color:C.muted }}>
+                      선택됨: <span style={{ color:C.blue, fontWeight:600 }}>{a.selectedUnit.itemNo}</span>
+                      {a.selectedUnit.itemName && ` · ${a.selectedUnit.itemName}`}
+                    </div>
+                  )}
+                </div>
+              ))}
+              <div style={{ display:"flex", gap:10, marginTop:4 }}>
+                <Btn onClick={() => setAssignModal(null)} color={C.muted} outline full>취소</Btn>
+                <Btn
+                  onClick={() => setAssignModal(p => ({ ...p, checkStep: true }))}
+                  color={C.blue} full
+                  disabled={assignModal.assignments.some(a => !a.selectedUnit)}>
+                  다음 → 장비 체크
+                </Btn>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 체크리스트</div>
+              <div style={{ fontSize:13, color:C.muted, marginBottom:6 }}>
+                장비를 하나씩 확인하며 체크해주세요
+              </div>
+              <div style={{ fontSize:12, color:C.blue, fontWeight:600, marginBottom:16 }}>
+                {assignModal.checklist.filter(c => c.checked).length} / {assignModal.checklist.length} 완료
+              </div>
+              {/* 진행바 */}
+              <div style={{ background:C.border, borderRadius:6, height:8, overflow:"hidden", marginBottom:20 }}>
+                <div style={{
+                  width:`${(assignModal.checklist.filter(c=>c.checked).length / assignModal.checklist.length)*100}%`,
+                  background: assignModal.checklist.every(c=>c.checked) ? C.green : C.blue,
+                  height:"100%", borderRadius:6, transition:"width 0.3s"
+                }} />
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
+                {assignModal.checklist.map((item, i) => (
+                  <div key={i}
+                    onClick={() => {
+                      const newCL = assignModal.checklist.map((c, j) =>
+                        j === i ? { ...c, checked: !c.checked } : c
                       );
-                      setAssignModal(p => ({ ...p, assignments: newA }));
-                    }} style={{
-                      padding:"8px 16px", borderRadius:10, border:`2px solid ${a.selectedUnit?.id === unit.id ? C.blue : C.border}`,
-                      background: a.selectedUnit?.id === unit.id ? C.blueLight : "#fff",
-                      color: a.selectedUnit?.id === unit.id ? C.blue : C.text,
-                      fontSize:13, fontWeight:600, cursor:"pointer",
+                      setAssignModal(p => ({ ...p, checklist: newCL }));
+                    }}
+                    style={{
+                      display:"flex", alignItems:"center", gap:12,
+                      background: item.checked ? C.greenLight : C.bg,
+                      borderRadius:10, padding:"12px 16px",
+                      border:`1.5px solid ${item.checked ? C.green : C.border}`,
+                      cursor:"pointer", transition:"all 0.15s",
                     }}>
-                      {unit.itemNo || unit.id.slice(-4)}
-                    </button>
-                  ))}
+                    <div style={{
+                      width:24, height:24, borderRadius:6, flexShrink:0,
+                      background: item.checked ? C.green : "#fff",
+                      border:`2px solid ${item.checked ? C.green : C.border}`,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      color:"#fff", fontSize:14, fontWeight:700,
+                    }}>
+                      {item.checked ? "✓" : ""}
+                    </div>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:600, color: item.checked ? C.green : C.text }}>
+                        {item.label}
+                      </div>
+                      {item.parent && (
+                        <div style={{ fontSize:11, color:C.muted }}>{item.parent} 구성품</div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {assignModal.checklist.every(c => c.checked) && (
+                <div style={{ background:C.greenLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.green, fontWeight:600, marginBottom:16, textAlign:"center" }}>
+                  ✅ 모든 장비 확인 완료!
                 </div>
               )}
-              {a.selectedUnit && (
-                <div style={{ marginTop:8, fontSize:12, color:C.muted }}>
-                  선택됨: <span style={{ color:C.blue, fontWeight:600 }}>{a.selectedUnit.itemNo}</span>
-                  {a.selectedUnit.itemName && ` · ${a.selectedUnit.itemName}`}
-                </div>
-              )}
-            </div>
-          ))}
-          <div style={{ display:"flex", gap:10, marginTop:4 }}>
-            <Btn onClick={() => setAssignModal(null)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={confirmAssign} color={C.blue} full disabled={submitting || assignModal.assignments.some(a => !a.selectedUnit)}>
-              {submitting ? "처리중..." : "✅ 대여 시작 확정"}
-            </Btn>
-          </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <Btn onClick={() => setAssignModal(p => ({ ...p, checkStep: false }))} color={C.muted} outline full>← 이전</Btn>
+                <Btn
+                  onClick={confirmAssign}
+                  color={C.green} full
+                  disabled={submitting || !assignModal.checklist.every(c => c.checked)}>
+                  {submitting ? "처리중..." : "🚀 대여 시작"}
+                </Btn>
+              </div>
+            </>
+          )}
         </Modal>
       )}
 
