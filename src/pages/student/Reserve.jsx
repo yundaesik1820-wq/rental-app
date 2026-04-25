@@ -42,7 +42,8 @@ function groupSets(equipments) {
         minorCategory: e.minorCategory || "",
         manufacturer:  e.manufacturer  || "",
         setItems:      e.setItems      || "",
-        photoUrls:     [],
+        photoUrls:       [],
+        displayPhotoUrl: e.displayPhotoUrl || "",
         units: [], total: 0, available: 0,
       };
     }
@@ -505,7 +506,7 @@ export default function Reserve() {
                   {isLocked && <span style={{ fontSize:11, color:"#DC2626" }}>(내 라이센스: {profile?.license || "없음"})</span>}
                 </div>
                 {/* 대표사진 */}
-                {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName); return photos.length > 0 ? (
+                {(() => { const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []); const idx = getIdx(e.modelName); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
                     <img src={photos[idx]} alt="제품사진" onClick={ev => { ev.stopPropagation(); setLightbox({ photos, idx }); }} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
@@ -586,7 +587,7 @@ export default function Reserve() {
                   {isLocked && <span style={{ fontSize:11, color:"#DC2626" }}>(내 라이센스: {profile?.license || "없음"})</span>}
                 </div>
                 {/* 대표사진 */}
-                {(() => { const photos = e.photoUrls || []; const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
+                {(() => { const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []); const idx = getIdx(e.modelName+"_set"); return photos.length > 0 ? (
                   <div style={{ position:"relative", paddingTop:"60%", borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, marginBottom:10 }}>
                     <img src={photos[idx]} alt="세트사진" onClick={ev => { ev.stopPropagation(); setLightbox({ photos, idx }); }} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"contain", cursor:"zoom-in" }} />
                     {photos.length > 1 && (<>
