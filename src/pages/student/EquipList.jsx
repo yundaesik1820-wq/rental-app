@@ -20,7 +20,8 @@ function groupSets(equipments) {
         minorCategory: e.minorCategory || "",
         manufacturer:  e.manufacturer  || "",
         setItems:      e.setItems      || "",
-        photoUrls:     e.photoUrls     || [],
+        photoUrls:       e.photoUrls     || [],
+        displayPhotoUrl: e.displayPhotoUrl || "",
         units: [], total: 0, available: 0,
       };
     }
@@ -29,6 +30,7 @@ function groupSets(equipments) {
     if ((e.status || "대여가능") === "대여가능") map[key].available++;
     if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
     if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
+    if (!map[key].displayPhotoUrl && e.displayPhotoUrl) map[key].displayPhotoUrl = e.displayPhotoUrl;
   });
   return Object.values(map);
 }
@@ -105,7 +107,7 @@ export default function EquipList() {
           {filteredUnits.length === 0 && <Empty icon="🔍" text="해당하는 장비가 없습니다" />}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px,1fr))", gap: 16 }}>
             {filteredUnits.map(e => {
-              const photos = e.photoUrls || [];
+              const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
               const idx    = getIdx(e.modelName);
               return (
                 <Card key={e.modelName}>
@@ -166,7 +168,7 @@ export default function EquipList() {
           {filteredSets.length === 0 && <Empty icon="📦" text="등록된 세트 장비가 없습니다" />}
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {filteredSets.map(e => {
-              const photos    = e.photoUrls || [];
+              const photos    = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
               const idx       = getIdx(e.modelName);
               const isExpand  = expandedSet === e.modelName;
               const setList   = e.setItems ? e.setItems.split("\n").filter(Boolean) : [];
