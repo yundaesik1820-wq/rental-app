@@ -363,6 +363,7 @@ const EMPTY = {
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
   isSet: false,
   setItems: "",
+  displayPhotoUrl: "",  // 학생 송출용 이미지 URL
 };
 
 const LICENSE_LEVELS = [
@@ -427,6 +428,7 @@ export default function Equipment() {
       location:      e.location      || "",
       photoUrls:     e.photoUrls     || [],
       snPhotoUrl:    e.snPhotoUrl    || "",
+      displayPhotoUrl: e.displayPhotoUrl || "",
       serialNo:      e.serialNo      || "",
       note:          e.note          || "",
       isSet:         e.isSet         || false,
@@ -548,6 +550,7 @@ export default function Equipment() {
 
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항 (선택)</div>
+            <SingleImageUploader label="🖼️ 송출용 이미지 (학생에게 표시)" value={form.displayPhotoUrl || ""} onChange={url => f("displayPhotoUrl", url)} />
             <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
             <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => f("location", e.target.value)} />
             <Inp label="S/N" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
@@ -645,6 +648,7 @@ export default function Equipment() {
 
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항</div>
+            <SingleImageUploader label="🖼️ 송출용 이미지 (학생에게 표시)" value={form.displayPhotoUrl || ""} onChange={url => f("displayPhotoUrl", url)} />
             <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
             <Inp label="보관 위치" value={form.location} onChange={e => f("location", e.target.value)} />
             <Inp label="S/N" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
