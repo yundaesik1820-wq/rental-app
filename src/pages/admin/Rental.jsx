@@ -193,6 +193,64 @@ ${r.attachments?.length > 0 ? `
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
   };
 
+  // 배치 선택 모달 열기 (자동배치 기본값)
+  const openAssignModal = (r) => {
+    const assignments = [];
+    const modelQty = {};
+    (r.items || []).forEach(item => {
+      const key = item.modelName || item.equipName || "";
+      if (key) modelQty[key] = (modelQty[key] || 0) + (item.quantity || 1);
+    });
+    for (const [modelName, qty] of Object.entries(modelQty)) {
+      const availUnits = equipments
+        .filter(e => (e.modelName || e.name) === modelName && (e.status || "대여가능") === "대여가능")
+        .sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""));
+      for (let i = 0; i < qty; i++) {
+        assignments.push({ modelName, selectedUnit: availUnits[i] || null, availUnits });
+      }
+    }
+    setAssignModal({ request: r, assignments });
+  };
+
+  // 배치 확정 → 대여 시작
+  const confirmAssign = async () => {
+    const { request, assignments } = assignModal;
+    setSubmitting(true);
+    try {
+      const assignedUnits = [];
+      for (const a of assignments) {
+        if (!a.selectedUnit) continue;
+        await updateItem("equipments", a.selectedUnit.id, { status: "대여중" });
+        assignedUnits.push({
+          modelName: a.modelName,
+          itemNo:    a.selectedUnit.itemNo || "",
+          unitId:    a.selectedUnit.id,
+          itemName:  a.selectedUnit.itemName || "",
+        });
+      }
+      await updateItem("rentalRequests", request.id, { status: "대여중", assignedUnits });
+      setAssignModal(null);
+    } catch(e) { alert("오류: " + e.message); }
+    finally { setSubmitting(false); }
+  };
+
+  // 장비 교체 확정
+  const confirmSwap = async (newUnit) => {
+    const { request, unitIdx } = swapModal;
+    setSubmitting(true);
+    try {
+      const oldUnit = request.assignedUnits[unitIdx];
+      if (oldUnit?.unitId) await updateItem("equipments", oldUnit.unitId, { status: "대여가능" });
+      await updateItem("equipments", newUnit.id, { status: "대여중" });
+      const newAssigned = request.assignedUnits.map((u, i) => i === unitIdx ? {
+        modelName: u.modelName, itemNo: newUnit.itemNo || "", unitId: newUnit.id, itemName: newUnit.itemName || "",
+      } : u);
+      await updateItem("rentalRequests", request.id, { assignedUnits: newAssigned });
+      setSwapModal(null);
+    } catch(e) { alert("오류: " + e.message); }
+    finally { setSubmitting(false); }
+  };
+
   // 실제 장비 수령 시 대여 시작 처리 + itemNo 자동 배치
   const startRental = async (r) => {
     const assignedUnits = []; // 배치된 개별 장비 기록
