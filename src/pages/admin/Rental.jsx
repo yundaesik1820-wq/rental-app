@@ -465,7 +465,8 @@ ${r.attachments?.length > 0 ? `
                     {r.assignedUnits.map((u, i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:8, padding:"6px 12px" }}>
                         <span style={{ fontSize:13, fontWeight:600, color:C.navy }}>
-                          {u.modelName} <span style={{ color:C.blue }}>{u.itemNo}</span>
+                          {u.itemName || u.modelName}
+                          {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
                         </span>
                         <button onClick={() => setSwapModal({ request: r, unitIdx: i })}
                           style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer" }}>
@@ -485,7 +486,8 @@ ${r.attachments?.length > 0 ? `
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                 {r.assignedUnits.map((u, i) => (
                   <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600, color:C.text }}>
-                    {u.modelName} <span style={{ color:C.navy, fontWeight:700 }}>{u.itemNo}</span>
+                    {u.itemName || u.modelName}
+                    {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
                   </span>
                 ))}
               </div>
