@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
@@ -8,6 +8,152 @@ import { PauseCircle } from "lucide-react";
 const STATUS_TABS_SUPER = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
 const STATUS_TABS_SUB   = ["승인됨", "대여중", "반납완료", "연체"];
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
+
+// ── QR 체크리스트 컴포넌트 ────────────────────────────────
+function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting }) {
+  const inputRef = useRef(null);
+  const [qrInput, setQrInput] = useState("");
+  const [lastMsg, setLastMsg] = useState(null); // { text, ok }
+
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
+  const handleScan = (raw) => {
+    const val = raw.trim();
+    if (!val) return;
+
+    // itemNo 또는 unitId 매칭
+    const idx = checklist.findIndex(
+      c => !c.checked && (
+        c.itemNo === val ||
+        c.unitId === val ||
+        c.itemNo?.includes(val) ||
+        c.label?.includes(val)
+      )
+    );
+
+    if (idx === -1) {
+      setLastMsg({ text: `"${val}" — 목록에 없는 장비예요`, ok: false });
+      setTimeout(() => setLastMsg(null), 2500);
+      return;
+    }
+
+    const newCL = checklist.map((c, i) => i === idx ? { ...c, checked: true } : c);
+    onUpdate(newCL);
+    setLastMsg({ text: `✅ ${checklist[idx].label} ${checklist[idx].itemNo} 확인!`, ok: true });
+    setTimeout(() => setLastMsg(null), 2000);
+  };
+
+  const allDone = checklist.every(c => c.checked);
+  const doneCount = checklist.filter(c => c.checked).length;
+
+  return (
+    <>
+      <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 QR 체크</div>
+      <div style={{ fontSize:13, color:C.muted, marginBottom:12 }}>
+        장비의 QR 코드를 스캔하면 자동으로 체크됩니다
+      </div>
+
+      {/* 진행바 */}
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:6 }}>
+        <span style={{ fontSize:12, color:C.muted }}>진행 현황</span>
+        <span style={{ fontSize:12, fontWeight:700, color: allDone ? C.green : C.blue }}>{doneCount} / {checklist.length}</span>
+      </div>
+      <div style={{ background:C.border, borderRadius:6, height:8, overflow:"hidden", marginBottom:16 }}>
+        <div style={{
+          width:`${(doneCount / checklist.length) * 100}%`,
+          background: allDone ? C.green : C.blue,
+          height:"100%", borderRadius:6, transition:"width 0.3s"
+        }} />
+      </div>
+
+      {/* QR 입력창 */}
+      <div style={{ position:"relative", marginBottom:12 }}>
+        <input
+          ref={inputRef}
+          value={qrInput}
+          onChange={e => setQrInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === "Enter" && qrInput.trim()) {
+              handleScan(qrInput);
+              setQrInput("");
+            }
+          }}
+          placeholder="QR 리더기로 스캔 또는 직접 입력 후 Enter"
+          style={{
+            display:"block", width:"100%", background:C.bg,
+            border:`2px solid ${lastMsg?.ok === false ? C.red : C.blue}`,
+            borderRadius:10, color:C.text, padding:"11px 16px",
+            fontSize:14, fontFamily:"monospace", outline:"none", boxSizing:"border-box",
+          }}
+          autoFocus
+        />
+        {qrInput && (
+          <button onClick={() => { handleScan(qrInput); setQrInput(""); }}
+            style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:C.blue, color:"#fff", border:"none", borderRadius:8, padding:"5px 12px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            확인
+          </button>
+        )}
+      </div>
+
+      {/* 스캔 결과 메시지 */}
+      {lastMsg && (
+        <div style={{ background: lastMsg.ok ? C.greenLight : C.redLight, color: lastMsg.ok ? C.green : C.red, borderRadius:8, padding:"8px 14px", fontSize:13, fontWeight:600, marginBottom:12 }}>
+          {lastMsg.text}
+        </div>
+      )}
+
+      {/* 체크리스트 */}
+      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
+        {checklist.map((item, i) => (
+          <div key={i} style={{
+            display:"flex", alignItems:"center", gap:12,
+            background: item.checked ? C.greenLight : C.bg,
+            borderRadius:10, padding:"10px 14px",
+            border:`1.5px solid ${item.checked ? C.green : C.border}`,
+          }}>
+            <div style={{
+              width:24, height:24, borderRadius:6, flexShrink:0,
+              background: item.checked ? C.green : "#fff",
+              border:`2px solid ${item.checked ? C.green : C.border}`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              color:"#fff", fontSize:14, fontWeight:700,
+            }}>
+              {item.checked ? "✓" : ""}
+            </div>
+            <div style={{ flex:1 }}>
+              <span style={{ fontSize:14, fontWeight:600, color: item.checked ? C.green : C.text }}>
+                {item.label}
+              </span>
+              {item.itemNo && (
+                <span style={{ fontSize:12, color:C.muted, marginLeft:8 }}>{item.itemNo}</span>
+              )}
+            </div>
+            {/* 미스캔 시 수동 체크 가능 */}
+            {!item.checked && (
+              <button onClick={() => onUpdate(checklist.map((c,j) => j===i ? {...c, checked:true} : c))}
+                style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:C.muted, cursor:"pointer" }}>
+                수동
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {allDone && (
+        <div style={{ background:C.greenLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.green, fontWeight:700, marginBottom:16, textAlign:"center" }}>
+          ✅ 모든 장비 확인 완료!
+        </div>
+      )}
+
+      <div style={{ display:"flex", gap:10 }}>
+        <Btn onClick={onPrev} color={C.muted} outline full>← 이전</Btn>
+        <Btn onClick={onConfirm} color={C.green} full disabled={submitting || !allDone}>
+          {submitting ? "처리중..." : "🚀 대여 시작"}
+        </Btn>
+      </div>
+    </>
+  );
+}
 
 export default function Rental({ subAdmin = false }) {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
@@ -217,21 +363,17 @@ ${r.attachments?.length > 0 ? `
         assignments.push({ modelName, selectedUnit: availUnits[i] || null, availUnits });
       }
     }
-    // 체크리스트 생성 (장비별 + 세트 구성품)
-    const checklist = [];
-    (r.items || []).forEach(item => {
-      const name = item.modelName || item.equipName || "";
-      if (item.isSet && item.setItems) {
-        item.setItems.split("\n").filter(Boolean).forEach(sub => {
-          checklist.push({ label: sub.trim(), checked: false, parent: name });
-        });
-      } else {
-        for (let i = 0; i < (item.quantity || 1); i++) {
-          checklist.push({ label: `${name}${item.quantity > 1 ? ` (${i+1}번째)` : ""}`, checked: false, parent: null });
-        }
-      }
-    });
-    setAssignModal({ request: r, assignments, checklist, checkStep: false });
+    // 체크리스트 = 배치 확정된 유닛의 itemNo 기반 (QR 스캔 매칭용)
+    const checklist = assignments
+      .filter(a => a.selectedUnit)
+      .map(a => ({
+        label:   a.selectedUnit.itemName || a.modelName,
+        itemNo:  a.selectedUnit.itemNo || "",
+        unitId:  a.selectedUnit.id,
+        modelName: a.modelName,
+        checked: false,
+      }));
+    setAssignModal({ request: r, assignments, checklist, checkStep: false, qrInput: "" });
   };
 
   // 배치 확정 → 대여 시작
@@ -654,73 +796,13 @@ ${r.attachments?.length > 0 ? `
               </div>
             </>
           ) : (
-            <>
-              <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 체크리스트</div>
-              <div style={{ fontSize:13, color:C.muted, marginBottom:6 }}>
-                장비를 하나씩 확인하며 체크해주세요
-              </div>
-              <div style={{ fontSize:12, color:C.blue, fontWeight:600, marginBottom:16 }}>
-                {assignModal.checklist.filter(c => c.checked).length} / {assignModal.checklist.length} 완료
-              </div>
-              {/* 진행바 */}
-              <div style={{ background:C.border, borderRadius:6, height:8, overflow:"hidden", marginBottom:20 }}>
-                <div style={{
-                  width:`${(assignModal.checklist.filter(c=>c.checked).length / assignModal.checklist.length)*100}%`,
-                  background: assignModal.checklist.every(c=>c.checked) ? C.green : C.blue,
-                  height:"100%", borderRadius:6, transition:"width 0.3s"
-                }} />
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:20 }}>
-                {assignModal.checklist.map((item, i) => (
-                  <div key={i}
-                    onClick={() => {
-                      const newCL = assignModal.checklist.map((c, j) =>
-                        j === i ? { ...c, checked: !c.checked } : c
-                      );
-                      setAssignModal(p => ({ ...p, checklist: newCL }));
-                    }}
-                    style={{
-                      display:"flex", alignItems:"center", gap:12,
-                      background: item.checked ? C.greenLight : C.bg,
-                      borderRadius:10, padding:"12px 16px",
-                      border:`1.5px solid ${item.checked ? C.green : C.border}`,
-                      cursor:"pointer", transition:"all 0.15s",
-                    }}>
-                    <div style={{
-                      width:24, height:24, borderRadius:6, flexShrink:0,
-                      background: item.checked ? C.green : "#fff",
-                      border:`2px solid ${item.checked ? C.green : C.border}`,
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      color:"#fff", fontSize:14, fontWeight:700,
-                    }}>
-                      {item.checked ? "✓" : ""}
-                    </div>
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:600, color: item.checked ? C.green : C.text }}>
-                        {item.label}
-                      </div>
-                      {item.parent && (
-                        <div style={{ fontSize:11, color:C.muted }}>{item.parent} 구성품</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {assignModal.checklist.every(c => c.checked) && (
-                <div style={{ background:C.greenLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.green, fontWeight:600, marginBottom:16, textAlign:"center" }}>
-                  ✅ 모든 장비 확인 완료!
-                </div>
-              )}
-              <div style={{ display:"flex", gap:10 }}>
-                <Btn onClick={() => setAssignModal(p => ({ ...p, checkStep: false }))} color={C.muted} outline full>← 이전</Btn>
-                <Btn
-                  onClick={confirmAssign}
-                  color={C.green} full
-                  disabled={submitting || !assignModal.checklist.every(c => c.checked)}>
-                  {submitting ? "처리중..." : "🚀 대여 시작"}
-                </Btn>
-              </div>
-            </>
+            <QRChecklist
+              checklist={assignModal.checklist}
+              onUpdate={newCL => setAssignModal(p => ({ ...p, checklist: newCL }))}
+              onPrev={() => setAssignModal(p => ({ ...p, checkStep: false }))}
+              onConfirm={confirmAssign}
+              submitting={submitting}
+            />
           )}
         </Modal>
       )}
