@@ -12,6 +12,7 @@ const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 
 
 // ── QR 체크리스트 컴포넌트 (카메라 + 리더기 겸용) ─────────
 function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode = "rental" }) {
+  // mode = "rental" | "return" (대여/반납 구분 prop)
   const inputRef     = useRef(null);
   const videoRef     = useRef(null);
   const canvasRef    = useRef(null);
@@ -23,7 +24,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
   // checklist prop 변경 시 ref 동기화
   useEffect(() => { checklistRef.current = checklist; }, [checklist]);
 
-  const [mode, setMode]         = useState("camera");
+  const [scanMode, setScanMode]  = useState("camera"); // "camera" | "reader"
   const [qrInput, setQrInput]   = useState("");
   const [lastMsg, setLastMsg]   = useState(null);
   const [camErr, setCamErr]     = useState(null);
@@ -115,7 +116,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
   }, [handleScan]);
 
   useEffect(() => {
-    if (mode === "camera") {
+    if (scanMode === "camera") {
       startCamera();
     } else {
       stopCamera();
@@ -149,7 +150,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
       {/* 모드 탭 */}
       <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, marginBottom:14, border:`1px solid ${C.border}` }}>
         {[["camera","📷 카메라"],["reader","🔫 리더기"]].map(([m, label]) => (
-          <button key={m} onClick={() => setMode(m)} style={{
+          <button key={m} onClick={() => setScanMode(m)} style={{
             flex:1, padding:"7px 0", borderRadius:8, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
             background: mode===m ? C.navy : "transparent", color: mode===m ? "#fff" : C.muted,
           }}>{label}</button>
@@ -164,7 +165,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
       )}
 
       {/* 카메라 모드 */}
-      {mode === "camera" && (
+      {scanMode === "camera" && (
         <div style={{ marginBottom:14 }}>
           {camErr ? (
             <div style={{ background:C.redLight, borderRadius:10, padding:"14px", fontSize:13, color:C.red, marginBottom:10 }}>
@@ -190,7 +191,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
       )}
 
       {/* 리더기 모드 */}
-      {mode === "reader" && (
+      {scanMode === "reader" && (
         <div style={{ position:"relative", marginBottom:14 }}>
           <input
             ref={inputRef}
