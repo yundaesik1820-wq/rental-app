@@ -91,7 +91,7 @@ function AppContent() {
       switch (tab) {
         case "home":     return <Dashboard />;
         case "equip":    return <Equipment />;
-        case "rental":   return isSuper ? <Rental /> : <Dashboard />;
+        case "rental":   return <Rental subAdmin={!isSuper} />;
         case "students": return isSuper ? <Students /> : <Students readOnly={true} />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats />;

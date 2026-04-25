@@ -5,14 +5,16 @@ import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_SUPER = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_SUB   = ["대여중", "반납완료", "연체"];
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
-export default function Rental() {
+export default function Rental({ subAdmin = false }) {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments } = useCollection("equipments", "createdAt");
 
-  const [tab, setTab]             = useState("승인대기");
+  const STATUS_TABS = subAdmin ? STATUS_TABS_SUB : STATUS_TABS_SUPER;
+  const [tab, setTab]             = useState(subAdmin ? "대여중" : "승인대기");
   const [actionTarget, setActionTarget] = useState(null);
   const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
   const [reason, setReason]       = useState("");
@@ -449,20 +451,20 @@ ${r.attachments?.length > 0 ? `
           </div>
 
           {/* 액션 버튼 */}
-          {r.status === "승인대기" && (
+          {!subAdmin && r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full><PauseCircle size={14} style={{ marginRight: 4 }} />보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {r.status === "보류" && (
+          {!subAdmin && r.status === "보류" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인으로 변경</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {r.status === "승인됨" && (
+          {!subAdmin && r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>

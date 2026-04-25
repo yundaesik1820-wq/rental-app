@@ -45,9 +45,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
     : null;
 
   // 일반 직원(교사/조교)은 대여/반납 숨김
-  const nav = profile?.role === "admin"
-    ? (isSuper ? ADMIN_NAV : ADMIN_NAV.filter(n => n.id !== "rental"))
-    : STU_NAV;
+  // 일반관리자: 대여/반납 탭 보이되 제한된 뷰 (대여중~반납완료만)
+  const nav = profile?.role === "admin" ? ADMIN_NAV : STU_NAV;
 
   // 모바일 하단 2줄 그리드
   const half = Math.ceil(nav.length / 2);
