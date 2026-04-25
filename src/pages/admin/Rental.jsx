@@ -74,8 +74,13 @@ export default function Rental() {
 
 <div class="section-title">대여 장비</div>
 <table>
-  <tr><th>장비명</th><th>카테고리</th><th>수량</th><th>비고</th></tr>
-  ${(r.items||[]).map(i=>`<tr><td>${i.equipName||i.modelName||""}</td><td>${i.category||""}</td><td style="text-align:center">${i.quantity||1}${i.isSet?" (세트)":""}</td><td>${i.setItems||""}</td></tr>`).join("")}
+  <tr><th>장비명</th><th>카테고리</th><th>수량</th><th>비고 (제품번호)</th></tr>
+  ${(r.items||[]).map(i => {
+    const modelName = i.equipName || i.modelName || "";
+    const assigned  = (r.assignedUnits || []).filter(u => u.modelName === modelName);
+    const itemNos   = assigned.length > 0 ? assigned.map(u => u.itemNo).filter(Boolean).join(", ") : (i.setItems || "");
+    return `<tr><td>${modelName}</td><td>${i.category||""}</td><td style="text-align:center">${i.quantity||1}${i.isSet?" (세트)":""}</td><td>${itemNos}</td></tr>`;
+  }).join("")}
 </table>
 
 <div class="section-title">대여 정보</div>
