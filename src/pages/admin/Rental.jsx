@@ -19,6 +19,7 @@ export default function Rental() {
   const [submitting, setSubmitting] = useState(false);
   const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
+  const [swapReason, setSwapReason]   = useState("");      // 교체 사유
 
   // 신청서 출력
   const printRequest = (r) => {
@@ -248,10 +249,16 @@ ${r.attachments?.length > 0 ? `
       if (oldUnit?.unitId) await updateItem("equipments", oldUnit.unitId, { status: "대여가능" });
       await updateItem("equipments", newUnit.id, { status: "대여중" });
       const newAssigned = request.assignedUnits.map((u, i) => i === unitIdx ? {
-        modelName: u.modelName, itemNo: newUnit.itemNo || "", unitId: newUnit.id, itemName: newUnit.itemName || "",
+        modelName:  u.modelName,
+        itemNo:     newUnit.itemNo || "",
+        unitId:     newUnit.id,
+        itemName:   newUnit.itemName || "",
+        swapReason: swapReason.trim() || "",
+        swapFrom:   u.itemNo || "",
       } : u);
       await updateItem("rentalRequests", request.id, { assignedUnits: newAssigned });
       setSwapModal(null);
+      setSwapReason("");
     } catch(e) { alert("오류: " + e.message); }
     finally { setSubmitting(false); }
   };
@@ -469,10 +476,17 @@ ${r.attachments?.length > 0 ? `
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {r.assignedUnits.map((u, i) => (
                       <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:8, padding:"6px 12px" }}>
-                        <span style={{ fontSize:13, fontWeight:600, color:C.navy }}>
-                          {u.itemName || u.modelName}
-                          {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
-                        </span>
+                        <div>
+                          <span style={{ fontSize:13, fontWeight:600, color:C.navy }}>
+                            {u.itemName || u.modelName}
+                            {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
+                          </span>
+                          {u.swapReason && (
+                            <div style={{ fontSize:11, color:C.orange, marginTop:2 }}>
+                              교체됨 ({u.swapFrom} → {u.itemNo}): {u.swapReason}
+                            </div>
+                          )}
+                        </div>
                         <button onClick={() => setSwapModal({ request: r, unitIdx: i })}
                           style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer" }}>
                           교체
@@ -490,10 +504,17 @@ ${r.attachments?.length > 0 ? `
               <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:6 }}>사용 장비 기록</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                 {r.assignedUnits.map((u, i) => (
-                  <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600, color:C.text }}>
-                    {u.itemName || u.modelName}
-                    {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
-                  </span>
+                  <div key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:12, fontWeight:600, color:C.text }}>
+                    <div>
+                      {u.itemName || u.modelName}
+                      {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
+                    </div>
+                    {u.swapReason && (
+                      <div style={{ fontSize:11, color:C.orange, fontWeight:400, marginTop:2 }}>
+                        교체: {u.swapFrom} → {u.itemNo} / {u.swapReason}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
@@ -622,12 +643,12 @@ ${r.attachments?.length > 0 ? `
         return null; // 아래 SwapModal로 처리
       })()}
       {swapModal && swapModal.request.assignedUnits[swapModal.unitIdx] && (
-        <Modal onClose={() => setSwapModal(null)} width={460}>
+        <Modal onClose={() => { setSwapModal(null); setSwapReason(""); }} width={460}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 교체</div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>
             현재:{" "}
             <span style={{ color:C.red, fontWeight:600 }}>
-              {swapModal.request.assignedUnits[swapModal.unitIdx].modelName}{" "}
+              {swapModal.request.assignedUnits[swapModal.unitIdx].itemName || swapModal.request.assignedUnits[swapModal.unitIdx].modelName}{" "}
               {swapModal.request.assignedUnits[swapModal.unitIdx].itemNo}
             </span>{" "}→ 교체할 유닛 선택
           </div>
@@ -658,7 +679,16 @@ ${r.attachments?.length > 0 ? `
               }
             </div>
           )}
-          <Btn onClick={() => setSwapModal(null)} color={C.muted} outline full>취소</Btn>
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>교체 사유 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+            <textarea
+              placeholder={"예: 고장으로 인한 교체, 학생 요청으로 교체 등"}
+              value={swapReason}
+              onChange={e => setSwapReason(e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }}
+            />
+          </div>
+          <Btn onClick={() => { setSwapModal(null); setSwapReason(""); }} color={C.muted} outline full>취소</Btn>
         </Modal>
       )}
 
