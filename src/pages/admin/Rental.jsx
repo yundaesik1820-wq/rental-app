@@ -191,10 +191,41 @@ ${r.attachments?.length > 0 ? `
     await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
   };
 
-  // 실제 장비 수령 시 대여 시작 처리
+  // 실제 장비 수령 시 대여 시작 처리 + itemNo 자동 배치
   const startRental = async (r) => {
-    await updateItem("rentalRequests", r.id, { status: "대여중" });
-    await updateAvailable(r.items, -1); // 이 시점에 equipment.status → "대여중"
+    const assignedUnits = []; // 배치된 개별 장비 기록
+
+    const modelQty = {};
+    (r.items || []).forEach(item => {
+      const key = item.modelName || item.equipName || "";
+      if (key) modelQty[key] = (modelQty[key] || 0) + (item.quantity || 1);
+    });
+
+    for (const [modelName, qty] of Object.entries(modelQty)) {
+      // 대여가능 상태인 유닛만, itemNo 순으로 정렬
+      const availUnits = equipments
+        .filter(e => (e.modelName || e.name) === modelName && (e.status || "대여가능") === "대여가능")
+        .sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""));
+
+      let remaining = qty;
+      for (const unit of availUnits) {
+        if (remaining <= 0) break;
+        await updateItem("equipments", unit.id, { status: "대여중" });
+        assignedUnits.push({
+          modelName,
+          itemNo:   unit.itemNo || "",
+          unitId:   unit.id,
+          itemName: unit.itemName || "",
+        });
+        remaining--;
+      }
+    }
+
+    // 배치 결과를 rentalRequest에 저장
+    await updateItem("rentalRequests", r.id, {
+      status: "대여중",
+      assignedUnits,
+    });
   };
 
   const confirmAction = async () => {
@@ -216,7 +247,14 @@ ${r.attachments?.length > 0 ? `
 
   const returnDone = async (r) => {
     await updateItem("rentalRequests", r.id, { status: "반납완료" });
-    await updateAvailable(r.items, +1); // 재고 복구
+    // assignedUnits 기준 복구 (없으면 기존 방식)
+    if (r.assignedUnits?.length > 0) {
+      for (const unit of r.assignedUnits) {
+        await updateItem("equipments", unit.unitId, { status: "대여가능" });
+      }
+    } else {
+      await updateAvailable(r.items, +1);
+    }
   };
 
   const counts = STATUS_TABS.reduce((acc, s) => {
@@ -359,7 +397,21 @@ ${r.attachments?.length > 0 ? `
             </div>
           )}
           {r.status === "대여중" && (
-            <Btn onClick={() => returnDone(r)} color={C.teal} full>📦 반납 완료</Btn>
+            <div>
+              {r.assignedUnits?.length > 0 && (
+                <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.blue, marginBottom:6 }}>배치된 장비</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {r.assignedUnits.map((u, i) => (
+                      <span key={i} style={{ background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600, color:C.navy }}>
+                        {u.modelName} <span style={{ color:C.blue }}>{u.itemNo}</span>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <Btn onClick={() => returnDone(r)} color={C.teal} full>📦 반납 완료</Btn>
+            </div>
           )}
         </Card>
       ))}
