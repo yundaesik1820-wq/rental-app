@@ -176,7 +176,11 @@ function DetailModal({ item, onClose, onSave }) {
 // ── 장비 카드 (1대) ────────────────────────────────────────
 function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
   const [photoIdx, setPhotoIdx] = useState(0);
-  const photos = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
+  // displayPhotoUrl(송출용)과 photoUrls(점검용) 합쳐서 표시
+  const displayPhoto = e.displayPhotoUrl ? [e.displayPhotoUrl] : [];
+  const inspPhotos   = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
+  const photos       = [...displayPhoto, ...inspPhotos];
+  const photoLabels  = [...displayPhoto.map(() => "송출"), ...inspPhotos.map(() => "점검")];
 
   const statusColor = { 대여가능: C.green, 대여중: C.blue, 수리중: C.yellow, 대여불가: C.red }[e.status] || C.muted;
 
@@ -214,6 +218,9 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
       {photos.length > 0 && (
         <div style={{ marginBottom: 12, position: "relative", paddingTop: "60%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
           <img src={photos[photoIdx]} alt="제품사진" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+          <div style={{ position:"absolute", top:6, left:6, background: photoLabels[photoIdx]==="송출" ? "rgba(59,108,248,0.85)" : "rgba(0,0,0,0.45)", color:"#fff", borderRadius:4, padding:"2px 7px", fontSize:10, fontWeight:700 }}>
+            {photoLabels[photoIdx]==="송출" ? "🖼️ 송출용" : "🔍 점검용"}
+          </div>
           {photos.length > 1 && (
             <>
               <button onClick={() => setPhotoIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer" }}>‹</button>
@@ -240,8 +247,9 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Btn onClick={() => onEdit(e)}    small color={C.green}>✏️ 수정</Btn>
-        <Btn onClick={() => onDetail(e)} small color={C.blue}>📋 세부사항</Btn>
-        <Btn onClick={() => onInsp(e)}   small color={C.purple}>🔧 점검이력</Btn>
+        <Btn onClick={() => onCopy(e)}    small color={C.teal} outline>📋 복사</Btn>
+        <Btn onClick={() => onDetail(e)} small color={C.blue}>세부사항</Btn>
+        <Btn onClick={() => onInsp(e)}   small color={C.purple}>🔧 점검</Btn>
         <Btn onClick={() => onCycleStatus(e)} small color={C.yellow} text={C.text} outline>상태변경</Btn>
         <Btn onClick={() => onDelete(e.id)}   small color={C.red}   outline>삭제</Btn>
       </div>
@@ -386,6 +394,7 @@ export default function Equipment() {
   const [inspItem, setInspItem]       = useState(null);
   const [detailItem, setDetailItem]   = useState(null);
   const [editItem, setEditItem]       = useState(null); // 수정 대상
+  const [copyItem, setCopyItem]       = useState(null); // 복사 대상
 
   const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
@@ -434,6 +443,37 @@ export default function Equipment() {
       isSet:         e.isSet         || false,
       setItems:      e.setItems      || "",
     });
+  };
+
+  // 복사 시작 — 기존 데이터로 폼 채우되 itemNo/serialNo 비움
+  const startCopy = (e) => {
+    setCopyItem(e);
+    setForm({
+      majorCategory:   e.majorCategory   || "",
+      minorCategory:   e.minorCategory   || "",
+      manufacturer:    e.manufacturer    || "",
+      modelName:       e.modelName       || "",
+      itemName:        e.itemName        || "",
+      unitNo:          e.unitNo          || "",
+      itemNo:          "",   // 번호만 비움
+      status:          "대여가능",
+      licenseLevel:    e.licenseLevel    || 0,
+      location:        e.location        || "",
+      photoUrls:       e.photoUrls       || [],
+      snPhotoUrl:      "",   // S/N 사진 비움
+      displayPhotoUrl: e.displayPhotoUrl || "",
+      serialNo:        "",   // 시리얼 비움
+      note:            e.note            || "",
+      isSet:           e.isSet           || false,
+      setItems:        e.setItems        || "",
+    });
+  };
+
+  const saveCopy = async () => {
+    if (!form.modelName) return;
+    await addItem("equipments", { ...form, name: form.modelName });
+    setCopyItem(null);
+    setForm(EMPTY);
   };
 
   const saveEdit = async () => {
@@ -586,6 +626,46 @@ export default function Equipment() {
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
             <Btn onClick={addEquip} full disabled={!form.modelName}>등록</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* 복사 모달 */}
+      {copyItem && (
+        <Modal onClose={() => { setCopyItem(null); setForm(EMPTY); }} width={560}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>📋 장비 복사 등록</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:18 }}>
+            <span style={{ color:C.teal, fontWeight:700 }}>{copyItem.modelName}</span> 을 복사합니다.
+            제품 번호와 S/N만 변경 후 등록하세요.
+          </div>
+
+          {/* 핵심 변경 필드 강조 */}
+          <div style={{ background:C.tealLight, borderRadius:12, padding:"14px 16px", marginBottom:16, border:`1.5px solid ${C.teal}40` }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.teal, marginBottom:10 }}>변경 필요 항목</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <Inp label="제품 번호 (itemNo) *" placeholder="예: SET_ZOOM F6 02" value={form.itemNo} onChange={e => setForm(p=>({...p,itemNo:e.target.value}))} />
+              <Inp label="시리얼 번호" placeholder="예: SN12345" value={form.serialNo} onChange={e => setForm(p=>({...p,serialNo:e.target.value}))} />
+            </div>
+          </div>
+
+          {/* 나머지 필드 (수정 가능) */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+            <Inp label="모델명" value={form.modelName} onChange={e => setForm(p=>({...p,modelName:e.target.value}))} />
+            <Inp label="장비명" value={form.itemName} onChange={e => setForm(p=>({...p,itemName:e.target.value}))} />
+            <Inp label="보관 위치" value={form.location} onChange={e => setForm(p=>({...p,location:e.target.value}))} />
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상태</div>
+              <select value={form.status} onChange={e => setForm(p=>({...p,status:e.target.value}))}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
+                <option>대여가능</option><option>대여중</option><option>수리중</option><option>분실</option>
+              </select>
+            </div>
+          </div>
+          <Inp label="비고" value={form.note} onChange={e => setForm(p=>({...p,note:e.target.value}))} />
+
+          <div style={{ display:"flex", gap:10, marginTop:8 }}>
+            <Btn onClick={() => { setCopyItem(null); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={saveCopy} color={C.teal} full disabled={!form.itemNo.trim()}>📋 복사 등록</Btn>
           </div>
         </Modal>
       )}
