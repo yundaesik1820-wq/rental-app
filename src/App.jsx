@@ -97,6 +97,7 @@ function AppContent() {
         case "settings": return <Settings />;
         case "qrscan":   return <QRScan />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
+        case "license":  return <LicenseAdmin />;
         default:         return <Dashboard />;
       }
     } else {
@@ -108,6 +109,7 @@ function AppContent() {
         case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} userEmail={profile.email} userName={profile.name} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
+        case "license":  return <License />;
         case "inquiry":  return <StudentInquiry />;
         default:         return <StudentHome />;
       }

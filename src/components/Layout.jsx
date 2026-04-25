@@ -18,6 +18,7 @@ const ADMIN_NAV = [
   { id: "notices",  icon: Megaphone,     label: "공지사항"  },
   { id: "qrscan",   icon: Camera,        label: "QR 스캔"  },
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
+  { id: "license",  icon: GraduationCap, label: "라이센스"  },
   { id: "settings", icon: Settings,      label: "설정"      },
 ];
 
@@ -28,6 +29,7 @@ const STU_NAV = [
   { id: "reserve",  icon: CalendarCheck, label: "예약 신청" },
   { id: "calendar", icon: Calendar,      label: "캘린더"   },
   { id: "notices",  icon: Megaphone,     label: "공지사항" },
+  { id: "license",  icon: GraduationCap, label: "라이센스" },
   { id: "inquiry",  icon: MessageCircle, label: "문의"     },
   { id: "profile",  icon: UserCircle,    label: "내 정보"  },
 ];
