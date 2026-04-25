@@ -8,17 +8,18 @@ export function groupEquipments(equipments) {
     if (!key) return;
     if (!map[key]) {
       map[key] = {
-        modelName:     key,
-        itemName:      e.itemName      || "",
-        majorCategory: e.majorCategory || e.category || "",
-        minorCategory: e.minorCategory || "",
-        manufacturer:  e.manufacturer  || "",
-        img:           e.img           || "📦",
-        photoUrls:     [],  // 빈 배열로 시작, 아래에서 합산
-        licenseLevel:  e.licenseLevel  || 0,
-        units:         [],
-        total:         0,
-        available:     0,
+        modelName:       key,
+        itemName:        e.itemName        || "",
+        majorCategory:   e.majorCategory   || e.category || "",
+        minorCategory:   e.minorCategory   || "",
+        manufacturer:    e.manufacturer    || "",
+        img:             e.img             || "📦",
+        photoUrls:       [],
+        displayPhotoUrl: e.displayPhotoUrl || "",
+        licenseLevel:    e.licenseLevel    || 0,
+        units:           [],
+        total:           0,
+        available:       0,
       };
     }
     map[key].units.push(e);
@@ -27,6 +28,9 @@ export function groupEquipments(equipments) {
     // 같은 모델 중 가장 높은 라이센스 단계로 설정
     if ((e.licenseLevel || 0) > map[key].licenseLevel) {
       map[key].licenseLevel = e.licenseLevel || 0;
+    }
+    if (!map[key].displayPhotoUrl && e.displayPhotoUrl) {
+      map[key].displayPhotoUrl = e.displayPhotoUrl;
     }
     // itemNo가 01인 장비 사진 우선 사용
     const ePhotos = e.photoUrls?.length > 0 ? e.photoUrls : (e.photoUrl ? [e.photoUrl] : []);
