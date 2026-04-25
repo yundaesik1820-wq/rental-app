@@ -14,7 +14,9 @@ import Stats      from "./pages/admin/Stats";
 import Notices    from "./pages/admin/Notices";
 import Settings   from "./pages/admin/Settings";
 import QRScan       from "./pages/admin/QRScan";
-import AdminInquiry from "./pages/admin/Inquiry";
+import AdminInquiry  from "./pages/admin/Inquiry";
+import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
+import License       from "./pages/student/License.jsx";
 
 // Student pages
 import StudentHome    from "./pages/student/Home";
