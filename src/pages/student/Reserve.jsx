@@ -127,9 +127,11 @@ export default function Reserve() {
   // 세트 장비
   const setEquips  = groupSets(equipments);
 
-  // 카테고리
-  const unitCats = ["전체", ...new Set(grouped.map(e => e.majorCategory).filter(Boolean))];
-  const setCats  = ["전체", ...new Set(setEquips.map(e => e.majorCategory).filter(Boolean))];
+  // 카테고리 - 단품+세트 합산 (대분류 기준 1차 선택)
+  const allCats = ["전체", ...new Set([
+    ...grouped.map(e => e.majorCategory),
+    ...setEquips.map(e => e.majorCategory),
+  ].filter(Boolean))];
 
   const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
@@ -383,7 +385,6 @@ export default function Reserve() {
     finally { setSubmitting(false); }
   };
 
-  const cats = tabView === "단품" ? unitCats : setCats;
 
   return (
     <div>
@@ -435,22 +436,29 @@ export default function Reserve() {
         </Card>
       )}
 
-      {/* 카테고리 + 검색 */}
-      <div style={{ display:"flex", gap:12, marginBottom:12, flexWrap:"wrap" }}>
-        <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ flex:1, minWidth:180, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          {cats.map(c => (
-            <button key={c} onClick={() => setFilter(c)} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
-          ))}
-        </div>
+      {/* 1차: 대분류 카테고리 */}
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+        {allCats.map(c => (
+          <button key={c} onClick={() => { setFilter(c); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+        ))}
       </div>
 
-      {/* 단품 / 세트 탭 */}
+      {/* 2차: 검색 */}
+      <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }} />
+
+      {/* 3차: 단품 / 세트 탭 */}
       <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:16, border:`1px solid ${C.border}`, width:"fit-content" }}>
-        {["단품", "세트"].map(t => (
-          <button key={t} onClick={() => { setTabView(t); setFilter("전체"); setSearch(""); }} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>{t} {t==="세트" ? `(${setEquips.length})` : `(${grouped.length})`}</button>
-        ))}
+        {["단품", "세트"].map(t => {
+          const cnt = t === "세트"
+            ? filteredSets.length
+            : filteredUnits.length;
+          return (
+            <button key={t} onClick={() => setTabView(t)} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>
+              {t} ({cnt})
+            </button>
+          );
+        })}
       </div>
 
       {errors.cart && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {errors.cart}</div>}
