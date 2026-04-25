@@ -479,6 +479,18 @@ ${r.attachments?.length > 0 ? `
               <Btn onClick={() => returnDone(r)} color={C.teal} full>📦 반납 완료</Btn>
             </div>
           )}
+          {r.status === "반납완료" && r.assignedUnits?.length > 0 && (
+            <div style={{ background:"#F8FAFC", borderRadius:10, padding:"10px 14px", border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:6 }}>사용 장비 기록</div>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                {r.assignedUnits.map((u, i) => (
+                  <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600, color:C.text }}>
+                    {u.modelName} <span style={{ color:C.navy, fontWeight:700 }}>{u.itemNo}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
         </Card>
       ))}
 
