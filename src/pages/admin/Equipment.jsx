@@ -174,7 +174,7 @@ function DetailModal({ item, onClose, onSave }) {
 }
 
 // ── 장비 카드 (1대) ────────────────────────────────────────
-function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit }) {
+function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
   const [photoIdx, setPhotoIdx] = useState(0);
   // displayPhotoUrl(송출용)과 photoUrls(점검용) 합쳐서 표시
   const displayPhoto = e.displayPhotoUrl ? [e.displayPhotoUrl] : [];
@@ -786,6 +786,7 @@ export default function Equipment() {
             onDelete={id => deleteItem("equipments", id)}
             onCycleStatus={cycleStatus}
             onEdit={startEdit}
+            onCopy={startCopy}
           />
         ))}
       </div>
