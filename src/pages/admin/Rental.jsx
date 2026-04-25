@@ -537,36 +537,53 @@ ${r.attachments?.length > 0 ? `
       )}
 
       {/* ── 장비 교체 모달 ── */}
-      {swapModal && (() => {
-        const unit = swapModal.request.assignedUnits[swapModal.unitIdx];
-        const avail = equipments.filter(e =>
-          (e.modelName || e.name) === unit.modelName &&
-          (e.status || "대여가능") === "대여가능"
-        ).sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""));
-        return (
-          <Modal onClose={() => setSwapModal(null)} width={460}>
-            <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 교체</div>
-            <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>
-              현재: <span style={{ color:C.red, fontWeight:600 }}>{unit.modelName} {unit.itemNo}</span> → 교체할 유닛 선택
+      {swapModal && swapModal.request.assignedUnits[swapModal.unitIdx] && (() => {
+        const unit  = swapModal.request.assignedUnits[swapModal.unitIdx];
+        const avail = equipments
+          .filter(e => (e.modelName || e.name) === unit.modelName && (e.status || "대여가능") === "대여가능")
+          .sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""));
+        return null; // 아래 SwapModal로 처리
+      })()}
+      {swapModal && swapModal.request.assignedUnits[swapModal.unitIdx] && (
+        <Modal onClose={() => setSwapModal(null)} width={460}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 교체</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>
+            현재:{" "}
+            <span style={{ color:C.red, fontWeight:600 }}>
+              {swapModal.request.assignedUnits[swapModal.unitIdx].modelName}{" "}
+              {swapModal.request.assignedUnits[swapModal.unitIdx].itemNo}
+            </span>{" "}→ 교체할 유닛 선택
+          </div>
+          {equipments.filter(e =>
+            (e.modelName || e.name) === swapModal.request.assignedUnits[swapModal.unitIdx].modelName &&
+            (e.status || "대여가능") === "대여가능"
+          ).length === 0 ? (
+            <div style={{ background:C.redLight, borderRadius:10, padding:"12px 16px", fontSize:13, color:C.red, marginBottom:16 }}>
+              교체 가능한 유닛이 없습니다
             </div>
-            {avail.length === 0 ? (
-              <div style={{ background:C.redLight, borderRadius:10, padding:"12px 16px", fontSize:13, color:C.red, marginBottom:16 }}>
-                교체 가능한 유닛이 없습니다
-              </div>
-            ) : (
-              <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
-                {avail.map(u => (
-                  <button key={u.id} onClick={() => confirmSwap(u)}
-                    style={{ padding:"10px 20px", borderRadius:10, border:`1.5px solid ${C.border}`, background:"#fff", color:C.text, fontSize:14, fontWeight:600, cursor:"pointer" }}>
+          ) : (
+            <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+              {equipments
+                .filter(e =>
+                  (e.modelName || e.name) === swapModal.request.assignedUnits[swapModal.unitIdx].modelName &&
+                  (e.status || "대여가능") === "대여가능"
+                )
+                .sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""))
+                .map(u => (
+                  <button
+                    key={u.id}
+                    onClick={(e) => { e.stopPropagation(); confirmSwap(u); }}
+                    disabled={submitting}
+                    style={{ padding:"10px 20px", borderRadius:10, border:`1.5px solid ${C.blue}`, background:C.blueLight, color:C.blue, fontSize:14, fontWeight:700, cursor:"pointer", opacity: submitting ? 0.5 : 1 }}>
                     {u.itemNo || u.id.slice(-4)}
                   </button>
-                ))}
-              </div>
-            )}
-            <Btn onClick={() => setSwapModal(null)} color={C.muted} outline full>취소</Btn>
-          </Modal>
-        );
-      })()}
+                ))
+              }
+            </div>
+          )}
+          <Btn onClick={() => setSwapModal(null)} color={C.muted} outline full>취소</Btn>
+        </Modal>
+      )}
 
     </div>
   );
