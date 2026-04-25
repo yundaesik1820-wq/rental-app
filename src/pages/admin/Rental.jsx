@@ -17,6 +17,8 @@ export default function Rental() {
   const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
+  const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
 
   // 신청서 출력
   const printRequest = (r) => {
@@ -392,7 +394,7 @@ ${r.attachments?.length > 0 ? `
           )}
           {r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => startRental(r)} color={C.blue} full>🚀 대여 시작</Btn>
+              <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>
             </div>
           )}
@@ -401,11 +403,17 @@ ${r.attachments?.length > 0 ? `
               {r.assignedUnits?.length > 0 && (
                 <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
                   <div style={{ fontSize:12, fontWeight:700, color:C.blue, marginBottom:6 }}>배치된 장비</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {r.assignedUnits.map((u, i) => (
-                      <span key={i} style={{ background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:6, padding:"3px 10px", fontSize:12, fontWeight:600, color:C.navy }}>
-                        {u.modelName} <span style={{ color:C.blue }}>{u.itemNo}</span>
-                      </span>
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:8, padding:"6px 12px" }}>
+                        <span style={{ fontSize:13, fontWeight:600, color:C.navy }}>
+                          {u.modelName} <span style={{ color:C.blue }}>{u.itemNo}</span>
+                        </span>
+                        <button onClick={() => setSwapModal({ request: r, unitIdx: i })}
+                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer" }}>
+                          교체
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
@@ -481,6 +489,85 @@ ${r.attachments?.length > 0 ? `
           </div>
         </Modal>
       )}
+
+      {/* ── 배치 선택 모달 ── */}
+      {assignModal && (
+        <Modal onClose={() => setAssignModal(null)} width={520}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>🚀 배치 장비 선택</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>대여할 장비를 확인하고 필요시 변경하세요</div>
+          {assignModal.assignments.map((a, i) => (
+            <div key={i} style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:12, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>{a.modelName} ({i+1}번째)</div>
+              {a.availUnits.length === 0 ? (
+                <div style={{ fontSize:13, color:C.red }}>대여 가능한 유닛이 없습니다</div>
+              ) : (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
+                  {a.availUnits.map(unit => (
+                    <button key={unit.id} onClick={() => {
+                      const newA = assignModal.assignments.map((x, j) =>
+                        j === i ? { ...x, selectedUnit: unit } : x
+                      );
+                      setAssignModal(p => ({ ...p, assignments: newA }));
+                    }} style={{
+                      padding:"8px 16px", borderRadius:10, border:`2px solid ${a.selectedUnit?.id === unit.id ? C.blue : C.border}`,
+                      background: a.selectedUnit?.id === unit.id ? C.blueLight : "#fff",
+                      color: a.selectedUnit?.id === unit.id ? C.blue : C.text,
+                      fontSize:13, fontWeight:600, cursor:"pointer",
+                    }}>
+                      {unit.itemNo || unit.id.slice(-4)}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {a.selectedUnit && (
+                <div style={{ marginTop:8, fontSize:12, color:C.muted }}>
+                  선택됨: <span style={{ color:C.blue, fontWeight:600 }}>{a.selectedUnit.itemNo}</span>
+                  {a.selectedUnit.itemName && ` · ${a.selectedUnit.itemName}`}
+                </div>
+              )}
+            </div>
+          ))}
+          <div style={{ display:"flex", gap:10, marginTop:4 }}>
+            <Btn onClick={() => setAssignModal(null)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={confirmAssign} color={C.blue} full disabled={submitting || assignModal.assignments.some(a => !a.selectedUnit)}>
+              {submitting ? "처리중..." : "✅ 대여 시작 확정"}
+            </Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* ── 장비 교체 모달 ── */}
+      {swapModal && (() => {
+        const unit = swapModal.request.assignedUnits[swapModal.unitIdx];
+        const avail = equipments.filter(e =>
+          (e.modelName || e.name) === unit.modelName &&
+          (e.status || "대여가능") === "대여가능"
+        ).sort((a, b) => (a.itemNo || "").localeCompare(b.itemNo || ""));
+        return (
+          <Modal onClose={() => setSwapModal(null)} width={460}>
+            <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>장비 교체</div>
+            <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>
+              현재: <span style={{ color:C.red, fontWeight:600 }}>{unit.modelName} {unit.itemNo}</span> → 교체할 유닛 선택
+            </div>
+            {avail.length === 0 ? (
+              <div style={{ background:C.redLight, borderRadius:10, padding:"12px 16px", fontSize:13, color:C.red, marginBottom:16 }}>
+                교체 가능한 유닛이 없습니다
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:20 }}>
+                {avail.map(u => (
+                  <button key={u.id} onClick={() => confirmSwap(u)}
+                    style={{ padding:"10px 20px", borderRadius:10, border:`1.5px solid ${C.border}`, background:"#fff", color:C.text, fontSize:14, fontWeight:600, cursor:"pointer" }}>
+                    {u.itemNo || u.id.slice(-4)}
+                  </button>
+                ))}
+              </div>
+            )}
+            <Btn onClick={() => setSwapModal(null)} color={C.muted} outline full>취소</Btn>
+          </Modal>
+        );
+      })()}
+
     </div>
   );
 }
