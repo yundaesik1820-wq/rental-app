@@ -222,8 +222,7 @@ ${r.attachments?.length > 0 ? `
     (r.items || []).forEach(item => {
       const name = item.modelName || item.equipName || "";
       if (item.isSet && item.setItems) {
-        item.setItems.split("
-").filter(Boolean).forEach(sub => {
+        item.setItems.split("\n").filter(Boolean).forEach(sub => {
           checklist.push({ label: sub.trim(), checked: false, parent: name });
         });
       } else {
