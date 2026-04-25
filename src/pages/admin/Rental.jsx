@@ -6,7 +6,7 @@ import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { PauseCircle } from "lucide-react";
 
 const STATUS_TABS_SUPER = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
-const STATUS_TABS_SUB   = ["대여중", "반납완료", "연체"];
+const STATUS_TABS_SUB   = ["승인됨", "대여중", "반납완료", "연체"];
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
 export default function Rental({ subAdmin = false }) {
@@ -464,10 +464,10 @@ ${r.attachments?.length > 0 ? `
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {!subAdmin && r.status === "승인됨" && (
+          {r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
-              <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>
+              {!subAdmin && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
           {r.status === "대여중" && (
