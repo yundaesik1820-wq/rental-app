@@ -57,9 +57,10 @@ export default function EquipList() {
   const grouped    = groupEquipments(unitEquips);
   const setEquips  = groupSets(equipments);
 
-  const unitCats = ["전체", ...new Set(grouped.map(e => e.majorCategory).filter(Boolean))];
-  const setCats  = ["전체", ...new Set(setEquips.map(e => e.majorCategory).filter(Boolean))];
-  const cats     = tabView === "단품" ? unitCats : setCats;
+  const allCats = ["전체", ...new Set([
+    ...grouped.map(e => e.majorCategory),
+    ...setEquips.map(e => e.majorCategory),
+  ].filter(Boolean))];
 
   const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
@@ -77,28 +78,29 @@ export default function EquipList() {
     <div>
       <PageTitle>🔍 장비 목록</PageTitle>
 
-      {/* 단품 / 세트 탭 */}
-      <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${C.border}`, width: "fit-content" }}>
-        {[["단품", "🔧"], ["세트", "📦"]].map(([v, icon]) => (
-          <button key={v} onClick={() => { setTabView(v); setFilter("전체"); setSearch(""); }}
-            style={{ background: tabView === v ? C.navy : "transparent", color: tabView === v ? "#fff" : C.muted, border: "none", borderRadius: 9, padding: "8px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
-            {icon} {v} 장비
-            <span style={{ background: tabView === v ? "rgba(255,255,255,0.25)" : C.bg, borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>
-              {v === "단품" ? grouped.length : setEquips.length}
-            </span>
-          </button>
+      {/* 1행: 대분류 카테고리 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        {allCats.map(c => (
+          <button key={c} onClick={() => { setFilter(c); setSearch(""); }}
+            style={{ background: filter === c ? C.navy : C.surface, color: filter === c ? "#fff" : C.muted, border: `1px solid ${filter === c ? C.navy : C.border}`, borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
         ))}
       </div>
 
-      {/* 검색 + 카테고리 필터 */}
-      <div style={{ display: "flex", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
-        <input placeholder="🔍 장비명, 제조사 검색" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ flex: 1, minWidth: 180, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 16px", fontSize: 14, fontFamily: "inherit", outline: "none" }} />
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {cats.map(c => (
-            <button key={c} onClick={() => setFilter(c)} style={{ background: filter === c ? C.navy : C.surface, color: filter === c ? "#fff" : C.muted, border: `1px solid ${filter === c ? C.navy : C.border}`, borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
-          ))}
-        </div>
+      {/* 2행: 검색 */}
+      <input placeholder="🔍 장비명, 제조사 검색" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ display: "block", width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 16px", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 12, boxSizing: "border-box" }} />
+
+      {/* 3행: 단품 / 세트 탭 */}
+      <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${C.border}`, width: "fit-content" }}>
+        {[["단품", "🔧"], ["세트", "📦"]].map(([v, icon]) => (
+          <button key={v} onClick={() => setTabView(v)}
+            style={{ background: tabView === v ? C.navy : "transparent", color: tabView === v ? "#fff" : C.muted, border: "none", borderRadius: 9, padding: "8px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
+            {icon} {v}
+            <span style={{ background: tabView === v ? "rgba(255,255,255,0.25)" : C.bg, borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>
+              {v === "단품" ? filteredUnits.length : filteredSets.length}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* ── 단품 목록 ── */}
