@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp, addDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { C } from "../theme";
@@ -72,12 +72,7 @@ export default function Login() {
     if (!resetId.trim() || !resetName.trim()) { setResetErr("학번과 이름을 모두 입력하세요"); return; }
     setResetLoading(true); setResetErr("");
     try {
-      const q    = query(collection(db, "users"), where("studentId", "==", resetId.trim()), where("name", "==", resetName.trim()));
-      const snap = await getDocs(q);
-      if (snap.empty) { setResetErr("학번 또는 이름이 일치하지 않습니다"); setResetLoading(false); return; }
-      const q2    = query(collection(db, "pwResetRequests"), where("studentId", "==", resetId.trim()), where("status", "==", "pending"));
-      const snap2 = await getDocs(q2);
-      if (!snap2.empty) { setResetErr("이미 초기화 요청이 접수되어 있습니다"); setResetLoading(false); return; }
+      // 비로그인 상태에서 바로 요청 저장 (관리자가 직접 확인)
       await addDoc(collection(db, "pwResetRequests"), {
         studentId: resetId.trim(), studentName: resetName.trim(),
         status: "pending", createdAt: serverTimestamp(),
