@@ -248,8 +248,6 @@ export default function Students({ readOnly = false }) {
     }
   };
 
-  };
-
   // 강제 탈퇴 / 복구
   const withdraw = async (s) => {
     if (!window.confirm(`${s.name} 학생을 강제 탈퇴시키겠습니까?\n탈퇴 후에는 로그인이 차단됩니다.`)) return;
