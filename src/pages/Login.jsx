@@ -215,6 +215,9 @@ export default function Login() {
         )}
 
       </div>
+      <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:"rgba(255,255,255,0.4)" }}>
+        Designed &amp; Developed by 윤대식
+      </div>
     </div>
   );
 }

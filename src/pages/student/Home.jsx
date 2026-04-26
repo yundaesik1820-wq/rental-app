@@ -99,6 +99,9 @@ export default function StudentHome() {
             </div>
           ))}
         </div>
+        <div style={{ textAlign:"right", marginTop:12, fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
+          Designed &amp; Developed by 윤대식
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
