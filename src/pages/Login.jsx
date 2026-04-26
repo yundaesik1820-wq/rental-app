@@ -124,10 +124,6 @@ export default function Login() {
               <button onClick={() => { setShowReset(true); setResetDone(false); setResetErr(""); setResetId(""); setResetName(""); }}
                 style={{ background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer", textDecoration:"underline" }}>
                 비밀번호를 잊으셨나요?
-              </button>
-              <div style={{ marginTop:8, fontSize:10, color:"rgba(100,100,120,0.5)", fontStyle:"italic" }}>
-                Designed &amp; Developed by 윤대식
-              </div>
             </div>
             <div style={{ marginTop:20, background:C.bg, borderRadius:12, padding:"12px 16px", fontSize:12, color:C.muted, lineHeight:1.8 }}>
               <div style={{ fontWeight:700, color:C.navy, marginBottom:4 }}>💡 안내</div>
@@ -135,6 +131,9 @@ export default function Login() {
               <div>관리자 승인 후 로그인이 가능합니다.</div>
               <div style={{ marginTop:4, color:C.orange }}>⏳ 가입 신청 후 승인까지 다소 시간이 소요될 수 있습니다. 승인 완료 후 다시 로그인해 주세요.</div>
               <div style={{ marginTop:6, paddingTop:6, borderTop:`1px solid ${C.border}` }}>오류문의는 윤대식 조교(010-9576-6028)로 연락 부탁드립니다.</div>
+            </div>
+            <div style={{ textAlign:"center", marginTop:10, fontSize:10, color:"rgba(100,100,120,0.45)", fontStyle:"italic" }}>
+              Designed &amp; Developed by 윤대식
             </div>
           </>
         )}
