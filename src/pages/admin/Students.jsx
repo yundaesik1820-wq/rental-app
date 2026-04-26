@@ -28,11 +28,12 @@ export default function Students({ readOnly = false }) {
   ];
   const TABS = readOnly ? TABS_ALL.filter(t => t.id === "approved") : TABS_ALL;
 
-  const pendingList  = allUsers.filter(s => s.role === "student" && s.status === "pending");
-  const approvedList = allUsers.filter(s => s.role === "student" && s.status === "approved");
-  const rejectedList = allUsers.filter(s => s.role === "student" && s.status === "rejected");
-  const adminList    = allUsers.filter(s => s.role === "admin");
-  const profList     = allUsers.filter(s => s.role === "professor");
+  const pendingList   = allUsers.filter(s => s.role === "student" && s.status === "pending");
+  const approvedList  = allUsers.filter(s => s.role === "student" && s.status === "approved");
+  const rejectedList  = allUsers.filter(s => s.role === "student" && s.status === "rejected");
+  const withdrawnList = allUsers.filter(s => s.role === "student" && s.status === "withdrawn");
+  const adminList     = allUsers.filter(s => s.role === "admin");
+  const profList      = allUsers.filter(s => s.role === "professor");
 
   const [tab, setTab]     = useState("pending");
   const [search, setSearch] = useState("");
