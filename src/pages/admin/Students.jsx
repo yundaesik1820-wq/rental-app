@@ -225,6 +225,16 @@ export default function Students({ readOnly = false }) {
   const reject    = id => updateItem("users", id, { status: "rejected" });
   const reapprove = s  => { setApproveTarget(s); setLicense(s.license || "없음"); };
 
+  // 강제 탈퇴 / 복구
+  const withdraw = async (s) => {
+    if (!window.confirm(`${s.name} 학생을 강제 탈퇴시키겠습니까?\n탈퇴 후에는 로그인이 차단됩니다.`)) return;
+    await updateItem("users", s.id, { status: "withdrawn", withdrawnAt: new Date().toISOString() });
+  };
+  const restore = async (s) => {
+    if (!window.confirm(`${s.name} 학생의 계정을 복구하겠습니까?`)) return;
+    await updateItem("users", s.id, { status: "approved", withdrawnAt: null });
+  };
+
   // ── 탭 + 필터 ───────────────────────────────────────────
   const allTabs = [
     { id:"pending",   label:`승인 대기 (${pendingList.length})`,   color:C.yellow  },
