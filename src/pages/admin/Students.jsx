@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { createUserWithEmailAndPassword, updatePassword as fbUpdatePassword } from "firebase/auth";
+import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
 import { auth, db } from "../../firebase";
 import { C } from "../../theme";
 import { Card, Avatar, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
@@ -13,7 +13,8 @@ const admYear  = id => id ? `${id.slice(0,2)}학번` : "";
 
 export default function Students({ readOnly = false }) {
   const { data: allUsers }    = useCollection("users", "createdAt");
-  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
+  const { data: allRequests }   = useCollection("rentalRequests", "createdAt");
+  const { data: resetRequests } = useCollection("pwResetRequests", "createdAt");
 
   // studentId 기준 대여 횟수 실시간 집계
   const getRentalCount = (studentId) =>
@@ -151,15 +152,16 @@ export default function Students({ readOnly = false }) {
     e.target.value = "";
   };
 
-  // 학생 일괄 등록
+  // 학생 일괄 등록 (10명마다 6초 딜레이 - Firebase 분당 제한 대응)
   const handleBulkCreate = async () => {
     if (bulkRows.length === 0) { setBulkErr("파일을 먼저 업로드하세요"); return; }
     setBulkLoading(true); setBulkErr(""); setBulkDone(0);
     let done = 0;
-    for (const s of bulkRows) {
+    for (let i = 0; i < bulkRows.length; i++) {
+      const s = bulkRows[i];
       const email = `${s.studentId}@kbas.ac.kr`;
       try {
-        const cred = await createUserWithEmailAndPassword(auth, email, "123456"); // 초기 비번 통일
+        const cred = await createUserWithEmailAndPassword(auth, email, "123456");
         await setDoc(doc(db, "users", cred.user.uid), {
           name:          s.name,
           dept:          s.dept,
@@ -169,7 +171,7 @@ export default function Students({ readOnly = false }) {
           admissionYear: s.studentId.slice(0, 2),
           license:       "",
           role:          "student",
-          status:        "approved", // 관리자 직접 추가 → 바로 승인
+          status:        "approved",
           rentals:       0,
           createdAt:     serverTimestamp(),
         });
@@ -177,6 +179,12 @@ export default function Students({ readOnly = false }) {
         if (!e.code?.includes("already-in-use")) console.error(s.studentId, e.message);
       }
       done++; setBulkDone(done);
+      // 10명마다 6초 대기 (Firebase 분당 10개 제한 대응)
+      if (done % 10 === 0 && done < bulkRows.length) {
+        setBulkErr(`⏳ Firebase 제한으로 잠시 대기 중... (${done}/${bulkRows.length}명 완료)`);
+        await new Promise(r => setTimeout(r, 6000));
+        setBulkErr("");
+      }
     }
     setBulkLoading(false);
     setBulkRows([]);
@@ -225,6 +233,24 @@ export default function Students({ readOnly = false }) {
   const reject    = id => updateItem("users", id, { status: "rejected" });
   const reapprove = s  => { setApproveTarget(s); setLicense(s.license || "없음"); };
 
+  // 비밀번호 초기화 요청 처리
+  const handlePwReset = async (req) => {
+    if (!window.confirm(`${req.studentName}(${req.studentId}) 학생의 비밀번호를 123456으로 초기화하시겠습니까?
+
+※ Firebase 콘솔 → Authentication → 사용자 목록에서
+   ${req.studentId}@kbas.ac.kr 계정의 비밀번호를 123456으로 변경해주세요.`)) return;
+    try {
+      await updateDoc(doc(db, "pwResetRequests", req.id), {
+        status: "done",
+        doneAt: new Date().toISOString(),
+      });
+      alert("처리 완료로 표시됐습니다.
+Firebase 콘솔에서 실제 비밀번호를 변경해주세요.");
+    } catch(e) {
+      alert("오류: " + e.message);
+    }
+  };
+
   // 강제 탈퇴 / 복구
   const withdraw = async (s) => {
     if (!window.confirm(`${s.name} 학생을 강제 탈퇴시키겠습니까?\n탈퇴 후에는 로그인이 차단됩니다.`)) return;
@@ -236,7 +262,10 @@ export default function Students({ readOnly = false }) {
   };
 
   // ── 탭 + 필터 ───────────────────────────────────────────
+  const pendingResets = resetRequests.filter(r => r.status === "pending");
+
   const allTabs = [
+    { id:"pwreset",   label:`비밀번호 초기화 요청 ${pendingResets.length > 0 ? `(${pendingResets.length})` : ""}`, color:C.orange },
     { id:"pending",   label:`승인 대기 (${pendingList.length})`,   color:C.yellow  },
     { id:"approved",  label:`승인됨 (${approvedList.length})`,     color:C.green   },
     { id:"rejected",  label:`거절됨 (${rejectedList.length})`,     color:C.red     },
@@ -384,8 +413,14 @@ export default function Students({ readOnly = false }) {
 
           {bulkErr && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {bulkErr}</div>}
           {bulkLoading && (
-            <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.blue, marginBottom:16, textAlign:"center" }}>
-              등록 중... {bulkDone} / {bulkRows.length}명
+            <div style={{ background:C.blueLight, borderRadius:10, padding:"12px 14px", fontSize:13, color:C.blue, marginBottom:16 }}>
+              <div style={{ fontWeight:700, marginBottom:6 }}>등록 중... {bulkDone} / {bulkRows.length}명</div>
+              <div style={{ background:"rgba(0,0,0,0.08)", borderRadius:6, height:8, overflow:"hidden" }}>
+                <div style={{ width:`${(bulkDone/bulkRows.length)*100}%`, background:C.blue, height:"100%", borderRadius:6, transition:"width 0.3s" }} />
+              </div>
+              <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>
+                116명 등록 시 약 1~2분 소요될 수 있습니다. 창을 닫지 마세요.
+              </div>
             </div>
           )}
 
@@ -506,6 +541,31 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 승인 대기 ── */}
+      {tab === "pwreset" && (
+        <>
+          {pendingResets.length === 0 && <Empty icon="🔑" text="비밀번호 초기화 요청이 없습니다" />}
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {pendingResets.map(req => (
+              <Card key={req.id}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:2 }}>{req.studentName}</div>
+                    <div style={{ fontSize:13, color:C.muted }}>학번: {req.studentId}</div>
+                    <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>
+                      요청일: {req.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || ""}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    <Btn onClick={() => handlePwReset(req)} color={C.orange} small>🔑 123456으로 초기화</Btn>
+                    <Btn onClick={() => updateDoc(doc(db, "pwResetRequests", req.id), { status:"done" })} color={C.muted} outline small>무시</Btn>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
       {tab === "pending" && (
         <>
           {filtered.length === 0 && <Empty icon="⏳" text="승인 대기 중인 학생이 없습니다" />}

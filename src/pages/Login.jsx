@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, serverTimestamp, addDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { C } from "../theme";
@@ -21,6 +21,14 @@ export default function Login() {
   const [loginErr, setLoginErr]         = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
+  // 비밀번호 초기화 요청
+  const [showReset, setShowReset]     = useState(false);
+  const [resetId, setResetId]         = useState("");
+  const [resetName, setResetName]     = useState("");
+  const [resetDone, setResetDone]     = useState(false);
+  const [resetErr, setResetErr]       = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
+
   // 회원가입
   const [form, setForm] = useState({
     name: "", dept: "", studentId: "", phone: "",
@@ -29,6 +37,33 @@ export default function Login() {
   const [signupErr, setSignupErr]         = useState("");
   const [signupDone, setSignupDone]       = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
+
+  // 비밀번호 초기화 요청
+  const handleReset = async () => {
+    if (!resetId.trim() || !resetName.trim()) { setResetErr("학번과 이름을 모두 입력하세요"); return; }
+    setResetLoading(true); setResetErr("");
+    try {
+      // 학번+이름 일치 여부 확인
+      const q    = query(collection(db, "users"), where("studentId", "==", resetId.trim()), where("name", "==", resetName.trim()));
+      const snap = await getDocs(q);
+      if (snap.empty) { setResetErr("학번 또는 이름이 일치하지 않습니다"); setResetLoading(false); return; }
+      // 이미 요청 중인지 확인
+      const q2    = query(collection(db, "pwResetRequests"), where("studentId", "==", resetId.trim()), where("status", "==", "pending"));
+      const snap2 = await getDocs(q2);
+      if (!snap2.empty) { setResetErr("이미 초기화 요청이 접수되어 있습니다"); setResetLoading(false); return; }
+      // 요청 저장
+      await addDoc(collection(db, "pwResetRequests"), {
+        studentId:   resetId.trim(),
+        studentName: resetName.trim(),
+        status:      "pending",
+        createdAt:   serverTimestamp(),
+      });
+      setResetDone(true);
+    } catch(e) {
+      setResetErr("요청 중 오류가 발생했습니다: " + e.message);
+    }
+    setResetLoading(false);
+  };
 
   const handleLogin = async () => {
     if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
@@ -118,6 +153,12 @@ export default function Login() {
                 {loginLoading ? "로그인 중..." : "로그인"}
               </Btn>
             </div>
+            <div style={{ textAlign:"center", marginTop:12 }}>
+              <button onClick={() => { setShowReset(true); setResetDone(false); setResetErr(""); setResetId(""); setResetName(""); }}
+                style={{ background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer", textDecoration:"underline" }}>
+                비밀번호를 잊으셨나요?
+              </button>
+            </div>
             <div style={{ marginTop: 20, background: C.bg, borderRadius: 12, padding: "12px 16px", fontSize: 12, color: C.muted, lineHeight: 1.8 }}>
               <div style={{ fontWeight: 700, color: C.navy, marginBottom: 4 }}>💡 안내</div>
               <div>계정이 없으면 회원가입 탭에서 신청하세요.</div>
@@ -181,5 +222,41 @@ export default function Login() {
         )}
       </div>
     </div>
+
+      {/* 비밀번호 초기화 요청 모달 */}
+      {showReset && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
+          <div style={{ background:C.surface, borderRadius:20, padding:"32px 28px", width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+            {resetDone ? (
+              <div style={{ textAlign:"center" }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+                <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:8 }}>요청이 접수됐어요!</div>
+                <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, marginBottom:20 }}>
+                  관리자가 확인 후 비밀번호를<br/>123456으로 초기화해드릴게요.
+                </div>
+                <Btn onClick={() => setShowReset(false)} color={C.navy} full>확인</Btn>
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>비밀번호 초기화 요청</div>
+                <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>학번과 이름을 입력하면 관리자에게 요청이 전달됩니다</div>
+                {resetErr && (
+                  <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14, border:`1px solid ${C.red}30` }}>
+                    ⚠️ {resetErr}
+                  </div>
+                )}
+                <Inp label="학번 *" placeholder="예: 25237001" value={resetId} onChange={e => { setResetId(e.target.value); setResetErr(""); }} />
+                <Inp label="이름 *" placeholder="홍길동" value={resetName} onChange={e => { setResetName(e.target.value); setResetErr(""); }} />
+                <div style={{ display:"flex", gap:10, marginTop:8 }}>
+                  <Btn onClick={() => setShowReset(false)} color={C.muted} outline full>취소</Btn>
+                  <Btn onClick={handleReset} color={C.navy} full disabled={resetLoading}>
+                    {resetLoading ? "요청 중..." : "초기화 요청"}
+                  </Btn>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
   );
 }
