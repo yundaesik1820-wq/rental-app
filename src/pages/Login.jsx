@@ -8,12 +8,15 @@ import { Btn, Inp } from "../components/UI";
 
 const DEPTS = ["영상계열", "성우계열", "엔터테인먼트계열", "음향계열", "실용음악계열"];
 
+// 학번 → 내부 이메일 변환
+const toEmail = (studentId) => `${studentId.trim()}@kbas.ac.kr`;
+
 export default function Login() {
   const { login, pendingError } = useAuth();
   const [tab, setTab] = useState("login");
 
   // 로그인
-  const [email, setEmail]               = useState("");
+  const [studentId, setStudentId]       = useState("");
   const [pw, setPw]                     = useState("");
   const [loginErr, setLoginErr]         = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -21,51 +24,52 @@ export default function Login() {
   // 회원가입
   const [form, setForm] = useState({
     name: "", dept: "", studentId: "", phone: "",
-    email: "", pw: "", pwConfirm: ""
+    pw: "", pwConfirm: ""
   });
-  const [signupErr, setSignupErr]           = useState("");
-  const [signupDone, setSignupDone]         = useState(false);
-  const [signupLoading, setSignupLoading]   = useState(false);
+  const [signupErr, setSignupErr]         = useState("");
+  const [signupDone, setSignupDone]       = useState(false);
+  const [signupLoading, setSignupLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!email || !pw) { setLoginErr("이메일과 비밀번호를 입력하세요"); return; }
+    if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
     setLoginLoading(true); setLoginErr("");
     try {
-      await login(email, pw);
+      await login(toEmail(studentId), pw);
     } catch (e) {
-      setLoginErr("이메일 또는 비밀번호가 올바르지 않습니다");
+      setLoginErr("학번 또는 비밀번호가 올바르지 않습니다");
     } finally {
       setLoginLoading(false);
     }
   };
 
   const handleSignup = async () => {
-    if (!form.name || !form.dept || !form.studentId || !form.phone || !form.email || !form.pw) {
+    if (!form.name || !form.dept || !form.studentId || !form.phone || !form.pw) {
       setSignupErr("모든 항목을 입력하세요"); return;
     }
     if (form.pw !== form.pwConfirm) { setSignupErr("비밀번호가 일치하지 않습니다"); return; }
     if (form.pw.length < 6)         { setSignupErr("비밀번호는 6자리 이상이어야 합니다"); return; }
     setSignupLoading(true); setSignupErr("");
     try {
-      const cred = await createUserWithEmailAndPassword(auth, form.email, form.pw);
+      const email = toEmail(form.studentId);
+      const cred  = await createUserWithEmailAndPassword(auth, email, form.pw);
       await setDoc(doc(db, "users", cred.user.uid), {
-        name:      form.name,
-        dept:      form.dept,
-        studentId: form.studentId,
-        phone:     form.phone,
-        email:     form.email,
-        admissionYear: form.studentId.slice(0, 2), // 학번 앞 2자리 자동 추출
-        license:   "",
-        role:      "student",
-        status:    "pending",
-        rentals:   0,
-        createdAt: serverTimestamp(),
+        name:          form.name,
+        dept:          form.dept,
+        studentId:     form.studentId,
+        phone:         form.phone,
+        email:         email,
+        admissionYear: form.studentId.slice(0, 2),
+        license:       "",
+        role:          "student",
+        status:        "pending",
+        rentals:       0,
+        createdAt:     serverTimestamp(),
       });
       setSignupDone(true);
     } catch (e) {
       setSignupErr(
         e.code === "auth/email-already-in-use"
-          ? "이미 사용 중인 이메일입니다"
+          ? "이미 가입된 학번입니다"
           : "가입 실패: " + e.message
       );
     } finally {
@@ -75,7 +79,7 @@ export default function Login() {
 
   const resetSignup = () => {
     setTab("login"); setSignupDone(false);
-    setForm({ name: "", dept: "", studentId: "", phone: "", email: "", pw: "", pwConfirm: "" });
+    setForm({ name: "", dept: "", studentId: "", phone: "", pw: "", pwConfirm: "" });
   };
 
   return (
@@ -105,7 +109,7 @@ export default function Login() {
                 ⚠️ {loginErr || pendingError}
               </div>
             )}
-            <Inp label="이메일" placeholder="example@email.com" value={email} onChange={e => { setEmail(e.target.value); setLoginErr(""); }} type="email" />
+            <Inp label="학번" placeholder="예: 25237001" value={studentId} onChange={e => { setStudentId(e.target.value); setLoginErr(""); }} />
             <Inp label="비밀번호" placeholder="비밀번호 입력" value={pw} onChange={e => { setPw(e.target.value); setLoginErr(""); }} type="password" />
             <div style={{ marginTop: 8 }}>
               <Btn onClick={handleLogin} color={C.navy} full disabled={loginLoading}>
@@ -142,10 +146,8 @@ export default function Login() {
                   </div>
                 )}
 
-                {/* 이름 */}
                 <Inp label="이름 *" placeholder="홍길동" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
 
-                {/* 계열 드롭박스 */}
                 <div style={{ marginBottom: 12 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>계열 *</div>
                   <select
@@ -158,19 +160,9 @@ export default function Login() {
                   </select>
                 </div>
 
-                {/* 학번 */}
                 <Inp label="학번 *" placeholder="25237001" value={form.studentId} onChange={e => setForm(p => ({ ...p, studentId: e.target.value }))} />
-
-                {/* 전화번호 */}
                 <Inp label="전화번호 *" placeholder="010-0000-0000" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} />
-
-                {/* 이메일 */}
-                <Inp label="이메일 *" placeholder="example@email.com" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} type="email" />
-
-                {/* 비밀번호 */}
                 <Inp label="비밀번호 * (6자리 이상)" placeholder="비밀번호 입력" value={form.pw} onChange={e => setForm(p => ({ ...p, pw: e.target.value }))} type="password" />
-
-                {/* 비밀번호 확인 */}
                 <Inp label="비밀번호 확인 *" placeholder="비밀번호 재입력" value={form.pwConfirm} onChange={e => setForm(p => ({ ...p, pwConfirm: e.target.value }))} type="password" />
 
                 <div style={{ marginTop: 4 }}>
