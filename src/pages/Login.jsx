@@ -125,6 +125,9 @@ export default function Login() {
                 style={{ background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer", textDecoration:"underline" }}>
                 비밀번호를 잊으셨나요?
               </button>
+              <div style={{ marginTop:8, fontSize:10, color:"rgba(100,100,120,0.5)", fontStyle:"italic" }}>
+                Designed &amp; Developed by 윤대식
+              </div>
             </div>
             <div style={{ marginTop:20, background:C.bg, borderRadius:12, padding:"12px 16px", fontSize:12, color:C.muted, lineHeight:1.8 }}>
               <div style={{ fontWeight:700, color:C.navy, marginBottom:4 }}>💡 안내</div>
@@ -215,9 +218,7 @@ export default function Login() {
         )}
 
       </div>
-      <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:"rgba(255,255,255,0.4)" }}>
-        Designed &amp; Developed by 윤대식
-      </div>
+
     </div>
   );
 }
