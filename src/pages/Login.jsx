@@ -23,12 +23,12 @@ export default function Login() {
   const [signupDone, setSignupDone]       = useState(false);
   const [signupLoading, setSignupLoading] = useState(false);
 
-  const [showReset, setShowReset]         = useState(false);
-  const [resetId, setResetId]             = useState("");
-  const [resetName, setResetName]         = useState("");
-  const [resetDone, setResetDone]         = useState(false);
-  const [resetErr, setResetErr]           = useState("");
-  const [resetLoading, setResetLoading]   = useState(false);
+  const [showReset, setShowReset]       = useState(false);
+  const [resetId, setResetId]           = useState("");
+  const [resetName, setResetName]       = useState("");
+  const [resetDone, setResetDone]       = useState(false);
+  const [resetErr, setResetErr]         = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
@@ -48,7 +48,7 @@ export default function Login() {
       setSignupErr("모든 항목을 입력하세요"); return;
     }
     if (form.pw !== form.pwConfirm) { setSignupErr("비밀번호가 일치하지 않습니다"); return; }
-    if (form.pw.length < 6)         { setSignupErr("비밀번호는 6자리 이상이어야 합니다"); return; }
+    if (form.pw.length < 6) { setSignupErr("비밀번호는 6자리 이상이어야 합니다"); return; }
     setSignupLoading(true); setSignupErr("");
     try {
       const email = toEmail(form.studentId);
@@ -72,7 +72,6 @@ export default function Login() {
     if (!resetId.trim() || !resetName.trim()) { setResetErr("학번과 이름을 모두 입력하세요"); return; }
     setResetLoading(true); setResetErr("");
     try {
-      // 비로그인 상태에서 바로 요청 저장 (관리자가 직접 확인)
       await addDoc(collection(db, "pwResetRequests"), {
         studentId: resetId.trim(), studentName: resetName.trim(),
         status: "pending", createdAt: serverTimestamp(),
@@ -93,12 +92,14 @@ export default function Login() {
     <div style={{ minHeight:"100vh", background:`linear-gradient(135deg,${C.navy} 0%,#2D4A9B 50%,${C.teal} 100%)`, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
       <div style={{ background:C.surface, borderRadius:24, padding:"40px 36px", width:"100%", maxWidth:440, boxShadow:"0 30px 80px rgba(0,0,0,0.3)" }}>
 
+        {/* 로고 */}
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <img src="/logo.png" alt="한예진 로고" style={{ width:100, height:100, objectFit:"contain", marginBottom:10 }} />
           <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>한국방송예술진흥원 장비대여실</div>
           <div style={{ fontSize:14, color:C.muted, marginTop:6 }}>한예진 장비관리시스템</div>
         </div>
 
+        {/* 탭 */}
         <div style={{ display:"flex", background:C.bg, borderRadius:12, padding:4, marginBottom:24 }}>
           {[["login","로그인"],["signup","회원가입"]].map(([v,l]) => (
             <button key={v} onClick={() => { setTab(v); setLoginErr(""); setSignupErr(""); setSignupDone(false); }}
@@ -106,6 +107,7 @@ export default function Login() {
           ))}
         </div>
 
+        {/* 로그인 */}
         {tab === "login" && (
           <>
             {(loginErr || pendingError) && (
@@ -124,6 +126,7 @@ export default function Login() {
               <button onClick={() => { setShowReset(true); setResetDone(false); setResetErr(""); setResetId(""); setResetName(""); }}
                 style={{ background:"none", border:"none", color:C.muted, fontSize:12, cursor:"pointer", textDecoration:"underline" }}>
                 비밀번호를 잊으셨나요?
+              </button>
             </div>
             <div style={{ marginTop:20, background:C.bg, borderRadius:12, padding:"12px 16px", fontSize:12, color:C.muted, lineHeight:1.8 }}>
               <div style={{ fontWeight:700, color:C.navy, marginBottom:4 }}>💡 안내</div>
@@ -138,6 +141,7 @@ export default function Login() {
           </>
         )}
 
+        {/* 회원가입 */}
         {tab === "signup" && (
           <>
             {signupDone ? (
@@ -217,7 +221,6 @@ export default function Login() {
         )}
 
       </div>
-
     </div>
   );
 }
