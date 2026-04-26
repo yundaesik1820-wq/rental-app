@@ -223,40 +223,40 @@ export default function Login() {
       </div>
     </div>
 
-      {/* 비밀번호 초기화 요청 모달 */}
-      {showReset && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
-          <div style={{ background:C.surface, borderRadius:20, padding:"32px 28px", width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
-            {resetDone ? (
-              <div style={{ textAlign:"center" }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
-                <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:8 }}>요청이 접수됐어요!</div>
-                <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, marginBottom:20 }}>
-                  관리자가 확인 후 비밀번호를<br/>123456으로 초기화해드릴게요.
-                </div>
-                <Btn onClick={() => setShowReset(false)} color={C.navy} full>확인</Btn>
+    {/* 비밀번호 초기화 요청 모달 */}
+    {showReset && (
+      <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:1000, padding:20 }}>
+        <div style={{ background:C.surface, borderRadius:20, padding:"32px 28px", width:"100%", maxWidth:380, boxShadow:"0 20px 60px rgba(0,0,0,0.3)" }}>
+          {resetDone ? (
+            <div style={{ textAlign:"center" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+              <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:8 }}>요청이 접수됐어요!</div>
+              <div style={{ fontSize:13, color:C.muted, lineHeight:1.7, marginBottom:20 }}>
+                관리자가 확인 후 비밀번호를<br/>123456으로 초기화해드릴게요.
               </div>
-            ) : (
-              <>
-                <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>비밀번호 초기화 요청</div>
-                <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>학번과 이름을 입력하면 관리자에게 요청이 전달됩니다</div>
-                {resetErr && (
-                  <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14, border:`1px solid ${C.red}30` }}>
-                    ⚠️ {resetErr}
-                  </div>
-                )}
-                <Inp label="학번 *" placeholder="예: 25237001" value={resetId} onChange={e => { setResetId(e.target.value); setResetErr(""); }} />
-                <Inp label="이름 *" placeholder="홍길동" value={resetName} onChange={e => { setResetName(e.target.value); setResetErr(""); }} />
-                <div style={{ display:"flex", gap:10, marginTop:8 }}>
-                  <Btn onClick={() => setShowReset(false)} color={C.muted} outline full>취소</Btn>
-                  <Btn onClick={handleReset} color={C.navy} full disabled={resetLoading}>
-                    {resetLoading ? "요청 중..." : "초기화 요청"}
-                  </Btn>
+              <Btn onClick={() => setShowReset(false)} color={C.navy} full>확인</Btn>
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>비밀번호 초기화 요청</div>
+              <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>학번과 이름을 입력하면 관리자에게 요청이 전달됩니다</div>
+              {resetErr && (
+                <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14, border:`1px solid ${C.red}30` }}>
+                  ⚠️ {resetErr}
                 </div>
-              </>
-            )}
-          </div>
+              )}
+              <Inp label="학번 *" placeholder="예: 25237001" value={resetId} onChange={e => { setResetId(e.target.value); setResetErr(""); }} />
+              <Inp label="이름 *" placeholder="홍길동" value={resetName} onChange={e => { setResetName(e.target.value); setResetErr(""); }} />
+              <div style={{ display:"flex", gap:10, marginTop:8 }}>
+                <Btn onClick={() => setShowReset(false)} color={C.muted} outline full>취소</Btn>
+                <Btn onClick={handleReset} color={C.navy} full disabled={resetLoading}>
+                  {resetLoading ? "요청 중..." : "초기화 요청"}
+                </Btn>
+              </div>
+            </>
+          )}
         </div>
-      )}
+      </div>
+    )}
   );
 }
