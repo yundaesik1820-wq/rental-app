@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
+import * as XLSX from "xlsx";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../../firebase";
@@ -99,9 +100,87 @@ export default function Students({ readOnly = false }) {
   const [profErr, setProfErr]         = useState("");
   const [profDone, setProfDone]       = useState(0);
 
+  // 학생 일괄 등록
+  const [showBulk, setShowBulk]       = useState(false);
+  const [bulkRows, setBulkRows]       = useState([]);  // 파싱된 학생 목록
+  const [bulkLoading, setBulkLoading] = useState(false);
+  const [bulkDone, setBulkDone]       = useState(0);
+  const [bulkErr, setBulkErr]         = useState("");
+  const bulkFileRef                   = useRef(null);
+
   // 교수 이름 수정
   const [editingProf, setEditingProf] = useState(null);
   const [profNameVal, setProfNameVal] = useState("");
+
+  // 엑셀 템플릿 다운로드
+  const downloadTemplate = () => {
+    const ws = XLSX.utils.aoa_to_sheet([
+      ["이름", "계열", "학번", "전화번호"],
+      ["홍길동", "영상계열", "25237001", "010-0000-0000"],
+      ["이서연", "음향계열", "25238002", "010-1111-1111"],
+    ]);
+    ws["!cols"] = [{ wch:10 }, { wch:16 }, { wch:12 }, { wch:16 }];
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "학생목록");
+    XLSX.writeFile(wb, "학생_일괄등록_템플릿.xlsx");
+  };
+
+  // 엑셀 파일 파싱
+  const handleBulkFile = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const wb   = XLSX.read(ev.target.result, { type: "binary" });
+      const ws   = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 }).slice(1); // 헤더 제외
+      const parsed = rows
+        .filter(r => r[0] && r[2]) // 이름, 학번 필수
+        .map(r => ({
+          name:      String(r[0] || "").trim(),
+          dept:      String(r[1] || "").trim(),
+          studentId: String(r[2] || "").trim(),
+          phone:     String(r[3] || "").trim(),
+        }));
+      setBulkRows(parsed);
+      setBulkErr("");
+      setBulkDone(0);
+    };
+    reader.readAsBinaryString(file);
+    e.target.value = "";
+  };
+
+  // 학생 일괄 등록
+  const handleBulkCreate = async () => {
+    if (bulkRows.length === 0) { setBulkErr("파일을 먼저 업로드하세요"); return; }
+    setBulkLoading(true); setBulkErr(""); setBulkDone(0);
+    let done = 0;
+    for (const s of bulkRows) {
+      const email = `${s.studentId}@kbas.ac.kr`;
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, "123456"); // 초기 비번 통일
+        await setDoc(doc(db, "users", cred.user.uid), {
+          name:          s.name,
+          dept:          s.dept,
+          studentId:     s.studentId,
+          phone:         s.phone,
+          email,
+          admissionYear: s.studentId.slice(0, 2),
+          license:       "",
+          role:          "student",
+          status:        "approved", // 관리자 직접 추가 → 바로 승인
+          rentals:       0,
+          createdAt:     serverTimestamp(),
+        });
+      } catch(e) {
+        if (!e.code?.includes("already-in-use")) console.error(s.studentId, e.message);
+      }
+      done++; setBulkDone(done);
+    }
+    setBulkLoading(false);
+    setBulkRows([]);
+    setShowBulk(false);
+  };
 
   const handleCreateProfs = async () => {
     const toCreate = Object.entries(profNames).filter(([_, name]) => name.trim());
@@ -147,11 +226,12 @@ export default function Students({ readOnly = false }) {
 
   // ── 탭 + 필터 ───────────────────────────────────────────
   const allTabs = [
-    { id:"pending",   label:`승인 대기 (${pendingList.length})`,  color:C.yellow  },
-    { id:"approved",  label:`승인됨 (${approvedList.length})`,    color:C.green   },
-    { id:"rejected",  label:`거절됨 (${rejectedList.length})`,    color:C.red     },
-    { id:"professor", label:`교수 (${profList.length})`,          color:C.blue    },
-    { id:"admin",     label:`직원 (${adminList.length})`,         color:C.purple  },
+    { id:"pending",   label:`승인 대기 (${pendingList.length})`,   color:C.yellow  },
+    { id:"approved",  label:`승인됨 (${approvedList.length})`,     color:C.green   },
+    { id:"rejected",  label:`거절됨 (${rejectedList.length})`,     color:C.red     },
+    { id:"professor", label:`교수 (${profList.length})`,           color:C.blue    },
+    { id:"admin",     label:`직원 (${adminList.length})`,          color:C.purple  },
+    { id:"withdrawn", label:`탈퇴 (${withdrawnList.length})`,      color:C.muted   },
   ];
   const tabs = readOnly ? allTabs.filter(t => t.id === "approved") : allTabs;
 
@@ -167,7 +247,10 @@ export default function Students({ readOnly = false }) {
         <PageTitle>👥 학생 관리</PageTitle>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           <Btn onClick={() => setShowAddProf(true)}  color={C.blue}>🎓 교수 계정 생성</Btn>
-          {!readOnly && <Btn onClick={() => setShowAddAdmin(true)} color={C.navy}>직원 추가</Btn>}
+          {!readOnly && <>
+          <Btn onClick={() => { setShowBulk(true); setBulkRows([]); setBulkErr(""); }} color={C.blue}>📥 학생 일괄 등록</Btn>
+          <Btn onClick={() => setShowAddAdmin(true)} color={C.navy}>직원 추가</Btn>
+        </>}
           <Btn onClick={() => setShowAdd(true)}       color={C.purple}>+ 학생 직접 추가</Btn>
         </div>
       </div>
@@ -241,6 +324,69 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 관리자 추가 모달 ── */}
+      {/* 학생 일괄 등록 모달 */}
+      {showBulk && (
+        <Modal onClose={() => setShowBulk(false)} width={560}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>📥 학생 일괄 등록</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>엑셀 파일로 여러 학생을 한번에 등록합니다</div>
+
+          {/* 템플릿 다운로드 */}
+          <div style={{ background:C.blueLight, borderRadius:12, padding:"14px 16px", marginBottom:16, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.blue, marginBottom:2 }}>엑셀 템플릿 다운로드</div>
+              <div style={{ fontSize:12, color:C.muted }}>이름 · 계열 · 학번 · 전화번호</div>
+            </div>
+            <Btn onClick={downloadTemplate} color={C.blue} small>📄 템플릿 받기</Btn>
+          </div>
+
+          {/* 파일 업로드 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>엑셀 파일 업로드</div>
+            <label style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`2px dashed ${C.border}`, borderRadius:12, padding:"16px 20px", cursor:"pointer" }}>
+              <span style={{ fontSize:13, color:C.muted }}>
+                {bulkRows.length > 0 ? `✅ ${bulkRows.length}명 파싱 완료` : "파일을 선택하세요 (.xlsx)"}
+              </span>
+              <input ref={bulkFileRef} type="file" accept=".xlsx,.xls" onChange={handleBulkFile} style={{ display:"none" }} />
+            </label>
+          </div>
+
+          {/* 파싱 미리보기 */}
+          {bulkRows.length > 0 && (
+            <div style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:16, maxHeight:200, overflowY:"auto" }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>등록 예정 학생 {bulkRows.length}명</div>
+              {bulkRows.map((s, i) => (
+                <div key={i} style={{ display:"flex", gap:10, padding:"5px 0", borderBottom:`1px solid ${C.border}`, fontSize:12, color:C.text }}>
+                  <span style={{ fontWeight:600, minWidth:60 }}>{s.studentId}</span>
+                  <span style={{ minWidth:60 }}>{s.name}</span>
+                  <span style={{ color:C.muted }}>{s.dept}</span>
+                  <span style={{ color:C.muted }}>{s.phone}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 안내 */}
+          <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
+            ⚠️ 초기 비밀번호는 <strong>123456</strong>으로 설정됩니다. 학생에게 변경을 안내해주세요.<br/>
+            이미 가입된 학번은 자동으로 건너뜁니다.
+          </div>
+
+          {bulkErr && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {bulkErr}</div>}
+          {bulkLoading && (
+            <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.blue, marginBottom:16, textAlign:"center" }}>
+              등록 중... {bulkDone} / {bulkRows.length}명
+            </div>
+          )}
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => setShowBulk(false)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={handleBulkCreate} color={C.blue} full disabled={bulkLoading || bulkRows.length === 0}>
+              {bulkLoading ? `등록 중... ${bulkDone}/${bulkRows.length}` : `✅ ${bulkRows.length}명 등록`}
+            </Btn>
+          </div>
+        </Modal>
+      )}
+
       {showAddAdmin && (
         <Modal onClose={() => { setShowAddAdmin(false); setAdminErr(""); }}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>직원 계정 추가</div>
@@ -399,6 +545,11 @@ export default function Students({ readOnly = false }) {
                     <div style={{ fontSize:9, color:C.muted }}>누적 대여</div>
                   </div>
                 </div>
+                {!readOnly && (
+                  <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                    <Btn onClick={() => withdraw(s)} color={C.red} outline full small>강제 탈퇴</Btn>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
@@ -459,6 +610,30 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 관리자 목록 ── */}
+      {tab === "withdrawn" && (
+        <>
+          <div style={{ background:C.yellowLight, borderRadius:12, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#92400E" }}>
+            ⚠️ 탈퇴 처리된 학생 목록입니다. 계정은 유지되지만 로그인이 차단됩니다.
+          </div>
+          {withdrawnList.length === 0 && <Empty icon="🗑️" text="탈퇴된 학생이 없습니다" />}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
+            {withdrawnList.map(s => (
+              <Card key={s.id} style={{ border:`2px solid ${C.muted}30`, opacity:0.8 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                  <Avatar name={s.name} size={44} />
+                  <div>
+                    <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</div>
+                    <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.studentId}</div>
+                    {s.withdrawnAt && <div style={{ fontSize:11, color:C.red }}>탈퇴일: {new Date(s.withdrawnAt).toLocaleDateString("ko-KR")}</div>}
+                  </div>
+                </div>
+                <Btn onClick={() => restore(s)} color={C.green} full small>계정 복구</Btn>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+
       {tab === "admin" && (
         <>
           {adminList.length === 0 && <Empty icon="👑" text="등록된 관리자가 없습니다" />}

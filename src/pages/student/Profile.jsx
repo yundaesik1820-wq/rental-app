@@ -1,11 +1,41 @@
+import { useState } from "react";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { auth } from "../../firebase";
 import { C } from "../../theme";
-import { Card, Avatar, PageTitle } from "../../components/UI";
+import { Card, Avatar, PageTitle, Btn, Inp, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { Award } from "lucide-react";
 
 export default function Profile() {
   const { profile, logout } = useAuth();
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [pwForm, setPwForm]           = useState({ current: "", next: "", confirm: "" });
+  const [pwErr, setPwErr]             = useState("");
+  const [pwDone, setPwDone]           = useState(false);
+  const [pwLoading, setPwLoading]     = useState(false);
+
+  const changePw = async () => {
+    if (!pwForm.current || !pwForm.next || !pwForm.confirm) { setPwErr("모든 항목을 입력하세요"); return; }
+    if (pwForm.next.length < 6) { setPwErr("새 비밀번호는 6자리 이상이어야 합니다"); return; }
+    if (pwForm.next !== pwForm.confirm) { setPwErr("새 비밀번호가 일치하지 않습니다"); return; }
+    setPwLoading(true); setPwErr("");
+    try {
+      const user = auth.currentUser;
+      const cred = EmailAuthProvider.credential(user.email, pwForm.current);
+      await reauthenticateWithCredential(user, cred);
+      await updatePassword(user, pwForm.next);
+      setPwDone(true);
+      setPwForm({ current: "", next: "", confirm: "" });
+    } catch(e) {
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+        setPwErr("현재 비밀번호가 올바르지 않습니다");
+      } else {
+        setPwErr("변경 실패: " + e.message);
+      }
+    }
+    setPwLoading(false);
+  };
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
   const myId   = profile?.studentId || profile?.email || "";
@@ -85,9 +115,44 @@ export default function Profile() {
         ))}
       </Card>
 
+      <button onClick={() => { setShowPwModal(true); setPwErr(""); setPwDone(false); }}
+        style={{ width: "100%", background: C.blueLight, color: C.blue, border: `1.5px solid ${C.blue}30`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
+        🔒 비밀번호 변경
+      </button>
       <button onClick={logout} style={{ width: "100%", background: C.redLight, color: C.red, border: `1.5px solid ${C.red}30`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
         로그아웃
       </button>
+
+      {/* 비밀번호 변경 모달 */}
+      {showPwModal && (
+        <Modal onClose={() => { setShowPwModal(false); setPwDone(false); setPwErr(""); }} width={420}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>🔒 비밀번호 변경</div>
+          {pwDone ? (
+            <div style={{ textAlign:"center", padding:"20px 0" }}>
+              <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+              <div style={{ fontSize:16, fontWeight:700, color:C.green, marginBottom:8 }}>비밀번호가 변경됐어요!</div>
+              <Btn onClick={() => { setShowPwModal(false); setPwDone(false); }} color={C.navy} full>확인</Btn>
+            </div>
+          ) : (
+            <>
+              {pwErr && (
+                <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:16, border:`1px solid ${C.red}30` }}>
+                  ⚠️ {pwErr}
+                </div>
+              )}
+              <Inp label="현재 비밀번호 *" placeholder="현재 비밀번호 입력" value={pwForm.current} onChange={e => { setPwForm(p=>({...p,current:e.target.value})); setPwErr(""); }} type="password" />
+              <Inp label="새 비밀번호 * (6자리 이상)" placeholder="새 비밀번호 입력" value={pwForm.next} onChange={e => { setPwForm(p=>({...p,next:e.target.value})); setPwErr(""); }} type="password" />
+              <Inp label="새 비밀번호 확인 *" placeholder="새 비밀번호 재입력" value={pwForm.confirm} onChange={e => { setPwForm(p=>({...p,confirm:e.target.value})); setPwErr(""); }} type="password" />
+              <div style={{ display:"flex", gap:10, marginTop:8 }}>
+                <Btn onClick={() => setShowPwModal(false)} color={C.muted} outline full>취소</Btn>
+                <Btn onClick={changePw} color={C.blue} full disabled={pwLoading}>
+                  {pwLoading ? "변경 중..." : "변경하기"}
+                </Btn>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }

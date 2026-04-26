@@ -39,6 +39,14 @@ export function AuthProvider({ children }) {
             setLoading(false);
             return;
           }
+          if (p.status === "withdrawn") {
+            setPendingError("탈퇴 처리된 계정입니다. 관리자에게 문의하세요.");
+            await signOut(auth);
+            setUser(null);
+            setProfile(null);
+            setLoading(false);
+            return;
+          }
           setPendingError("");
           setProfile({ uid: firebaseUser.uid, email: firebaseUser.email, ...p });
         }
