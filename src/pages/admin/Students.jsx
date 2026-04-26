@@ -244,8 +244,7 @@ export default function Students({ readOnly = false }) {
         status: "done",
         doneAt: new Date().toISOString(),
       });
-      alert("처리 완료로 표시됐습니다.
-Firebase 콘솔에서 실제 비밀번호를 변경해주세요.");
+      alert("처리 완료로 표시됐습니다.\nFirebase 콘솔에서 실제 비밀번호를 변경해주세요.");
     } catch(e) {
       alert("오류: " + e.message);
     }
