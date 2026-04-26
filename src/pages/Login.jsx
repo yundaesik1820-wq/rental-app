@@ -31,14 +31,14 @@ export default function Login() {
   const [signupLoading, setSignupLoading] = useState(false);
 
   const handleLogin = async () => {
-    if (!studentId || !pw) { setLoginErr("학번 또는 이메일과 비밀번호를 입력하세요"); return; }
+    if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
     setLoginLoading(true); setLoginErr("");
     try {
       // @ 포함되면 이메일 그대로, 없으면 학번으로 변환
       const loginEmail = studentId.includes("@") ? studentId.trim() : toEmail(studentId);
       await login(loginEmail, pw);
     } catch (e) {
-      setLoginErr("학번(이메일) 또는 비밀번호가 올바르지 않습니다");
+      setLoginErr("학번 또는 비밀번호가 올바르지 않습니다");
     } finally {
       setLoginLoading(false);
     }
@@ -111,7 +111,7 @@ export default function Login() {
                 ⚠️ {loginErr || pendingError}
               </div>
             )}
-            <Inp label="학번 또는 이메일" placeholder="예: 25237001 또는 admin@email.com" value={studentId} onChange={e => { setStudentId(e.target.value); setLoginErr(""); }} />
+            <Inp label="학번" placeholder="예: 25237001" value={studentId} onChange={e => { setStudentId(e.target.value); setLoginErr(""); }} />
             <Inp label="비밀번호" placeholder="비밀번호 입력" value={pw} onChange={e => { setPw(e.target.value); setLoginErr(""); }} type="password" />
             <div style={{ marginTop: 8 }}>
               <Btn onClick={handleLogin} color={C.navy} full disabled={loginLoading}>
