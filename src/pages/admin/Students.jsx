@@ -234,20 +234,20 @@ export default function Students({ readOnly = false }) {
   const reapprove = s  => { setApproveTarget(s); setLicense(s.license || "없음"); };
 
   // 비밀번호 초기화 요청 처리
+  // 비밀번호 초기화 요청 처리 (Cloud Function 호출)
   const handlePwReset = async (req) => {
-    if (!window.confirm(`${req.studentName}(${req.studentId}) 학생의 비밀번호를 123456으로 초기화하시겠습니까?
-
-※ Firebase 콘솔 → Authentication → 사용자 목록에서
-   ${req.studentId}@kbas.ac.kr 계정의 비밀번호를 123456으로 변경해주세요.`)) return;
+    if (!window.confirm(`${req.studentName}(${req.studentId}) 학생의 비밀번호를 123456으로 초기화하시겠습니까?`)) return;
     try {
-      await updateDoc(doc(db, "pwResetRequests", req.id), {
-        status: "done",
-        doneAt: new Date().toISOString(),
-      });
-      alert("처리 완료로 표시됐습니다.\nFirebase 콘솔에서 실제 비밀번호를 변경해주세요.");
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const functions     = getFunctions();
+      const resetPassword = httpsCallable(functions, "resetStudentPassword");
+      const result        = await resetPassword({ studentId: req.studentId, requestId: req.id });
+      alert("✅ " + result.data.message);
     } catch(e) {
-      alert("오류: " + e.message);
+      alert("오류: " + (e.message || JSON.stringify(e)));
     }
+  };
+
   };
 
   // 강제 탈퇴 / 복구
