@@ -31,35 +31,93 @@ import StudentInquiry from "./pages/student/Inquiry";
 // Shared
 import { useCollection } from "./hooks/useFirestore";
 
-function NotifPanel({ onClose, isAdmin, rentalRequests }) {
-  const { C } = { C: { red: "#F05252", redLight: "#FEF2F2", yellow: "#F59E0B", yellowLight: "#FFFBEB", blue: "#3B6CF8", blueLight: "#EEF2FF", navy: "#1A2B6B", text: "#1E293B", muted: "#94A3B8", border: "#E2E8F0", surface: "#FFFFFF" } };
+function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }) {
+  const CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
+  const [selCat, setSelCat] = React.useState("전체");
+
   const getLabel = (r) => {
     if (!r.items || r.items.length === 0) return r.equipName || "-";
     const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
     return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
   };
-  const alerts = [
-    ...(isAdmin ? rentalRequests.filter(r => r.status === "연체").map(r => ({ type: "danger", icon: "⚠️", title: `연체: ${getLabel(r)}`, desc: `${r.studentName} · 반납예정 ${r.endDate}` })) : []),
-    ...(isAdmin ? rentalRequests.filter(r => r.status === "승인대기").map(r => ({ type: "warning", icon: "📅", title: `승인대기: ${getLabel(r)}`, desc: `${r.studentName}` })) : []),
-  ];
-  const bg  = t => ({ danger: "#FEF2F2", warning: "#FFFBEB", info: "#EEF2FF" }[t]);
-  const col = t => ({ danger: "#F05252", warning: "#F59E0B", info: "#3B6CF8" }[t]);
+
+  const today    = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const myId     = profile?.studentId || "";
+
+  // ── 관리자 알림 ──
+  const adminAlerts = isAdmin ? [
+    // 대여/반납
+    ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ cat:"대여/반납", color:CC.red,    bg:CC.redLight,    icon:"⚠️", title:`연체 발생: ${getLabel(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}` })),
+    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${getLabel(r)}`, desc:`${r.studentName}` })),
+    // 시설
+    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}` })),
+    // 가입 승인
+    ...allUsers.filter(u=>u.status==="pending").map(u=>({ cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}` })),
+    // 비밀번호 초기화
+    ...pwResets.filter(r=>r.status==="pending").map(r=>({ cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}` })),
+  ] : [];
+
+  // ── 학생 알림 ──
+  const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
+  const myFacility = facilityRequests.filter(r=>r.studentId===myId);
+  const recentNotices = [...notices].sort((a,b)=>b.date>a.date?1:-1).slice(0,3);
+  const upcoming = licenseSchedules.filter(s=>s.date>=today&&s.status!=="완료").slice(0,3);
+
+  const studentAlerts = !isAdmin ? [
+    // 대여 승인/거절
+    ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${getLabel(r)}`, desc:`${r.startDate} ~ ${r.endDate}` })),
+    ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${getLabel(r)}`, desc:r.reason||"" })),
+    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${getLabel(r)}`, desc:`내일(${r.endDate})까지 반납해주세요` })),
+    ...myRentals.filter(r=>r.status==="연체").map(r=>({ cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${getLabel(r)}`, desc:`반납예정일 ${r.endDate} 초과` })),
+    // 시설
+    ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}` })),
+    ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"" })),
+    // 공지
+    ...recentNotices.map(n=>({ cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date })),
+    // 라이센스
+    ...upcoming.map(s=>({ cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}` })),
+  ] : [];
+
+  const allAlerts = isAdmin ? adminAlerts : studentAlerts;
+  const cats = ["전체", ...new Set(allAlerts.map(a=>a.cat))];
+  const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a=>a.cat===selCat);
+
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 500 }}>
-      <div onClick={e => e.stopPropagation()} style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 360, background: "#fff", boxShadow: "-10px 0 40px rgba(0,0,0,0.15)", display: "flex", flexDirection: "column" }}>
-        <div style={{ padding: "24px 20px 16px", borderBottom: "1px solid #E2E8F0" }}>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div style={{ fontSize: 18, fontWeight: 800, color: "#1A2B6B" }}>🔔 알림</div>
-            <button onClick={onClose} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "#94A3B8" }}>✕</button>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column" }}>
+        {/* 헤더 */}
+        <div style={{ padding:"20px 20px 12px", borderBottom:`1px solid ${CC.border}` }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div style={{ fontSize:18, fontWeight:800, color:CC.navy }}>🔔 알림 {allAlerts.length > 0 && <span style={{ background:CC.red, color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:12, marginLeft:6 }}>{allAlerts.length}</span>}</div>
+            <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:CC.muted }}>✕</button>
+          </div>
+          {/* 카테고리 탭 */}
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            {cats.map(c=>(
+              <button key={c} onClick={()=>setSelCat(c)}
+                style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${selCat===c?CC.navy:CC.border}`, background:selCat===c?CC.navy:"transparent", color:selCat===c?"#fff":CC.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                {c} {c!=="전체" && `(${allAlerts.filter(a=>a.cat===c).length})`}
+              </button>
+            ))}
           </div>
         </div>
-        <div style={{ flex: 1, overflowY: "auto", padding: 16 }}>
-          {alerts.length === 0 && <div style={{ textAlign: "center", padding: "60px 0", color: "#94A3B8" }}><div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>새 알림 없음</div>}
-          {alerts.map((a, i) => (
-            <div key={i} style={{ background: bg(a.type), borderRadius: 12, padding: "14px 16px", marginBottom: 10, borderLeft: `4px solid ${col(a.type)}` }}>
-              <div style={{ fontSize: 20, marginBottom: 4 }}>{a.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: "#1E293B" }}>{a.title}</div>
-              <div style={{ fontSize: 12, color: "#94A3B8", marginTop: 3 }}>{a.desc}</div>
+        {/* 알림 목록 */}
+        <div style={{ flex:1, overflowY:"auto", padding:16 }}>
+          {filtered.length === 0 && (
+            <div style={{ textAlign:"center", padding:"60px 0", color:CC.muted }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
+              새 알림 없음
+            </div>
+          )}
+          {filtered.map((a,i) => (
+            <div key={i} style={{ background:a.bg, borderRadius:12, padding:"12px 14px", marginBottom:8, borderLeft:`4px solid ${a.color}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                <span style={{ fontSize:16 }}>{a.icon}</span>
+                <span style={{ fontSize:11, background:a.color+"20", color:a.color, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>{a.cat}</span>
+              </div>
+              <div style={{ fontSize:13, fontWeight:700, color:CC.text, marginBottom:2 }}>{a.title}</div>
+              {a.desc && <div style={{ fontSize:11, color:CC.muted }}>{a.desc}</div>}
             </div>
           ))}
         </div>
@@ -73,7 +131,12 @@ function AppContent() {
   const [tab,       setTab]       = useState("home");
   const [showNotif, setShowNotif] = useState(false);
 
-  const { data: rentalRequests } = useCollection("rentalRequests", "createdAt");
+  const { data: rentalRequests }   = useCollection("rentalRequests",   "createdAt");
+  const { data: facilityRequests } = useCollection("facilityRequests", "createdAt");
+  const { data: allUsers }         = useCollection("users",            "createdAt");
+  const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
+  const { data: notices }          = useCollection("notices",          "createdAt");
+  const { data: licenseSchedules } = useCollection("licenseSchedules", "date");
 
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
@@ -83,10 +146,36 @@ function AppContent() {
   const isSuper    = isAdmin && adminRole === "super";
   const isSubAdmin = isAdmin && (adminRole === "teacher" || adminRole === "assistant");
 
-  const notifCount = isAdmin
-    ? rentalRequests.filter(r => r.status === "연체").length
-    + rentalRequests.filter(r => r.status === "승인대기").length
-    : 0;
+  const today = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const myId = profile?.studentId || "";
+
+  // 관리자 알림
+  const adminNotifCount = isAdmin ? (
+    rentalRequests.filter(r => r.status === "연체").length +
+    rentalRequests.filter(r => r.status === "승인대기").length +
+    facilityRequests.filter(r => r.status === "승인대기").length +
+    allUsers.filter(u => u.status === "pending").length +
+    pwResets.filter(r => r.status === "pending").length
+  ) : 0;
+
+  // 학생 알림
+  const myRentals = rentalRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
+  const myFacility = facilityRequests.filter(r => r.studentId === myId);
+  const recentNotices = notices.filter(n => n.date >= new Date(Date.now() - 3*86400000).toISOString().slice(0,10));
+  const upcomingLicense = licenseSchedules.filter(s => s.date >= today && s.status !== "완료");
+
+  const studentNotifCount = !isAdmin ? (
+    myRentals.filter(r => r.status === "승인됨" && !r.studentSeenApproved).length +
+    myRentals.filter(r => r.status === "거절됨" && !r.studentSeenRejected).length +
+    myRentals.filter(r => r.status === "대여중" && r.endDate === tomorrow).length +
+    myFacility.filter(r => r.status === "승인됨" && !r.studentSeenApproved).length +
+    myFacility.filter(r => r.status === "거절됨" && !r.studentSeenRejected).length +
+    recentNotices.length +
+    upcomingLicense.length
+  ) : 0;
+
+  const notifCount = isAdmin ? adminNotifCount : studentNotifCount;
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
@@ -147,7 +236,13 @@ function AppContent() {
         <NotifPanel
           onClose={() => setShowNotif(false)}
           isAdmin={isAdmin}
+          profile={profile}
           rentalRequests={rentalRequests}
+          facilityRequests={facilityRequests}
+          allUsers={allUsers}
+          pwResets={pwResets}
+          notices={notices}
+          licenseSchedules={licenseSchedules}
         />
       )}
     </>
