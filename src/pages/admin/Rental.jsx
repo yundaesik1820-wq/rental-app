@@ -4,6 +4,7 @@ import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
 const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
@@ -372,11 +373,13 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
 }
 
 export default function Rental({ subAdmin = false }) {
+  const { profile } = useAuth();
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments } = useCollection("equipments", "createdAt");
 
-  const isAssist    = !isSuper && profile?.adminRole === "assistant";
-  const isTeacher   = !isSuper && profile?.adminRole === "teacher";
+  const isSuper     = profile?.role === "admin" && (!profile?.adminRole || profile?.adminRole === "super");
+  const isAssist    = profile?.role === "admin" && profile?.adminRole === "assistant";
+  const isTeacher   = profile?.role === "admin" && profile?.adminRole === "teacher";
   const STATUS_TABS = isTeacher ? STATUS_TABS_TEACHER : STATUS_TABS_SUPER;
   const [tab, setTab] = useState(isTeacher ? "대여중" : "승인대기");
   const [actionTarget, setActionTarget] = useState(null);
