@@ -1,25 +1,205 @@
 import { useState } from "react";
 import { C, NOTICE_CAT } from "../../theme";
-import { Card, Badge, SectionTitle, Modal, Btn, Avatar } from "../../components/UI";
-import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
+import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
+import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
+import { useEffect } from "react";
+
+const DAYS   = ["월", "화", "수", "목", "금"];
+const HOURS  = Array.from({ length: 13 }, (_, i) => i + 9); // 9~21
+const SLOT_H = 48; // px per hour
+const COLORS = [
+  "#E57373","#64B5F6","#81C784","#FFB74D","#BA68C8",
+  "#4DB6AC","#F06292","#4FC3F7","#AED581","#FF8A65",
+];
+
+const timeToFrac = (t) => {
+  const [h, m] = t.split(":").map(Number);
+  return h + m / 60;
+};
+
+// ── 시간표 그리드 컴포넌트 ──
+function Timetable({ classes, onEdit }) {
+  const colW = `calc((100% - 36px) / 5)`;
+
+  return (
+    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+      {/* 헤더 */}
+      <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.bg }}>
+        <div style={{ width: 36, flexShrink: 0 }} />
+        {DAYS.map(d => (
+          <div key={d} style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: C.navy, padding: "6px 0" }}>{d}</div>
+        ))}
+      </div>
+
+      {/* 그리드 바디 */}
+      <div style={{ position: "relative", display: "flex" }}>
+        {/* 시간 라벨 */}
+        <div style={{ width: 36, flexShrink: 0 }}>
+          {HOURS.map(h => (
+            <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 3 }}>
+              <span style={{ fontSize: 9, color: C.muted, lineHeight: 1 }}>{h}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* 열 (월~금) */}
+        {DAYS.map((day, di) => (
+          <div key={day} style={{ flex: 1, position: "relative", borderLeft: `1px solid ${C.border}` }}>
+            {/* 시간 구분선 */}
+            {HOURS.map(h => (
+              <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}` }} />
+            ))}
+            {/* 수업 블록 */}
+            {classes.filter(c => c.day === day).map((cls, i) => {
+              const start = timeToFrac(cls.startTime) - 9;
+              const end   = timeToFrac(cls.endTime)   - 9;
+              const top   = start * SLOT_H;
+              const height = (end - start) * SLOT_H;
+              return (
+                <div key={i} style={{
+                  position: "absolute", left: 2, right: 2,
+                  top: top, height: height,
+                  background: cls.color || COLORS[i % COLORS.length],
+                  borderRadius: 6, overflow: "hidden",
+                  padding: "3px 5px", boxSizing: "border-box",
+                  cursor: onEdit ? "pointer" : "default",
+                }} onClick={onEdit ? () => onEdit(cls) : undefined}>
+                  <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", lineHeight: 1.3, wordBreak: "keep-all" }}>{cls.name}</div>
+                  {height > 36 && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", marginTop: 2, lineHeight: 1.3 }}>{cls.location}</div>}
+                  {height > 56 && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{cls.professor}</div>}
+                </div>
+              );
+            })}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── 수업 추가/편집 폼 ──
+const EMPTY_CLASS = { day:"월", name:"", location:"", professor:"", startTime:"09:00", endTime:"10:00", color: COLORS[0] };
+
+function ClassForm({ initial, onSave, onDelete, onClose }) {
+  const [form, setForm] = useState(initial || EMPTY_CLASS);
+  const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  return (
+    <div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 18 }}>
+        {initial ? "수업 수정" : "수업 추가"}
+      </div>
+
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>요일 *</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {DAYS.map(d => (
+            <button key={d} onClick={() => f("day", d)}
+              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${form.day === d ? C.navy : C.border}`, background: form.day === d ? C.navy : C.bg, color: form.day === d ? "#fff" : C.muted, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+              {d}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <Inp label="수업명 *" placeholder="예: 대중예술론" value={form.name} onChange={e => f("name", e.target.value)} />
+      <Inp label="강의실 위치 *" placeholder="예: 1관 502호" value={form.location} onChange={e => f("location", e.target.value)} />
+      <Inp label="교수님 성함" placeholder="예: 송경희 교수님" value={form.professor} onChange={e => f("professor", e.target.value)} />
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>시작 시간 *</div>
+          <input type="time" value={form.startTime} onChange={e => f("startTime", e.target.value)}
+            style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>종료 시간 *</div>
+          <input type="time" value={form.endTime} onChange={e => f("endTime", e.target.value)}
+            style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
+        </div>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>색상</div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          {COLORS.map(col => (
+            <button key={col} onClick={() => f("color", col)}
+              style={{ width: 28, height: 28, borderRadius: "50%", background: col, border: form.color === col ? "3px solid #1E293B" : "3px solid transparent", cursor: "pointer", flexShrink: 0 }} />
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        {initial && <Btn onClick={onDelete} color={C.red} outline>삭제</Btn>}
+        <Btn onClick={onClose} color={C.muted} outline full>취소</Btn>
+        <Btn onClick={() => onSave(form)} color={C.navy} full disabled={!form.name || !form.location || !form.startTime || !form.endTime}>
+          저장
+        </Btn>
+      </div>
+    </div>
+  );
+}
 
 export default function StudentHome() {
   const { profile } = useAuth();
-  const { data: allRequests }      = useCollection("rentalRequests",    "createdAt");
-  const { data: notices }          = useCollection("notices",           "createdAt");
-  const { data: comments }         = useCollection("noticeComments",    "createdAt");
-  const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
-  const { data: communityComments} = useCollection("communityComments", "createdAt");
-  const { data: licenseSchedules } = useCollection("licenseSchedules",  "date");
+  const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
+  const { data: notices }           = useCollection("notices",           "createdAt");
+  const { data: comments }          = useCollection("noticeComments",    "createdAt");
+  const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
+  const { data: communityComments } = useCollection("communityComments", "createdAt");
+  const { data: licenseSchedules }  = useCollection("licenseSchedules",  "date");
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [commentText,     setCommentText]     = useState("");
   const [submitting,      setSubmitting]      = useState(false);
 
-  const myId = profile?.studentId || profile?.email || "";
+  // 시간표
+  const [classes,       setClasses]       = useState([]);
+  const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
+  const [editClass,     setEditClass]     = useState(null);  // null=추가, obj=수정
+  const [showClassForm, setShowClassForm] = useState(false);
 
+  const uid = profile?.uid;
+
+  // 시간표 로드
+  useEffect(() => {
+    if (!uid) return;
+    getDoc(doc(db, "timetables", uid)).then(snap => {
+      if (snap.exists()) setClasses(snap.data().classes || []);
+    });
+  }, [uid]);
+
+  // 시간표 저장
+  const saveTimetable = async (newClasses) => {
+    if (!uid) return;
+    await setDoc(doc(db, "timetables", uid), { classes: newClasses });
+    setClasses(newClasses);
+  };
+
+  const handleSaveClass = async (form) => {
+    let updated;
+    if (editClass) {
+      updated = classes.map(c => c === editClass ? form : c);
+    } else {
+      updated = [...classes, form];
+    }
+    await saveTimetable(updated);
+    setShowClassForm(false);
+    setEditClass(null);
+  };
+
+  const handleDeleteClass = async () => {
+    const updated = classes.filter(c => c !== editClass);
+    await saveTimetable(updated);
+    setShowClassForm(false);
+    setEditClass(null);
+  };
+
+  const myId = profile?.studentId || profile?.email || "";
   const myRentals = allRequests.filter(r =>
     (r.studentId === myId || r.studentId === profile?.uid) &&
     (r.status === "대여중" || r.status === "연체")
@@ -70,7 +250,6 @@ export default function StudentHome() {
     await deleteItem("noticeComments", commentId);
   };
 
-  // 상태별 색
   const statusStyle = (status) => {
     const map = {
       "승인대기": { bg: C.yellowLight,  col: C.yellow },
@@ -85,31 +264,47 @@ export default function StudentHome() {
   return (
     <div>
       {/* Welcome banner */}
-      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "28px 28px", marginBottom: 24 }}>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 6 }}>
+      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "22px 22px 16px", marginBottom: 20 }}>
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
           {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
         </div>
-        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff" }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 16 }}>
           {profile?.role === "professor"
             ? `${profile?.name} 교수님 안녕하세요 👋`
             : `안녕하세요, ${profile?.name}님 👋`}
         </div>
-        <div style={{ display: "flex", gap: 16, marginTop: 20 }}>
-          {[["현재 대여중", myRentals.length, "#93C5FD"], ["예약 현황", myRes.length, "#6EE7B7"]].map(([l, v, col]) => (
-            <div key={l} style={{ background: "rgba(255,255,255,0.15)", borderRadius: 14, padding: "14px 20px" }}>
-              <div style={{ fontSize: 28, fontWeight: 900, color: col }}>{v}</div>
-              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-        <div style={{ textAlign:"right", marginTop:12, fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
+        <div style={{ textAlign:"right", fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
           Designed &amp; Developed by 윤대식
         </div>
       </div>
 
+      {/* 시간표 */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+          <SectionTitle>📅 내 시간표</SectionTitle>
+          <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>+ 수업 추가</Btn>
+        </div>
+        {classes.length === 0 ? (
+          <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "28px 0", textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>📚</div>
+            <div style={{ fontSize: 14, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
+            <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>수업 추가하기</Btn>
+          </div>
+        ) : (
+          <div style={{ overflowX: "auto" }}>
+            <div style={{ minWidth: 320 }}>
+              <Timetable
+                classes={classes}
+                onEdit={(cls) => { setEditClass(cls); setShowClassForm(true); }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-        {/* ── 1. 공지사항 최신 3개 ── */}
+        {/* 공지사항 */}
         <section>
           <SectionTitle>📌 공지사항</SectionTitle>
           {recentNotices.length === 0 && <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>공지사항이 없습니다</div>}
@@ -133,7 +328,7 @@ export default function StudentHome() {
           })}
         </section>
 
-        {/* ── 2. 라이센스 신청 가능한 수업 ── */}
+        {/* 라이센스 수업 */}
         {(() => {
           const today = new Date().toISOString().slice(0,10);
           const upcoming = licenseSchedules
@@ -160,7 +355,7 @@ export default function StudentHome() {
           );
         })()}
 
-        {/* ── 3. 에브리타임 최신글 5개 ── */}
+        {/* 에브리타임 최신글 */}
         {profile?.role !== "professor" && (() => {
           const recent5 = [...communityPosts]
             .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
@@ -190,9 +385,9 @@ export default function StudentHome() {
           );
         })()}
 
-        {/* ── 4. 예약 현황 ── */}
+        {/* 예약현황 */}
         <section>
-          <SectionTitle>📅 예약 현황</SectionTitle>
+          <SectionTitle>📋 예약 현황</SectionTitle>
           {myRentals.length > 0 && (
             <>
               <div style={{ fontSize:12, color:C.muted, marginBottom:6, fontWeight:600 }}>대여중</div>
@@ -228,10 +423,21 @@ export default function StudentHome() {
             <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>예약 내역이 없습니다</div>
           )}
         </section>
-
       </div>
 
-      {/* ── 공지 상세 모달 ── */}
+      {/* 수업 추가/수정 모달 */}
+      {showClassForm && (
+        <Modal onClose={() => { setShowClassForm(false); setEditClass(null); }} width={420}>
+          <ClassForm
+            initial={editClass}
+            onSave={handleSaveClass}
+            onDelete={handleDeleteClass}
+            onClose={() => { setShowClassForm(false); setEditClass(null); }}
+          />
+        </Modal>
+      )}
+
+      {/* 공지 상세 모달 */}
       {selectedNotice && (() => {
         const cat = NOTICE_CAT[selectedNotice.category] || { bg: C.bg, col: C.muted };
         const detailComments = getNoticeComments(selectedNotice.id);
@@ -244,8 +450,6 @@ export default function StudentHome() {
             <div style={{ fontSize: 20, fontWeight: 800, color: C.navy, marginBottom: 8, lineHeight: 1.4 }}>{selectedNotice.title}</div>
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{selectedNotice.date} · {selectedNotice.author}</div>
             <div style={{ fontSize: 15, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 28 }}>{selectedNotice.content}</div>
-
-            {/* 댓글 */}
             <div style={{ borderTop: `2px solid ${C.border}`, paddingTop: 20 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 16 }}>💬 댓글 {detailComments.length}</div>
               {detailComments.length === 0 && (
@@ -267,123 +471,50 @@ export default function StudentHome() {
                               </span>
                             )}
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, color: C.muted }}>{formatTime(c.createdAt)}</span>
-                            {canDelete && (
-                              <button onClick={() => deleteComment(c.id)}
-                                style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
-                            )}
-                          </div>
+                          {canDelete && (
+                            <button onClick={() => deleteComment(c.id)} style={{ background: "none", border: "none", color: C.muted, fontSize: 11, cursor: "pointer" }}>삭제</button>
+                          )}
                         </div>
-                        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{c.content}</div>
+                        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.6 }}>{c.content}</div>
                       </div>
                     </div>
                   );
                 })}
               </div>
-              {/* 댓글 입력 */}
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                <Avatar name={profile?.name || "?"} size={34} />
-                <div style={{ flex: 1 }}>
-                  <textarea
-                    placeholder="댓글을 입력하세요..."
-                    value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-                    style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", minHeight: 60, boxSizing: "border-box" }}
-                  />
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Enter 등록 · Shift+Enter 줄바꿈</div>
-                </div>
-                <Btn onClick={submitComment} color={C.teal} disabled={submitting || !commentText.trim()}>
-                  {submitting ? "..." : "등록"}
-                </Btn>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input value={commentText} onChange={e => setCommentText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }}}
+                  placeholder="댓글 입력 후 Enter"
+                  style={{ flex: 1, background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 14px", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
+                <Btn onClick={submitComment} color={C.navy} disabled={submitting || !commentText.trim()}>등록</Btn>
               </div>
-            </div>
-            <div style={{ marginTop: 20 }}>
-              <Btn onClick={() => setSelectedNotice(null)} color={C.navy} full>닫기</Btn>
             </div>
           </Modal>
         );
       })()}
 
-      {/* ── 예약/대여 상세 모달 ── */}
-      {selectedRequest && (() => {
-        const r = selectedRequest;
-        const ss = statusStyle(r.status);
-        return (
-          <Modal onClose={() => setSelectedRequest(null)} width={500}>
-            {/* 상태 배지 */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 800, color: C.navy }}>📋 신청 상세</div>
-              <span style={{ background: ss.bg, color: ss.col, borderRadius: 20, padding: "4px 14px", fontSize: 13, fontWeight: 700 }}>{r.status}</span>
-            </div>
-
-            {/* 장비 목록 */}
-            <div style={{ background: C.bg, borderRadius: 12, padding: "14px 16px", marginBottom: 14, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>🔧 신청 장비</div>
-              {(r.items || []).map((item, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 0", borderBottom: i < (r.items.length - 1) ? `1px solid ${C.border}` : "none" }}>
-                  <div>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{item.modelName || item.equipName}</span>
-                    {item.isSet && <span style={{ marginLeft: 6, background: C.orangeLight, color: C.orange, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>세트</span>}
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: C.teal }}>{item.quantity}개</span>
-                </div>
-              ))}
-              {(!r.items || r.items.length === 0) && (
-                <div style={{ fontSize: 13, color: C.muted }}>{r.equipName || "-"}</div>
-              )}
-            </div>
-
-            {/* 기간 */}
-            <div style={{ background: C.bg, borderRadius: 12, padding: "14px 16px", marginBottom: 14, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 8 }}>📅 대여 기간</div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>대여 시작</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.startDate}</div>
-                  <div style={{ fontSize: 12, color: C.blue }}>{r.startTime}</div>
-                </div>
-                <div style={{ fontSize: 20, color: C.muted }}>→</div>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 4 }}>반납</div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{r.endDate}</div>
-                  <div style={{ fontSize: 12, color: C.blue }}>{r.endTime}</div>
-                </div>
+      {/* 대여 상세 모달 */}
+      {selectedRequest && (
+        <Modal onClose={() => setSelectedRequest(null)} width={480}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: C.navy, marginBottom: 16 }}>{getEquipLabel(selectedRequest)}</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 13 }}>
+            {[
+              ["상태", selectedRequest.status],
+              ["목적", selectedRequest.purpose],
+              ["대여일", selectedRequest.startDate],
+              ["반납예정", `${selectedRequest.endDate} ${selectedRequest.endTime}`],
+            ].map(([label, val]) => (
+              <div key={label} style={{ background: C.bg, borderRadius: 10, padding: "10px 14px" }}>
+                <div style={{ fontSize: 11, color: C.muted, marginBottom: 3 }}>{label}</div>
+                <div style={{ fontWeight: 700, color: C.text }}>{val}</div>
               </div>
-            </div>
-
-            {/* 상세 정보 */}
-            <div style={{ background: C.bg, borderRadius: 12, padding: "14px 16px", marginBottom: 14, border: `1px solid ${C.border}` }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>📝 신청 정보</div>
-              {[
-                ["사용 목적", r.purpose],
-                ["사용 장소", `${r.locationType || ""} ${r.location || ""}`.trim()],
-                ["세부 내용", r.purposeDetail],
-                r.courseName  && ["수업명", r.courseName],
-                r.professorName && ["담당교수", r.professorName],
-                r.club        && ["동아리", r.club],
-                r.eventName   && ["행사명", r.eventName],
-              ].filter(Boolean).map(([k, v]) => v ? (
-                <div key={k} style={{ display: "flex", gap: 12, padding: "5px 0", borderBottom: `1px solid ${C.border}` }}>
-                  <span style={{ fontSize: 12, color: C.muted, minWidth: 72, flexShrink: 0 }}>{k}</span>
-                  <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{v}</span>
-                </div>
-              ) : null)}
-            </div>
-
-            {/* 거절 사유 */}
-            {r.reason && (
-              <div style={{ background: C.redLight, borderRadius: 10, padding: "12px 14px", marginBottom: 14, border: `1px solid ${C.red}30` }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: C.red, marginBottom: 4 }}>거절 사유</div>
-                <div style={{ fontSize: 13, color: C.red }}>{r.reason}</div>
-              </div>
-            )}
-
-            <Btn onClick={() => setSelectedRequest(null)} color={C.navy} full>닫기</Btn>
-          </Modal>
-        );
-      })()}
+            ))}
+          </div>
+          <div style={{ marginTop: 16 }}>
+            <Btn onClick={() => setSelectedRequest(null)} color={C.muted} outline full>닫기</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }
