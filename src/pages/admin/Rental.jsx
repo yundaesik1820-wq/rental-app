@@ -130,6 +130,8 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
         </Modal>
       )}
     </div>
+      )}
+    </div>
   );
 }
 
@@ -375,7 +377,8 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
 export default function Rental({ subAdmin = false }) {
   const { profile } = useAuth();
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
-  const { data: equipments } = useCollection("equipments", "createdAt");
+  const { data: equipments }       = useCollection("equipments", "createdAt");
+  const { data: facilityRequests } = useCollection("facilityRequests", "createdAt");
 
   const isSuper     = profile?.role === "admin" && (!profile?.adminRole || profile?.adminRole === "super");
   const isAssist    = profile?.role === "admin" && profile?.adminRole === "assistant";
@@ -738,6 +741,18 @@ ${r.attachments?.length > 0 ? `
 
   return (
     <div>
+      {/* 장비 / 시설 탭 전환 */}
+      <div style={{ display:"flex", background:"#F1F5F9", borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:"1px solid #E2E8F0" }}>
+        {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
+          <button key={v} onClick={() => setMainTab(v)}
+            style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:mainTab===v?C.navy:"transparent", color:mainTab===v?"#fff":C.muted, transition:"all 0.2s" }}>{l}</button>
+        ))}
+      </div>
+
+      {mainTab === "facility" ? (
+        <FacilityManager requests={facilityRequests} subAdmin={subAdmin} isTeacher={isTeacher} isSuper={isSuper} />
+      ) : (
+      <div>
       <PageTitle>📋 대여 신청 관리</PageTitle>
 
       {/* 승인대기 알림 */}
@@ -1126,6 +1141,8 @@ ${r.attachments?.length > 0 ? `
         </Modal>
       )}
 
+    </div>
+      )}
     </div>
   );
 }
