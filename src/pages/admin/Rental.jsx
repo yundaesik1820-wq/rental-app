@@ -65,11 +65,11 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
 </table>
 <div class="sign-area">
   <div class="sign-box">
-    ${r.studentSignature ? \`<img src="\${r.studentSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>\` : '<div class="sign-line"></div>'}
+    ${r.studentSignature ? '<img src="' + r.studentSignature + '" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>' : '<div class="sign-line"></div>'}
     신청자 서명
   </div>
   <div class="sign-box">
-    ${r.adminSignature ? \`<img src="\${r.adminSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>\` : '<div class="sign-line"></div>'}
+    ${r.adminSignature ? '<img src="' + r.adminSignature + '" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>' : '<div class="sign-line"></div>'}
     담당자 확인
   </div>
 </div>
