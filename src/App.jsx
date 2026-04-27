@@ -35,6 +35,31 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   const CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
   const [selCat, setSelCat] = React.useState("전체");
 
+  // 읽은 알림 관리 (localStorage)
+  const SEEN_KEY = `seen_notifs_${profile?.uid || "guest"}`;
+  const [seenIds, setSeenIds] = React.useState(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]")); }
+    catch { return new Set(); }
+  });
+  const markSeen = (id) => {
+    const next = new Set([...seenIds, id]);
+    setSeenIds(next);
+    localStorage.setItem(SEEN_KEY, JSON.stringify([...next]));
+  };
+
+  // 시간 포맷
+  const fmtTime = (ts) => {
+    if (!ts) return "";
+    const d = ts?.seconds ? new Date(ts.seconds * 1000) : new Date(ts);
+    if (isNaN(d)) return "";
+    const now = new Date();
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60)   return "방금 전";
+    if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
+    return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+  };
+
   const getLabel = (r) => {
     if (!r.items || r.items.length === 0) return r.equipName || "-";
     const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
@@ -47,15 +72,11 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
 
   // ── 관리자 알림 ──
   const adminAlerts = isAdmin ? [
-    // 대여/반납
-    ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ cat:"대여/반납", color:CC.red,    bg:CC.redLight,    icon:"⚠️", title:`연체 발생: ${getLabel(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}` })),
-    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${getLabel(r)}`, desc:`${r.studentName}` })),
-    // 시설
-    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}` })),
-    // 가입 승인
-    ...allUsers.filter(u=>u.status==="pending").map(u=>({ cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}` })),
-    // 비밀번호 초기화
-    ...pwResets.filter(r=>r.status==="pending").map(r=>({ cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}` })),
+    ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red,    bg:CC.redLight,    icon:"⚠️", title:`연체 발생: ${getLabel(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt })),
+    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${getLabel(r)}`, desc:`${r.studentName}`, time:r.createdAt })),
+    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt })),
+    ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt })),
+    ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt })),
   ] : [];
 
   // ── 학생 알림 ──
@@ -65,21 +86,17 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   const upcoming = licenseSchedules.filter(s=>s.date>=today&&s.status!=="완료").slice(0,3);
 
   const studentAlerts = !isAdmin ? [
-    // 대여 승인/거절
-    ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${getLabel(r)}`, desc:`${r.startDate} ~ ${r.endDate}` })),
-    ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${getLabel(r)}`, desc:r.reason||"" })),
-    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${getLabel(r)}`, desc:`내일(${r.endDate})까지 반납해주세요` })),
-    ...myRentals.filter(r=>r.status==="연체").map(r=>({ cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${getLabel(r)}`, desc:`반납예정일 ${r.endDate} 초과` })),
-    // 시설
-    ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}` })),
-    ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"" })),
-    // 공지
-    ...recentNotices.map(n=>({ cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date })),
-    // 라이센스
-    ...upcoming.map(s=>({ cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}` })),
+    ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${getLabel(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
+    ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${getLabel(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
+    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${getLabel(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt })),
+    ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${getLabel(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt })),
+    ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
+    ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
+    ...recentNotices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt })),
+    ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
   ] : [];
 
-  const allAlerts = isAdmin ? adminAlerts : studentAlerts;
+  const allAlerts = (isAdmin ? adminAlerts : studentAlerts).filter(a => !seenIds.has(a.id));
   const cats = ["전체", ...new Set(allAlerts.map(a=>a.cat))];
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a=>a.cat===selCat);
 
@@ -111,13 +128,18 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
             </div>
           )}
           {filtered.map((a,i) => (
-            <div key={i} style={{ background:a.bg, borderRadius:12, padding:"12px 14px", marginBottom:8, borderLeft:`4px solid ${a.color}` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                <span style={{ fontSize:16 }}>{a.icon}</span>
-                <span style={{ fontSize:11, background:a.color+"20", color:a.color, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>{a.cat}</span>
+            <div key={i} onClick={() => markSeen(a.id)}
+              style={{ background:a.bg, borderRadius:12, padding:"12px 14px", marginBottom:8, borderLeft:`4px solid ${a.color}`, cursor:"pointer", transition:"opacity 0.2s" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                  <span style={{ fontSize:16 }}>{a.icon}</span>
+                  <span style={{ fontSize:11, background:a.color+"20", color:a.color, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>{a.cat}</span>
+                </div>
+                <span style={{ fontSize:10, color:CC.muted, flexShrink:0, marginLeft:8, marginTop:2 }}>탭하여 닫기</span>
               </div>
               <div style={{ fontSize:13, fontWeight:700, color:CC.text, marginBottom:2 }}>{a.title}</div>
-              {a.desc && <div style={{ fontSize:11, color:CC.muted }}>{a.desc}</div>}
+              {a.desc && <div style={{ fontSize:11, color:CC.muted, marginBottom:4 }}>{a.desc}</div>}
+              {a.time && <div style={{ fontSize:10, color:CC.muted+"aa" }}>{fmtTime(a.time)}</div>}
             </div>
           ))}
         </div>
