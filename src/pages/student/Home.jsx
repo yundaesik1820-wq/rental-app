@@ -9,7 +9,7 @@ import { useEffect } from "react";
 
 const DAYS   = ["월", "화", "수", "목", "금"];
 const HOURS  = Array.from({ length: 13 }, (_, i) => i + 9); // 9~21
-const SLOT_H = 48; // px per hour
+const SLOT_H = 28; // px per hour
 const COLORS = [
   "#E57373","#64B5F6","#81C784","#FFB74D","#BA68C8",
   "#4DB6AC","#F06292","#4FC3F7","#AED581","#FF8A65",
@@ -30,7 +30,7 @@ function Timetable({ classes, onEdit }) {
       <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.bg }}>
         <div style={{ width: 36, flexShrink: 0 }} />
         {DAYS.map(d => (
-          <div key={d} style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: C.navy, padding: "6px 0" }}>{d}</div>
+          <div key={d} style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: C.navy, padding: "4px 0" }}>{d}</div>
         ))}
       </div>
 
@@ -39,7 +39,7 @@ function Timetable({ classes, onEdit }) {
         {/* 시간 라벨 */}
         <div style={{ width: 36, flexShrink: 0 }}>
           {HOURS.map(h => (
-            <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 3 }}>
+            <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 2 }}>
               <span style={{ fontSize: 9, color: C.muted, lineHeight: 1 }}>{h}</span>
             </div>
           ))}
@@ -64,12 +64,12 @@ function Timetable({ classes, onEdit }) {
                   top: top, height: height,
                   background: cls.color || COLORS[i % COLORS.length],
                   borderRadius: 6, overflow: "hidden",
-                  padding: "3px 5px", boxSizing: "border-box",
+                  padding: "2px 4px", boxSizing: "border-box",
                   cursor: onEdit ? "pointer" : "default",
                 }} onClick={onEdit ? () => onEdit(cls) : undefined}>
-                  <div style={{ fontSize: 10, fontWeight: 800, color: "#fff", lineHeight: 1.3, wordBreak: "keep-all" }}>{cls.name}</div>
-                  {height > 36 && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.85)", marginTop: 2, lineHeight: 1.3 }}>{cls.location}</div>}
-                  {height > 56 && <div style={{ fontSize: 9, color: "rgba(255,255,255,0.75)", lineHeight: 1.3 }}>{cls.professor}</div>}
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#fff", lineHeight: 1.2, wordBreak: "keep-all" }}>{cls.name}</div>
+                  {height > 22 && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.85)", marginTop: 1, lineHeight: 1.2 }}>{cls.location}</div>}
+                  {height > 42 && <div style={{ fontSize: 8, color: "rgba(255,255,255,0.75)", lineHeight: 1.2 }}>{cls.professor}</div>}
                 </div>
               );
             })}
@@ -279,13 +279,13 @@ export default function StudentHome() {
       </div>
 
       {/* 시간표 */}
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <SectionTitle>📅 내 시간표</SectionTitle>
           <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>+ 수업 추가</Btn>
         </div>
         {classes.length === 0 ? (
-          <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "28px 0", textAlign: "center" }}>
+          <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>📚</div>
             <div style={{ fontSize: 14, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
             <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>수업 추가하기</Btn>
