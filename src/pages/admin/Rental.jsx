@@ -1124,6 +1124,5 @@ ${r.attachments?.length > 0 ? `
       )}
 
     </div>
-      )}
   );
 }
