@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../hooks/useAuth.jsx";
@@ -14,6 +14,7 @@ export default function Login() {
   const [tab, setTab] = useState("login");
 
   const [studentId, setStudentId]       = useState("");
+  const [keepLogin, setKeepLogin]       = useState(true);
   const [pw, setPw]                     = useState("");
   const [loginErr, setLoginErr]         = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
@@ -34,6 +35,8 @@ export default function Login() {
     if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
     setLoginLoading(true); setLoginErr("");
     try {
+      const persistence = keepLogin ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistence);
       const loginEmail = studentId.includes("@") ? studentId.trim() : toEmail(studentId);
       await login(loginEmail, pw);
     } catch (e) {
@@ -117,7 +120,12 @@ export default function Login() {
             )}
             <Inp label="학번" placeholder="예: 25237001" value={studentId} onChange={e => { setStudentId(e.target.value); setLoginErr(""); }} />
             <Inp label="비밀번호" placeholder="비밀번호 입력" value={pw} onChange={e => { setPw(e.target.value); setLoginErr(""); }} type="password" />
-            <div style={{ marginTop:8 }}>
+            <label style={{ display:"flex", alignItems:"center", gap:8, margin:"4px 0 10px", cursor:"pointer", userSelect:"none" }}>
+              <input type="checkbox" checked={keepLogin} onChange={e => setKeepLogin(e.target.checked)}
+                style={{ width:16, height:16, cursor:"pointer", accentColor:C.navy }} />
+              <span style={{ fontSize:13, color:C.muted }}>로그인 유지</span>
+            </label>
+            <div style={{ marginTop:0 }}>
               <Btn onClick={handleLogin} color={C.navy} full disabled={loginLoading}>
                 {loginLoading ? "로그인 중..." : "로그인"}
               </Btn>
