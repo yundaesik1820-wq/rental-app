@@ -172,8 +172,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         @media (max-width: 768px) {
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
-          .mobile-logout-btn { display: flex !important; }
-          header { padding-right: 48px !important; }
+
           main { padding: 12px !important; padding-bottom: 130px !important; }
 
           /* 헤더 */
@@ -271,11 +270,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         }
       `}</style>
 
-      {/* 모바일 로그아웃 버튼 - 헤더 우측에 고정 */}
-      <button className="mobile-logout-btn" onClick={logout}
-        style={{ display: "none", position: "fixed", top: 0, right: 0, zIndex: 200, background: "transparent", color: C.muted, border: "none", padding: "16px 14px", fontSize: 13, cursor: "pointer", alignItems: "center", gap: 4, height: 52 }}>
-        <LogOut size={18} />
-      </button>
+
 
       {/* 모바일 하단 2줄 네비 */}
       <div className="mobile-nav" style={{

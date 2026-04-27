@@ -144,7 +144,7 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
 }
 
 export default function StudentHome() {
-  const { profile } = useAuth();
+  const { profile, logout } = useAuth();
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
@@ -264,7 +264,11 @@ export default function StudentHome() {
   return (
     <div>
       {/* Welcome banner */}
-      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "22px 22px 16px", marginBottom: 20 }}>
+      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "22px 22px 16px", marginBottom: 20, position: "relative" }}>
+        {/* 로그아웃 버튼 - 배너 우측 상단 */}
+        <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+          <LogOut size={14} /> 로그아웃
+        </button>
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
           {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
         </div>
