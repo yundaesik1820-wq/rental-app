@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { useEffect } from "react";
+import { LogOut } from "lucide-react";
 
 const DAYS   = ["월", "화", "수", "목", "금"];
 const HOURS  = Array.from({ length: 13 }, (_, i) => i + 9); // 9~21
