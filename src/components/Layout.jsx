@@ -140,7 +140,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
             {currentNav && <currentNav.icon size={20} color={C.navy} strokeWidth={2.5} />}
             {currentNav?.label}
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: "env(safe-area-inset-right, 0px)" }}>
             <button onClick={onNotif} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", alignItems: "center", color: C.muted }}>
               <Bell size={22} />
               {notifCount > 0 && (
@@ -173,6 +173,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
           .mobile-logout-btn { display: flex !important; }
+          header { padding-right: 48px !important; }
           main { padding: 12px !important; padding-bottom: 130px !important; }
 
           /* 헤더 */
@@ -270,10 +271,10 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         }
       `}</style>
 
-      {/* 모바일 로그아웃 버튼 */}
+      {/* 모바일 로그아웃 버튼 - 헤더 우측에 고정 */}
       <button className="mobile-logout-btn" onClick={logout}
-        style={{ display: "none", position: "fixed", top: 12, right: 12, zIndex: 200, background: C.red, color: "#fff", border: "none", borderRadius: 10, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", alignItems: "center", gap: 6, boxShadow: "0 2px 8px rgba(0,0,0,0.15)" }}>
-        <LogOut size={14} /> 로그아웃
+        style={{ display: "none", position: "fixed", top: 0, right: 0, zIndex: 200, background: "transparent", color: C.muted, border: "none", padding: "16px 14px", fontSize: 13, cursor: "pointer", alignItems: "center", gap: 4, height: 52 }}>
+        <LogOut size={18} />
       </button>
 
       {/* 모바일 하단 2줄 네비 */}
