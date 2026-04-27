@@ -158,48 +158,40 @@ export default function EquipList() {
       {tabView === "세트" && (
         <>
           {filteredSets.length === 0 && <Empty icon="📦" text="등록된 세트 장비가 없습니다" />}
-          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {filteredSets.map(e => {
-              const photos    = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
-              const idx       = getIdx(e.modelName);
-              const isExpand  = expandedSet === e.modelName;
-              const setList   = e.setItems ? e.setItems.split("\n").filter(Boolean) : [];
-
+              const photos   = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
+              const isExpand = expandedSet === e.modelName;
+              const setList  = e.setItems ? e.setItems.split("\n").filter(Boolean) : [];
+              const avail    = e.available > 0;
               return (
-                <Card key={e.modelName} style={{ border: `2px solid ${C.orange || "#F97316"}20` }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                    <div style={{ flex: 1 }}>
-                      {/* 태그 */}
-                      <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
-                        <span style={{ background: "#FFF7ED", color: "#EA580C", borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, border: "1px solid #FED7AA" }}>📦 세트</span>
-                        {e.majorCategory && <span style={{ background: C.blueLight, color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{e.majorCategory}</span>}
-                      </div>
-
-                      <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 4 }}>{e.modelName}</div>
-                      {e.itemName     && <div style={{ fontSize: 13, color: C.text, marginBottom: 2 }}>{e.itemName}</div>}
-                      {e.manufacturer && <div style={{ fontSize: 12, color: C.muted }}>🏭 {e.manufacturer}</div>}
-                    </div>
-
-                    {/* 사진 */}
+                <Card key={e.modelName} style={{ padding:"12px 14px", border:`1.5px solid ${C.orange}20` }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    {/* 썸네일 */}
                     {photos.length > 0 && (
-                      <div style={{ position: "relative", width: 120, height: 90, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg, flexShrink: 0 }}>
-                        <img src={photos[idx]} alt="세트사진" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
-                        {photos.length > 1 && (
-                          <>
-                            <button onClick={() => setIdx(e.modelName, idx - 1, photos.length)} style={{ position: "absolute", left: 2, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 11 }}>‹</button>
-                            <button onClick={() => setIdx(e.modelName, idx + 1, photos.length)} style={{ position: "absolute", right: 2, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "50%", width: 20, height: 20, cursor: "pointer", fontSize: 11 }}>›</button>
-                          </>
-                        )}
+                      <div style={{ width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
+                        <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
+                    {/* 정보 */}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:6, marginBottom:2 }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
+                        <span style={{ flexShrink:0, background:avail?C.greenLight:C.redLight, color:avail?C.green:C.red, borderRadius:6, padding:"2px 7px", fontSize:11, fontWeight:700 }}>
+                          {avail ? "대여가능" : "대여불가"}
+                        </span>
+                      </div>
+                      {e.itemName && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.itemName}</div>}
+                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                        <span style={{ background:"#FFF7ED", color:"#EA580C", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
+                        {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.majorCategory}</span>}
+                        <span style={{ fontSize:10, color:C.muted }}>{e.available}/{e.total}세트</span>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* 재고 */}
-                  <div style={{ background: C.border, borderRadius: 6, height: 5, overflow: "hidden", margin: "12px 0 4px" }}>
-                    <div style={{ width: `${(e.available / e.total) * 100}%`, background: e.available === 0 ? C.red : C.teal, height: "100%", borderRadius: 6 }} />
-                  </div>
-                  <div style={{ fontSize: 12, color: e.available === 0 ? C.red : C.muted, fontWeight: e.available === 0 ? 700 : 400, marginBottom: 12 }}>
-                    대여 가능 {e.available}세트 / 전체 {e.total}세트{e.available === 0 ? " · 현재 대여 불가" : ""}
+                  {/* 재고 바 */}
+                  <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", marginTop:8, marginBottom: setList.length>0?8:0 }}>
+                    <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
                   </div>
 
                   {/* 구성품 목록 펼치기 */}
