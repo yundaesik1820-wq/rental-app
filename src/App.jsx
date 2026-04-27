@@ -172,11 +172,11 @@ function AppContent() {
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const myId     = profile?.studentId || "";
 
-  // 읽은 알림 ID 목록
-  const seenNotifIds = React.useMemo(() => {
+  // 읽은 알림 ID 목록 (useMemo 대신 직접 계산 - hooks 규칙 준수)
+  const seenNotifIds = (() => {
     try { return new Set(JSON.parse(localStorage.getItem(`seen_notifs_${profile?.uid}`) || "[]")); }
     catch { return new Set(); }
-  }, [profile?.uid]);
+  })();
 
   const notSeen = (id) => !seenNotifIds.has(id);
 
@@ -185,12 +185,6 @@ function AppContent() {
   const myFacility = facilityRequests.filter(r => r.studentId === myId);
   const recentNotices    = notices.filter(n => n.date >= new Date(Date.now() - 3*86400000).toISOString().slice(0,10));
   const upcomingLicense  = licenseSchedules.filter(s => s.date >= today && s.status !== "완료");
-
-  const getLabel = (r) => {
-    if (!r.items || r.items.length === 0) return r.equipName || "-";
-    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
-    return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
-  };
 
   // 관리자 notifCount (seenIds 반영)
   const adminNotifCount = isAdmin ? [
