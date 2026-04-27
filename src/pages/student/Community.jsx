@@ -1,11 +1,24 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { C } from "../../theme";
+import { storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 
 const CATEGORIES = ["전체", "자유", "질문", "정보", "저격", "새내기"];
+
+async function uploadImage(file) {
+  return new Promise((resolve, reject) => {
+    const storageRef = ref(storage, `community/${Date.now()}_${file.name}`);
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => {
+      const url = await getDownloadURL(task.snapshot.ref);
+      resolve(url);
+    });
+  });
+}
 
 // 현재 연도 기준 새내기 학번 앞 2자리
 const currentYear = new Date().getFullYear();
@@ -41,9 +54,11 @@ export default function Community() {
   const [cat, setCat]           = useState("전체");
   const [selPost, setSelPost]   = useState(null); // 상세 모달
   const [showWrite, setShowWrite] = useState(false);
-  const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유" });
+  const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[] });
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
+  const [imgUploading, setImgUploading] = useState(false);
+  const imgInputRef = useRef(null);
   const [search, setSearch]           = useState("");
 
   const formatDate = (ts) => {
@@ -94,7 +109,7 @@ export default function Community() {
       likedBy:    [],
       createdAt:  serverTimestamp(),
     });
-    setWriteForm({ title:"", content:"", category:"자유" });
+    setWriteForm({ title:"", content:"", category:"자유", images:[] });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -300,6 +315,7 @@ export default function Community() {
             <span>👍 {p.likes||0}</span>
             <span>💬 {postComments(p.id).length}</span>
             <span>익명</span>
+            {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
           </div>
         </Card>
       ))}
@@ -317,7 +333,15 @@ export default function Community() {
             <span>{formatDate(selPost.createdAt)}</span>
             <span>👁 {selPost.views||0}</span>
           </div>
-          <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom:20, whiteSpace:"pre-wrap", borderBottom:`1px solid ${C.border}`, paddingBottom:20 }}>{selPost.content}</div>
+          <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+          {selPost.images?.length > 0 && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
+              {selPost.images.map((url, i) => (
+                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => window.open(url,"_blank")}
+                  style={{ width:"100%", borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}` }} />
+              ))}
+            </div>
+          )}
 
           {/* 좋아요 */}
           <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
@@ -391,6 +415,42 @@ export default function Community() {
             <textarea placeholder="내용을 입력하세요..." value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
           </div>
+          {/* 이미지 첨부 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>
+              이미지 첨부 <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
+            </div>
+            {writeForm.images.length > 0 && (
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:8 }}>
+                {writeForm.images.map((url, i) => (
+                  <div key={i} style={{ position:"relative", paddingTop:"75%", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg }}>
+                    <img src={url} alt={`첨부${i+1}`} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                    <button onClick={() => setWriteForm(p=>({...p, images:p.images.filter((_,j)=>j!==i)}))}
+                      style={{ position:"absolute", top:3, right:3, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:20, height:20, cursor:"pointer", fontSize:11, fontWeight:700 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            {writeForm.images.length < 3 && (
+              <button onClick={() => imgInputRef.current?.click()}
+                disabled={imgUploading}
+                style={{ display:"flex", alignItems:"center", gap:6, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"9px 16px", fontSize:13, color:C.muted, cursor:"pointer", width:"100%" }}>
+                {imgUploading ? "⏳ 업로드 중..." : "📷 이미지 추가"}
+              </button>
+            )}
+            <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display:"none" }}
+              onChange={async (e) => {
+                const files = Array.from(e.target.files).slice(0, 3 - writeForm.images.length);
+                if (!files.length) return;
+                setImgUploading(true);
+                try {
+                  const urls = await Promise.all(files.map(uploadImage));
+                  setWriteForm(p => ({ ...p, images: [...p.images, ...urls] }));
+                } catch { alert("이미지 업로드 실패"); }
+                finally { setImgUploading(false); e.target.value = ""; }
+              }} />
+          </div>
+
           <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
             ⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다.
           </div>
