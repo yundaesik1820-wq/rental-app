@@ -155,6 +155,7 @@ export default function StudentHome() {
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selPost, setSelPost] = useState(null);
   const [commentText,     setCommentText]     = useState("");
   const [submitting,      setSubmitting]      = useState(false);
 
@@ -362,7 +363,11 @@ export default function StudentHome() {
 
         {/* 에브리타임 최신글 */}
         {profile?.role !== "professor" && (() => {
+          const currentYear = new Date().getFullYear();
+          const newbiePrefix = String(currentYear).slice(2);
+          const isNewbie = (profile?.studentId || "").startsWith(newbiePrefix);
           const recent5 = [...communityPosts]
+            .filter(p => p.category !== "새내기" || isNewbie) // 새내기 글은 새내기만
             .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
             .slice(0, 5);
           if (recent5.length === 0) return null;
@@ -370,7 +375,7 @@ export default function StudentHome() {
             <section>
               <SectionTitle>🔥 에브리타임 최신글</SectionTitle>
               {recent5.map(p => (
-                <Card key={p.id} style={{ marginBottom:8 }}>
+                <Card key={p.id} onClick={() => setSelPost(p)} style={{ marginBottom:8, cursor:"pointer" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10 }}>
                     <div style={{ minWidth:0, flex:1 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
@@ -497,6 +502,48 @@ export default function StudentHome() {
           </Modal>
         );
       })()}
+
+      {/* 에브리타임 글 상세 모달 */}
+      {selPost && (
+        <Modal onClose={() => setSelPost(null)} width={520}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+            <span style={{ background:
+              selPost.category==="저격" ? C.redLight :
+              selPost.category==="새내기" ? C.purpleLight :
+              selPost.category==="질문" ? C.orangeLight :
+              selPost.category==="정보" ? C.greenLight : C.blueLight,
+              color:
+              selPost.category==="저격" ? C.red :
+              selPost.category==="새내기" ? C.purple :
+              selPost.category==="질문" ? C.orange :
+              selPost.category==="정보" ? C.green : C.blue,
+              borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+              {selPost.category}
+            </span>
+          </div>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:8 }}>{selPost.title}</div>
+          <div style={{ display:"flex", gap:10, fontSize:12, color:C.muted, marginBottom:16 }}>
+            <span>익명</span>
+            <span>👁 {selPost.views||0}</span>
+            <span>👍 {selPost.likes||0}</span>
+            <span>💬 {communityComments.filter(c=>c.postId===selPost.id).length}</span>
+          </div>
+          <div style={{ fontSize:14, color:C.text, lineHeight:1.8, whiteSpace:"pre-wrap", marginBottom: selPost.images?.length>0?12:0 }}>
+            {selPost.content}
+          </div>
+          {selPost.images?.length > 0 && (
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8, marginTop:12 }}>
+              {selPost.images.map((url,i) => (
+                <img key={i} src={url} alt="" onClick={() => window.open(url,"_blank")}
+                  style={{ width:"100%", borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}` }} />
+              ))}
+            </div>
+          )}
+          <div style={{ marginTop:16 }}>
+            <Btn onClick={() => setSelPost(null)} color={C.muted} outline full>닫기</Btn>
+          </div>
+        </Modal>
+      )}
 
       {/* 대여 상세 모달 */}
       {selectedRequest && (

@@ -81,6 +81,8 @@ export default function Community() {
   const filtered = posts
     .filter(p => {
       if (cat !== "전체" && p.category !== cat) return false;
+      // 새내기 글은 새내기만 볼 수 있음 (전체 탭에서도)
+      if (p.category === "새내기" && !isNewbie && profile?.role !== "admin") return false;
       if (search && !p.title.includes(search) && !p.content.includes(search)) return false;
       return true;
     })
