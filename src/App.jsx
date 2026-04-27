@@ -168,34 +168,50 @@ function AppContent() {
   const isSuper    = isAdmin && adminRole === "super";
   const isSubAdmin = isAdmin && (adminRole === "teacher" || adminRole === "assistant");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today    = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const myId = profile?.studentId || "";
+  const myId     = profile?.studentId || "";
 
-  // 관리자 알림
-  const adminNotifCount = isAdmin ? (
-    rentalRequests.filter(r => r.status === "연체").length +
-    rentalRequests.filter(r => r.status === "승인대기").length +
-    facilityRequests.filter(r => r.status === "승인대기").length +
-    allUsers.filter(u => u.status === "pending").length +
-    pwResets.filter(r => r.status === "pending").length
-  ) : 0;
+  // 읽은 알림 ID 목록
+  const seenNotifIds = React.useMemo(() => {
+    try { return new Set(JSON.parse(localStorage.getItem(`seen_notifs_${profile?.uid}`) || "[]")); }
+    catch { return new Set(); }
+  }, [profile?.uid]);
 
-  // 학생 알림
-  const myRentals = rentalRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
+  const notSeen = (id) => !seenNotifIds.has(id);
+
+  // 학생용 대여/시설 데이터
+  const myRentals  = rentalRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
   const myFacility = facilityRequests.filter(r => r.studentId === myId);
-  const recentNotices = notices.filter(n => n.date >= new Date(Date.now() - 3*86400000).toISOString().slice(0,10));
-  const upcomingLicense = licenseSchedules.filter(s => s.date >= today && s.status !== "완료");
+  const recentNotices    = notices.filter(n => n.date >= new Date(Date.now() - 3*86400000).toISOString().slice(0,10));
+  const upcomingLicense  = licenseSchedules.filter(s => s.date >= today && s.status !== "완료");
 
-  const studentNotifCount = !isAdmin ? (
-    myRentals.filter(r => r.status === "승인됨" && !r.studentSeenApproved).length +
-    myRentals.filter(r => r.status === "거절됨" && !r.studentSeenRejected).length +
-    myRentals.filter(r => r.status === "대여중" && r.endDate === tomorrow).length +
-    myFacility.filter(r => r.status === "승인됨" && !r.studentSeenApproved).length +
-    myFacility.filter(r => r.status === "거절됨" && !r.studentSeenRejected).length +
-    recentNotices.length +
-    upcomingLicense.length
-  ) : 0;
+  const getLabel = (r) => {
+    if (!r.items || r.items.length === 0) return r.equipName || "-";
+    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
+    return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
+  };
+
+  // 관리자 notifCount (seenIds 반영)
+  const adminNotifCount = isAdmin ? [
+    ...rentalRequests.filter(r=>r.status==="연체").map(r=>`연체_${r.id}`),
+    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>`승인대기_${r.id}`),
+    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>`시설대기_${r.id}`),
+    ...allUsers.filter(u=>u.status==="pending").map(u=>`가입_${u.id}`),
+    ...pwResets.filter(r=>r.status==="pending").map(r=>`비번_${r.id}`),
+  ].filter(notSeen).length : 0;
+
+  // 학생 notifCount (seenIds 반영)
+  const studentNotifCount = !isAdmin ? [
+    ...myRentals.filter(r=>r.status==="승인됨").map(r=>`승인됨_${r.id}`),
+    ...myRentals.filter(r=>r.status==="거절됨").map(r=>`거절됨_${r.id}`),
+    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>`반납D1_${r.id}`),
+    ...myRentals.filter(r=>r.status==="연체").map(r=>`연체_${r.id}`),
+    ...myFacility.filter(r=>r.status==="승인됨").map(r=>`시설승인_${r.id}`),
+    ...myFacility.filter(r=>r.status==="거절됨").map(r=>`시설거절_${r.id}`),
+    ...recentNotices.map(n=>`공지_${n.id}`),
+    ...upcomingLicense.map(s=>`라이센스_${s.id}`),
+  ].filter(notSeen).length : 0;
 
   const notifCount = isAdmin ? adminNotifCount : studentNotifCount;
 
