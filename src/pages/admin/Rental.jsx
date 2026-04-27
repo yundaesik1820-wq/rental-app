@@ -130,8 +130,6 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
         </Modal>
       )}
     </div>
-      )}
-    </div>
   );
 }
 
