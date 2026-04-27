@@ -5,7 +5,7 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 
-const CATEGORIES = ["전체", "자유", "질문", "정보", "새내기"];
+const CATEGORIES = ["전체", "자유", "질문", "정보", "저격", "새내기"];
 
 // 현재 연도 기준 새내기 학번 앞 2자리
 const currentYear = new Date().getFullYear();
@@ -13,6 +13,18 @@ const newbiePrefix = String(currentYear).slice(2); // ex) 2026 → "26"
 
 export default function Community() {
   const { profile } = useAuth();
+
+  // 공지 팝업
+  const NOTICE_KEY = "everytime_notice_hidden";
+  const todayStr   = new Date().toISOString().slice(0, 10);
+  const hiddenDate = localStorage.getItem(NOTICE_KEY);
+  const [showNotice, setShowNotice] = useState(hiddenDate !== todayStr);
+  const [dontShow, setDontShow]     = useState(false);
+
+  const closeNotice = () => {
+    if (dontShow) localStorage.setItem(NOTICE_KEY, todayStr);
+    setShowNotice(false);
+  };
 
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
@@ -138,16 +150,68 @@ export default function Community() {
   };
 
   const catColor = (c) => {
-    const m = { "자유":C.blue, "질문":C.orange, "정보":C.green, "새내기":C.purple };
+    const m = { "자유":C.blue, "질문":C.orange, "정보":C.green, "저격":C.red, "새내기":C.purple };
     return m[c] || C.muted;
   };
   const catBg = (c) => {
-    const m = { "자유":C.blueLight, "질문":C.orangeLight, "정보":C.greenLight, "새내기":C.purpleLight };
+    const m = { "자유":C.blueLight, "질문":C.orangeLight, "정보":C.greenLight, "저격":C.redLight, "새내기":C.purpleLight };
     return m[c] || C.bg;
   };
 
   return (
     <div>
+      {/* 공지 팝업 */}
+      {showNotice && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+          <div style={{ background:C.surface, borderRadius:16, width:"100%", maxWidth:480, boxShadow:"0 20px 60px rgba(0,0,0,0.3)", overflow:"hidden" }}>
+            <div style={{ background:C.navy, padding:"14px 20px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:15, fontWeight:700, color:"#fff" }}>📢 에브리타임 공지</span>
+              <button onClick={closeNotice} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.7)", fontSize:20, cursor:"pointer", lineHeight:1 }}>✕</button>
+            </div>
+            <div style={{ padding:"16px 20px", maxHeight:"60vh", overflowY:"auto", fontSize:12.5, color:C.text, lineHeight:1.9, whiteSpace:"pre-wrap" }}>{`📢 공지
+한예진 영상계열 커뮤니티에 오신 여러분 환영합니다.
+본 커뮤니티에는 자유 / 질문 / 정보 / 저격 / 새내기 탭이 존재합니다.
+여러분의 숨겨진 흑염룡과 음지력을 마음껏 발산해주시길 바랍니다.
+
+＜규칙＞
+1. 올린 글과 댓글은 삭제되지 않습니다.
+   손가락은 가볍게, 책임은 무겁게 부탁드립니다.
+   삭제를 원하실 경우 어떤 글을 쓰셨는지 말씀해주시면 삭제할지말지 고민해보겠습니다.
+2. 본 커뮤니티는 학생을 제외하고는 접근 권한이 부여되지 않아 교수님도 볼 수 없습니다.
+3. 모든 글은 익명으로 작성되며, 관리자 또한 작성자가 누구인지 확인할 수 없습니다.
+4. 인성도 같이 로그인하시길 추천드립니다.
+5. 뭔가 욕을 먹은 기분이 들었다면, 그건 아마 당신이 맞을 겁니다.
+   다만 실명 저격, 개인정보 공개, 과도한 비방은 금지입니다.
+6. 흑염룡은 풀어도 개인정보는 풀지 마세요.
+7. 질문은 자유롭게 올려주세요.
+8. 정보 공유는 적극 환영합니다.
+   꿀팁은 나누고, 헛소문은 마음속에만 저장해주세요.
+9. 새내기 탭은 새내기를 위한 공간입니다.
+   고인물 여러분은 텃세 대신 생존 팁을 남겨주세요.
+10. 드립은 환영합니다.
+    다만 누군가의 멘탈을 편집점으로 삼는 드립은 컷하겠습니다.
+11. 싸움이 길어질 경우 장르가 토론에서 막장드라마로 변경됩니다.
+    적당히 엔딩 크레딧 올려주세요.
+12. 과한 혐오 표현, 성적 발언, 불법 자료 공유, 개인정보 유출은 제재될 수 있습니다.
+    음지는 환영하지만 범죄는 안 됩니다.
+13. 관리자도 최대한 개입하지 않겠습니다.
+    하지만 선을 넘으면 조용히 나타납니다.
+14. 최선을 다해 여러분의 음지력을 발산해주시되,
+    최소한 사람 하나 보내버릴 말은 하지 맙시다.`}</div>
+            <div style={{ padding:"10px 20px 14px", borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.muted, cursor:"pointer" }}>
+                <input type="checkbox" checked={dontShow} onChange={e => setDontShow(e.target.checked)} style={{ cursor:"pointer" }} />
+                오늘 하루 그만 보기
+              </label>
+              <button onClick={closeNotice}
+                style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"7px 18px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
         <PageTitle>에브리타임</PageTitle>
         <Btn onClick={() => setShowWrite(true)} color={C.navy}>✏️ 글쓰기</Btn>
