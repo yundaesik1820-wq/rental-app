@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -16,7 +16,8 @@ import Settings   from "./pages/admin/Settings";
 import QRScan       from "./pages/admin/QRScan";
 import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
-import License       from "./pages/student/License.jsx";
+import License          from "./pages/student/License.jsx";
+import FacilityReserve from "./pages/student/FacilityReserve.jsx";
 import Community     from "./pages/student/Community.jsx";
 
 // Student pages
@@ -87,6 +88,22 @@ function AppContent() {
     + rentalRequests.filter(r => r.status === "승인대기").length
     : 0;
 
+  // 장비/시설 탭 전환 래퍼
+  const ReserveWrapper = () => {
+    const [reserveTab, setReserveTab] = React.useState("equip");
+    return (
+      <div>
+        <div style={{ display:"flex", background:"#F1F5F9", borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:"1px solid #E2E8F0" }}>
+          {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
+            <button key={v} onClick={() => setReserveTab(v)}
+              style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:reserveTab===v?"#1B2B6B":"transparent", color:reserveTab===v?"#fff":"#94A3B8", transition:"all 0.2s" }}>{l}</button>
+          ))}
+        </div>
+        {reserveTab === "equip" ? <Reserve /> : <FacilityReserve />}
+      </div>
+    );
+  };
+
   const renderPage = () => {
     if (isAdmin) {
       switch (tab) {
@@ -109,7 +126,7 @@ function AppContent() {
         case "home":     return <StudentHome />;
         case "equip":    return <EquipList />;
         case "history":  return <History />;
-        case "reserve":  return <Reserve />;
+        case "reserve":  return <ReserveWrapper />;
         case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} userEmail={profile.email} userName={profile.name} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
