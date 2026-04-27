@@ -6,9 +6,12 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 
 export default function StudentHome() {
   const { profile } = useAuth();
-  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
-  const { data: notices }     = useCollection("notices", "createdAt");
-  const { data: comments }    = useCollection("noticeComments", "createdAt");
+  const { data: allRequests }      = useCollection("rentalRequests",    "createdAt");
+  const { data: notices }          = useCollection("notices",           "createdAt");
+  const { data: comments }         = useCollection("noticeComments",    "createdAt");
+  const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
+  const { data: communityComments} = useCollection("communityComments", "createdAt");
+  const { data: licenseSchedules } = useCollection("licenseSchedules",  "date");
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
@@ -104,62 +107,128 @@ export default function StudentHome() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
-        {/* 대여 / 예약 */}
-        <div>
-          <SectionTitle>📋 현재 대여 중</SectionTitle>
-          {myRentals.length === 0 && <div style={{ fontSize: 13, color: C.muted, padding: "10px 0" }}>대여 중인 장비가 없습니다</div>}
-          {myRentals.map(r => (
-            <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{getEquipLabel(r)}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>반납예정: {r.endDate} {r.endTime}</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>목적: {r.purpose}</div>
-                </div>
-                <Badge label={r.status} />
-              </div>
-            </Card>
-          ))}
+      <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
-          <SectionTitle>📅 예약 현황</SectionTitle>
-          {myRes.length === 0 && <div style={{ fontSize: 13, color: C.muted, padding: "10px 0" }}>예약 내역이 없습니다</div>}
-          {myRes.slice(0, 3).map(r => (
-            <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor: "pointer" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{getEquipLabel(r)}</div>
-                  <div style={{ fontSize: 12, color: C.muted, marginTop: 3 }}>{r.startDate} ~ {r.endDate}</div>
-                </div>
-                <Badge label={r.status} />
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        {/* 공지사항 */}
-        <div>
+        {/* ── 1. 공지사항 최신 3개 ── */}
+        <section>
           <SectionTitle>📌 공지사항</SectionTitle>
-          {recentNotices.length === 0 && <div style={{ fontSize: 13, color: C.muted, padding: "10px 0" }}>공지사항이 없습니다</div>}
+          {recentNotices.length === 0 && <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>공지사항이 없습니다</div>}
           {recentNotices.map(n => {
-            const cat = NOTICE_CAT[n.category] || { bg: C.bg, col: C.muted };
+            const cat = NOTICE_CAT[n.category] || { bg:C.bg, col:C.muted };
             const cmtCount = comments.filter(c => c.noticeId === n.id).length;
             return (
-              <Card key={n.id} onClick={() => { setSelectedNotice(n); setCommentText(""); }} style={{ cursor: "pointer" }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                  <span style={{ background: cat.bg, color: cat.col, borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{n.category}</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{n.title}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: C.muted }}>{n.date}</span>
-                      {cmtCount > 0 && <span style={{ fontSize: 11, color: C.blue, fontWeight: 600 }}>💬 {cmtCount}</span>}
+              <Card key={n.id} onClick={() => { setSelectedNotice(n); setCommentText(""); }} style={{ cursor:"pointer", marginBottom:8 }}>
+                <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
+                  <span style={{ background:cat.bg, color:cat.col, borderRadius:6, padding:"3px 8px", fontSize:11, fontWeight:700, flexShrink:0 }}>{n.category}</span>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:3 }}>
+                      <span style={{ fontSize:11, color:C.muted }}>{n.date}</span>
+                      {cmtCount > 0 && <span style={{ fontSize:11, color:C.blue, fontWeight:600 }}>💬 {cmtCount}</span>}
                     </div>
                   </div>
                 </div>
               </Card>
             );
           })}
-        </div>
+        </section>
+
+        {/* ── 2. 라이센스 신청 가능한 수업 ── */}
+        {(() => {
+          const today = new Date().toISOString().slice(0,10);
+          const upcoming = licenseSchedules
+            .filter(s => s.date >= today && s.status !== "완료")
+            .sort((a,b) => a.date > b.date ? 1 : -1)
+            .slice(0, 3);
+          if (upcoming.length === 0) return null;
+          return (
+            <section>
+              <SectionTitle>🎖️ 라이센스 신청 가능한 수업</SectionTitle>
+              {upcoming.map(s => (
+                <Card key={s.id} style={{ marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{s.title || s.equipName}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{s.date} {s.time} · {s.location}</div>
+                      {s.licenseLevel && <div style={{ fontSize:11, color:C.purple, marginTop:2, fontWeight:600 }}>Lv.{s.licenseLevel} 수업</div>}
+                    </div>
+                    <span style={{ background:C.purpleLight, color:C.purple, borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:700, flexShrink:0 }}>신청가능</span>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          );
+        })()}
+
+        {/* ── 3. 에브리타임 최신글 5개 ── */}
+        {profile?.role !== "professor" && (() => {
+          const recent5 = [...communityPosts]
+            .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+            .slice(0, 5);
+          if (recent5.length === 0) return null;
+          return (
+            <section>
+              <SectionTitle>🔥 에브리타임 최신글</SectionTitle>
+              {recent5.map(p => (
+                <Card key={p.id} style={{ marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10 }}>
+                    <div style={{ minWidth:0, flex:1 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
+                        <span style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, padding:"1px 6px", fontSize:10, color:C.muted, flexShrink:0 }}>{p.category}</span>
+                        <span style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                      </div>
+                      <div style={{ display:"flex", gap:8, fontSize:11, color:C.muted }}>
+                        <span>👍 {p.likes||0}</span>
+                        <span>💬 {communityComments.filter(c=>c.postId===p.id).length}</span>
+                        <span>👁 {p.views||0}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </section>
+          );
+        })()}
+
+        {/* ── 4. 예약 현황 ── */}
+        <section>
+          <SectionTitle>📅 예약 현황</SectionTitle>
+          {myRentals.length > 0 && (
+            <>
+              <div style={{ fontSize:12, color:C.muted, marginBottom:6, fontWeight:600 }}>대여중</div>
+              {myRentals.map(r => (
+                <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>반납예정: {r.endDate} {r.endTime}</div>
+                    </div>
+                    <Badge label={r.status} />
+                  </div>
+                </Card>
+              ))}
+            </>
+          )}
+          {myRes.length > 0 ? (
+            <>
+              {myRentals.length > 0 && <div style={{ fontSize:12, color:C.muted, marginTop:8, marginBottom:6, fontWeight:600 }}>예약됨</div>}
+              {myRes.slice(0, 3).map(r => (
+                <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{r.startDate} ~ {r.endDate}</div>
+                    </div>
+                    <Badge label={r.status} />
+                  </div>
+                </Card>
+              ))}
+            </>
+          ) : myRentals.length === 0 && (
+            <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>예약 내역이 없습니다</div>
+          )}
+        </section>
+
       </div>
 
       {/* ── 공지 상세 모달 ── */}
