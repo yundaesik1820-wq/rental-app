@@ -48,7 +48,13 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
   // 일반 직원(교사/조교)은 대여/반납 숨김
   // 일반관리자: 대여/반납 탭 보이되 제한된 뷰 (대여중~반납완료만)
-  const nav = profile?.role === "admin" ? ADMIN_NAV : STU_NAV;
+  // 교사·교수는 에브리타임 숨김 (조교는 보임)
+  const hideEverytime = 
+    (profile?.role === "admin" && adminRole === "teacher") ||
+    (profile?.role === "professor");
+  const nav = profile?.role === "admin"
+    ? (hideEverytime ? ADMIN_NAV.filter(n => n.id !== "community") : ADMIN_NAV)
+    : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
   // 모바일 하단 2줄 그리드
   const half = Math.ceil(nav.length / 2);
