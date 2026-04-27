@@ -6,9 +6,131 @@ import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS_SUPER = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
-const STATUS_TABS_SUB   = ["승인됨", "대여중", "반납완료", "연체"];
+const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_ASSIST  = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
+const STATUS_TABS_TEACHER = ["승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
+
+// ── 시설 대여 관리 컴포넌트 ────────────────────────────────
+function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
+  const [tab, setTab]         = useState("승인대기");
+  const [selReq, setSelReq]   = useState(null);
+  const [reason, setReason]   = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const tabs = isTeacher
+    ? ["승인됨", "반납완료"]
+    : ["승인대기", "승인됨", "반납완료", "거절됨"];
+
+  const filtered = requests.filter(r => tab === "전체" || r.status === tab)
+    .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+
+  const approve = async (r) => {
+    setSubmitting(true);
+    await updateItem("facilityRequests", r.id, { status: "승인됨" });
+    setSubmitting(false);
+  };
+  const reject = async (r) => {
+    if (!reason.trim()) { alert("거절 사유를 입력하세요"); return; }
+    setSubmitting(true);
+    await updateItem("facilityRequests", r.id, { status: "거절됨", reason });
+    setReason(""); setSelReq(null);
+    setSubmitting(false);
+  };
+  const returnDone = async (r) => {
+    setSubmitting(true);
+    await updateItem("facilityRequests", r.id, { status: "반납완료" });
+    setSubmitting(false);
+  };
+
+  const formatDate = (ts) => {
+    if (!ts?.seconds) return "";
+    return new Date(ts.seconds * 1000).toLocaleDateString("ko-KR");
+  };
+
+  const statusColor = { 승인대기:C.yellow, 승인됨:C.teal, 반납완료:C.green, 거절됨:C.red };
+
+  return (
+    <div>
+      <PageTitle>시설 대여 관리</PageTitle>
+
+      {/* 탭 */}
+      <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+        {tabs.map(t => (
+          <button key={t} onClick={() => setTab(t)}
+            style={{ padding:"7px 18px", borderRadius:20, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?"#fff":C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            {t} ({requests.filter(r=>r.status===t).length})
+          </button>
+        ))}
+      </div>
+
+      {filtered.length === 0 && <Empty icon="🏢" text="신청 내역이 없습니다" />}
+
+      {filtered.map(r => (
+        <Card key={r.id} style={{ marginBottom:12, border:`2px solid ${(statusColor[r.status]||C.border)}30` }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+            <div>
+              <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:2 }}>{r.facilityName}</div>
+              <div style={{ fontSize:12, color:C.muted }}>{r.location}</div>
+            </div>
+            <span style={{ background:`${statusColor[r.status]||C.border}20`, color:statusColor[r.status]||C.muted, borderRadius:8, padding:"4px 12px", fontSize:12, fontWeight:700 }}>{r.status}</span>
+          </div>
+
+          <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:13 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+              <div><span style={{ color:C.muted }}>신청자: </span><strong>{r.studentName}</strong> ({r.studentId})</div>
+              <div><span style={{ color:C.muted }}>계열: </span>{r.dept}</div>
+              <div><span style={{ color:C.muted }}>연락처: </span>{r.phone}</div>
+              <div><span style={{ color:C.muted }}>신청일: </span>{formatDate(r.createdAt)}</div>
+            </div>
+          </div>
+
+          <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:13 }}>
+            <div style={{ marginBottom:4 }}><span style={{ color:C.muted }}>대여 일시: </span><strong>{r.date} {r.startTime}~{r.endTime}</strong></div>
+            <div style={{ marginBottom:4 }}><span style={{ color:C.muted }}>목적: </span>{r.purpose} - {r.purposeDetail}</div>
+            <div><span style={{ color:C.muted }}>참여인원: </span><span style={{ whiteSpace:"pre-line" }}>{r.participants}</span></div>
+          </div>
+
+          {r.studentSignature && (
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>신청자 서명</div>
+              <img src={r.studentSignature} alt="서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
+            </div>
+          )}
+
+          {r.reason && (
+            <div style={{ background:C.redLight, borderRadius:8, padding:"8px 12px", marginBottom:10, fontSize:12, color:C.red }}>
+              거절 사유: {r.reason}
+            </div>
+          )}
+
+          {!isTeacher && r.status === "승인대기" && (
+            <div style={{ display:"flex", gap:8 }}>
+              <Btn onClick={() => approve(r)} color={C.green} full disabled={submitting}>✅ 승인</Btn>
+              <Btn onClick={() => { setSelReq(r); setReason(""); }} color={C.red} outline full>❌ 거절</Btn>
+            </div>
+          )}
+          {r.status === "승인됨" && (
+            <Btn onClick={() => returnDone(r)} color={C.teal} full disabled={submitting}>📦 반납 완료</Btn>
+          )}
+        </Card>
+      ))}
+
+      {/* 거절 모달 */}
+      {selReq && (
+        <Modal onClose={() => setSelReq(null)} width={440}>
+          <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:16 }}>거절 사유 입력</div>
+          <textarea placeholder="거절 사유를 입력하세요" value={reason} onChange={e => setReason(e.target.value)}
+            style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box", marginBottom:16 }} />
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => setSelReq(null)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={() => reject(selReq)} color={C.red} full disabled={submitting}>거절</Btn>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
 
 // ── QR 체크리스트 컴포넌트 (카메라 + 리더기 겸용) ─────────
 function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode = "rental" }) {
@@ -253,12 +375,15 @@ export default function Rental({ subAdmin = false }) {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments } = useCollection("equipments", "createdAt");
 
-  const STATUS_TABS = subAdmin ? STATUS_TABS_SUB : STATUS_TABS_SUPER;
-  const [tab, setTab]             = useState(subAdmin ? "대여중" : "승인대기");
+  const isAssist    = !isSuper && profile?.adminRole === "assistant";
+  const isTeacher   = !isSuper && profile?.adminRole === "teacher";
+  const STATUS_TABS = isTeacher ? STATUS_TABS_TEACHER : STATUS_TABS_SUPER;
+  const [tab, setTab] = useState(isTeacher ? "대여중" : "승인대기");
   const [actionTarget, setActionTarget] = useState(null);
   const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [mainTab, setMainTab]       = useState("equip"); // "equip" | "facility"
   const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
   const [returnModal, setReturnModal] = useState(null);   // 반납 QR 체크 모달 { request, checklist }
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
@@ -723,14 +848,14 @@ ${r.attachments?.length > 0 ? `
           </div>
 
           {/* 액션 버튼 */}
-          {!subAdmin && r.status === "승인대기" && (
+          {!isTeacher && r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full><PauseCircle size={14} style={{ marginRight: 4 }} />보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {!subAdmin && r.status === "보류" && (
+          {!isTeacher && r.status === "보류" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인으로 변경</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
@@ -739,7 +864,7 @@ ${r.attachments?.length > 0 ? `
           {r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
               <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
-              {!subAdmin && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
+              {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
           {r.status === "대여중" && (
@@ -998,6 +1123,8 @@ ${r.attachments?.length > 0 ? `
         </Modal>
       )}
 
+    </div>
+      )}
     </div>
   );
 }
