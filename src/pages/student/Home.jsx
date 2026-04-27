@@ -104,7 +104,7 @@ export default function StudentHome() {
         </div>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: 12 }}>
         {/* 대여 / 예약 */}
         <div>
           <SectionTitle>📋 현재 대여 중</SectionTitle>

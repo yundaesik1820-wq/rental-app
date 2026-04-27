@@ -97,7 +97,7 @@ export default function FacilityReserve() {
       )}
 
       {/* 시설 선택 카드 */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(260px,1fr))", gap:14, marginBottom:24 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:14, marginBottom:24 }}>
         {FACILITIES.map(fac => (
           <Card key={fac.id}
             onClick={() => { setSelFacility(fac); setShowForm(true); setDone(false); setErrors({}); setStudentSig(""); }}
@@ -121,7 +121,7 @@ export default function FacilityReserve() {
           {/* 대여자 정보 (자동입력) */}
           <div style={{ background:C.bg, borderRadius:12, padding:"12px 16px", marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:8 }}>대여자 정보 (자동입력)</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, fontSize:13, color:C.text }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8, fontSize:13, color:C.text }}>
               <div><span style={{ color:C.muted }}>이름: </span>{profile?.name}</div>
               <div><span style={{ color:C.muted }}>학번: </span>{profile?.studentId}</div>
               <div><span style={{ color:C.muted }}>계열: </span>{profile?.dept}</div>
@@ -132,7 +132,7 @@ export default function FacilityReserve() {
           {/* 대여 일시 */}
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>대여 일시 *</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(110px, 1fr))", gap:8 }}>
               <div>
                 <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>날짜</div>
                 <input type="date" value={form.date} min={today}

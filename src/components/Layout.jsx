@@ -173,8 +173,97 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
           .mobile-logout-btn { display: flex !important; }
-          main { padding: 16px !important; padding-bottom: 120px !important; }
+          main { padding: 12px !important; padding-bottom: 130px !important; }
+
+          /* 헤더 */
+          header { padding: 0 12px !important; height: 52px !important; }
+          header > div:last-child > div > div:last-child { display: none !important; }
+
+          /* 카드 패딩 축소 */
+          [class*="card"], [data-card] { padding: 12px !important; }
+
+          /* 2열 그리드 → 1열 */
+          [style*="grid-template-columns: 1fr 1fr"],
+          [style*="gridTemplateColumns: \"1fr 1fr\""],
+          [style*="gridTemplateColumns:'1fr 1fr'"] {
+            grid-template-columns: 1fr !important;
+          }
+
+          /* 3열 이상 그리드 → 1열 또는 2열 */
+          [style*="repeat(3"],
+          [style*="repeat(4"],
+          [style*="repeat(auto-fill"] {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+
+          /* 폰트 크기 조정 */
+          [style*="fontSize: 28"],
+          [style*="fontSize: 32"],
+          [style*="fontSize: 36"],
+          [style*="fontSize: 40"],
+          [style*="fontSize: 42"],
+          [style*="fontSize: 48"] {
+            font-size: 22px !important;
+          }
+          [style*="fontSize: 22"],
+          [style*="fontSize: 24"] {
+            font-size: 18px !important;
+          }
+          [style*="fontSize: 18"],
+          [style*="fontSize: 20"] {
+            font-size: 15px !important;
+          }
+
+          /* 버튼 최소 높이 */
+          button { min-height: 36px; }
+
+          /* 홈 배너 */
+          [style*="linear-gradient"] { border-radius: 14px !important; padding: 18px 16px !important; }
+
+          /* 입력창 */
+          input, textarea, select { font-size: 16px !important; }
+
+          /* 모달 */
+          [style*="maxWidth: 560"],
+          [style*="maxWidth: 600"],
+          [style*="maxWidth: 640"],
+          [style*="maxWidth: 700"],
+          [style*="maxWidth: 800"] {
+            max-width: calc(100vw - 24px) !important;
+            margin: 0 12px !important;
+          }
+
+          /* 가로 스크롤 방지 */
+          * { max-width: 100%; box-sizing: border-box; }
+          body { overflow-x: hidden; }
+
+          /* 탭 버튼 */
+          [style*="padding: \"8px 28px\""],
+          [style*="padding: \"8px 24px\""],
+          [style*="padding: \"9px 0\""] {
+            padding: 7px 10px !important;
+            font-size: 12px !important;
+          }
+
+          /* flex 행 → 줄바꿈 */
+          [style*="display: \"flex\""][style*="gap: 12"],
+          [style*="display: \"flex\""][style*="gap: 16"],
+          [style*="display: \"flex\""][style*="gap: 24"] {
+            flex-wrap: wrap;
+          }
+
+          /* PageTitle */
+          [style*="fontSize: 22"][style*="fontWeight: 900"] {
+            font-size: 17px !important;
+          }
+
+          /* 카테고리 배지 작게 */
+          [style*="borderRadius: 20"][style*="padding: \"8px 16px\""] {
+            padding: 5px 10px !important;
+            font-size: 12px !important;
+          }
         }
+
         @media (min-width: 769px) {
           .mobile-nav { display: none !important; }
           .mobile-logout-btn { display: none !important; }
