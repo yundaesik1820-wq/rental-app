@@ -150,7 +150,7 @@ export default function Community() {
   return (
     <div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-        <PageTitle>커뮤니티</PageTitle>
+        <PageTitle>에브리타임</PageTitle>
         <Btn onClick={() => setShowWrite(true)} color={C.navy}>✏️ 글쓰기</Btn>
       </div>
 
