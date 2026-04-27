@@ -3,7 +3,6 @@ import { C } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { MessageCircle, ThumbsUp, Eye } from "lucide-react";
 import { serverTimestamp } from "firebase/firestore";
 
 const CATEGORIES = ["전체", "자유", "질문", "정보", "새내기"];
@@ -185,6 +184,41 @@ export default function Community() {
       <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => setSearch(e.target.value)}
         style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:16, boxSizing:"border-box" }} />
 
+      {/* 인기 게시글 TOP3 */}
+      {(() => {
+        const base = cat === "전체" ? posts : posts.filter(p => p.category === cat);
+        const top3 = [...base]
+          .sort((a,b) =>
+            ((b.views||0)*1 + (b.likes||0)*3 + postComments(b.id).length*2) -
+            ((a.views||0)*1 + (a.likes||0)*3 + postComments(a.id).length*2)
+          ).slice(0, 3);
+        if (top3.length === 0) return null;
+        return (
+          <div style={{ background:C.yellowLight, borderRadius:14, padding:"14px 16px", marginBottom:16, border:`1px solid ${C.yellow}40` }}>
+            <div style={{ fontSize:13, fontWeight:700, color:"#92400E", marginBottom:10 }}>
+              🔥 인기 게시글 TOP 3
+            </div>
+            {top3.map((p, i) => (
+              <div key={p.id} onClick={() => openPost(p)}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0", borderBottom: i<2?`1px solid ${C.yellow}30`:"none", cursor:"pointer" }}>
+                <span style={{ fontSize:15, fontWeight:900, color:["#F59E0B","#9CA3AF","#CD7C3A"][i], minWidth:20 }}>
+                  {["1","2","3"][i]}
+                </span>
+                <span style={{ fontSize:12, background:C.yellowLight, border:`1px solid ${C.yellow}60`, borderRadius:5, padding:"1px 6px", color:"#92400E", flexShrink:0 }}>
+                  {p.category}
+                </span>
+                <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                <div style={{ display:"flex", gap:8, fontSize:11, color:C.muted, flexShrink:0 }}>
+                  <span>👁 {p.views||0}</span>
+                  <span>👍 {p.likes||0}</span>
+                  <span>💬 {postComments(p.id).length}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+
       {/* 게시글 목록 */}
       {filtered.length === 0 && <Empty icon="📝" text="게시글이 없습니다" />}
       {filtered.map(p => (
@@ -198,9 +232,9 @@ export default function Community() {
           </div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
           <div style={{ display:"flex", gap:14, fontSize:12, color:C.muted }}>
-            <span style={{ display:"flex", alignItems:"center", gap:3 }}><Eye size={12} /> {p.views||0}</span>
-            <span style={{ display:"flex", alignItems:"center", gap:3 }}><ThumbsUp size={12} /> {p.likes||0}</span>
-            <span style={{ display:"flex", alignItems:"center", gap:3 }}><MessageCircle size={12} /> {postComments(p.id).length}</span>
+            <span>👁 {p.views||0}</span>
+            <span>👍 {p.likes||0}</span>
+            <span>💬 {postComments(p.id).length}</span>
             <span>익명</span>
           </div>
         </Card>
@@ -217,15 +251,15 @@ export default function Community() {
           <div style={{ display:"flex", gap:12, fontSize:12, color:C.muted, marginBottom:16 }}>
             <span>{canSeeReal ? `${selPost.authorName} (익명)` : "익명"}</span>
             <span>{formatDate(selPost.createdAt)}</span>
-            <span style={{ display:"flex", alignItems:"center", gap:3 }}><Eye size=   {12} /> {selPost.views||0}</span>
+            <span>👁 {selPost.views||0}</span>
           </div>
           <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom:20, whiteSpace:"pre-wrap", borderBottom:`1px solid ${C.border}`, paddingBottom:20 }}>{selPost.content}</div>
 
           {/* 좋아요 */}
           <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
             <button onClick={() => toggleLike("post", selPost)}
-              style={{ display:"flex", alignItems:"center", gap:6, background:(selPost.likedBy||[]).includes(profile?.uid)?C.blueLight:C.bg, border:`1px solid ${C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
-              <ThumbsUp size={14} /> {selPost.likes||0}
+              style={{ background:(selPost.likedBy||[]).includes(profile?.uid)?C.blueLight:C.bg, border:`1px solid ${C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
+              👍 {selPost.likes||0}
             </button>
           </div>
 
@@ -242,8 +276,8 @@ export default function Community() {
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <button onClick={() => toggleLike("comment", c)}
-                    style={{ display:"flex", alignItems:"center", gap:3, background:"none", border:"none", fontSize:11, color:(c.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
-                    <ThumbsUp size={11} /> {c.likes||0}
+                    style={{ background:"none", border:"none", fontSize:11, color:(c.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
+                    👍 {c.likes||0}
                   </button>
                   {isSuper && (
                     <button onClick={() => adminDeleteComment(c.id)}
