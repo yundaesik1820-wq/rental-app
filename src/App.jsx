@@ -17,6 +17,7 @@ import QRScan       from "./pages/admin/QRScan";
 import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License       from "./pages/student/License.jsx";
+import Community     from "./pages/student/Community.jsx";
 
 // Student pages
 import StudentHome    from "./pages/student/Home";
@@ -100,6 +101,7 @@ function AppContent() {
         case "qrscan":   return <QRScan />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
+        case "community": return <Community />;
         default:         return <Dashboard />;
       }
     } else {
@@ -112,6 +114,7 @@ function AppContent() {
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
         case "license":  return <License />;
+        case "community": return <Community />;
         case "inquiry":  return <StudentInquiry />;
         default:         return <StudentHome />;
       }
