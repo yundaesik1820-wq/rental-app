@@ -138,9 +138,9 @@ export default function EquipList() {
                           {avail ? "대여가능" : "대여불가"}
                         </span>
                       </div>
-                      {e.itemName && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.itemName}</div>}
+                      {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                       <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                        {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.majorCategory}</span>}
+                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
                         {eqLic > 0 && (
                           <span style={{ background:locked?C.redLight:C.blueLight, color:locked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
                             {locked ? `🔴 Lv.${eqLic} 필요` : `🔵 Lv.${eqLic}`}
@@ -188,10 +188,10 @@ export default function EquipList() {
                           {avail ? "대여가능" : "대여불가"}
                         </span>
                       </div>
-                      {e.itemName && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.itemName}</div>}
+                      {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                       <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
                         <span style={{ background:"#FFF7ED", color:"#EA580C", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
-                        {e.majorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.majorCategory}</span>}
+                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
                         <span style={{ fontSize:10, color:C.muted }}>{e.available}/{e.total}세트</span>
                       </div>
                     </div>
