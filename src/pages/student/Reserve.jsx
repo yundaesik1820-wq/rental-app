@@ -545,7 +545,7 @@ export default function Reserve() {
 
       {/* ── 세트 목록 ── */}
       {tabView === "세트" && (
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:14 }}>
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {filteredSets.map(e => {
             const avail    = e.available;
             const selected = !!cartSets[e.modelName];
