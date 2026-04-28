@@ -18,6 +18,7 @@ import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
 import FacilityReserve from "./pages/student/FacilityReserve.jsx";
+import FacilityAdmin  from "./pages/admin/FacilityAdmin.jsx";
 import Community     from "./pages/student/Community.jsx";
 
 // Student pages
@@ -240,6 +241,7 @@ function AppContent() {
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
         case "community": return <Community />;
+        case "facility-admin": return <FacilityAdmin />;
         default:         return <Dashboard />;
       }
     } else {
@@ -253,6 +255,7 @@ function AppContent() {
         case "profile":  return <Profile />;
         case "license":  return <License />;
         case "community": return <Community />;
+        case "facility-admin": return <FacilityAdmin />;
         case "inquiry":  return <StudentInquiry />;
         default:         return <StudentHome />;
       }

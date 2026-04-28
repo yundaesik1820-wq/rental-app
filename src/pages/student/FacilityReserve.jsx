@@ -3,19 +3,15 @@ import { C } from "../../theme";
 import { Card, Btn, Inp, Modal, PageTitle } from "../../components/UI";
 import { addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { useCollection } from "../../hooks/useFirestore";
 import SignaturePad from "../../components/SignaturePad";
 import { serverTimestamp } from "firebase/firestore";
-
-const FACILITIES = [
-  { id: "horizon",  name: "호리존 스튜디오", location: "1관 1층", desc: "방송 촬영용 호리존 스튜디오" },
-  { id: "theater",  name: "시사실",           location: "1관 1층", desc: "시사 및 상영 공간" },
-  { id: "bokja",    name: "복자 스튜디오",    location: "1관 5층", desc: "방송 제작용 스튜디오" },
-];
 
 const PURPOSES = ["수업", "과제", "동아리", "개인 프로젝트", "기타"];
 
 export default function FacilityReserve() {
   const { profile } = useAuth();
+  const { data: FACILITIES } = useCollection("facilities", "createdAt");
 
   const [selFacility, setSelFacility] = useState(null);
   const [showForm, setShowForm]       = useState(false);
@@ -100,12 +96,19 @@ export default function FacilityReserve() {
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))", gap:14, marginBottom:24 }}>
         {FACILITIES.map(fac => (
           <Card key={fac.id}
-            onClick={() => { setSelFacility(fac); setShowForm(true); setDone(false); setErrors({}); setStudentSig(""); }}
-            style={{ cursor:"pointer", border:`2px solid ${selFacility?.id===fac.id ? C.teal : C.border}`, transition:"all 0.2s" }}>
-            <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>{fac.location}</div>
-            <div style={{ fontSize:18, fontWeight:800, color:C.navy, marginBottom:6 }}>{fac.name}</div>
-            <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>{fac.desc}</div>
-            <Btn color={C.teal} full>신청하기</Btn>
+            onClick={() => { if(fac.available===false) return; setSelFacility(fac); setShowForm(true); setDone(false); setErrors({}); setStudentSig(""); }}
+            style={{ cursor: fac.available===false?"not-allowed":"pointer", border:`2px solid ${selFacility?.id===fac.id ? C.teal : C.border}`, transition:"all 0.2s", opacity: fac.available===false ? 0.6 : 1 }}>
+            {fac.displayPhotoUrl && (
+              <div style={{ height:100, borderRadius:8, overflow:"hidden", marginBottom:10, border:`1px solid ${C.border}` }}>
+                <img src={fac.displayPhotoUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              </div>
+            )}
+            <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>{fac.location}</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{fac.name}</div>
+            {fac.desc && <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>{fac.desc}</div>}
+            <Btn color={fac.available===false ? C.muted : C.teal} full disabled={fac.available===false}>
+              {fac.available===false ? "대여불가" : "신청하기"}
+            </Btn>
           </Card>
         ))}
       </div>
