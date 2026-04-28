@@ -57,13 +57,11 @@ export function useFCM(userId) {
           console.log("Firestore 저장 완료");
         }
 
-        // 6. 포그라운드 알림
+        // 6. 포그라운드 알림 - 서비스워커가 처리하므로 중복 방지
         onMessage(msg, (payload) => {
-          const { title, body } = payload.notification || {};
-          new Notification(title || "KBAS 알림", {
-            body: body || "",
-            icon: "/icons/icon-192x192.png",
-          });
+          // 서비스워커가 백그라운드 알림을 처리하므로
+          // 포그라운드에서는 별도 알림 생성 안 함 (중복 방지)
+          console.log("포그라운드 FCM 수신:", payload.notification?.title);
         });
 
       } catch (e) {
