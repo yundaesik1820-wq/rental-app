@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
+import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import { Spinner } from "./components/UI";
@@ -151,6 +152,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
 
 function AppContent() {
   const { user, profile, loading } = useAuth();
+  useFCM(profile?.uid);
   const [tab,       setTab]       = useState("home");
   const [showNotif, setShowNotif] = useState(false);
 
