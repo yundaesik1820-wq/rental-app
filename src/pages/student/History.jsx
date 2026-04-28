@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
@@ -156,88 +157,183 @@ ${r.attachments?.length > 0 ? `
     w.document.close();
   };
 
+  const [tabFilter, setTabFilter] = useState("전체");
+  const [expandedId, setExpandedId] = useState(null);
+  const [showPrint, setShowPrint]   = useState(null);
+
+  const overdue  = mine.filter(r => r.status === "연체").length;
+  const renting  = mine.filter(r => r.status === "대여중").length;
+
+  const STATUS_TABS = [
+    { id:"전체",    label:"전체 신청", count:total,    color:C.navy,   bg:C.blueLight },
+    { id:"승인대기", label:"승인대기",  count:pending,  color:C.yellow, bg:C.yellowLight },
+    { id:"승인됨",   label:"승인완료",  count:active,   color:C.teal,   bg:C.tealLight },
+    { id:"대여중",   label:"대여중",   count:renting,  color:C.blue,   bg:C.blueLight },
+    { id:"반납완료", label:"반납완료",  count:returned, color:C.green,  bg:C.greenLight },
+    { id:"연체",    label:"연체중",   count:overdue,  color:C.red,    bg:C.redLight },
+  ];
+
+  const filtered = tabFilter === "전체" ? mine : mine.filter(r => r.status === tabFilter);
+
+  const getEquipLabel = (r) => {
+    if (!r.items || r.items.length === 0) return r.equipName || "-";
+    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
+    return names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : names[0] || "-";
+  };
+
+  // 신청서 뷰 모드
+  if (showPrint) {
+    return (
+      <div>
+        <button onClick={() => setShowPrint(null)}
+          style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1.5px solid ${C.navy}`, borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, color:C.navy, cursor:"pointer", marginBottom:20 }}>
+          ← 대여 이력으로 돌아가기
+        </button>
+        <div style={{ background:"#fff", borderRadius:16, padding:20, border:`1px solid ${C.border}` }}>
+          <div style={{ textAlign:"center", marginBottom:16 }}>
+            <div style={{ fontSize:18, fontWeight:900, color:C.navy }}>장비 대여 신청서</div>
+            <div style={{ fontSize:12, color:C.muted }}>한국방송예술진흥원 미디어센터 장비대여실</div>
+          </div>
+          {[
+            ["신청자", showPrint.studentName],
+            ["학번", showPrint.studentId],
+            ["계열", showPrint.dept],
+            ["연락처", showPrint.phone],
+            ["대여일", `${showPrint.startDate} ~ ${showPrint.endDate}`],
+            ["반납시간", showPrint.endTime],
+            ["목적", showPrint.purpose],
+            ["장소", showPrint.location],
+          ].map(([label, val]) => val ? (
+            <div key={label} style={{ display:"flex", padding:"8px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
+              <span style={{ color:C.muted, minWidth:70 }}>{label}</span>
+              <span style={{ color:C.text, fontWeight:500 }}>{val}</span>
+            </div>
+          ) : null)}
+          <div style={{ marginTop:12 }}>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>장비 목록</div>
+            {showPrint.items?.map((item, i) => (
+              <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"6px 10px", background:C.bg, borderRadius:8, marginBottom:4, fontSize:13 }}>
+                <span>{item.modelName || item.equipName}</span>
+                <span style={{ fontWeight:700, color:C.navy }}>{item.quantity}개</span>
+              </div>
+            ))}
+          </div>
+          {showPrint.studentSignature && (
+            <div style={{ marginTop:16, textAlign:"right" }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>신청자 서명</div>
+              <img src={showPrint.studentSignature} alt="서명" style={{ height:60, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:8, padding:4 }} />
+            </div>
+          )}
+          <div style={{ marginTop:20, display:"flex", gap:10 }}>
+            <Btn onClick={() => printRequest(showPrint)} color={C.navy} full>🖨️ 인쇄 / PDF</Btn>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageTitle>대여 이력</PageTitle>
 
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 24 }}>
-        <StatBox icon="📊" label="전체 신청"  value={total}    color={C.blue}   bg={C.blueLight}  />
-        <StatBox icon="⏳" label="승인 대기"  value={pending}  color={C.yellow} bg={C.yellowLight} />
-        <StatBox icon="✅" label="승인/대여중" value={active}   color={C.teal}   bg={C.tealLight}  />
-        <StatBox icon="📦" label="반납 완료"  value={returned} color={C.green}  bg={C.greenLight} />
+      {/* 1행: 전체 신청 */}
+      <div onClick={() => setTabFilter("전체")}
+        style={{ background: tabFilter==="전체" ? C.navy : C.surface, borderRadius:12, padding:"12px 16px", marginBottom:8, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", border:`1.5px solid ${tabFilter==="전체" ? C.navy : C.border}` }}>
+        <span style={{ fontSize:14, fontWeight:700, color: tabFilter==="전체" ? "#fff" : C.text }}>전체 신청</span>
+        <span style={{ fontSize:20, fontWeight:900, color: tabFilter==="전체" ? "#fff" : C.navy }}>{total}</span>
       </div>
 
-      {mine.length === 0 && <Empty icon="📭" text="대여 신청 이력이 없습니다" />}
+      {/* 2행: 상태별 탭 */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:5, marginBottom:20 }}>
+        {STATUS_TABS.slice(1).map(t => (
+          <button key={t.id} onClick={() => setTabFilter(t.id)}
+            style={{ background: tabFilter===t.id ? t.color : C.surface, border:`1.5px solid ${tabFilter===t.id ? t.color : C.border}`, borderRadius:10, padding:"6px 4px", cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
+            <div style={{ fontSize:16, fontWeight:900, color: tabFilter===t.id ? "#fff" : t.color }}>{t.count}</div>
+            <div style={{ fontSize:9, fontWeight:600, color: tabFilter===t.id ? "rgba(255,255,255,0.85)" : C.muted, marginTop:1, whiteSpace:"nowrap" }}>{t.label}</div>
+          </button>
+        ))}
+      </div>
 
-      {mine.map(r => (
-        <Card key={r.id} style={{
-          border: `2px solid ${
-            r.status === "보류"   ? C.yellow + "60" :
-            r.status === "거절됨" ? C.red    + "40" :
-            r.status === "승인됨" ? C.teal   + "40" :
-            r.status === "대여중" ? C.blue   + "40" : C.border
-          }`
-        }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
-            <div>
-              <div style={{ fontSize: 12, color: C.muted, marginBottom: 4 }}>
-                {r.startDate} ~ {r.endDate}
+      {filtered.length === 0 && <Empty icon="📭" text="해당 이력이 없습니다" />}
+
+      {filtered.map(r => {
+        const isExpand = expandedId === r.id;
+        const statusColor = {
+          승인대기: C.yellow, 승인됨: C.teal, 대여중: C.blue,
+          반납완료: C.green, 거절됨: C.red, 보류: C.orange, 연체: C.red,
+        }[r.status] || C.muted;
+
+        return (
+          <Card key={r.id} style={{ marginBottom:8, border:`1.5px solid ${statusColor}30`, padding:"12px 14px" }}>
+            {/* 카드 헤더 - 항상 보임 */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>
+                  {getEquipLabel(r)}
+                </div>
+                <div style={{ fontSize:11, color:C.muted }}>{r.startDate} ~ {r.endDate}</div>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: C.muted }}>
-                목적: {r.purpose}
+              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
+                <Badge label={r.status} />
+                <div style={{ display:"flex", gap:5 }}>
+                  <button onClick={() => setShowPrint(r)}
+                    style={{ display:"flex", alignItems:"center", gap:3, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:C.muted, cursor:"pointer" }}>
+                    <FileText size={11} /> 신청서
+                  </button>
+                  <button onClick={() => setExpandedId(isExpand ? null : r.id)}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:C.navy, fontWeight:600, cursor:"pointer" }}>
+                    {isExpand ? "접기 ▲" : "자세히 ▼"}
+                  </button>
+                </div>
               </div>
             </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <Badge label={r.status} />
-              <button onClick={() => printRequest(r)}
-                style={{ display:"flex", alignItems:"center", gap:4, background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:12, color:C.muted, cursor:"pointer" }}>
-                <FileText size={13} /> 신청서
-              </button>
-            </div>
-          </div>
 
-          {/* 장비 목록 */}
-          <div style={{ background: C.bg, borderRadius: 10, padding: "10px 14px", marginBottom: 8 }}>
-            {r.items?.map((item, i) => (
-              <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "5px 0", borderBottom: i < r.items.length - 1 ? `1px solid ${C.border}` : "none" }}>
-                <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{item.modelName || item.equipName}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{item.quantity}개</span>
-              </div>
-            ))}
-          </div>
+            {/* 자세히 보기 - 클릭 시 펼침 */}
+            {isExpand && (
+              <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
+                <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>목적: {r.purpose}</div>
 
-          {/* 배치된 장비 (대여중/반납완료) */}
-          {r.assignedUnits?.length > 0 && (
-            <div style={{ background: r.status === "반납완료" ? "#F8FAFC" : C.blueLight, borderRadius: 8, padding: "8px 12px", marginBottom: 8 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: r.status === "반납완료" ? C.muted : C.blue, marginBottom: 5 }}>
-                {r.status === "반납완료" ? "사용한 장비" : "배치된 장비"}
-              </div>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                {r.assignedUnits.map((u, i) => (
-                  <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px", fontSize:12, color:C.text }}>
-                    {u.itemName || u.modelName}
-                    {u.itemNo && <span style={{ color:C.blue, marginLeft:4, fontWeight:600 }}>{u.itemNo}</span>}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
+                {/* 장비 목록 */}
+                <div style={{ background:C.bg, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                  {r.items?.map((item, i) => (
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom: i<r.items.length-1?`1px solid ${C.border}`:"none", fontSize:12 }}>
+                      <span style={{ color:C.text }}>{item.modelName || item.equipName}</span>
+                      <span style={{ fontWeight:700, color:C.navy }}>{item.quantity}개</span>
+                    </div>
+                  ))}
+                </div>
 
-          {/* 보류/거절 사유 */}
-          {r.reason && (
-            <div style={{
-              background: r.status === "보류" ? C.yellowLight : C.redLight,
-              borderRadius: 10, padding: "10px 14px",
-              borderLeft: `4px solid ${r.status === "보류" ? C.yellow : C.red}`,
-            }}>
-              <div style={{ fontSize: 12, fontWeight: 700, color: r.status === "보류" ? "#92400E" : C.red, marginBottom: 4 }}>
-                {r.status === "보류" ? "보류 사유" : "거절 사유"}
+                {/* 배치 장비 */}
+                {r.assignedUnits?.length > 0 && (
+                  <div style={{ background: r.status==="반납완료"?"#F8FAFC":C.blueLight, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="반납완료"?C.muted:C.blue, marginBottom:5 }}>
+                      {r.status==="반납완료" ? "사용한 장비" : "배치된 장비"}
+                    </div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
+                      {r.assignedUnits.map((u,i) => (
+                        <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:5, padding:"2px 7px", fontSize:11, color:C.text }}>
+                          {u.itemName||u.modelName}
+                          {u.itemNo && <span style={{ color:C.blue, marginLeft:3, fontWeight:600 }}>{u.itemNo}</span>}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 보류/거절 사유 */}
+                {r.reason && (
+                  <div style={{ background: r.status==="보류"?C.yellowLight:C.redLight, borderRadius:8, padding:"8px 12px", borderLeft:`3px solid ${r.status==="보류"?C.yellow:C.red}` }}>
+                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="보류"?"#92400E":C.red, marginBottom:3 }}>
+                      {r.status==="보류" ? "보류 사유" : "거절 사유"}
+                    </div>
+                    <div style={{ fontSize:12, color:C.text }}>{r.reason}</div>
+                  </div>
+                )}
               </div>
-              <div style={{ fontSize: 13, color: C.text }}>{r.reason}</div>
-            </div>
-          )}
-        </Card>
-      ))}
+            )}
+          </Card>
+        );
+      })}
     </div>
   );
 }
