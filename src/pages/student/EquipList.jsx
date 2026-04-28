@@ -57,10 +57,17 @@ export default function EquipList() {
   const grouped    = groupEquipments(unitEquips);
   const setEquips  = groupSets(equipments);
 
-  const allCats = ["전체", ...new Set([
+  // 카테고리 커스텀 순서
+  const CAT_ORDER = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
+  const rawCats = [...new Set([
     ...grouped.map(e => e.majorCategory),
     ...setEquips.map(e => e.majorCategory),
   ].filter(Boolean))];
+  const sortedCats = [
+    ...CAT_ORDER.filter(c => rawCats.includes(c)),
+    ...rawCats.filter(c => !CAT_ORDER.includes(c)), // 지정 안된 카테고리는 뒤에
+  ];
+  const allCats = ["전체", ...sortedCats];
 
   const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
