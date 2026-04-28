@@ -4,6 +4,21 @@ import { db } from "../firebase";
 
 const VAPID_KEY = "BLPGJBCYMn5hajgFcqpus-4noZQwFtpD4pZOV93yWk2cO1dCWEd_iS7m-9qMV2Dr_MtcAlMHjF7EPdY1z8BzNds";
 
+// SW가 active 상태가 될 때까지 대기
+function waitForActiveServiceWorker(registration) {
+  return new Promise((resolve) => {
+    if (registration.active) { resolve(registration); return; }
+    const sw = registration.installing || registration.waiting;
+    if (!sw) { resolve(registration); return; }
+    sw.addEventListener("statechange", function handler() {
+      if (sw.state === "activated") {
+        sw.removeEventListener("statechange", handler);
+        resolve(registration);
+      }
+    });
+  });
+}
+
 export function useFCM(userId) {
   useEffect(() => {
     if (!userId) return;
@@ -12,30 +27,37 @@ export function useFCM(userId) {
 
     const initFCM = async () => {
       try {
-        // 1. 권한 요청
+        // 1. 알림 권한 요청
         const permission = await Notification.requestPermission();
         console.log("알림 권한:", permission);
         if (permission !== "granted") return;
 
-        // 2. firebase/messaging을 동적으로 import (빌드 에러 방지)
+        // 2. SW 등록
+        const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+        console.log("SW 등록:", swReg.scope);
+
+        // 3. SW active 대기 (핵심!)
+        await waitForActiveServiceWorker(swReg);
+        console.log("SW 활성화 완료");
+
+        // 4. FCM 동적 import
         const { getMessaging, getToken, onMessage } = await import("firebase/messaging");
         const { getApp } = await import("firebase/app");
-        const app = getApp();
-        const msg = getMessaging(app);
+        const msg = getMessaging(getApp());
 
-        // 3. SW 등록 확인
-        const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
-        console.log("SW 등록:", swReg);
-
-        // 4. FCM 토큰 발급
-        const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+        // 5. 토큰 발급
+        const token = await getToken(msg, {
+          vapidKey: VAPID_KEY,
+          serviceWorkerRegistration: swReg,
+        });
         console.log("FCM 토큰:", token ? "발급 완료" : "발급 실패");
 
         if (token) {
           await updateDoc(doc(db, "users", userId), { fcmToken: token });
+          console.log("Firestore 저장 완료");
         }
 
-        // 5. 포그라운드 알림
+        // 6. 포그라운드 알림
         onMessage(msg, (payload) => {
           const { title, body } = payload.notification || {};
           new Notification(title || "KBAS 알림", {
@@ -45,11 +67,11 @@ export function useFCM(userId) {
         });
 
       } catch (e) {
-        console.error("FCM 오류:", e);
+        console.error("FCM 오류:", e.message);
       }
     };
 
-    const timer = setTimeout(initFCM, 1500);
+    const timer = setTimeout(initFCM, 2000);
     return () => clearTimeout(timer);
   }, [userId]);
 }
