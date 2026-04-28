@@ -13,6 +13,8 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth    = getAuth(app);
+export const auth      = getAuth(app);
+export const messaging = getMessaging(app);
+export const VAPID_KEY = "BLPGJBCYMn5hajgFcqpus-4noZQwFtpD4pZOV93yWk2cO1dCWEd_iS7m-9qMV2Dr_MtcAlMHjF7EPdY1z8BzNds";
 export const db      = getFirestore(app);
 export const storage = getStorage(app);
