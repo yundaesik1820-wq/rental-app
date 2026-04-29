@@ -106,6 +106,7 @@ export default function Community() {
       category:   writeForm.category,
       authorId:   profile?.uid || "",
       authorName: profile?.name || "",
+      images:     writeForm.images || [],
       views:      0,
       likes:      0,
       likedBy:    [],
