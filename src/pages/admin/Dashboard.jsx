@@ -253,8 +253,31 @@ export default function Dashboard({ setTab }) {
         );
       })()}
 
-      <DashRow icon="💬" label="에브리타임 관리"
-        alerts={[{ label:"전체글", count:communityPosts.length, color:C.blue }]} />
+      {/* 에브리타임 관리 */}
+      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+        <div onClick={() => setTab?.("community")}
+          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+          <span style={{ fontSize:20 }}>💬</span>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>에브리타임 관리</span>
+          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+        </div>
+        {[...communityPosts]
+          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+          .slice(0,3)
+          .map(p => (
+            <div key={p.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
+                <span style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:4, padding:"1px 6px", fontSize:10, color:C.muted, flexShrink:0 }}>{p.category}</span>
+                <span style={{ fontSize:12, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+              </div>
+              <span style={{ fontSize:10, color:C.muted, flexShrink:0 }}>💬{p.likes||0}</span>
+            </div>
+          ))
+        }
+        {communityPosts.length === 0 && (
+          <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, fontSize:12, color:C.muted }}>게시글이 없습니다</div>
+        )}
+      </div>
 
       <DashRow icon="📩" label="문의 관리"
         alerts={[{ label:"미답변", count:unanswered, color:C.red }]} />
