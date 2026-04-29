@@ -36,6 +36,7 @@ export default function Dashboard({ setTab }) {
   const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",   "createdAt");
   const { data: schedules }        = useCollection("licenseSchedules",   "date");
+  const { data: facilities }       = useCollection("facilities",          "createdAt");
 
   // 통계
   const pending       = requests.filter(r => r.status === "승인대기").length;
@@ -145,24 +146,60 @@ export default function Dashboard({ setTab }) {
           return { cat, totalModels, availModels };
         });
 
+        const [eqTab, setEqTab] = React.useState("장비");
+
         return (
           <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            <div onClick={() => setTab?.("equipment")}
-              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+            {/* 헤더 + 바로가기 */}
+            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px" }}>
               <span style={{ fontSize:20 }}>📦</span>
               <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 관리</span>
-              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+              <span onClick={() => setTab?.("equipment")} style={{ fontSize:12, color:C.blue, fontWeight:600, cursor:"pointer" }}>바로가기 →</span>
             </div>
-            <div style={{ display:"flex", overflowX:"auto", borderTop:`1px solid ${C.border}`, padding:"10px 14px", gap:10 }}>
-              {catStats.map(({ cat, totalModels, availModels }) => (
-                <div key={cat} style={{ textAlign:"center", flexShrink:0 }}>
-                  <div style={{ fontSize:16, fontWeight:900, color: availModels < totalModels ? C.orange : C.green }}>
-                    {availModels}<span style={{ fontSize:10, color:C.muted, fontWeight:400 }}>/{totalModels}</span>
-                  </div>
-                  <div style={{ fontSize:10, color:C.muted, marginTop:2, whiteSpace:"nowrap" }}>{cat}</div>
-                </div>
+
+            {/* 1행: 장비/시설 탭 전환 */}
+            <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
+              {["장비","시설"].map(t => (
+                <button key={t} onClick={() => setEqTab(t)}
+                  style={{ flex:1, padding:"8px 0", border:"none", background: eqTab===t ? C.navy : C.bg, color: eqTab===t ? "#fff" : C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  {t}
+                </button>
               ))}
             </div>
+
+            {/* 2행: 장비 카테고리별 현황 */}
+            {eqTab === "장비" && (
+              <div style={{ display:"flex", overflowX:"auto", borderTop:`1px solid ${C.border}`, padding:"12px 14px", gap:16 }}>
+                {catStats.map(({ cat, totalModels, availModels }) => (
+                  <div key={cat} style={{ textAlign:"center", flexShrink:0 }}>
+                    <div style={{ fontSize:22, fontWeight:900, color: availModels < totalModels ? C.orange : C.green, lineHeight:1 }}>
+                      {availModels}
+                    </div>
+                    <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>/{totalModels}</div>
+                    <div style={{ fontSize:10, color:C.muted, marginTop:3, whiteSpace:"nowrap" }}>{cat}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 2행: 시설 현황 */}
+            {eqTab === "시설" && (
+              <div style={{ borderTop:`1px solid ${C.border}` }}>
+                {facilities.length === 0 ? (
+                  <div style={{ padding:"12px 14px", fontSize:12, color:C.muted }}>등록된 시설이 없습니다</div>
+                ) : facilities.map(f => (
+                  <div key={f.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", borderBottom:`1px solid ${C.border}` }}>
+                    <div>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{f.name}</div>
+                      <div style={{ fontSize:11, color:C.muted }}>{f.location}</div>
+                    </div>
+                    <span style={{ background: f.available!==false ? C.greenLight : C.redLight, color: f.available!==false ? C.green : C.red, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:700 }}>
+                      {f.available!==false ? "정상" : "대여불가"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })()}
