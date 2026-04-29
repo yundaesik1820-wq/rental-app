@@ -475,9 +475,9 @@ export default function StudentHome() {
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{c.authorName}</span>
-                            {["super","teacher","assistant","admin"].includes(c.authorRole) && (
-                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "teacher" ? C.blue : C.teal, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
-                                {c.authorRole === "super" || c.authorRole === "admin" ? "관리자" : c.authorRole === "teacher" ? "교사" : "조교"}
+                            {["super","teacher","assistant","professor","admin"].includes(c.authorRole) && (
+                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                                {c.authorRole === "professor" ? "교수" : c.authorRole === "teacher" ? "교사" : c.authorRole === "assistant" ? "조교" : "관리자"}
                               </span>
                             )}
                           </div>
