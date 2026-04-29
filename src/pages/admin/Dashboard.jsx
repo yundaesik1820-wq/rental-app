@@ -279,8 +279,25 @@ export default function Dashboard({ setTab }) {
         )}
       </div>
 
-      <DashRow icon="📩" label="문의 관리"
-        alerts={[{ label:"미답변", count:unanswered, color:C.red }]} />
+      {/* 문의 관리 */}
+      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+        <div onClick={() => setTab?.("inquiry")}
+          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+          <span style={{ fontSize:20 }}>📩</span>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>문의 관리</span>
+          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+        </div>
+        <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
+          <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center", background: unanswered>0 ? C.redLight : C.bg }}>
+            <div style={{ fontSize:18, fontWeight:900, color: unanswered>0 ? C.red : C.green }}>{unanswered}</div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>미답변</div>
+          </div>
+          <div style={{ flex:1, padding:"10px 14px", textAlign:"center" }}>
+            <div style={{ fontSize:18, fontWeight:900, color:C.green }}>{inquiries.length - unanswered}</div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>답변완료</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
