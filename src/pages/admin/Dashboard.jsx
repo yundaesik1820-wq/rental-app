@@ -46,7 +46,7 @@ export default function Dashboard({ setTab }) {
   const pwResetPend   = pwResets.filter(r => r.status === "pending").length;
   const lowStock      = equipments.filter(e => (e.available || 0) === 0).length;
   const licensePend   = licenseApps.filter(a => a.status === "대기").length;
-  const unanswered    = inquiries.filter(i => !i.answered).length;
+  const unanswered    = inquiries.filter(i => i.status !== "답변완료").length;
   const today         = new Date().toISOString().slice(0, 10);
   const newNotices    = notices.filter(n => n.date === today).length;
 
