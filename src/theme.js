@@ -1,34 +1,45 @@
 export const C = {
-  bg: "#F0F4FF", surface: "#FFFFFF", card: "#FFFFFF",
-  navy: "#1A2B6B", blue: "#3B6CF8", blueLight: "#EEF2FF",
-  teal: "#0ABFA3", tealLight: "#E6FAF7",
-  red: "#F05252", redLight: "#FEF2F2",
-  yellow: "#F59E0B", yellowLight: "#FFFBEB",
-  green: "#10B981", greenLight: "#ECFDF5",
-  purple: "#8B5CF6", purpleLight: "#F5F3FF",
-  orange: "#F97316", orangeLight: "#FFF7ED",
-  text: "#1E293B", muted: "#94A3B8", border: "#E2E8F0",
-  shadow: "0 2px 12px rgba(59,108,248,0.08)",
+  // 다크 배경
+  bg:      "#0F172A",   // 메인 배경 (딥 네이비)
+  surface: "#1E293B",   // 카드/패널 배경
+  card:    "#1E293B",
+
+  // 포인트 색상 (밝게 유지)
+  navy:   "#60A5FA",    // 기존 네이비 → 밝은 블루로
+  blue:   "#60A5FA",    blueLight:   "#1E3A5F",
+  teal:   "#2DD4BF",    tealLight:   "#0F3D38",
+  red:    "#F87171",    redLight:    "#3B1515",
+  yellow: "#FBBF24",    yellowLight: "#3B2A00",
+  green:  "#34D399",    greenLight:  "#0F3028",
+  purple: "#A78BFA",    purpleLight: "#2D1F5E",
+  orange: "#FB923C",    orangeLight: "#3B1F00",
+
+  // 텍스트
+  text:   "#F1F5F9",    // 기본 텍스트 (밝은 흰색)
+  muted:  "#64748B",    // 보조 텍스트
+  border: "#334155",    // 테두리
+
+  shadow: "0 2px 12px rgba(0,0,0,0.4)",
 };
 
 const STATUS_COLOR = {
-  대여가능: "#10B981", 대여중: "#3B6CF8", 수리중: "#F59E0B",
-  연체: "#F05252", 반납완료: "#94A3B8", 승인대기: "#F59E0B",
-  승인됨: "#10B981", 거절됨: "#F05252",
-  정상: "#10B981", 수리필요: "#F97316", 폐기: "#F05252", 신청중: "#8B5CF6",
+  대여가능: "#34D399", 대여중: "#60A5FA", 수리중: "#FBBF24",
+  연체: "#F87171", 반납완료: "#64748B", 승인대기: "#FBBF24",
+  승인됨: "#34D399", 거절됨: "#F87171",
+  정상: "#34D399", 수리필요: "#FB923C", 폐기: "#F87171", 신청중: "#A78BFA",
 };
 const STATUS_BG = {
-  대여가능: "#ECFDF5", 대여중: "#EEF2FF", 수리중: "#FFFBEB",
-  연체: "#FEF2F2", 반납완료: "#F8FAFC", 승인대기: "#FFFBEB",
-  승인됨: "#ECFDF5", 거절됨: "#FEF2F2",
-  정상: "#ECFDF5", 수리필요: "#FFF7ED", 폐기: "#FEF2F2", 신청중: "#F5F3FF",
+  대여가능: "#0F3028", 대여중: "#1E3A5F", 수리중: "#3B2A00",
+  연체: "#3B1515", 반납완료: "#1E293B", 승인대기: "#3B2A00",
+  승인됨: "#0F3028", 거절됨: "#3B1515",
+  정상: "#0F3028", 수리필요: "#3B1F00", 폐기: "#3B1515", 신청중: "#2D1F5E",
 };
 
-export const sc = (s) => STATUS_COLOR[s] || "#94A3B8";
-export const sb = (s) => STATUS_BG[s]    || "#F8FAFC";
+export const sc = (s) => STATUS_COLOR[s] || "#64748B";
+export const sb = (s) => STATUS_BG[s]    || "#1E293B";
 
 export const NOTICE_CAT = {
-  공지:    { bg: "#EEF2FF", col: "#3B6CF8" },
-  신규장비: { bg: "#ECFDF5", col: "#10B981" },
-  휴무:    { bg: "#FEF2F2", col: "#F05252" },
+  공지:    { bg: "#1E3A5F", col: "#60A5FA" },
+  신규장비: { bg: "#0F3028", col: "#34D399" },
+  휴무:    { bg: "#3B1515", col: "#F87171" },
 };

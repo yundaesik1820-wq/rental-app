@@ -3,57 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>KBAS 장비대여실</title>
-    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
-    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-    <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#1B2B6B" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="KBAS Rental" />
+    <title>장비대여실</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Noto Sans KR', sans-serif; background: #1B2B6B; }
-
-      #splash {
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        transition: opacity 0.4s ease;
-      }
-      #splash.hide {
-        opacity: 0;
-        pointer-events: none;
-      }
-      #splash img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-      }
+      body { font-family: 'Noto Sans KR', sans-serif; background: #0F172A; }
     </style>
   </head>
   <body>
-    <div id="splash">
-      <img src="/splash.png" alt="" />
-    </div>
-
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
-    <script>
-      window.addEventListener('load', () => {
-        setTimeout(() => {
-          const splash = document.getElementById('splash');
-          if (splash) {
-            splash.classList.add('hide');
-            setTimeout(() => splash.remove(), 400);
-          }
-        }, 800);
-      });
-    </script>
   </body>
 </html>

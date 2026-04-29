@@ -30,7 +30,7 @@ export function Inp({ label, placeholder, value, onChange, type = "text", style 
   );
 }
 
-export function Btn({ children, onClick, color = C.blue, text = "#fff", small, full, outline, disabled, type = "button" }) {
+export function Btn({ children, onClick, color = C.blue, text = "#1E293B", small, full, outline, disabled, type = "button" }) {
   return (
     <button onClick={onClick} disabled={disabled} type={type} style={{
       background: outline ? "transparent" : disabled ? C.muted : color,
@@ -51,7 +51,7 @@ export function Avatar({ name, size = 40 }) {
   const colors = [C.blue, C.teal, C.purple, C.red, C.orange];
   const col = colors[name.charCodeAt(0) % colors.length];
   return (
-    <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg,${col},${col}99)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.42, fontWeight: 800, color: "#fff", flexShrink: 0 }}>
+    <div style={{ width: size, height: size, borderRadius: "50%", background: `linear-gradient(135deg,${col},${col}99)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * 0.42, fontWeight: 800, color: "#1E293B", flexShrink: 0 }}>
       {name[0]}
     </div>
   );
