@@ -80,7 +80,7 @@ export default function Community() {
   };
 
   // 필터링
-  const filtered = posts
+  const allFiltered = posts
     .filter(p => {
       if (cat !== "전체" && p.category !== cat) return false;
       // 새내기 글은 새내기만 볼 수 있음 (전체 탭에서도)
@@ -89,6 +89,9 @@ export default function Community() {
       return true;
     })
     .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+
+  const totalPages = Math.ceil(allFiltered.length / PAGE_SIZE);
+  const filtered   = allFiltered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
 
   const postComments = (postId) =>
     comments.filter(c => c.postId === postId)
