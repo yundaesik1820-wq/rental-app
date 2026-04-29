@@ -231,7 +231,7 @@ function AppContent() {
   const renderPage = () => {
     if (isAdmin) {
       switch (tab) {
-        case "home":     return <Dashboard />;
+        case "home":     return <Dashboard setTab={setTab} />;
         case "equip":    return <Equipment />;
         case "rental":   return <Rental subAdmin={!isSuper} />;
         case "students": return isSuper ? <Students /> : <Students readOnly={true} />;
@@ -244,7 +244,7 @@ function AppContent() {
         case "license":  return <LicenseAdmin />;
         case "community": return <Community />;
         case "facility-admin": return <FacilityAdmin />;
-        default:         return <Dashboard />;
+        default:         return <Dashboard setTab={setTab} />;
       }
     } else {
       switch (tab) {

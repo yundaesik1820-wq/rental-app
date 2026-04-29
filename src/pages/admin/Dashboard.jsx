@@ -24,7 +24,7 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ setTab }) {
   const { profile, logout } = useAuth();
   const { data: requests }         = useCollection("rentalRequests",    "createdAt");
   const { data: facilityRequests } = useCollection("facilityRequests",  "createdAt");
@@ -83,8 +83,24 @@ export default function Dashboard() {
       {/* 업무별 현황 */}
       <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>📋 업무 현황</div>
 
-      <DashRow icon="📢" label="공지 관리"
-        alerts={[{ label:"오늘 등록", count:newNotices, color:C.blue }]} />
+      {/* 공지 관리 */}
+      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+        <div onClick={() => setTab?.("notices")}
+          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+          <span style={{ fontSize:20 }}>📢</span>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>공지 관리</span>
+          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+        </div>
+        {notices.slice(0,3).map(n => (
+          <div key={n.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:10 }}>
+            <span style={{ fontSize:12, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{n.title}</span>
+            <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>{n.date}</span>
+          </div>
+        ))}
+        {notices.length === 0 && (
+          <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, fontSize:12, color:C.muted }}>등록된 공지가 없습니다</div>
+        )}
+      </div>
 
       <DashRow icon="👥" label="학생 관리"
         alerts={[
