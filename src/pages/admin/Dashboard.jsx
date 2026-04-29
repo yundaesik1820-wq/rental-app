@@ -35,6 +35,7 @@ export default function Dashboard({ setTab }) {
   const { data: inquiries }        = useCollection("inquiries",         "createdAt");
   const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",   "createdAt");
+  const { data: schedules }        = useCollection("licenseSchedules",   "date");
 
   // 통계
   const pending       = requests.filter(r => r.status === "승인대기").length;
@@ -179,8 +180,77 @@ export default function Dashboard({ setTab }) {
         );
       })()}
 
-      <DashRow icon="🎖️" label="라이센스 관리"
-        alerts={[{ label:"신청대기", count:licensePend, color:C.purple }]} />
+      {/* 라이센스 관리 */}
+      {(() => {
+        const today = new Date().toISOString().slice(0,10);
+        const upcoming = schedules
+          .filter(s => s.date >= today && s.status !== "완료")
+          .sort((a,b) => a.date > b.date ? 1 : -1)
+          .slice(0, 3);
+
+        const DEPTS = ["영상계열","성우계열","엔터테인먼트계열","음향계열","실용음악계열"];
+        const students = users.filter(u => u.role === "student" && u.status === "approved");
+
+        const LicBar = ({ dept }) => {
+          const group = dept === "전체" ? students : students.filter(u => u.dept === dept);
+          const total = group.length;
+          if (total === 0) return null;
+          const none = group.filter(u => !u.license || u.license === "없음").length;
+          const lv1  = group.filter(u => u.license === "1단계").length;
+          const lv2  = group.filter(u => u.license === "2단계").length;
+          const lv3  = group.filter(u => u.license === "3단계").length;
+          const pct  = n => Math.round(n/total*100);
+          return (
+            <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                <span style={{ fontSize:11, fontWeight:700, color:C.navy }}>{dept === "전체" ? "전체" : dept.replace("계열","")}</span>
+                <span style={{ fontSize:10, color:C.muted }}>총 {total}명</span>
+              </div>
+              {/* 게이지 바 */}
+              <div style={{ display:"flex", borderRadius:4, overflow:"hidden", height:8, marginBottom:4 }}>
+                {none>0 && <div style={{ flex:none, background:"#CBD5E1" }} title={`없음 ${none}명`} />}
+                {lv1 >0 && <div style={{ flex:lv1,  background:C.blue   }} title={`1단계 ${lv1}명`} />}
+                {lv2 >0 && <div style={{ flex:lv2,  background:C.purple }} title={`2단계 ${lv2}명`} />}
+                {lv3 >0 && <div style={{ flex:lv3,  background:C.orange }} title={`3단계 ${lv3}명`} />}
+              </div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {[["없음", none, "#64748B"], ["1단계", lv1, C.blue], ["2단계", lv2, C.purple], ["3단계", lv3, C.orange]].map(([label, n, col]) => (
+                  <span key={label} style={{ fontSize:10, color:col, fontWeight:600 }}>
+                    {label} {n}명({pct(n)}%)
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        };
+
+        return (
+          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            <div onClick={() => setTab?.("license")}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+              <span style={{ fontSize:20 }}>🎖️</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>라이센스 관리</span>
+              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+            </div>
+
+            {/* 예정 수업 */}
+            {upcoming.length > 0 && (
+              <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, background:C.purpleLight }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.purple, marginBottom:4 }}>📅 예정 수업</div>
+                {upcoming.map(s => (
+                  <div key={s.id} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.text, marginBottom:2 }}>
+                    <span>{s.title}</span>
+                    <span style={{ color:C.muted }}>{s.date} {s.time}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 계열별 라이센스 현황 */}
+            {DEPTS.map(dept => <LicBar key={dept} dept={dept} />)}
+          </div>
+        );
+      })()}
 
       <DashRow icon="💬" label="에브리타임 관리"
         alerts={[{ label:"전체글", count:communityPosts.length, color:C.blue }]} />
