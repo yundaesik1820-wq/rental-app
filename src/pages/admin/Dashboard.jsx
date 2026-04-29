@@ -159,11 +159,17 @@ export default function Dashboard({ setTab }) {
               <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 대여관리</span>
               <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
             </div>
-            {totalPend > 0 && (
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, background:C.yellowLight }}>
-                <span style={{ fontSize:13, fontWeight:700, color:C.orange }}>⏳ 승인 대기 요청 {totalPend}건</span>
+            {/* 승인 대기 - 항상 표시 */}
+            <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
+              <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center", background: pending>0 ? C.yellowLight : C.bg }}>
+                <div style={{ fontSize:18, fontWeight:900, color: pending>0 ? C.orange : C.green }}>{pending}</div>
+                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>장비대여 승인대기</div>
               </div>
-            )}
+              <div style={{ flex:1, padding:"10px 14px", textAlign:"center", background: facilityPend>0 ? C.tealLight : C.bg }}>
+                <div style={{ fontSize:18, fontWeight:900, color: facilityPend>0 ? C.teal : C.green }}>{facilityPend}</div>
+                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>시설대여 승인대기</div>
+              </div>
+            </div>
             <Row label="오늘 대여" equip={todayRentEquip} fac={todayRentFac} />
             <Row label="오늘 반납" equip={todayRetEquip}  fac={todayRetFac} />
             <Row label="내일 대여" equip={tmrRentEquip}   fac={tmrRentFac} />
