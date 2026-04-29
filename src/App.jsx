@@ -19,6 +19,7 @@ import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
 import FacilityReserve from "./pages/student/FacilityReserve.jsx";
+import GuideReserve  from "./pages/student/GuideReserve.jsx";
 import FacilityAdmin  from "./pages/admin/FacilityAdmin.jsx";
 import Community     from "./pages/student/Community.jsx";
 
@@ -214,9 +215,37 @@ function AppContent() {
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
+    const [mode, setMode]           = React.useState(null); // null=선택화면, "guide"=초보자, "expert"=전문가
     const [reserveTab, setReserveTab] = React.useState("equip");
-    return (
+
+    // 선택 화면
+    if (!mode) return (
       <div>
+        <div style={{ fontSize:20, fontWeight:900, color:"#1B2B6B", marginBottom:8 }}>예약 신청</div>
+        <div style={{ fontSize:13, color:"#94A3B8", marginBottom:24 }}>어떻게 장비를 고르시겠어요?</div>
+        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+          <button onClick={() => setMode("guide")}
+            style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"24px 20px", border:"none", cursor:"pointer", textAlign:"left", boxShadow:"0 4px 16px rgba(27,43,107,0.2)" }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>🎓</div>
+            <div style={{ fontSize:17, fontWeight:800, color:"#fff", marginBottom:4 }}>초보자</div>
+            <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>저와 함께 장비를 골라요!</div>
+          </button>
+          <button onClick={() => setMode("expert")}
+            style={{ background:"#fff", borderRadius:16, padding:"24px 20px", border:"2px solid #E2E8F0", cursor:"pointer", textAlign:"left" }}>
+            <div style={{ fontSize:28, marginBottom:8 }}>⚡</div>
+            <div style={{ fontSize:17, fontWeight:800, color:"#1B2B6B", marginBottom:4 }}>전문가</div>
+            <div style={{ fontSize:13, color:"#94A3B8" }}>직접 장비를 고릅니다!</div>
+          </button>
+        </div>
+      </div>
+    );
+
+    // 전문가 모드 (기존)
+    if (mode === "expert") return (
+      <div>
+        <button onClick={() => setMode(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
+          ← 뒤로가기
+        </button>
         <div style={{ display:"flex", background:"#F1F5F9", borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:"1px solid #E2E8F0" }}>
           {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
             <button key={v} onClick={() => setReserveTab(v)}
@@ -224,6 +253,16 @@ function AppContent() {
           ))}
         </div>
         {reserveTab === "equip" ? <Reserve /> : <FacilityReserve />}
+      </div>
+    );
+
+    // 초보자 가이드 모드
+    return (
+      <div>
+        <button onClick={() => setMode(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
+          ← 뒤로가기
+        </button>
+        <GuideReserve />
       </div>
     );
   };

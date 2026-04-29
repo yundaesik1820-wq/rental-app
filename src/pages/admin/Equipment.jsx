@@ -372,6 +372,13 @@ const EMPTY = {
   isSet: false,
   setItems: "",
   displayPhotoUrl: "",  // 학생 송출용 이미지 URL
+  // 가이드 모드용 필드
+  equipType: "",        // "camera" | "lens" | "battery" | "adapter" | "etc"
+  mount: "",            // "E-mount" | "EF-mount"
+  batteryModel: "",     // 카메라용: 호환 배터리 모델명
+  forCamera: "",        // 배터리용: 어떤 카메라에 쓰이는지
+  adapterFrom: "",      // 어댑터용: 렌즈 마운트
+  adapterTo: "",        // 어댑터용: 카메라 마운트
 };
 
 const LICENSE_LEVELS = [
@@ -586,6 +593,69 @@ export default function Equipment() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Inp label="호기 (구분번호)" placeholder="예: 1호기, A, No.1" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
             <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
+          </div>
+
+          {/* 가이드 모드 설정 */}
+          <div style={{ marginBottom:16, background:C.purpleLight, borderRadius:12, padding:"14px 16px" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:C.purple, marginBottom:12 }}>🧭 가이드 모드 설정</div>
+            <div style={{ marginBottom:12 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>장비 유형</div>
+              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                {[["","없음"],["camera","카메라"],["lens","렌즈"],["battery","배터리"],["adapter","어댑터"],["etc","기타"]].map(([val, label]) => (
+                  <button key={val} onClick={() => f("equipType", val)}
+                    style={{ padding:"5px 12px", borderRadius:20, border:`1.5px solid ${form.equipType===val?C.purple:C.border}`, background:form.equipType===val?C.purple:C.bg, color:form.equipType===val?"#fff":C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {(form.equipType==="camera" || form.equipType==="lens") && (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>마운트</div>
+                <div style={{ display:"flex", gap:6 }}>
+                  {[["E-mount","E-mount (Sony)"],["EF-mount","EF-mount (Canon)"]].map(([val, label]) => (
+                    <button key={val} onClick={() => f("mount", val)}
+                      style={{ flex:1, padding:"7px 0", borderRadius:9, border:`1.5px solid ${form.mount===val?C.purple:C.border}`, background:form.mount===val?C.purple:C.bg, color:form.mount===val?"#fff":C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            {form.equipType==="camera" && (
+              <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
+                value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
+            )}
+            {form.equipType==="battery" && (
+              <Inp label="해당 카메라 모델명" placeholder="예: Sony FX3"
+                value={form.forCamera||""} onChange={e => f("forCamera", e.target.value)} />
+            )}
+            {form.equipType==="adapter" && (
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>렌즈 마운트 (From)</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {["EF-mount","E-mount"].map(v => (
+                      <button key={v} onClick={() => f("adapterFrom", v)}
+                        style={{ padding:"6px 0", borderRadius:8, border:`1.5px solid ${form.adapterFrom===v?C.purple:C.border}`, background:form.adapterFrom===v?C.purple:C.bg, color:form.adapterFrom===v?"#fff":C.muted, fontSize:12, cursor:"pointer" }}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>카메라 마운트 (To)</div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                    {["E-mount","EF-mount"].map(v => (
+                      <button key={v} onClick={() => f("adapterTo", v)}
+                        style={{ padding:"6px 0", borderRadius:8, border:`1.5px solid ${form.adapterTo===v?C.purple:C.border}`, background:form.adapterTo===v?C.purple:C.bg, color:form.adapterTo===v?"#fff":C.muted, fontSize:12, cursor:"pointer" }}>
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
