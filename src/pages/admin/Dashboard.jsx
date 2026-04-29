@@ -207,14 +207,15 @@ export default function Dashboard({ setTab }) {
                 <span style={{ fontSize:10, color:C.muted }}>총 {total}명</span>
               </div>
               {/* 게이지 바 */}
+              {/* 없음:#B0BEC5 / 1단계:#5BB5A2 / 2단계:#7986CB / 3단계:#E57373 */}
               <div style={{ display:"flex", borderRadius:4, overflow:"hidden", height:8, marginBottom:4 }}>
-                {none>0 && <div style={{ flex:none, background:"#CBD5E1" }} title={`없음 ${none}명`} />}
-                {lv1 >0 && <div style={{ flex:lv1,  background:C.blue   }} title={`1단계 ${lv1}명`} />}
-                {lv2 >0 && <div style={{ flex:lv2,  background:C.purple }} title={`2단계 ${lv2}명`} />}
-                {lv3 >0 && <div style={{ flex:lv3,  background:C.orange }} title={`3단계 ${lv3}명`} />}
+                {none>0 && <div style={{ flex:none, background:"#B0BEC5" }} title={`없음 ${none}명`} />}
+                {lv1 >0 && <div style={{ flex:lv1,  background:"#5BB5A2" }} title={`1단계 ${lv1}명`} />}
+                {lv2 >0 && <div style={{ flex:lv2,  background:"#7986CB" }} title={`2단계 ${lv2}명`} />}
+                {lv3 >0 && <div style={{ flex:lv3,  background:"#E57373" }} title={`3단계 ${lv3}명`} />}
               </div>
               <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {[["없음", none, "#64748B"], ["1단계", lv1, C.blue], ["2단계", lv2, C.purple], ["3단계", lv3, C.orange]].map(([label, n, col]) => (
+                {[["없음", none, "#90A4AE"], ["1단계", lv1, "#5BB5A2"], ["2단계", lv2, "#7986CB"], ["3단계", lv3, "#E57373"]].map(([label, n, col]) => (
                   <span key={label} style={{ fontSize:10, color:col, fontWeight:600 }}>
                     {label} {n}명({pct(n)}%)
                   </span>
