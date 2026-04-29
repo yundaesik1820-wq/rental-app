@@ -169,16 +169,17 @@ export default function Dashboard({ setTab }) {
 
             {/* 2행: 장비 카테고리별 현황 */}
             {eqTab === "장비" && (
-              <div style={{ display:"flex", overflowX:"auto", borderTop:`1px solid ${C.border}`, padding:"12px 14px", gap:16 }}>
-                {catStats.map(({ cat, totalModels, availModels }) => (
-                  <div key={cat} style={{ textAlign:"center", flexShrink:0 }}>
-                    <div style={{ fontSize:22, fontWeight:900, color: availModels < totalModels ? C.orange : C.green, lineHeight:1 }}>
-                      {availModels}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(80px, 1fr))", gap:8, borderTop:`1px solid ${C.border}`, padding:"10px 12px" }}>
+                {catStats.map(({ cat, totalModels, availModels }) => {
+                  const isLow = availModels < totalModels;
+                  return (
+                    <div key={cat} style={{ background: isLow ? C.orangeLight : C.greenLight, borderRadius:10, padding:"10px 8px", textAlign:"center", border:`1px solid ${isLow ? C.orange+"40" : C.green+"40"}` }}>
+                      <div style={{ fontSize:20, fontWeight:900, color: isLow ? C.orange : C.green, lineHeight:1 }}>{availModels}</div>
+                      <div style={{ fontSize:10, color: isLow ? C.orange : C.green, marginTop:1 }}>/ {totalModels}</div>
+                      <div style={{ fontSize:10, color:C.muted, marginTop:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cat}</div>
                     </div>
-                    <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>/{totalModels}</div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:3, whiteSpace:"nowrap" }}>{cat}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
