@@ -328,6 +328,36 @@ export default function Community() {
         </Card>
       ))}
 
+      {/* 페이지네이션 */}
+      {totalPages > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:6, marginTop:16, flexWrap:"wrap" }}>
+          <button onClick={() => setPage(1)} disabled={page===1}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", fontSize:12, color:page===1?C.border:C.muted, cursor:page===1?"not-allowed":"pointer" }}>«</button>
+          <button onClick={() => setPage(p=>Math.max(1,p-1))} disabled={page===1}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, color:page===1?C.border:C.muted, cursor:page===1?"not-allowed":"pointer" }}>‹</button>
+          {Array.from({length:totalPages},(_,i)=>i+1)
+            .filter(n => n===1 || n===totalPages || Math.abs(n-page)<=1)
+            .reduce((acc,n,i,arr) => { if(i>0 && n-arr[i-1]>1) acc.push("..."); acc.push(n); return acc; },[])
+            .map((n,i) => n==="..." ? (
+              <span key={`d${i}`} style={{ color:C.muted, fontSize:12 }}>…</span>
+            ) : (
+              <button key={n} onClick={() => setPage(n)}
+                style={{ background:page===n?C.navy:"none", border:`1px solid ${page===n?C.navy:C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:page===n?700:400, color:page===n?"#fff":C.muted, cursor:"pointer" }}>
+                {n}
+              </button>
+            ))}
+          <button onClick={() => setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, color:page===totalPages?C.border:C.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>›</button>
+          <button onClick={() => setPage(totalPages)} disabled={page===totalPages}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", fontSize:12, color:page===totalPages?C.border:C.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>»</button>
+        </div>
+      )}
+      {allFiltered.length > 0 && (
+        <div style={{ fontSize:11, color:C.muted, textAlign:"center", marginTop:6 }}>
+          {(page-1)*PAGE_SIZE+1}~{Math.min(page*PAGE_SIZE, allFiltered.length)} / 전체 {allFiltered.length}개
+        </div>
+      )}
+
       {/* 게시글 상세 모달 */}
       {selPost && (
         <Modal onClose={() => setSelPost(null)} width={600}>
