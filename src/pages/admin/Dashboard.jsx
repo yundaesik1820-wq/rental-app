@@ -127,13 +127,50 @@ export default function Dashboard({ setTab }) {
           { label:"재고없음", count:lowStock, color:C.red },
         ]} />
 
-      <DashRow icon="📅" label="장비/시설 대여관리"
-        alerts={[
-          { label:"장비대기", count:pending, color:C.yellow },
-          { label:"시설대기", count:facilityPend, color:C.teal },
-          { label:"보류", count:held, color:C.orange },
-          { label:"연체", count:overdue, color:C.red },
-        ]} />
+      {/* 장비/시설 대여관리 */}
+      {(() => {
+        const today    = new Date().toISOString().slice(0,10);
+        const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+
+        const todayRentEquip  = requests.filter(r => r.startDate === today).length;
+        const todayRentFac    = facilityRequests.filter(r => r.date === today && r.status === "승인됨").length;
+        const todayRetEquip   = requests.filter(r => r.endDate === today && r.status === "대여중").length;
+        const todayRetFac     = facilityRequests.filter(r => r.date === today && r.status === "반납완료").length;
+        const tmrRentEquip    = requests.filter(r => r.startDate === tomorrow).length;
+        const tmrRentFac      = facilityRequests.filter(r => r.date === tomorrow && r.status === "승인됨").length;
+        const tmrRetEquip     = requests.filter(r => r.endDate === tomorrow && r.status === "대여중").length;
+        const tmrRetFac       = facilityRequests.filter(r => r.date === tomorrow && r.status === "대여중").length;
+        const totalPend       = pending + facilityPend;
+
+        const Row = ({label, equip, fac}) => (
+          <div style={{ display:"flex", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:8 }}>
+            <span style={{ fontSize:12, color:C.muted, minWidth:80 }}>{label}</span>
+            <span style={{ fontSize:12, fontWeight:700, color:equip>0?C.navy:C.muted }}>장비 {equip}건</span>
+            <span style={{ fontSize:12, color:C.border }}>·</span>
+            <span style={{ fontSize:12, fontWeight:700, color:fac>0?C.teal:C.muted }}>시설 {fac}건</span>
+          </div>
+        );
+
+        return (
+          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            <div onClick={() => setTab?.("rental")}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+              <span style={{ fontSize:20 }}>📅</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 대여관리</span>
+              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+            </div>
+            {totalPend > 0 && (
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, background:C.yellowLight }}>
+                <span style={{ fontSize:13, fontWeight:700, color:C.orange }}>⏳ 승인 대기 요청 {totalPend}건</span>
+              </div>
+            )}
+            <Row label="오늘 대여" equip={todayRentEquip} fac={todayRentFac} />
+            <Row label="오늘 반납" equip={todayRetEquip}  fac={todayRetFac} />
+            <Row label="내일 대여" equip={tmrRentEquip}   fac={tmrRentFac} />
+            <Row label="내일 반납" equip={tmrRetEquip}    fac={tmrRetFac} />
+          </div>
+        );
+      })()}
 
       <DashRow icon="🎖️" label="라이센스 관리"
         alerts={[{ label:"신청대기", count:licensePend, color:C.purple }]} />
