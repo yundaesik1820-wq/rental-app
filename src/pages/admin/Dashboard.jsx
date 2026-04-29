@@ -132,14 +132,14 @@ export default function Dashboard({ setTab }) {
         const today    = new Date().toISOString().slice(0,10);
         const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
 
-        const todayRentEquip  = requests.filter(r => r.startDate === today).length;
-        const todayRentFac    = facilityRequests.filter(r => r.date === today && r.status === "승인됨").length;
-        const todayRetEquip   = requests.filter(r => r.endDate === today && r.status === "대여중").length;
-        const todayRetFac     = facilityRequests.filter(r => r.date === today && r.status === "반납완료").length;
-        const tmrRentEquip    = requests.filter(r => r.startDate === tomorrow).length;
-        const tmrRentFac      = facilityRequests.filter(r => r.date === tomorrow && r.status === "승인됨").length;
-        const tmrRetEquip     = requests.filter(r => r.endDate === tomorrow && r.status === "대여중").length;
-        const tmrRetFac       = facilityRequests.filter(r => r.date === tomorrow && r.status === "대여중").length;
+        const todayRentEquip  = requests.filter(r => r.startDate === today     && r.status === "승인됨").length;
+        const todayRentFac    = facilityRequests.filter(r => r.date === today     && r.status === "승인됨").length;
+        const todayRetEquip   = requests.filter(r => r.endDate === today          && r.status === "대여중").length;
+        const todayRetFac     = facilityRequests.filter(r => r.date === today     && r.status === "대여중").length;
+        const tmrRentEquip    = requests.filter(r => r.startDate === tomorrow     && r.status === "승인됨").length;
+        const tmrRentFac      = facilityRequests.filter(r => r.date === tomorrow  && r.status === "승인됨").length;
+        const tmrRetEquip     = requests.filter(r => r.endDate === tomorrow       && r.status === "대여중").length;
+        const tmrRetFac       = facilityRequests.filter(r => r.date === tomorrow  && r.status === "대여중").length;
         const totalPend       = pending + facilityPend;
 
         const Row = ({label, equip, fac}) => (
