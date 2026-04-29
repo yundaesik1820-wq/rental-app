@@ -26,8 +26,15 @@ export default function Dashboard() {
         <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
           <LogOut size={14} /> 로그아웃
         </button>
-        <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:3 }}>
-          {"관리자"}
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:3, display:"flex", alignItems:"center", gap:6 }}>
+          {profile?.adminRole === "teacher"   ? "교사" :
+           profile?.adminRole === "assistant" ? "조교" :
+           profile?.adminRole === "professor" ? "교수" : "관리자"}
+          <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>
+            {profile?.adminRole === "teacher"   ? "교사" :
+             profile?.adminRole === "assistant" ? "조교" :
+             profile?.adminRole === "professor" ? "교수" : "관리자"}
+          </span>
         </div>
         <div style={{ fontSize:20, fontWeight:900, color:"#fff" }}>
           안녕하세요, {profile?.name}님 👋

@@ -44,7 +44,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const adminRole = profile?.adminRole || "super";
   const isSuper   = profile?.role === "admin"; // 모든 관리자 슈퍼와 동일
   const roleLabel = profile?.role === "admin"
-    ? (adminRole === "teacher" ? "교사" : adminRole === "assistant" ? "조교" : "관리자")
+    ? (adminRole === "teacher" ? "교사" : adminRole === "assistant" ? "조교" : adminRole === "professor" ? "교수" : "관리자")
     : null;
 
   // 일반 직원(교사/조교)은 대여/반납 숨김
