@@ -340,7 +340,7 @@ export default function Community() {
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
               {selPost.images.map((url, i) => (
                 <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => window.open(url,"_blank")}
-                  style={{ width:"100%", borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}` }} />
+                  style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}`, display:"block" }} />
               ))}
             </div>
           )}
