@@ -123,10 +123,49 @@ export default function Dashboard({ setTab }) {
         </div>
       </div>
 
-      <DashRow icon="📦" label="장비/시설 관리"
-        alerts={[
-          { label:"재고없음", count:lowStock, color:C.red },
-        ]} />
+      {/* 장비/시설 관리 */}
+      {(() => {
+        const CAT_ORDER = ["촬영","렌즈","ACC","트라이포드/그립","모니터","조명","음향"];
+        // 단품만, 동일 모델명은 1건으로 카운팅
+        const units = equipments.filter(e => !e.isSet);
+        const uniqueModels = [...new Set(units.map(e => e.modelName || e.name).filter(Boolean))];
+        const cats = [...new Set(units.map(e => e.majorCategory).filter(Boolean))];
+        const sortedCats = [
+          ...CAT_ORDER.filter(c => cats.includes(c)),
+          ...cats.filter(c => !CAT_ORDER.includes(c)),
+        ];
+
+        // 카테고리별 가용 모델 수 (모델 단위, available>0인 모델만)
+        const catStats = sortedCats.map(cat => {
+          const catUnits = units.filter(e => e.majorCategory === cat);
+          const totalModels = [...new Set(catUnits.map(e => e.modelName||e.name).filter(Boolean))].length;
+          const availModels = [...new Set(
+            catUnits.filter(e => (e.available||0) > 0).map(e => e.modelName||e.name).filter(Boolean)
+          )].length;
+          return { cat, totalModels, availModels };
+        });
+
+        return (
+          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+            <div onClick={() => setTab?.("equipment")}
+              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+              <span style={{ fontSize:20 }}>📦</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 관리</span>
+              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+            </div>
+            <div style={{ display:"flex", overflowX:"auto", borderTop:`1px solid ${C.border}`, padding:"10px 14px", gap:10 }}>
+              {catStats.map(({ cat, totalModels, availModels }) => (
+                <div key={cat} style={{ textAlign:"center", flexShrink:0 }}>
+                  <div style={{ fontSize:16, fontWeight:900, color: availModels < totalModels ? C.orange : C.green }}>
+                    {availModels}<span style={{ fontSize:10, color:C.muted, fontWeight:400 }}>/{totalModels}</span>
+                  </div>
+                  <div style={{ fontSize:10, color:C.muted, marginTop:2, whiteSpace:"nowrap" }}>{cat}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 장비/시설 대여관리 */}
       {(() => {
