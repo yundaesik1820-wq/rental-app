@@ -80,8 +80,8 @@ export default function LicenseAdmin() {
 
       {/* 탭 */}
       <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:20, border:`1px solid ${C.border}`, width:"fit-content" }}>
-        {[["schedules","수업 일정"],["applications","신청 현황"]].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tab===id?C.navy:"transparent", color:tab===id?"#fff":C.muted }}>
+        {[["schedules","수업 일정"],["applications","신청 현황"],["completed","종료된 수업"]].map(([id, label]) => (
+          <button key={id} onClick={() => setTab(id)} style={{ padding:"8px 20px", borderRadius:9, border:"none", fontSize:13, fontWeight:700, cursor:"pointer", background:tab===id?C.navy:"transparent", color:tab===id?"#fff":C.muted }}>
             {label}
           </button>
         ))}
@@ -90,8 +90,8 @@ export default function LicenseAdmin() {
       {/* 수업 일정 탭 */}
       {tab === "schedules" && (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(300px,1fr))", gap:14 }}>
-          {schedules.length === 0 && <Empty icon="📅" text="등록된 수업 일정이 없습니다" />}
-          {schedules.map(s => {
+          {schedules.filter(s => s.status !== "완료").length === 0 && <Empty icon="📅" text="등록된 수업 일정이 없습니다" />}
+          {schedules.filter(s => s.status !== "완료").map(s => {
             const apps  = getApps(s.id);
             const lc    = levelColor(s.level);
             const attended = apps.filter(a => a.attended).length;
@@ -113,9 +113,15 @@ export default function LicenseAdmin() {
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
                   <Btn onClick={() => setSelSchedule(s)} color={C.teal} full>출석 체크</Btn>
-                  <Btn onClick={() => updateItem("licenseSchedules", s.id, { status: s.status==="모집중"?"모집마감":"모집중" })} color={C.muted} outline full>
-                    {s.status==="모집중" ? "마감" : "재오픈"}
-                  </Btn>
+                  {s.status === "모집중" ? (
+                    <Btn onClick={() => updateItem("licenseSchedules", s.id, { status: "모집마감" })} color={C.muted} outline full>마감</Btn>
+                  ) : (
+                    <Btn onClick={async () => {
+                      if (window.confirm("수업을 종료하시겠습니까? 종료된 수업은 '종료된 수업' 탭으로 이동합니다.")) {
+                        await updateItem("licenseSchedules", s.id, { status: "완료" });
+                      }
+                    }} color={C.red} outline full>종료</Btn>
+                  )}
                 </div>
               </Card>
             );
@@ -156,6 +162,34 @@ export default function LicenseAdmin() {
                   </Card>
                 ))}
               </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 종료된 수업 탭 */}
+      {tab === "completed" && (
+        <div>
+          {schedules.filter(s => s.status === "완료").length === 0 && <Empty icon="✅" text="종료된 수업이 없습니다" />}
+          {schedules.filter(s => s.status === "완료").map(s => {
+            const apps     = getApps(s.id);
+            const attended = apps.filter(a => a.attended).length;
+            const lc       = levelColor(s.level);
+            return (
+              <Card key={s.id} style={{ marginBottom:10, opacity:0.8 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                  <div style={{ display:"flex", gap:6 }}>
+                    <span style={{ background:lc.bg, color:lc.col, borderRadius:6, padding:"2px 10px", fontSize:12, fontWeight:700 }}>{s.level}단계</span>
+                    <span style={{ background:C.bg, color:C.muted, borderRadius:6, padding:"2px 10px", fontSize:12, fontWeight:700 }}>✅ 완료</span>
+                  </div>
+                  <button onClick={() => deleteItem("licenseSchedules", s.id)} style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16 }}>🗑️</button>
+                </div>
+                <div style={{ fontSize:15, fontWeight:800, color:C.navy, marginBottom:4 }}>{s.title}</div>
+                <div style={{ fontSize:13, color:C.muted, marginBottom:6 }}>📅 {s.date} {s.time}</div>
+                <div style={{ padding:"8px 12px", background:C.bg, borderRadius:8, fontSize:13, color:C.muted }}>
+                  신청 {apps.length}명 · 출석 <span style={{ color:C.green, fontWeight:700 }}>{attended}명</span>
+                </div>
+              </Card>
             );
           })}
         </div>
