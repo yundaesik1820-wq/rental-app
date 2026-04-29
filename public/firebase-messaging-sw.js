@@ -12,12 +12,22 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// data payload를 받아 직접 알림 표시 (notification payload 없으므로 중복 없음)
 messaging.onBackgroundMessage((payload) => {
-  const { title, body } = payload.notification || {};
-  self.registration.showNotification(title || "KBAS 알림", {
-    body:  body  || "",
+  const title = payload.data?.title || "KBAS 알림";
+  const body  = payload.data?.body  || "";
+
+  self.registration.showNotification(title, {
+    body,
     icon:  "/icons/icon-192x192.png",
     badge: "/icons/icon-72x72.png",
-    data:  payload.data || {},
+    data:  { url: "https://rental-app-delta-kohl.vercel.app" },
   });
+});
+
+// 알림 클릭 시 앱 열기
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "https://rental-app-delta-kohl.vercel.app";
+  event.waitUntil(clients.openWindow(url));
 });
