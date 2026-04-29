@@ -60,6 +60,8 @@ export default function Community() {
   const [imgUploading, setImgUploading] = useState(false);
   const imgInputRef = useRef(null);
   const [search, setSearch]           = useState("");
+  const [page, setPage]               = useState(1);
+  const PAGE_SIZE = 10;
 
   const formatDate = (ts) => {
     if (!ts?.seconds) return "";
@@ -240,7 +242,7 @@ export default function Community() {
         {CATEGORIES.map(c => {
           const isLocked = c === "새내기" && !isNewbie && profile?.role !== "admin";
           return (
-            <button key={c} onClick={() => !isLocked && setCat(c)}
+            <button key={c} onClick={() => { if(!isLocked) { setCat(c); setPage(1); } }}
               style={{
                 padding:"7px 16px", borderRadius:20, border:`1px solid ${cat===c ? C.navy : C.border}`,
                 background: cat===c ? C.navy : C.bg,
@@ -263,7 +265,7 @@ export default function Community() {
       )}
 
       {/* 검색 */}
-      <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => setSearch(e.target.value)}
+      <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
         style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:16, boxSizing:"border-box" }} />
 
       {/* 인기 게시글 TOP3 */}
