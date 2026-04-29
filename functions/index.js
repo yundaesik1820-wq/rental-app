@@ -30,41 +30,57 @@ async function sendFCM(userId, title, body) {
   try {
     const userDoc = await admin.firestore().collection("users").doc(userId).get();
     const token   = userDoc.data()?.fcmToken;
-    if (!token) return;
-    await admin.messaging().send({
+    console.log(`FCM 전송 시도 - userId: ${userId}, token: ${token ? token.slice(0,20)+"..." : "없음"}`);
+    if (!token) { console.log("토큰 없음 - 전송 취소"); return; }
+    // notification 필드 제거 → iOS 자동 표시 방지
+    // 서비스워커가 data를 받아 직접 표시 (중복 방지)
+    const result = await admin.messaging().send({
       token,
-      notification: { title, body },
+      data: { title, body },
       webpush: {
-        notification: {
-          icon:  "/icons/icon-192x192.png",
-          badge: "/icons/icon-72x72.png",
-        },
+        fcm_options: { link: "https://rental-app-delta-kohl.vercel.app" },
       },
     });
+    console.log("FCM 전송 성공:", result);
   } catch (e) {
-    console.log("FCM 전송 실패:", e.message);
+    console.error("FCM 전송 실패:", e.code, e.message);
   }
 }
 
 // ── 대여 상태 변경 알림 ────────────────────────────────────
 exports.onRentalStatusChange = functions.firestore
   .document("rentalRequests/{reqId}")
-  .onUpdate(async (change) => {
+  .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after  = change.after.data();
     if (before.status === after.status) return;
+
+    // 중복 알림 방지 - 별도 컬렉션으로 원자적 처리
+    const dedupId  = `${change.after.id}_${after.status}`;
+    const dedupRef = admin.firestore().collection("fcmSent").doc(dedupId);
+
+    const alreadySent = await admin.firestore().runTransaction(async (tx) => {
+      const doc = await tx.get(dedupRef);
+      if (doc.exists) return true;
+      tx.set(dedupRef, { sentAt: admin.firestore.FieldValue.serverTimestamp() });
+      return false;
+    });
+
+    if (alreadySent) return;
     const usersSnap = await admin.firestore().collection("users")
-      .where("studentId", "==", after.studentId).limit(1).get();
+      .where("studentId", "==", after.studentId)
+      .where("status", "==", "approved")
+      .limit(1).get();
     if (usersSnap.empty) return;
-    const uid   = usersSnap.docs[0].id;
-    const equip = after.items?.[0]?.modelName || after.equipName || "장비";
+    const uid  = usersSnap.docs[0].id;
+    const name = after.studentName || usersSnap.docs[0].data().name || "학생";
+    console.log(`대여 알림 대상 - studentId: ${after.studentId}, uid: ${uid}`);
     const messages = {
-      "승인됨":   { title: "✅ 대여 승인됨",   body: `${equip} 대여가 승인됐어요!` },
-      "거절됨":   { title: "❌ 대여 거절됨",   body: `${equip} 대여가 거절됐어요.` },
-      "대여중":   { title: "📦 대여 시작",     body: `${equip} 대여가 시작됐어요.` },
-      "반납완료": { title: "✅ 반납 완료",      body: `${equip} 반납이 확인됐어요.` },
-      "보류":     { title: "⏸ 보류 처리됨",    body: `${equip} 대여가 보류됐어요.` },
-      "연체":     { title: "⚠️ 반납 연체 중",   body: `${equip} 반납이 지연되고 있어요!` },
+      "승인됨":   { title: "✅ 대여 승인됨",   body: `${name}님의 대여가 승인됐어요! 신청하신 날짜에 맞춰 방문해주세요.` },
+      "거절됨":   { title: "❌ 대여 거절됨",   body: `${name}님의 대여가 거절됐어요. 앱에 접속해 사유를 확인해주세요.` },
+      "반납완료": { title: "✅ 반납 완료",      body: `${name}님의 반납이 확인됐어요.` },
+      "보류":     { title: "⏸ 보류 처리됨",    body: `${name}님의 대여가 보류됐어요. 앱에 접속해 사유를 확인해주세요.` },
+      "연체":     { title: "⚠️ 반납 연체 중",   body: `${name}님의 반납이 지연되고 있어요!` },
     };
     const msg = messages[after.status];
     if (msg) await sendFCM(uid, msg.title, msg.body);
@@ -78,14 +94,17 @@ exports.onFacilityStatusChange = functions.firestore
     const after  = change.after.data();
     if (before.status === after.status) return;
     const usersSnap = await admin.firestore().collection("users")
-      .where("studentId", "==", after.studentId).limit(1).get();
+      .where("studentId", "==", after.studentId)
+      .where("status", "==", "approved")
+      .limit(1).get();
     if (usersSnap.empty) return;
     const uid      = usersSnap.docs[0].id;
+    const name2    = after.studentName || usersSnap.docs[0].data().name || "학생";
     const facility = after.facilityName || "시설";
     const messages = {
-      "승인됨":   { title: "✅ 시설 대여 승인됨", body: `${facility} 대여가 승인됐어요!` },
-      "거절됨":   { title: "❌ 시설 대여 거절됨", body: `${facility} 대여가 거절됐어요.` },
-      "반납완료": { title: "✅ 시설 반납 완료",    body: `${facility} 반납이 확인됐어요.` },
+      "승인됨":   { title: "✅ 시설 대여 승인됨", body: `${name2}님의 ${facility} 대여가 승인됐어요!` },
+      "거절됨":   { title: "❌ 시설 대여 거절됨", body: `${name2}님의 ${facility} 대여가 거절됐어요.` },
+      "반납완료": { title: "✅ 시설 반납 완료",    body: `${name2}님의 ${facility} 반납이 확인됐어요.` },
     };
     const msg = messages[after.status];
     if (msg) await sendFCM(uid, msg.title, msg.body);
@@ -100,6 +119,6 @@ exports.onNewNotice = functions.firestore
       .where("status", "==", "approved").where("role", "==", "student").get();
     const sends = usersSnap.docs
       .filter(d => d.data().fcmToken)
-      .map(d => sendFCM(d.id, `📌 새 공지: ${notice.title}`, notice.content?.slice(0, 60) || ""));
+      .map(d => sendFCM(d.id, `📌 공지사항: ${notice.title}`, ""));
     await Promise.allSettled(sends);
   });
