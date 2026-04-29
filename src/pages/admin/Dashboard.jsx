@@ -169,14 +169,18 @@ export default function Dashboard({ setTab }) {
 
             {/* 2행: 장비 카테고리별 현황 */}
             {eqTab === "장비" && (
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(80px, 1fr))", gap:8, borderTop:`1px solid ${C.border}`, padding:"10px 12px" }}>
-                {catStats.map(({ cat, totalModels, availModels }) => {
-                  const isLow = availModels < totalModels;
+              <div style={{ display:"grid", gridTemplateColumns:`repeat(${catStats.length}, 1fr)`, gap:0, borderTop:`1px solid ${C.border}` }}>
+                {catStats.map(({ cat, totalModels, availModels }, idx) => {
+                  const isLow   = availModels < totalModels;
+                  const baseCol = isLow ? "#D97706" : "#059669";
+                  const dimCol  = isLow ? "#FCD34D" : "#6EE7B7";
                   return (
-                    <div key={cat} style={{ background: isLow ? C.orangeLight : C.greenLight, borderRadius:10, padding:"10px 8px", textAlign:"center", border:`1px solid ${isLow ? C.orange+"40" : C.green+"40"}` }}>
-                      <div style={{ fontSize:20, fontWeight:900, color: isLow ? C.orange : C.green, lineHeight:1 }}>{availModels}</div>
-                      <div style={{ fontSize:10, color: isLow ? C.orange : C.green, marginTop:1 }}>/ {totalModels}</div>
-                      <div style={{ fontSize:10, color:C.muted, marginTop:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{cat}</div>
+                    <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? "#FFFBEB" : "#ECFDF5", borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
+                      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:0 }}>
+                        <span style={{ fontSize:18, fontWeight:800, color:baseCol }}>{availModels}</span>
+                        <span style={{ fontSize:18, fontWeight:400, color:dimCol }}>/{totalModels}</span>
+                      </div>
+                      <div style={{ fontSize:9, color:C.muted, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", padding:"0 2px" }}>{cat}</div>
                     </div>
                   );
                 })}
