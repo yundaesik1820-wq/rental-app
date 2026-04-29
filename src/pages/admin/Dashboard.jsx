@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { C } from "../../theme";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -26,6 +27,7 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
 
 export default function Dashboard({ setTab }) {
   const { profile, logout } = useAuth();
+  const [eqTab, setEqTab] = useState("장비");
   const { data: requests }         = useCollection("rentalRequests",    "createdAt");
   const { data: facilityRequests } = useCollection("facilityRequests",  "createdAt");
   const { data: equipments }       = useCollection("equipments",        "createdAt");
@@ -145,8 +147,6 @@ export default function Dashboard({ setTab }) {
           )].length;
           return { cat, totalModels, availModels };
         });
-
-        const [eqTab, setEqTab] = React.useState("장비");
 
         return (
           <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
