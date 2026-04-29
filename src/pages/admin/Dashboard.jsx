@@ -102,11 +102,25 @@ export default function Dashboard({ setTab }) {
         )}
       </div>
 
-      <DashRow icon="👥" label="학생 관리"
-        alerts={[
-          { label:"가입대기", count:pendingUsers, color:C.orange },
-          { label:"비번초기화", count:pwResetPend, color:C.yellow },
-        ]} />
+      {/* 학생 관리 */}
+      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+        <div onClick={() => setTab?.("students")}
+          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
+          <span style={{ fontSize:20 }}>👥</span>
+          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>학생 관리</span>
+          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
+        </div>
+        <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
+          <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center" }}>
+            <div style={{ fontSize:18, fontWeight:900, color: pendingUsers>0 ? C.orange : C.green }}>{pendingUsers}</div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>승인 대기</div>
+          </div>
+          <div style={{ flex:1, padding:"10px 14px", textAlign:"center" }}>
+            <div style={{ fontSize:18, fontWeight:900, color: pwResetPend>0 ? C.yellow : C.green }}>{pwResetPend}</div>
+            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>비밀번호 초기화 요청</div>
+          </div>
+        </div>
+      </div>
 
       <DashRow icon="📦" label="장비/시설 관리"
         alerts={[
