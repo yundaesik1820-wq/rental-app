@@ -466,11 +466,11 @@ export default function Rental({ subAdmin = false }) {
   const { data: equipments }       = useCollection("equipments", "createdAt");
   const { data: facilityRequests } = useCollection("facilityRequests", "createdAt");
 
-  const isSuper     = profile?.role === "admin" && (!profile?.adminRole || profile?.adminRole === "super");
-  const isAssist    = profile?.role === "admin" && profile?.adminRole === "assistant";
-  const isTeacher   = profile?.role === "admin" && profile?.adminRole === "teacher";
-  const STATUS_TABS = isTeacher ? STATUS_TABS_TEACHER : STATUS_TABS_SUPER;
-  const [tab, setTab] = useState(isTeacher ? "대여중" : "승인대기");
+  const isSuper     = profile?.role === "admin"; // 모든 관리자 슈퍼와 동일
+  const isAssist    = false;
+  const isTeacher   = false;
+  const STATUS_TABS = STATUS_TABS_SUPER;
+  const [tab, setTab] = useState("승인대기");
   const [actionTarget, setActionTarget] = useState(null);
   const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
   const [reason, setReason]       = useState("");

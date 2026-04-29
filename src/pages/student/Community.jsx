@@ -43,9 +43,9 @@ export default function Community() {
   const { data: comments } = useCollection("communityComments", "createdAt");
 
   const adminRole  = profile?.adminRole || "super";
-  const isSuper    = profile?.role === "admin" && adminRole === "super";
-  const isAssist   = profile?.role === "admin" && adminRole === "assistant";
-  const canSeeReal = isSuper || isAssist; // 실명 볼 수 있는 권한
+  const isSuper    = profile?.role === "admin"; // 모든 관리자 동일
+  const isAssist   = false;
+  const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
 
   // 새내기 여부
   const studentId  = profile?.studentId || "";

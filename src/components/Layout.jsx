@@ -42,7 +42,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const [sideOpen, setSideOpen] = useState(true);
 
   const adminRole = profile?.adminRole || "super";
-  const isSuper   = profile?.role === "admin" && adminRole === "super";
+  const isSuper   = profile?.role === "admin"; // 모든 관리자 슈퍼와 동일
   const roleLabel = profile?.role === "admin"
     ? (adminRole === "teacher" ? "교사" : adminRole === "assistant" ? "조교" : "관리자")
     : null;
@@ -50,11 +50,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   // 일반 직원(교사/조교)은 대여/반납 숨김
   // 일반관리자: 대여/반납 탭 보이되 제한된 뷰 (대여중~반납완료만)
   // 교사·교수는 에브리타임 숨김 (조교는 보임)
-  const hideEverytime = 
-    (profile?.role === "admin" && adminRole === "teacher") ||
-    (profile?.role === "professor");
+  const hideEverytime = (profile?.role === "professor");
   const nav = profile?.role === "admin"
-    ? (hideEverytime ? ADMIN_NAV.filter(n => n.id !== "community") : ADMIN_NAV)
+    ? ADMIN_NAV
     : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
   // 모바일 하단 2줄 그리드

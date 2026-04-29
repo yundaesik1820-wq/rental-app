@@ -27,7 +27,7 @@ export default function Dashboard() {
           <LogOut size={14} /> 로그아웃
         </button>
         <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:3 }}>
-          {profile?.adminRole === "teacher" ? "교사" : profile?.adminRole === "assistant" ? "조교" : "관리자"}
+          {"관리자"}
         </div>
         <div style={{ fontSize:20, fontWeight:900, color:"#fff" }}>
           안녕하세요, {profile?.name}님 👋
