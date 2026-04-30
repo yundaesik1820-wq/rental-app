@@ -363,6 +363,27 @@ function ExcelImportModal({ onClose, onImport }) {
 }
 
 // ── EMPTY FORM ────────────────────────────────────────────
+const MAJOR_CATS = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
+
+const MINOR_CATS = {
+  "촬영":        ["카메라/드론", "캠코더", "액션캠", "배터리", "충전기/전원", "저장매체", "카드리더기"],
+  "렌즈":        ["단렌즈", "줌렌즈", "시네렌즈", "렌즈어댑터", "렌즈액세서리"],
+  "ACC":         ["리그/케이지", "무선송수신", "라이브송출", "슬레이트/타임코드", "케이블/젠더", "가방/운반", "기타"],
+  "트라이포드/그립": ["비디오삼각대", "사진삼각대", "모노포드", "짐벌", "슬라이더", "숄더리그", "그립장비"],
+  "모니터":      ["카메라용 모니터", "감독용 모니터", "모니터액세서리"],
+  "조명":        ["조명본체", "조명액세서리", "그립장비"],
+  "음향":        ["마이크", "레코더/믹서", "음향액세서리"],
+};
+
+// 드롭박스 스타일
+const selStyle = (C) => ({
+  display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`,
+  borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13,
+  fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer",
+  appearance:"none", backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2364748B' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E")`,
+  backgroundRepeat:"no-repeat", backgroundPosition:"right 12px center", paddingRight:32,
+});
+
 const EMPTY = {
   majorCategory:"", minorCategory:"", manufacturer:"",
   modelName:"", itemName:"", unitNo:"", itemNo:"",
@@ -598,16 +619,8 @@ export default function Equipment() {
           {/* 가이드 모드 설정 */}
           <div style={{ marginBottom:16, background:C.purpleLight, borderRadius:12, padding:"14px 16px" }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.purple, marginBottom:12 }}>🧭 가이드 모드 설정</div>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>장비 유형</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {[["","없음"],["camera","카메라"],["lens","렌즈"],["battery","배터리"],["adapter","어댑터"],["etc","기타"]].map(([val, label]) => (
-                  <button key={val} onClick={() => f("equipType", val)}
-                    style={{ padding:"5px 12px", borderRadius:20, border:`1.5px solid ${form.equipType===val?C.purple:C.border}`, background:form.equipType===val?C.purple:C.bg, color:form.equipType===val?"#fff":C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+            <div style={{ marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:8 }}>
+              <div style={{ fontSize:11, color:C.purple, fontWeight:600 }}>🧭 가이드 유형: {form.equipType || "소분류 선택 시 자동 설정"}</div>
             </div>
             {(form.equipType==="camera" || form.equipType==="lens") && (
               <div style={{ marginBottom:12 }}>
@@ -831,16 +844,8 @@ export default function Equipment() {
           {/* 가이드 모드 설정 (수정 모달) */}
           <div style={{ marginBottom:16, background:C.purpleLight, borderRadius:12, padding:"14px 16px" }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.purple, marginBottom:12 }}>🧭 가이드 모드 설정</div>
-            <div style={{ marginBottom:12 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>장비 유형</div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {[["","없음"],["camera","카메라"],["lens","렌즈"],["battery","배터리"],["adapter","어댑터"],["etc","기타"]].map(([val, label]) => (
-                  <button key={val} onClick={() => f("equipType", val)}
-                    style={{ padding:"5px 12px", borderRadius:20, border:`1.5px solid ${form.equipType===val?C.purple:C.border}`, background:form.equipType===val?C.purple:C.bg, color:form.equipType===val?"#fff":C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                    {label}
-                  </button>
-                ))}
-              </div>
+            <div style={{ marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:8 }}>
+              <div style={{ fontSize:11, color:C.purple, fontWeight:600 }}>🧭 가이드 유형: {form.equipType || "소분류 선택 시 자동 설정"}</div>
             </div>
             {(form.equipType==="camera" || form.equipType==="lens") && (
               <div style={{ marginBottom:12 }}>
