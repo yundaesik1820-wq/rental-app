@@ -581,13 +581,20 @@ export default function Equipment() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
-              <input placeholder="예: 카메라, 캠코더" value={form.majorCategory} onChange={e => f("majorCategory", e.target.value)}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              <select value={form.majorCategory} onChange={e => { f("majorCategory", e.target.value); f("minorCategory", ""); }}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.majorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:"pointer", boxSizing:"border-box" }}>
+                <option value="">대분류 선택</option>
+                {MAJOR_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
-              <input placeholder="예: 미러리스, DSLR" value={form.minorCategory} onChange={e => f("minorCategory", e.target.value)}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
+                disabled={!form.majorCategory}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
+                <option value="">소분류 선택</option>
+                {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           </div>
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
@@ -761,13 +768,20 @@ export default function Equipment() {
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
-              <input value={form.majorCategory} onChange={e => f("majorCategory", e.target.value)}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              <select value={form.majorCategory} onChange={e => { f("majorCategory", e.target.value); f("minorCategory", ""); }}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.majorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:"pointer", boxSizing:"border-box" }}>
+                <option value="">대분류 선택</option>
+                {MAJOR_CATS.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
-              <input value={form.minorCategory} onChange={e => f("minorCategory", e.target.value)}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
+                disabled={!form.majorCategory}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
+                <option value="">소분류 선택</option>
+                {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           </div>
           <Inp label="제조사" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
