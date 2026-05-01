@@ -163,12 +163,10 @@ export default function EquipList() {
                     </div>
                   </div>
                   {/* 장비가 궁금하다면? */}
-                  {e.description && (
-                    <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
-                      style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginTop:8, width:"100%", textAlign:"left" }}>
-                      🔍 장비가 궁금하다면?
-                    </button>
-                  )}
+                  <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginTop:8, width:"100%", textAlign:"left" }}>
+                    🔍 장비가 궁금하다면?
+                  </button>
                   {/* 재고 바 */}
                   <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", marginTop:8 }}>
                     <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
@@ -263,8 +261,11 @@ export default function EquipList() {
               {showDescModel.manufacturer && <div style={{ fontSize:12, color:C.muted }}>{showDescModel.manufacturer}</div>}
             </div>
           </div>
-          <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", fontSize:13, color:C.text, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
-            {showDescModel.description}
+          <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", fontSize:13, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
+            {showDescModel.description
+              ? <span style={{ color:C.text }}>{showDescModel.description}</span>
+              : <span style={{ color:C.muted }}>아직 장비 설명이 등록되지 않았어요.<br/>관리자에게 문의해주세요.</span>
+            }
           </div>
           <div style={{ marginTop:16, textAlign:"right" }}>
             <button onClick={() => setShowDescModel(null)}
