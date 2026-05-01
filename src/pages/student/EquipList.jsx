@@ -32,6 +32,7 @@ function groupSets(equipments) {
     if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
     if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
     if (!map[key].displayPhotoUrl && e.displayPhotoUrl) map[key].displayPhotoUrl = e.displayPhotoUrl;
+    if (!map[key].description && e.description) map[key].description = e.description;
   });
   return Object.values(map);
 }
@@ -138,37 +139,36 @@ export default function EquipList() {
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                     {/* 썸네일 */}
                     {photos.length > 0 && (
-                      <div style={{ width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
+                      <div style={{ width:46, height:46, borderRadius:7, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
                         <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
                     {/* 정보 */}
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:6, marginBottom:2 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
-                        <span style={{ flexShrink:0, background:avail?C.greenLight:C.redLight, color:avail?C.green:C.red, borderRadius:6, padding:"2px 7px", fontSize:11, fontWeight:700 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:4, marginBottom:2 }}>
+                        <div style={{ fontSize:13, fontWeight:800, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
+                        <span style={{ flexShrink:0, background:avail?C.greenLight:C.redLight, color:avail?C.green:C.red, borderRadius:5, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
                           {avail ? "대여가능" : "대여불가"}
                         </span>
                       </div>
-                      {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
-                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
+                      {e.manufacturer && <div style={{ fontSize:11, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>{e.manufacturer}</div>}
+                      <div style={{ display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
+                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 5px", fontSize:9, fontWeight:700 }}>{e.minorCategory}</span>}
                         {eqLic > 0 && (
-                          <span style={{ background:locked?C.redLight:C.blueLight, color:locked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
-                            {locked ? `🔴 Lv.${eqLic} 필요` : `🔵 Lv.${eqLic}`}
+                          <span style={{ background:locked?C.redLight:C.blueLight, color:locked?C.red:C.blue, borderRadius:4, padding:"1px 5px", fontSize:9, fontWeight:700 }}>
+                            {locked ? `🔴 Lv.${eqLic}` : `🔵 Lv.${eqLic}`}
                           </span>
                         )}
-                        <span style={{ fontSize:10, color:C.muted }}>{e.available}/{e.total}대</span>
+                        <span style={{ fontSize:9, color:C.muted }}>{e.available}/{e.total}대</span>
+                        <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
+                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:5, padding:"1px 6px", fontSize:9, color:C.muted, cursor:"pointer", marginLeft:"auto", flexShrink:0, whiteSpace:"nowrap" }}>
+                          🔍 장비가 궁금하다면?
+                        </button>
                       </div>
                     </div>
                   </div>
-                  {/* 장비가 궁금하다면? */}
-                  <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginTop:8, width:"100%", textAlign:"left" }}>
-                    🔍 장비가 궁금하다면?
-                  </button>
                   {/* 재고 바 */}
-                  <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", marginTop:8 }}>
+                  <div style={{ background:C.border, borderRadius:4, height:2, overflow:"hidden", marginTop:6 }}>
                     <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
                   </div>
                 </Card>
@@ -193,7 +193,7 @@ export default function EquipList() {
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                     {/* 썸네일 */}
                     {photos.length > 0 && (
-                      <div style={{ width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
+                      <div style={{ width:46, height:46, borderRadius:7, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
                         <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
