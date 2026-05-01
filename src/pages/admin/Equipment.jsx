@@ -613,7 +613,7 @@ export default function Equipment() {
           {/* 소분류 텍스트 입력 - 다음 행 전체 */}
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
-            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
+            <input placeholder="예: 소형 오디오 인터페이스, ENG 캠코더" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
           </div>
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
@@ -642,8 +642,8 @@ export default function Equipment() {
           </div>
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <Inp label="호기 (구분번호)" placeholder="예: 1호기, A, No.1" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
-            <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
+            <Inp label="부여번호 (구분번호)" placeholder="예: 1,2,3" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
+            <Inp label="장비번호" placeholder="예: CAM 01" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
           </div>
 
           {/* 가이드 모드 설정 */}
