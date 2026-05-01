@@ -243,8 +243,8 @@ export default function EquipList() {
           </div>
         </>
       )}
-    </div>
-    {/* 장비 설명 모달 */}
+
+      {/* 장비 설명 모달 */}
       {showDescModel && (
         <Modal onClose={() => setShowDescModel(null)} width={400}>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
