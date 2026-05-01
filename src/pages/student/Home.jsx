@@ -162,6 +162,7 @@ export default function StudentHome() {
   // 시간표
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
+  const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
   const [editClass,     setEditClass]     = useState(null);  // null=추가, obj=수정
   const [showClassForm, setShowClassForm] = useState(false);
 
