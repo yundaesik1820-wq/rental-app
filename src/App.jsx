@@ -221,25 +221,39 @@ function AppContent() {
     // 선택 화면
     if (!mode) return (
       <div>
-        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
-          <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div>
-            <div style={{ fontSize:20, fontWeight:900, color:"#F1F5F9", marginBottom:4 }}>예약 신청</div>
-            <div style={{ fontSize:13, color:"#64748B" }}>어떻게 장비를 고르시겠어요?</div>
+        {/* 상단 배너 */}
+        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 예약 신청 페이지야!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>어떻게 장비를 고를지 선택해봐.<br/>초보자라면 렌토리랑 같이 골라봐 🎓</div>
+            </div>
           </div>
         </div>
+
+        {/* 선택 버튼 */}
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <button onClick={() => setMode("guide")}
-            style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"24px 20px", border:"none", cursor:"pointer", textAlign:"left", boxShadow:"0 4px 16px rgba(27,43,107,0.2)" }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>🎓</div>
-            <div style={{ fontSize:17, fontWeight:800, color:"#fff", marginBottom:4 }}>초보자</div>
-            <div style={{ fontSize:13, color:"rgba(255,255,255,0.75)" }}>저와 함께 장비를 골라요!</div>
+            style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"20px", border:"none", cursor:"pointer", textAlign:"left", boxShadow:"0 4px 16px rgba(27,43,107,0.2)" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              <img src="/mascot/hi.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:17, fontWeight:800, color:"#fff", marginBottom:4 }}>초보자</div>
+                <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)" }}>저와 함께 장비를 골라요!</div>
+              </div>
+            </div>
           </button>
           <button onClick={() => setMode("expert")}
-            style={{ background:"#fff", borderRadius:16, padding:"24px 20px", border:"2px solid #E2E8F0", cursor:"pointer", textAlign:"left" }}>
-            <div style={{ fontSize:28, marginBottom:8 }}>⚡</div>
-            <div style={{ fontSize:17, fontWeight:800, color:"#1B2B6B", marginBottom:4 }}>전문가</div>
-            <div style={{ fontSize:13, color:"#94A3B8" }}>직접 장비를 고릅니다!</div>
+            style={{ background:"#1E293B", borderRadius:16, padding:"20px", border:"2px solid #334155", cursor:"pointer", textAlign:"left" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+              <img src="/mascot/shrug.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:17, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>전문가</div>
+                <div style={{ fontSize:13, color:"#64748B" }}>직접 장비를 고릅니다!</div>
+              </div>
+            </div>
           </button>
         </div>
       </div>
