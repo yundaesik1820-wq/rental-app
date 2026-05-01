@@ -307,7 +307,7 @@ export default function StudentHome() {
       {showRentory && (
         <Modal onClose={() => setShowRentory(false)} width={420}>
           <div style={{ textAlign:"center", padding:"4px" }}>
-            <img src="/mascot/hi.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
+            <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
             <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
               렌토리는 한국방송예술진흥원<br/>
