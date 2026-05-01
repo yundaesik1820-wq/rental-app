@@ -224,7 +224,7 @@ function AppContent() {
         {/* 상단 배너 */}
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <img src="/mascot/reserve.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+            <img src="/mascot/rental.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
             <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 예약 신청 페이지!</div>
@@ -248,7 +248,7 @@ function AppContent() {
           <button onClick={() => setMode("expert")}
             style={{ background:"#1E293B", borderRadius:16, padding:"20px", border:"2px solid #334155", cursor:"pointer", textAlign:"left" }}>
             <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <img src="/mascot/reserve.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
+              <img src="/mascot/reserv.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
               <div>
                 <div style={{ fontSize:17, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>전문가</div>
                 <div style={{ fontSize:13, color:"#64748B" }}>성장했구만...직접 골라봐!</div>
