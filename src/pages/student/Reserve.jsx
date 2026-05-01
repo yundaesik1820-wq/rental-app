@@ -405,7 +405,16 @@ export default function Reserve() {
         )}
       </div>
 
-      {done && <div style={{ background:C.greenLight, color:C.green, borderRadius:12, padding:"14px 18px", marginBottom:16, fontWeight:700, fontSize:14, border:`1px solid ${C.green}30` }}>✅ 대여 신청이 완료됐어요! 관리자 승인을 기다려 주세요.</div>}
+      {done && (
+        <div style={{ background:C.greenLight, borderRadius:12, padding:"16px 18px", marginBottom:16, border:`1px solid ${C.green}30`, display:"flex", alignItems:"center", gap:14 }}>
+          <img src="/mascot/rental.png" alt="렌토리" style={{ width:60, height:60, objectFit:"contain", flexShrink:0 }} />
+          <div>
+            <div style={{ fontSize:14, fontWeight:800, color:C.green, marginBottom:2 }}>✅ 대여 신청이 완료됐어요!</div>
+            <div style={{ fontSize:12, color:C.green, fontWeight:600, marginBottom:2 }}>장비대여중인 렌토리</div>
+            <div style={{ fontSize:12, color:C.muted }}>관리자 승인을 기다려 주세요.</div>
+          </div>
+        </div>
+      )}
 
       {/* 선택 장바구니 */}
       {cartTotal > 0 && (

@@ -130,8 +130,9 @@ export default function GuideReserve() {
 
   if (done) return (
     <div style={{ textAlign:"center", padding:"40px 20px" }}>
-      <div style={{ fontSize:48, marginBottom:16 }}>✅</div>
-      <div style={{ fontSize:18, fontWeight:800, color:C.navy, marginBottom:8 }}>예약 신청 완료!</div>
+      <img src="/mascot/rental.png" alt="렌토리" style={{ width:160, height:160, objectFit:"contain", marginBottom:16 }} />
+      <div style={{ fontSize:18, fontWeight:800, color:C.text, marginBottom:8 }}>예약 신청 완료!</div>
+      <div style={{ fontSize:14, fontWeight:700, color:C.teal, marginBottom:6 }}>장비대여중인 렌토리</div>
       <div style={{ fontSize:13, color:C.muted }}>관리자 승인을 기다려 주세요.</div>
     </div>
   );
