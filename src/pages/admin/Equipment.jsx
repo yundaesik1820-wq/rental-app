@@ -385,7 +385,7 @@ const selStyle = (C) => ({
 });
 
 const EMPTY = {
-  majorCategory:"", minorCategory:"", subCategory:"", manufacturer:"",
+  majorCategory:"", minorCategory:"", subCategory:"", manufacturer:"", _minorCustom:false,
   modelName:"", unitNo:"", itemNo:"",
   description:"", subCategory:"",
   status:"대여가능",
@@ -579,6 +579,7 @@ export default function Equipment() {
         <Modal onClose={() => { setShowAdd(false); setForm(EMPTY); }} width={520}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>새 장비 등록 (1대)</div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:18 }}>같은 모델을 여러 대 등록할 경우 각각 별도로 등록하세요</div>
+          {/* 대분류 + 중분류 1행 */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
@@ -589,14 +590,31 @@ export default function Equipment() {
               </select>
             </div>
             <div>
-              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
-              <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
-                disabled={!form.majorCategory}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
-                <option value="">소분류 선택</option>
-                {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text }}>중분류</div>
+                <button onClick={() => { f("_minorCustom", !form._minorCustom); f("minorCategory",""); }}
+                  style={{ fontSize:10, color:C.teal, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>
+                  {form._minorCustom ? "목록에서 선택" : "+ 직접 추가"}
+                </button>
+              </div>
+              {form._minorCustom ? (
+                <input placeholder="중분류 직접 입력" value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType","etc"); }}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.teal}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              ) : (
+                <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
+                  disabled={!form.majorCategory}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
+                  <option value="">중분류 선택</option>
+                  {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
+          </div>
+          {/* 소분류 텍스트 입력 - 다음 행 전체 */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
+            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
           </div>
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" placeholder="예: PXW-Z150" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
@@ -774,6 +792,7 @@ export default function Equipment() {
         <Modal onClose={() => { setEditItem(null); setForm(EMPTY); }} width={520}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>✏️ 장비 수정</div>
           <div style={{ fontSize:13, color:C.muted, marginBottom:18 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
+          {/* 대분류 + 중분류 1행 */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대분류 *</div>
@@ -784,14 +803,37 @@ export default function Equipment() {
               </select>
             </div>
             <div>
-              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류</div>
-              <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
-                disabled={!form.majorCategory}
-                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
-                <option value="">소분류 선택</option>
-                {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text }}>중분류</div>
+                <button onClick={() => { f("_minorCustom", !form._minorCustom); f("minorCategory",""); }}
+                  style={{ fontSize:10, color:C.teal, background:"none", border:"none", cursor:"pointer", fontWeight:600 }}>
+                  {form._minorCustom ? "목록에서 선택" : "+ 직접 추가"}
+                </button>
+              </div>
+              {form._minorCustom ? (
+                <input placeholder="중분류 직접 입력" value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType","etc"); }}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.teal}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              ) : (
+                <select value={form.minorCategory} onChange={e => { f("minorCategory", e.target.value); f("equipType", EQUIP_TYPE_MAP[e.target.value]||"etc"); }}
+                  disabled={!form.majorCategory}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:form.minorCategory?C.text:C.muted, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", cursor:form.majorCategory?"pointer":"not-allowed", opacity:form.majorCategory?1:0.5, boxSizing:"border-box" }}>
+                  <option value="">중분류 선택</option>
+                  {(MINOR_CATS[form.majorCategory]||[]).map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              )}
             </div>
+          </div>
+          {/* 소분류 텍스트 입력 - 다음 행 전체 */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
+            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+          </div>
+          {/* 소분류 텍스트 입력 */}
+          <div style={{ marginBottom:12 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
+            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
           </div>
           <Inp label="제조사" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
