@@ -29,7 +29,8 @@ export default function GuideReserve() {
   const today = new Date().toISOString().slice(0,10);
 
   const cameras  = equips.filter(e => e.equipType === "camera" && e.status !== "수리중" && !e.isSet);
-  const batteries= equips.filter(e => e.equipType === "battery");
+  const batteries = equips.filter(e => e.equipType === "battery");
+  const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
   const lenses   = equips.filter(e => e.equipType === "lens" && !e.isSet);
   const adapters = equips.filter(e => e.equipType === "adapter");
   const extras   = equips.filter(e => e.equipType === "etc" || !e.equipType);
@@ -38,7 +39,14 @@ export default function GuideReserve() {
 
   // 현재 카메라에 맞는 배터리
   const matchedBatteries = currentCam
-    ? batteries.filter(b => b.forCamera === currentCam.modelName || b.batteryModel === currentCam.batteryModel)
+    ? batteries.filter(b =>
+        // 구버전 호환: forCamera 단일 필드
+        b.forCamera === currentCam.modelName ||
+        // 신버전: forCameras 배열
+        (b.forCameras || []).includes(currentCam.modelName) ||
+        // 카메라의 batteryModel 필드와 매칭
+        (currentCam.batteryModel && b.modelName === currentCam.batteryModel)
+      )
     : batteries;
 
   const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;

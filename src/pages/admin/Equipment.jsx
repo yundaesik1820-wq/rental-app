@@ -366,7 +366,7 @@ function ExcelImportModal({ onClose, onImport }) {
 const MAJOR_CATS = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
 
 const MINOR_CATS = {
-  "촬영":        ["카메라", "캠코더", "액션캠/드론", "배터리", "충전기/전원", "저장매체", "카드리더기"],
+  "촬영":        ["카메라/드론", "캠코더", "액션캠", "배터리", "충전기/전원", "저장매체", "카드리더기"],
   "렌즈":        ["단렌즈", "줌렌즈", "시네렌즈", "렌즈어댑터", "렌즈액세서리"],
   "ACC":         ["리그/케이지", "무선송수신", "라이브송출", "슬레이트/타임코드", "케이블/젠더", "가방/운반", "기타"],
   "트라이포드/그립": ["비디오삼각대", "사진삼각대", "모노포드", "짐벌", "슬라이더", "숄더리그", "그립장비"],
@@ -398,7 +398,9 @@ const EMPTY = {
   equipType: "",        // "camera" | "lens" | "battery" | "adapter" | "etc"
   mount: "",            // "E-mount" | "EF-mount"
   batteryModel: "",     // 카메라용: 호환 배터리 모델명
-  forCamera: "",        // 배터리용: 어떤 카메라에 쓰이는지
+  forCamera: "",        // 배터리용: 어떤 카메라에 쓰이는지 (구버전 호환)
+  forCameras: [],       // 배터리용: 호환 카메라 목록 (다대다)
+  chargerForCameras: [], // 충전기/전원용: 호환 카메라 목록
   adapterFrom: "",      // 어댑터용: 렌즈 마운트
   adapterTo: "",        // 어댑터용: 카메라 마운트
 };
@@ -613,7 +615,7 @@ export default function Equipment() {
           {/* 소분류 텍스트 입력 - 다음 행 전체 */}
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
-            <input placeholder="예: 소형 오디오 인터페이스, ENG 캠코더" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
+            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
           </div>
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
@@ -642,8 +644,8 @@ export default function Equipment() {
           </div>
 
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-            <Inp label="부여번호 (구분번호)" placeholder="예: 1,2,3" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
-            <Inp label="장비번호" placeholder="예: CAM 01" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
+            <Inp label="호기 (구분번호)" placeholder="예: 1호기, A, No.1" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
+            <Inp label="물품번호" placeholder="예: CAM-001" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
           </div>
 
           {/* 가이드 모드 설정 */}
@@ -669,9 +671,61 @@ export default function Equipment() {
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
+            {(form.equipType==="charger" || form.minorCategory==="충전기/전원") && (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.chargerForCameras||[]).map((cam, i) => (
+                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      {cam}
+                      <button onClick={() => f("chargerForCameras", (form.chargerForCameras||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="chargerCamInput" placeholder="예: Sony FX3" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("chargerForCameras", [...(form.chargerForCameras||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("chargerCamInput");
+                    if (input?.value.trim()) { f("chargerForCameras", [...(form.chargerForCameras||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
+            )}
             {form.equipType==="battery" && (
-              <Inp label="해당 카메라 모델명" placeholder="예: Sony FX3"
-                value={form.forCamera||""} onChange={e => f("forCamera", e.target.value)} />
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.forCameras||[]).map((cam, i) => (
+                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      {cam}
+                      <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="camInput" placeholder="예: Sony FX3" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("forCameras", [...(form.forCameras||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("camInput");
+                    if (input?.value.trim()) { f("forCameras", [...(form.forCameras||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
             )}
             {form.equipType==="adapter" && (
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
@@ -934,8 +988,32 @@ export default function Equipment() {
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
             {form.equipType==="battery" && (
-              <Inp label="해당 카메라 모델명" placeholder="예: Sony FX3"
-                value={form.forCamera||""} onChange={e => f("forCamera", e.target.value)} />
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.forCameras||[]).map((cam, i) => (
+                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      {cam}
+                      <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="camInput" placeholder="예: Sony FX3" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("forCameras", [...(form.forCameras||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("camInput");
+                    if (input?.value.trim()) { f("forCameras", [...(form.forCameras||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
             )}
             {form.equipType==="adapter" && (
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
