@@ -385,8 +385,9 @@ const selStyle = (C) => ({
 });
 
 const EMPTY = {
-  majorCategory:"", minorCategory:"", manufacturer:"",
-  modelName:"", itemName:"", unitNo:"", itemNo:"",
+  majorCategory:"", minorCategory:"", subCategory:"", manufacturer:"",
+  modelName:"", unitNo:"", itemNo:"",
+  description:"", subCategory:"",
   status:"대여가능",
   licenseLevel: 0,  // 0~3단계
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
@@ -599,7 +600,11 @@ export default function Equipment() {
           </div>
           <Inp label="제조사" placeholder="예: SONY, CANON" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" placeholder="예: PXW-Z150" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
-          <Inp label="품명" placeholder="예: XDCAM 방송용 캠코더" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
+<div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>장비 설명 <span style={{ fontSize:10, color:C.muted }}>(학생에게 표시)</span></div>
+              <textarea placeholder="이 장비가 어떤 건지, 어떨 때 쓰는지 설명해주세요" value={form.description||""} onChange={e => f("description", e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box" }} />
+            </div>
 
           {/* 라이센스 제한 */}
           <div style={{ marginBottom:14 }}>
@@ -741,7 +746,11 @@ export default function Equipment() {
           {/* 나머지 필드 (수정 가능) */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
             <Inp label="모델명" value={form.modelName} onChange={e => setForm(p=>({...p,modelName:e.target.value}))} />
-            <Inp label="장비명" value={form.itemName} onChange={e => setForm(p=>({...p,itemName:e.target.value}))} />
+<div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>장비 설명 <span style={{ fontSize:10, color:C.muted }}>(학생에게 표시)</span></div>
+              <textarea placeholder="이 장비가 어떤 건지, 어떨 때 쓰는지 설명해주세요" value={form.description||""} onChange={e => setForm(p=>({...p,description:e.target.value}))}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box" }} />
+            </div>
             <Inp label="보관 위치" value={form.location} onChange={e => setForm(p=>({...p,location:e.target.value}))} />
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상태</div>
@@ -786,7 +795,11 @@ export default function Equipment() {
           </div>
           <Inp label="제조사" value={form.manufacturer} onChange={e => f("manufacturer", e.target.value)} />
           <Inp label="모델명 *" value={form.modelName} onChange={e => f("modelName", e.target.value)} />
-          <Inp label="품명" value={form.itemName} onChange={e => f("itemName", e.target.value)} />
+<div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>장비 설명 <span style={{ fontSize:10, color:C.muted }}>(학생에게 표시)</span></div>
+              <textarea placeholder="이 장비가 어떤 건지, 어떨 때 쓰는지 설명해주세요" value={form.description||""} onChange={e => f("description", e.target.value)}
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box" }} />
+            </div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
             <Inp label="호기" value={form.unitNo} onChange={e => f("unitNo", e.target.value)} />
             <Inp label="물품번호" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
