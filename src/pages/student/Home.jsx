@@ -277,10 +277,9 @@ export default function StudentHome() {
         </div>
 
         {/* 마스코트 + 말풍선 */}
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
-            {/* 말풍선 꼬리 */}
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
             <div style={{ fontSize:13, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
               난 장비대여실 마스코트 렌토리야!
@@ -290,10 +289,42 @@ export default function StudentHome() {
             </div>
           </div>
         </div>
+
+        {/* 친해지기 버튼 */}
+        <div style={{ textAlign:"right", marginBottom:14 }}>
+          <button onClick={() => setShowRentory(true)}
+            style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:16, padding:"5px 12px", fontSize:11, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+            렌토리랑 친해져보기 ♡
+          </button>
+        </div>
         <div style={{ textAlign:"right", fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
           Designed &amp; Developed by 윤대식
         </div>
       </div>
+
+      {/* 렌토리 소개 모달 */}
+      {showRentory && (
+        <Modal onClose={() => setShowRentory(false)} width={420}>
+          <div style={{ textAlign:"center", padding:"4px" }}>
+            <img src="/mascot/hi.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
+            <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
+            <div style={{ fontSize:13, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+              렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
+              카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
+              대여 신청부터 장비 확인, 반납 알림까지<br/>
+              촬영의 시작과 끝을 함께하는<br/>
+              여러분의 공식 장비 도우미랍니다.<br/><br/>
+              장비를 깨끗하게 쓰고 제시간에 반납하면 렌토리가 따봉을 날려줘요. 👍<br/>
+              하지만 반납이 늦거나 장비를 함부로 다루면 7번 아이언과 함께 나타날지도 몰라요! ⛳<br/><br/>
+              <div style={{ fontWeight:700, color:C.teal, textAlign:"center" }}>오늘의 촬영도 렌토리와 함께 준비해볼까요?</div>
+            </div>
+            <button onClick={() => setShowRentory(false)}
+              style={{ background:`linear-gradient(135deg, ${C.teal}, ${C.navy})`, color:"#fff", border:"none", borderRadius:10, padding:"11px 24px", fontSize:14, fontWeight:700, cursor:"pointer", width:"100%" }}>
+              좋아, 친해질래 ♡
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {/* 시간표 */}
       <div style={{ marginBottom: 16 }}>
