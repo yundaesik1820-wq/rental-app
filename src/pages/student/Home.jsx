@@ -271,15 +271,30 @@ export default function StudentHome() {
         <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
           <LogOut size={14} /> 로그아웃
         </button>
-        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
-          {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
-        </div>
-        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
-          <img src="/mascot/hi.png" alt="렌토리" style={{ width:64, height:64, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
-          <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>
+        {/* 학번/계열 + 인사말 박스 (고정) */}
+        <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", marginBottom:16, backdropFilter:"blur(8px)" }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 3 }}>
+            {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
+          </div>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>
             {profile?.role === "professor"
               ? `${profile?.name} 교수님 안녕하세요!`
               : `안녕하세요, ${profile?.name}님!`}
+          </div>
+        </div>
+
+        {/* 마스코트 + 말풍선 */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:14 }}>
+          <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
+            {/* 말풍선 꼬리 */}
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
+              난 장비대여실 마스코트 렌토리야!
+            </div>
+            <div style={{ fontSize:12, color:"#475569", lineHeight:1.4 }}>
+              오늘도 잘 부탁해, {profile?.name}님!
+            </div>
           </div>
         </div>
         <div style={{ textAlign:"right", fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
