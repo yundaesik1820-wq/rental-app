@@ -434,7 +434,7 @@ const selStyle = (C) => ({
 const EMPTY = {
   majorCategory:"", minorCategory:"", subCategory:"", manufacturer:"", _minorCustom:false,
   modelName:"", unitNo:"", itemNo:"",
-  description:"", subCategory:"",
+  description:"",
   status:"대여가능",
   licenseLevel: 0,  // 0~3단계
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
@@ -925,12 +925,6 @@ export default function Equipment() {
             </div>
           </div>
           {/* 소분류 텍스트 입력 - 다음 행 전체 */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
-            <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-          </div>
-          {/* 소분류 텍스트 입력 */}
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>소분류 <span style={{ fontSize:10, color:C.muted }}>(직접 입력)</span></div>
             <input placeholder="예: ILME-FX3, 50mm F1.8, NP-FZ100" value={form.subCategory||""} onChange={e => f("subCategory", e.target.value)}
