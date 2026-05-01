@@ -291,10 +291,10 @@ export default function StudentHome() {
           </div>
         </div>
 
-        {/* 친해지기 버튼 */}
-        <div style={{ textAlign:"right", marginBottom:14 }}>
+        {/* 친해지기 버튼 - 좌측하단 */}
+        <div style={{ marginBottom:10 }}>
           <button onClick={() => setShowRentory(true)}
-            style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:16, padding:"5px 12px", fontSize:11, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+            style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
             렌토리랑 친해져보기 ♡
           </button>
         </div>
