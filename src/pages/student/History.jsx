@@ -254,7 +254,12 @@ ${r.attachments?.length > 0 ? `
         ))}
       </div>
 
-      {filtered.length === 0 && <Empty icon="📭" text="해당 이력이 없습니다" />}
+      {filtered.length === 0 && (
+        <div style={{ textAlign:"center", padding:"40px 20px" }}>
+          <img src="/mascot/shrug.png" alt="" style={{ width:120, height:120, objectFit:"contain", marginBottom:12 }} />
+          <div style={{ fontSize:14, color:C.muted, fontWeight:600 }}>해당 이력이 없습니다</div>
+        </div>
+      )}
 
       {filtered.map(r => {
         const isExpand = expandedId === r.id;

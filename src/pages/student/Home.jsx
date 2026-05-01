@@ -274,10 +274,13 @@ export default function StudentHome() {
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 4 }}>
           {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
         </div>
-        <div style={{ fontSize: 22, fontWeight: 900, color: "#fff", marginBottom: 16 }}>
-          {profile?.role === "professor"
-            ? `${profile?.name} 교수님 안녕하세요 👋`
-            : `안녕하세요, ${profile?.name}님 👋`}
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:16 }}>
+          <img src="/mascot/hi.png" alt="렌토리" style={{ width:64, height:64, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
+          <div style={{ fontSize: 20, fontWeight: 900, color: "#fff" }}>
+            {profile?.role === "professor"
+              ? `${profile?.name} 교수님 안녕하세요!`
+              : `안녕하세요, ${profile?.name}님!`}
+          </div>
         </div>
         <div style={{ textAlign:"right", fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
           Designed &amp; Developed by 윤대식

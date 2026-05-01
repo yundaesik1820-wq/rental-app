@@ -159,8 +159,13 @@ export default function GuideReserve() {
       {/* Step 0: 카메라 선택 (다중) */}
       {step === 0 && (
         <div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>📷 카메라를 선택해주세요</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>여러 대 선택 가능해요 · 선택 순서대로 진행돼요</div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/camera.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>📷 카메라를 선택해주세요</div>
+              <div style={{ fontSize:12, color:C.muted }}>여러 대 선택 가능 · 선택 순서대로 진행</div>
+            </div>
+          </div>
           {cameras.map((e, idx) => {
             const isSelected = selectedCameras.findIndex(c => c.modelName === e.modelName) !== -1;
             const order = selectedCameras.findIndex(c => c.modelName === e.modelName) + 1;
@@ -193,8 +198,13 @@ export default function GuideReserve() {
       {/* Step 1: 배터리 선택 */}
       {step === 1 && currentCam && (
         <div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🔋 배터리를 선택해주세요</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>{currentCam.modelName}용 배터리예요</div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/camcorder.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🔋 배터리를 선택해주세요</div>
+              <div style={{ fontSize:12, color:C.muted }}>{currentCam.modelName}용 배터리예요</div>
+            </div>
+          </div>
           {matchedBatteries.length === 0 && <div style={{ color:C.muted, fontSize:13, marginBottom:16, padding:"20px 0", textAlign:"center" }}>등록된 배터리가 없습니다</div>}
           {matchedBatteries.map(e => {
             const qty = getSelection(currentCam.modelName).batteries[e.modelName] || 0;
@@ -231,8 +241,13 @@ export default function GuideReserve() {
       {/* Step 2: 렌즈 선택 */}
       {step === 2 && currentCam && (
         <div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🔭 렌즈를 선택해주세요</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>다른 마운트 렌즈는 어댑터가 자동으로 추가돼요</div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/lens.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🔭 렌즈를 선택해주세요</div>
+              <div style={{ fontSize:12, color:C.muted }}>다른 마운트는 어댑터가 자동 추가돼요</div>
+            </div>
+          </div>
           {lenses.map(e => {
             const need    = needsAdapter(e);
             const adapter = need ? getAdapter(e) : null;
@@ -278,8 +293,13 @@ export default function GuideReserve() {
       {/* Step 3: 추가 액세서리 */}
       {step === 3 && (
         <div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🎒 추가 장비가 필요한가요?</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>선택하지 않아도 괜찮아요</div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/shrug.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🎒 추가 장비가 필요한가요?</div>
+              <div style={{ fontSize:12, color:C.muted }}>선택하지 않아도 괜찮아요</div>
+            </div>
+          </div>
           {extras.length === 0 && <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>등록된 액세서리가 없습니다</div>}
           {extras.map(e => {
             const qty = extraCart[e.modelName] || 0;

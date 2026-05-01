@@ -221,8 +221,13 @@ function AppContent() {
     // 선택 화면
     if (!mode) return (
       <div>
-        <div style={{ fontSize:20, fontWeight:900, color:"#1B2B6B", marginBottom:8 }}>예약 신청</div>
-        <div style={{ fontSize:13, color:"#94A3B8", marginBottom:24 }}>어떻게 장비를 고르시겠어요?</div>
+        <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
+          <div>
+            <div style={{ fontSize:20, fontWeight:900, color:"#F1F5F9", marginBottom:4 }}>예약 신청</div>
+            <div style={{ fontSize:13, color:"#64748B" }}>어떻게 장비를 고르시겠어요?</div>
+          </div>
+        </div>
         <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
           <button onClick={() => setMode("guide")}
             style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"24px 20px", border:"none", cursor:"pointer", textAlign:"left", boxShadow:"0 4px 16px rgba(27,43,107,0.2)" }}>
