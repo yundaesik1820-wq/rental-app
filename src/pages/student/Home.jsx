@@ -267,7 +267,7 @@ export default function StudentHome() {
   return (
     <div>
       {/* Welcome banner */}
-      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "22px 22px 16px", marginBottom: 20, position: "relative" }}>
+      <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
         {/* 로그아웃 버튼 - 배너 우측 상단 */}
         <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
           <LogOut size={14} /> 로그아웃
@@ -278,7 +278,7 @@ export default function StudentHome() {
         </div>
 
         {/* 마스코트 + 말풍선 */}
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:10 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
@@ -291,15 +291,15 @@ export default function StudentHome() {
           </div>
         </div>
 
-        {/* 친해지기 버튼 - 좌측하단 */}
-        <div style={{ marginBottom:10 }}>
+        {/* 친해지기 버튼 + Designed by - 한 행 */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <button onClick={() => setShowRentory(true)}
             style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
             렌토리랑 친해져보기 ♡
           </button>
-        </div>
-        <div style={{ textAlign:"right", fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
-          Designed &amp; Developed by 윤대식
+          <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
+            Designed &amp; Developed by 윤대식
+          </span>
         </div>
       </div>
 
