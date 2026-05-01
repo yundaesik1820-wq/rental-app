@@ -29,9 +29,14 @@ export default function GuideReserve() {
 
   const today = new Date().toISOString().slice(0,10);
 
-  const allCameraEquips = equips.filter(e => e.equipType === "camera" && e.status !== "수리중" && !e.isSet);
+  // equipType="camera" 또는 minorCategory가 카메라 계열인 것 모두 포함
+  const CAMERA_MINOR = ["카메라/드론", "캠코더", "액션캠"];
+  const allCameraEquips = equips.filter(e =>
+    (e.equipType === "camera" || CAMERA_MINOR.includes(e.minorCategory)) &&
+    e.status !== "수리중" && !e.isSet
+  );
   const cameras = camType === "camcorder"
-    ? allCameraEquips.filter(e => e.minorCategory === "캠코더")
+    ? allCameraEquips.filter(e => e.minorCategory === "캠코더" || e.equipType === "camcorder")
     : camType === "camera"
     ? allCameraEquips.filter(e => e.minorCategory !== "캠코더")
     : allCameraEquips;
