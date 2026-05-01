@@ -124,7 +124,17 @@ export default function GuideReserve() {
   const currentStepNum = step === 0 ? 0 : step <= 2 ? camIdx * 2 + step : totalCams * 2 + step - 2;
 
   const goNext = () => {
-    if (step === 1) { setStep(2); return; }
+    // 캠코더 전용: 렌즈 단계 건너뜀
+    const skipLens = camType === "camcorder";
+    if (step === 1) {
+      if (skipLens) {
+        if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
+        else setStep(3);
+      } else {
+        setStep(2);
+      }
+      return;
+    }
     if (step === 2) {
       if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
       else setStep(3);
@@ -133,11 +143,16 @@ export default function GuideReserve() {
     setStep(s => s+1);
   };
   const goPrev = () => {
-    if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); return; }
+    const skipLens = camType === "camcorder";
+    if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); setCamQty({}); return; }
     if (step === 1 && camIdx === 0) { setStep(0); return; }
-    if (step === 1) { setCamIdx(i => i-1); setStep(2); return; }
+    if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 1 : 2); return; }
     if (step === 2) { setStep(1); return; }
-    if (step === 3 && selectedCameras.length > 0) { setCamIdx(selectedCameras.length-1); setStep(2); return; }
+    if (step === 3 && selectedCameras.length > 0) {
+      setCamIdx(selectedCameras.length-1);
+      setStep(skipLens ? 1 : 2);
+      return;
+    }
     setStep(s => s-1);
   };
 
@@ -352,7 +367,7 @@ export default function GuideReserve() {
       )}
 
       {/* Step 2: 렌즈 선택 */}
-      {step === 2 && currentCam && (
+      {step === 2 && currentCam && camType !== "camcorder" && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/lens.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
