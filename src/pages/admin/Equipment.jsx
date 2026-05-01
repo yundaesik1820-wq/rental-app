@@ -266,10 +266,15 @@ function ExcelImportModal({ onClose, onImport }) {
   const [error, setError]     = useState("");
 
   const COL_MAP = {
-    "대분류":"majorCategory","소분류":"minorCategory",
+    "대분류":"majorCategory","중분류":"minorCategory","소분류":"subCategory",
     "제조사":"manufacturer","모델명":"modelName",
-    "품명":"itemName","호기":"unitNo","물품번호":"itemNo",
-    "보관위치":"location","S/N":"serialNo","특이사항":"note",
+    "장비설명":"description","라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel",
+    "호기":"unitNo","물품번호":"itemNo",
+    "보관위치":"location","S/N":"serialNo","상태":"status","특이사항":"note",
+    "마운트":"mount","마운트(E-mount/EF-mount)":"mount",
+    "호환배터리모델명":"batteryModel",
+    "호환카메라모델명(배터리)":"_forCamerasRaw",
+    "호환카메라모델명(충전기)":"_chargerCamerasRaw",
   };
 
   const handleFile = async (e) => {
@@ -284,14 +289,28 @@ function ExcelImportModal({ onClose, onImport }) {
       let headerRowIdx = -1;
       for (let i = 0; i < Math.min(allRows.length, 10); i++) {
         const row = allRows[i].map(c => String(c).trim());
-        if (row.includes("대분류") || row.includes("모델명")) { headerRowIdx = i; break; }
+        const cleanRow = row.map(c => String(c).replace(/\*/g,"").trim());
+        if (cleanRow.includes("대분류") || cleanRow.includes("모델명")) { headerRowIdx = i; break; }
       }
       if (headerRowIdx === -1) { setError("헤더를 찾을 수 없습니다. 템플릿 파일을 사용해주세요."); setLoading(false); e.target.value = ""; return; }
-      const hdrs    = allRows[headerRowIdx].map(c => String(c).trim());
+      const hdrs    = allRows[headerRowIdx].map(c => String(c).replace(/\*/g,"").trim());
       const dataRows = allRows.slice(headerRowIdx + 1);
       const mapped   = dataRows.map(row => {
         const obj = { status: "대여가능", photoUrls: [], snPhotoUrl: "" };
-        hdrs.forEach((h, i) => { const en = COL_MAP[h]; if (en) obj[en] = row[i] !== undefined ? String(row[i]).trim() : ""; });
+        hdrs.forEach((h, i) => {
+          const en = COL_MAP[h];
+          if (!en) return;
+          const val = row[i] !== undefined ? String(row[i]).trim() : "";
+          if (en === "_forCamerasRaw") {
+            obj.forCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
+          } else if (en === "_chargerCamerasRaw") {
+            obj.chargerForCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
+          } else if (en === "licenseLevel") {
+            obj[en] = parseInt(val) || 0;
+          } else {
+            obj[en] = val;
+          }
+        });
         return obj;
       }).filter(r => r.modelName);
       if (!mapped.length) setError("데이터를 읽을 수 없습니다. 모델명을 확인해주세요.");
