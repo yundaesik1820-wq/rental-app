@@ -1067,7 +1067,21 @@ export default function Equipment() {
         </Modal>
       )}
 
-      {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
+      {showImport && (
+        <Modal onClose={() => setShowImport(false)} width={700}>
+          <div style={{ marginBottom:16, background:C.bg, borderRadius:12, padding:"12px 16px", border:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>📋 엑셀 템플릿 다운로드</div>
+              <div style={{ fontSize:11, color:C.muted }}>템플릿을 받아 작성 후 업로드해주세요</div>
+            </div>
+            <a href="/장비_일괄등록_템플릿.xlsx" download="장비_일괄등록_템플릿.xlsx"
+              style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0 }}>
+              ⬇️ 템플릿 받기
+            </a>
+          </div>
+          <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />
+        </Modal>
+      )}
 
       {/* 검색 + 필터 */}
       <div style={{ display:"flex", gap:14, marginBottom:14, flexWrap:"wrap" }}>
