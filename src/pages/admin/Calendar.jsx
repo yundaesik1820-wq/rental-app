@@ -78,6 +78,19 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
   return (
     <div>
+      {/* 페이지 안내 배너 (학생용) */}
+      {!isAdmin && (
+        <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <img src="/mascot/tripod.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 캘린더 페이지야!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 일정을 한눈에 확인할 수 있어.\n내 예약 현황도 여기서 볼 수 있어 📅</div>
+            </div>
+          </div>
+        </div>
+      )}
       <PageTitle>📅 예약 캘린더</PageTitle>
 
       {/* 관리자 월간 통계 */}

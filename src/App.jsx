@@ -222,7 +222,7 @@ function AppContent() {
     if (!mode) return (
       <div>
         <div style={{ display:"flex", alignItems:"center", gap:14, marginBottom:24 }}>
-          <img src="/mascot/curious.png" alt="렌토리" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
           <div>
             <div style={{ fontSize:20, fontWeight:900, color:"#F1F5F9", marginBottom:4 }}>예약 신청</div>
             <div style={{ fontSize:13, color:"#64748B" }}>어떻게 장비를 고르시겠어요?</div>

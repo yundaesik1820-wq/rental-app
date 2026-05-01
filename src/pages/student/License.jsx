@@ -74,6 +74,19 @@ export default function License() {
 
   return (
     <div>
+{/* 페이지 안내 배너 */}
+      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <img src="/mascot/thumbsup.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 라이센스 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>단계별 라이센스 교육 일정을 확인하고
+신청할 수 있어. 단계가 높을수록 더 좋은 장비를 쓸 수 있어 🎖️</div>
+          </div>
+        </div>
+      </div>
+
       <PageTitle>라이센스 신청</PageTitle>
 
       {/* 내 라이센스 현황 */}

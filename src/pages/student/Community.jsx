@@ -183,6 +183,19 @@ export default function Community() {
 
   return (
     <div>
+{/* 페이지 안내 배너 */}
+      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 에브리타임 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>익명으로 자유롭게 소통할 수 있어.
+질문, 정보, 저격까지 다양한 글을 올릴 수 있어 💬</div>
+          </div>
+        </div>
+      </div>
+
       {/* 공지 팝업 */}
       {showNotice && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.55)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
@@ -199,32 +212,28 @@ export default function Community() {
 ＜규칙＞
 1. 올린 글과 댓글은 삭제되지 않습니다.
    손가락은 가볍게, 책임은 무겁게 부탁드립니다.
-   삭제를 원하실 경우 어떤 글을 쓰셨는지 말씀해주시면
-   삭제할지말지 고민해보겠습니다.
-2. 본 커뮤니티는 학생을 제외하고는 접근 권한이 
-   부여되지 않아 교수님도 볼 수 없습니다.
-3. 모든 글은 익명으로 작성되며, 
-   관리자 또한 작성자가 누구인지 확인할 수 없습니다.
+   삭제를 원하실 경우 어떤 글을 쓰셨는지 말씀해주시면 삭제할지말지 고민해보겠습니다.
+2. 본 커뮤니티는 학생을 제외하고는 접근 권한이 부여되지 않아 교수님도 볼 수 없습니다.
+3. 모든 글은 익명으로 작성되며, 관리자 또한 작성자가 누구인지 확인할 수 없습니다.
 4. 인성도 같이 로그인하시길 추천드립니다.
-5. 뭔가 욕을 먹은 기분이 들었다면, 
-   그건 아마 당신이 맞을 겁니다.
+5. 뭔가 욕을 먹은 기분이 들었다면, 그건 아마 당신이 맞을 겁니다.
    다만 실명 저격, 개인정보 공개, 과도한 비방은 금지입니다.
 6. 흑염룡은 풀어도 개인정보는 풀지 마세요.
 7. 질문은 자유롭게 올려주세요.
 8. 정보 공유는 적극 환영합니다.
    꿀팁은 나누고, 헛소문은 마음속에만 저장해주세요.
-9. 새내기 탭은 신입생을 위한 공간입니다.
+9. 새내기 탭은 새내기를 위한 공간입니다.
    고인물 여러분은 텃세 대신 생존 팁을 남겨주세요.
 10. 드립은 환영합니다.
-     다만 누군가의 멘탈을 편집점으로 삼는 드립은 컷하겠습니다.
+    다만 누군가의 멘탈을 편집점으로 삼는 드립은 컷하겠습니다.
 11. 싸움이 길어질 경우 장르가 토론에서 막장드라마로 변경됩니다.
-     적당한 엔딩 크레딧 부탁드립니다.
-12. 과한 혐오 표현, 개인정보 유출은 제재될 수 있습니다.
-     음지는 환영하지만 범죄는 안 됩니다.
+    적당히 엔딩 크레딧 올려주세요.
+12. 과한 혐오 표현, 성적 발언, 불법 자료 공유, 개인정보 유출은 제재될 수 있습니다.
+    음지는 환영하지만 범죄는 안 됩니다.
 13. 관리자도 최대한 개입하지 않겠습니다.
-     하지만 선을 넘으면 조용히 나타납니다.
+    하지만 선을 넘으면 조용히 나타납니다.
 14. 최선을 다해 여러분의 음지력을 발산해주시되,
-     최소한 사람 하나 보내버릴 말은 하지 맙시다.`}</div>
+    최소한 사람 하나 보내버릴 말은 하지 맙시다.`}</div>
             <div style={{ padding:"10px 20px 14px", borderTop:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:C.muted, cursor:"pointer" }}>
                 <input type="checkbox" checked={dontShow} onChange={e => setDontShow(e.target.checked)} style={{ cursor:"pointer" }} />
