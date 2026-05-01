@@ -83,7 +83,17 @@ export default function EquipList() {
 
   return (
     <div>
-      <PageTitle>🔍 장비 목록</PageTitle>
+      {/* 장비목록 안내 배너 */}
+      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:72, height:72, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 장비 목록 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 가능한 장비를 미리 확인해봐.<br/>카테고리별로 필터링도 할 수 있어 📷</div>
+          </div>
+        </div>
+      </div>
 
       {/* 1행: 대분류 카테고리 */}
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
