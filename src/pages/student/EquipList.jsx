@@ -162,6 +162,13 @@ export default function EquipList() {
                       </div>
                     </div>
                   </div>
+                  {/* 장비가 궁금하다면? */}
+                  {e.description && (
+                    <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
+                      style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginTop:8, width:"100%", textAlign:"left" }}>
+                      🔍 장비가 궁금하다면?
+                    </button>
+                  )}
                   {/* 재고 바 */}
                   <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", marginTop:8 }}>
                     <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
