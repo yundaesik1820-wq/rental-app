@@ -311,7 +311,18 @@ function ExcelImportModal({ onClose, onImport }) {
   return (
     <Modal onClose={onClose} width={700}>
       <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 4 }}>📥 엑셀로 일괄 등록</div>
-      <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>각 행 = 장비 1대 (같은 모델 3대면 3행 입력)</div>
+      <div style={{ fontSize: 13, color: C.muted, marginBottom: 14 }}>각 행 = 장비 1대 (같은 모델 3대면 3행 입력)</div>
+      {/* 템플릿 다운로드 */}
+      <div style={{ background:C.bg, borderRadius:12, padding:"12px 16px", marginBottom:16, border:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>📋 템플릿을 먼저 받아주세요</div>
+          <div style={{ fontSize:11, color:C.muted }}>템플릿에 맞게 작성 후 업로드하면 자동 등록돼요</div>
+        </div>
+        <a href="/장비_일괄등록_템플릿.xlsx" download="장비_일괄등록_템플릿.xlsx"
+          style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0, whiteSpace:"nowrap" }}>
+          ⬇️ 템플릿 받기
+        </a>
+      </div>
       {rows.length === 0 && (
         <div onClick={() => inputRef.current.click()} style={{ border:`2px dashed ${C.border}`, borderRadius:12, padding:"36px 0", textAlign:"center", cursor:"pointer", background:C.bg, marginBottom:14 }}>
           {loading ? <div style={{ color:C.blue, fontSize:14, fontWeight:600 }}>⏳ 파일 읽는 중...</div> : (
@@ -1067,21 +1078,7 @@ export default function Equipment() {
         </Modal>
       )}
 
-      {showImport && (
-        <Modal onClose={() => setShowImport(false)} width={700}>
-          <div style={{ marginBottom:16, background:C.bg, borderRadius:12, padding:"12px 16px", border:`1px solid ${C.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <div>
-              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>📋 엑셀 템플릿 다운로드</div>
-              <div style={{ fontSize:11, color:C.muted }}>템플릿을 받아 작성 후 업로드해주세요</div>
-            </div>
-            <a href="/장비_일괄등록_템플릿.xlsx" download="장비_일괄등록_템플릿.xlsx"
-              style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0 }}>
-              ⬇️ 템플릿 받기
-            </a>
-          </div>
-          <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />
-        </Modal>
-      )}
+      {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
 
       {/* 검색 + 필터 */}
       <div style={{ display:"flex", gap:14, marginBottom:14, flexWrap:"wrap" }}>
