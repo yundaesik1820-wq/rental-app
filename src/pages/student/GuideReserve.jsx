@@ -98,9 +98,11 @@ export default function GuideReserve() {
   const buildCart = () => {
     const cart = {};
     selectedCameras.forEach(cam => {
-      cart[cam.modelName] = (cart[cam.modelName]||0) + 1;
+      const qty = camQty[cam.modelName] || 1;
+      cart[cam.modelName] = (cart[cam.modelName]||0) + qty;
       const sel = getSelection(cam.modelName);
-      Object.entries(sel.batteries).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
+      // 배터리/렌즈는 카메라 수량 × 선택 수량
+      Object.entries(sel.batteries).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+(q*qty); });
       Object.entries(sel.lens).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
     });
     Object.entries(extraCart).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
@@ -112,8 +114,8 @@ export default function GuideReserve() {
   const getStepLabel = () => {
     if (step === 0 && camType === null) return "촬영 장비 종류 선택";
     if (step === 0) return "카메라 선택";
-    if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}번째 카메라: ${currentCam?.modelName})` : `배터리`;
-    if (step === 2) return totalCams > 1 ? `렌즈 (${camIdx+1}번째 카메라: ${currentCam?.modelName})` : `렌즈`;
+    if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}/${totalCams} - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대)` : `배터리 - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대`;
+    if (step === 2) return totalCams > 1 ? `렌즈 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : `렌즈`;
     if (step === 3) return "추가 액세서리";
     return "최종 확인";
   };
@@ -291,7 +293,13 @@ export default function GuideReserve() {
                   if (equip) for (let i=0; i<qty; i++) selected.push(equip);
                 }
               });
-              setSelectedCameras(selected);
+              // 유니크 모델만 selectedCameras에 저장 (수량은 camQty로 관리)
+              const uniqueSelected = [];
+              const seen = new Set();
+              selected.forEach(e => {
+                if (!seen.has(e.modelName)) { seen.add(e.modelName); uniqueSelected.push(e); }
+              });
+              setSelectedCameras(uniqueSelected);
               setCamIdx(0); setStep(1);
             }} color={C.navy} full disabled={Object.values(camQty).every(q=>q===0)}>
               다음 → {Object.values(camQty).some(q=>q>0) && `(${Object.values(camQty).reduce((s,q)=>s+q,0)}대 선택)`}
@@ -307,7 +315,7 @@ export default function GuideReserve() {
             <img src="/mascot/camcorder.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
             <div>
               <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🔋 배터리를 선택해주세요</div>
-              <div style={{ fontSize:12, color:C.muted }}>{currentCam.modelName}용 배터리예요</div>
+              <div style={{ fontSize:12, color:C.muted }}>{currentCam.modelName} {camQty[currentCam.modelName]||1}대용 배터리예요</div>
             </div>
           </div>
           {matchedBatteries.length === 0 && <div style={{ color:C.muted, fontSize:13, marginBottom:16, padding:"20px 0", textAlign:"center" }}>등록된 배터리가 없습니다</div>}
