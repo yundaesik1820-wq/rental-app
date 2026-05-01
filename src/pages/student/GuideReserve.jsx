@@ -8,10 +8,19 @@ import { serverTimestamp } from "firebase/firestore";
 
 export default function GuideReserve() {
   const { profile }      = useAuth();
+
+  const licenseToNum = (lic) => {
+    if (!lic || lic === "없음") return 0;
+    const n = parseInt(lic);
+    return isNaN(n) ? 0 : n;
+  };
+  const myLicNum = licenseToNum(profile?.license);
+  const isProf   = profile?.role === "professor" || profile?.role === "admin";
   const { data: equips } = useCollection("equipments", "modelName");
 
   // 선택한 카메라 목록 (순서 있음)
-  const [camType, setCamType]           = useState(null); // null=미선택, "camera"|"camcorder"|"both"
+  const [camType, setCamType]           = useState(null);
+  const [camQty, setCamQty]             = useState({});  // { modelName: qty } // null=미선택, "camera"|"camcorder"|"both"
   const [selectedCameras, setSelectedCameras] = useState([]);
   // 카메라별 배터리/렌즈 선택 { cameraModelName: { batteries: {model:qty}, lens: {model:qty} } }
   const [cameraSelections, setCameraSelections] = useState({});
@@ -206,44 +215,90 @@ export default function GuideReserve() {
         </div>
       )}
 
-      {/* Step 0: 카메라 선택 (다중) */}
-      {step === 0 && camType !== null && (
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <img src="/mascot/camera.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
-            <div>
-              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>📷 카메라를 선택해주세요</div>
-              <div style={{ fontSize:12, color:C.muted }}>여러 대 선택 가능 · 선택 순서대로 진행</div>
+      {/* Step 0: 카메라 선택 (모델별 그룹화) */}
+      {step === 0 && camType !== null && (() => {
+        const stepTitle = camType === "camera" ? "카메라를 선택해주세요"
+          : camType === "camcorder" ? "캠코더를 선택해주세요"
+          : "장비를 선택해주세요";
+        const stepMascot = camType === "camcorder" ? "camcorder.png" : "camera.png";
+
+        // 모델명 기준으로 그룹화
+        const grouped = Object.values(
+          cameras.reduce((acc, e) => {
+            const key = e.modelName;
+            if (!acc[key]) acc[key] = { ...e, total:0, available:0 };
+            acc[key].total++;
+            if ((e.status||"대여가능") === "대여가능") acc[key].available++;
+            return acc;
+          }, {})
+        );
+
+        return (
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+              <img src={`/mascot/${stepMascot}`} alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>{stepTitle}</div>
+                <div style={{ fontSize:12, color:C.muted }}>필요한 수량을 선택해주세요</div>
+              </div>
             </div>
-          </div>
-          {cameras.map((e, idx) => {
-            const isSelected = selectedCameras.findIndex(c => c.modelName === e.modelName) !== -1;
-            const order = selectedCameras.findIndex(c => c.modelName === e.modelName) + 1;
-            return (
-              <Card key={e.id} onClick={() => {
-                setSelectedCameras(p =>
-                  isSelected ? p.filter(c => c.modelName !== e.modelName) : [...p, e]
-                );
-              }} style={{ padding:"12px", border:`1.5px solid ${isSelected ? C.teal : C.border}`, marginBottom:8, cursor:"pointer", background: isSelected ? C.tealLight+"22" : C.surface }}>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  <EquipPhoto e={e} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                    {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
-                    {e.mount && <span style={{ fontSize:10, background:C.blueLight, color:C.navy, borderRadius:4, padding:"1px 6px" }}>{e.mount}</span>}
+            {grouped.map((e) => {
+              const qty       = camQty[e.modelName] || 0;
+              const eqLic     = e.licenseLevel || 0;
+              const isLocked  = !isProf && myLicNum < eqLic;
+              const avail     = e.available;
+              return (
+                <Card key={e.modelName} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:isLocked?C.red:C.border}`, opacity:isLocked?0.7:1 }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    <EquipPhoto e={e} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text, marginBottom:2 }}>{e.modelName}</div>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                        {e.mount && <span style={{ fontSize:10, background:C.blueLight, color:C.navy, borderRadius:4, padding:"1px 6px" }}>{e.mount}</span>}
+                        {eqLic > 0 && (
+                          <span style={{ fontSize:10, background:isLocked?C.redLight:C.greenLight, color:isLocked?C.red:C.green, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>
+                            {isLocked ? `🔒 ${eqLic}단계 필요` : `✅ ${eqLic}단계`}
+                          </span>
+                        )}
+                        <span style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}/{e.total}대</span>
+                      </div>
+                    </div>
+                    {isLocked ? (
+                      <span style={{ fontSize:11, color:C.red, flexShrink:0 }}>대여 불가</span>
+                    ) : avail === 0 ? (
+                      <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                    ) : qty > 0 ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+                        <button onClick={() => setCamQty(p=>({...p,[e.modelName]:Math.max(0,qty-1)}))}
+                          style={{ width:28,height:28,borderRadius:7,border:`1px solid ${C.border}`,background:C.bg,cursor:"pointer",fontSize:16 }}>−</button>
+                        <span style={{ fontSize:16,fontWeight:800,color:C.teal,minWidth:20,textAlign:"center" }}>{qty}</span>
+                        <button onClick={() => setCamQty(p=>({...p,[e.modelName]:Math.min(avail,qty+1)}))}
+                          style={{ width:28,height:28,borderRadius:7,border:`1px solid ${C.teal}`,background:C.tealLight,cursor:"pointer",fontSize:16,color:C.teal }}>+</button>
+                      </div>
+                    ) : (
+                      <Btn onClick={() => setCamQty(p=>({...p,[e.modelName]:1}))} color={C.navy} small>+ 선택</Btn>
+                    )}
                   </div>
-                  {isSelected && (
-                    <div style={{ width:26, height:26, borderRadius:"50%", background:C.teal, color:"#fff", fontSize:13, fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{order}</div>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-          <Btn onClick={() => { setCamIdx(0); setStep(1); }} color={C.navy} full disabled={selectedCameras.length === 0}>
-            다음 → {selectedCameras.length > 0 && `(${selectedCameras.length}대 선택)`}
-          </Btn>
-        </div>
-      )}
+                </Card>
+              );
+            })}
+            <Btn onClick={() => {
+              // camQty 기반으로 selectedCameras 배열 생성 (수량만큼 반복)
+              const selected = [];
+              Object.entries(camQty).forEach(([modelName, qty]) => {
+                if (qty > 0) {
+                  const equip = cameras.find(e => e.modelName === modelName);
+                  if (equip) for (let i=0; i<qty; i++) selected.push(equip);
+                }
+              });
+              setSelectedCameras(selected);
+              setCamIdx(0); setStep(1);
+            }} color={C.navy} full disabled={Object.values(camQty).every(q=>q===0)}>
+              다음 → {Object.values(camQty).some(q=>q>0) && `(${Object.values(camQty).reduce((s,q)=>s+q,0)}대 선택)`}
+            </Btn>
+          </div>
+        );
+      })()}
 
       {/* Step 1: 배터리 선택 */}
       {step === 1 && currentCam && (
