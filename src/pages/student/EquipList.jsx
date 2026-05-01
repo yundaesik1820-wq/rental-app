@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C } from "../../theme";
-import { Card, Badge, Empty, PageTitle } from "../../components/UI";
+import { Card, Badge, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
@@ -20,6 +20,7 @@ function groupSets(equipments) {
         minorCategory: e.minorCategory || "",
         manufacturer:  e.manufacturer  || "",
         setItems:      e.setItems      || "",
+        description:   e.description   || "",
         photoUrls:       e.photoUrls     || [],
         displayPhotoUrl: e.displayPhotoUrl || "",
         units: [], total: 0, available: 0,
@@ -50,6 +51,7 @@ export default function EquipList() {
   const [filter, setFilter]   = useState("전체");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [expandedSet, setExpandedSet] = useState(null);
+  const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
   const [photoIdx, setPhotoIdx] = useState({});
 
   // 단품 / 세트 분리
@@ -240,6 +242,30 @@ export default function EquipList() {
             })}
           </div>
         </>
+      )}
+    </div>
+    {/* 장비 설명 모달 */}
+      {showDescModel && (
+        <Modal onClose={() => setShowDescModel(null)} width={400}>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            {showDescModel.displayPhotoUrl && (
+              <img src={showDescModel.displayPhotoUrl} alt="" style={{ width:60, height:60, objectFit:"contain", borderRadius:8, border:`1px solid ${C.border}`, flexShrink:0 }} />
+            )}
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>{showDescModel.modelName}</div>
+              {showDescModel.manufacturer && <div style={{ fontSize:12, color:C.muted }}>{showDescModel.manufacturer}</div>}
+            </div>
+          </div>
+          <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", fontSize:13, color:C.text, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
+            {showDescModel.description}
+          </div>
+          <div style={{ marginTop:16, textAlign:"right" }}>
+            <button onClick={() => setShowDescModel(null)}
+              style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"9px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              확인
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

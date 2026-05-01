@@ -11,6 +11,7 @@ export default function GuideReserve() {
   const { data: equips } = useCollection("equipments", "modelName");
 
   // 선택한 카메라 목록 (순서 있음)
+  const [camType, setCamType]           = useState(null); // null=미선택, "camera"|"camcorder"|"both"
   const [selectedCameras, setSelectedCameras] = useState([]);
   // 카메라별 배터리/렌즈 선택 { cameraModelName: { batteries: {model:qty}, lens: {model:qty} } }
   const [cameraSelections, setCameraSelections] = useState({});
@@ -28,7 +29,12 @@ export default function GuideReserve() {
 
   const today = new Date().toISOString().slice(0,10);
 
-  const cameras  = equips.filter(e => e.equipType === "camera" && e.status !== "수리중" && !e.isSet);
+  const allCameraEquips = equips.filter(e => e.equipType === "camera" && e.status !== "수리중" && !e.isSet);
+  const cameras = camType === "camcorder"
+    ? allCameraEquips.filter(e => e.minorCategory === "캠코더")
+    : camType === "camera"
+    ? allCameraEquips.filter(e => e.minorCategory !== "캠코더")
+    : allCameraEquips;
   const batteries = equips.filter(e => e.equipType === "battery" || e.minorCategory === "배터리");
   const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
   const lenses   = equips.filter(e => e.equipType === "lens" && !e.isSet);
@@ -90,6 +96,7 @@ export default function GuideReserve() {
   // 스텝 레이블 계산
   const totalCams = selectedCameras.length;
   const getStepLabel = () => {
+    if (step === 0 && camType === null) return "촬영 장비 종류 선택";
     if (step === 0) return "카메라 선택";
     if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}번째 카메라: ${currentCam?.modelName})` : `배터리`;
     if (step === 2) return totalCams > 1 ? `렌즈 (${camIdx+1}번째 카메라: ${currentCam?.modelName})` : `렌즈`;
@@ -110,6 +117,7 @@ export default function GuideReserve() {
     setStep(s => s+1);
   };
   const goPrev = () => {
+    if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); return; }
     if (step === 1 && camIdx === 0) { setStep(0); return; }
     if (step === 1) { setCamIdx(i => i-1); setStep(2); return; }
     if (step === 2) { setStep(1); return; }
@@ -164,8 +172,37 @@ export default function GuideReserve() {
       </div>
       <div style={{ fontSize:11, color:C.muted, marginBottom:16 }}>{getStepLabel()}</div>
 
+      {/* Step -1: 카메라 종류 선택 */}
+      {step === 0 && camType === null && (
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/camera.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>어떤 촬영 장비가 필요해?</div>
+              <div style={{ fontSize:12, color:C.muted }}>촬영 방식에 따라 골라봐!</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {[
+              { key:"camera",    mascot:"camera.png",    label:"카메라",         desc:"미러리스, 시네마 카메라 등" },
+              { key:"camcorder", mascot:"camcorder.png", label:"캠코더",         desc:"방송용 캠코더, ENG 카메라 등" },
+              { key:"both",      mascot:"hi.png",        label:"카메라 + 캠코더", desc:"둘 다 필요해요" },
+            ].map(opt => (
+              <button key={opt.key} onClick={() => setCamType(opt.key)}
+                style={{ background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:14, padding:"14px 16px", cursor:"pointer", textAlign:"left", display:"flex", alignItems:"center", gap:14 }}>
+                <img src={`/mascot/${opt.mascot}`} alt="" style={{ width:56, height:56, objectFit:"contain", flexShrink:0 }} />
+                <div>
+                  <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:2 }}>{opt.label}</div>
+                  <div style={{ fontSize:12, color:C.muted }}>{opt.desc}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Step 0: 카메라 선택 (다중) */}
-      {step === 0 && (
+      {step === 0 && camType !== null && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/camera.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
