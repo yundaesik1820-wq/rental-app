@@ -271,16 +271,9 @@ export default function StudentHome() {
         <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
           <LogOut size={14} /> 로그아웃
         </button>
-        {/* 학번/계열 + 인사말 박스 (고정) */}
-        <div style={{ background:"rgba(255,255,255,0.1)", borderRadius:12, padding:"10px 14px", marginBottom:16, backdropFilter:"blur(8px)" }}>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginBottom: 3 }}>
-            {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>
-            {profile?.role === "professor"
-              ? `${profile?.name} 교수님 안녕하세요!`
-              : `안녕하세요, ${profile?.name}님!`}
-          </div>
+        {/* 학번/계열만 표시 */}
+        <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight:600, marginBottom: 14 }}>
+          {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
         </div>
 
         {/* 마스코트 + 말풍선 */}
