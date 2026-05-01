@@ -375,6 +375,23 @@ const MINOR_CATS = {
   "음향":        ["마이크", "레코더/믹서", "음향액세서리"],
 };
 
+// 소분류 → equipType 매핑
+const EQUIP_TYPE_MAP = {
+  "카메라/드론": "camera", "캠코더": "camera", "액션캠": "camera",
+  "배터리": "battery", "충전기/전원": "charger",
+  "저장매체": "storage", "카드리더기": "storage",
+  "단렌즈": "lens", "줌렌즈": "lens", "시네렌즈": "lens",
+  "렌즈어댑터": "adapter", "렌즈액세서리": "lens_acc",
+  "리그/케이지": "rig", "무선송수신": "wireless", "라이브송출": "live",
+  "슬레이트/타임코드": "slate", "케이블/젠더": "cable",
+  "가방/운반": "bag", "기타": "etc",
+  "비디오삼각대": "tripod", "사진삼각대": "tripod", "모노포드": "tripod",
+  "짐벌": "gimbal", "슬라이더": "slider", "숄더리그": "shoulder", "그립장비": "grip",
+  "카메라용 모니터": "monitor", "감독용 모니터": "monitor", "모니터액세서리": "monitor_acc",
+  "조명본체": "light", "조명액세서리": "light_acc",
+  "마이크": "mic", "레코더/믹서": "recorder", "음향액세서리": "audio_acc",
+};
+
 // 드롭박스 스타일
 const selStyle = (C) => ({
   display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`,
@@ -699,7 +716,7 @@ export default function Equipment() {
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>
             )}
-            {form.equipType==="battery" && (
+            {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
@@ -987,7 +1004,7 @@ export default function Equipment() {
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
-            {form.equipType==="battery" && (
+            {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>

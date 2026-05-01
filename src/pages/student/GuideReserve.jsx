@@ -29,7 +29,7 @@ export default function GuideReserve() {
   const today = new Date().toISOString().slice(0,10);
 
   const cameras  = equips.filter(e => e.equipType === "camera" && e.status !== "수리중" && !e.isSet);
-  const batteries = equips.filter(e => e.equipType === "battery");
+  const batteries = equips.filter(e => e.equipType === "battery" || e.minorCategory === "배터리");
   const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
   const lenses   = equips.filter(e => e.equipType === "lens" && !e.isSet);
   const adapters = equips.filter(e => e.equipType === "adapter");
