@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Stats from "./Stats.jsx";
 import { C } from "../../theme";
 import { Card, PageTitle, Badge, Modal, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
@@ -18,6 +19,7 @@ const ALL_STATUSES = ["승인대기","승인됨","대여중","반납완료","거
 
 export default function CalendarPage({ isAdmin = true, userId = null, userEmail = null, userName = null }) {
   const today = new Date();
+  const [calView, setCalView] = useState("calendar"); // "calendar" | "stats"
   const [year,   setYear]   = useState(today.getFullYear());
   const [month,  setMonth]  = useState(today.getMonth() + 1);
   const [sel,    setSel]    = useState(null);
@@ -91,6 +93,21 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
           </div>
         </div>
       )}
+      {/* 뷰 전환 탭 */}
+      <div style={{ display:"flex", gap:4, marginBottom:12 }}>
+        {[["calendar","📅 캘린더"],["stats","📊 통계"]].map(([v,l]) => (
+          <button key={v} onClick={() => setCalView(v)}
+            style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?"#fff":C.muted }}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* 통계 뷰 */}
+      {calView === "stats" && <Stats />}
+
+      {/* 캘린더 뷰 */}
+      {calView === "calendar" && <div>
       <PageTitle>📅 예약 캘린더</PageTitle>
 
       {/* 관리자 월간 통계 */}
@@ -267,6 +284,8 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
           </div>
         )}
       </div>
+
+      </div>}
 
       {/* 신청 상세 모달 */}
       {detail && (() => {

@@ -302,7 +302,6 @@ function AppContent() {
         case "rental":   return <Rental subAdmin={!isSuper} />;
         case "students": return isSuper ? <Students /> : <Students readOnly={true} />;
         case "calendar": return <CalendarPage isAdmin={true} />;
-        case "stats":    return <Stats />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;

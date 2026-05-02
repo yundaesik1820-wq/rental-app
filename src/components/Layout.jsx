@@ -14,7 +14,6 @@ const ADMIN_NAV = [
   { id: "rental",   icon: ClipboardList, label: "대여/반납" },
   { id: "students", icon: Users,         label: "학생 관리" },
   { id: "calendar", icon: Calendar,      label: "캘린더"    },
-  { id: "stats",    icon: BarChart2,     label: "통계"      },
   { id: "notices",  icon: Megaphone,     label: "공지사항"  },
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
   { id: "license",  icon: GraduationCap, label: "라이센스"  },

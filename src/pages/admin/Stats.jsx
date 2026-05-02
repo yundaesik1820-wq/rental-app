@@ -97,25 +97,33 @@ export default function Stats() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <PageTitle>📊 통계 & 리포트</PageTitle>
-        <Btn onClick={doExport} color={C.green}>📥 엑셀 다운로드</Btn>
+      {/* 헤더 */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ fontSize:13, fontWeight:700, color:C.navy }}>📊 통계 & 리포트</div>
+        <button onClick={doExport} style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 다운로드</button>
       </div>
 
-      {/* 요약 수치 */}
-      <div style={{ display: "flex", gap: 16, flexWrap: "wrap", marginBottom: 28 }}>
-        <StatBox icon="📊" label="총 대여 건수"  value={total}    color={C.blue}   bg={C.blueLight}  />
-        <StatBox icon="🚀" label="현재 대여중"   value={renting}  color={C.teal}   bg={C.tealLight}  />
-        <StatBox icon="⚠️" label="연체"          value={overdue}  color={C.red}    bg={C.redLight}   />
-        <StatBox icon="✅" label="반납 완료"      value={returned} color={C.green}  bg={C.greenLight} />
+      {/* 요약 수치 - 1행 */}
+      <div style={{ display:"flex", gap:6, marginBottom:12 }}>
+        {[
+          ["📊","총 대여",total,C.blue,C.blueLight],
+          ["🚀","대여중",renting,C.teal,C.tealLight],
+          ["⚠️","연체",overdue,C.red,C.redLight],
+          ["✅","반납완료",returned,C.green,C.greenLight],
+        ].map(([icon,label,val,col,bg]) => (
+          <div key={label} style={{ flex:1, background:bg, borderRadius:10, padding:"6px 8px", textAlign:"center", border:`1px solid ${col}20` }}>
+            <div style={{ fontSize:14, fontWeight:900, color:col }}>{val}</div>
+            <div style={{ fontSize:9, color:C.muted }}>{label}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 20 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:10 }}>
         {/* 월별 대여 추이 - rentalRequests 실데이터 */}
         <Card>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 4 }}>월별 대여 추이</div>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>최근 6개월 · 대여 시작일 기준</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.navy, marginBottom: 3 }}>월별 대여 추이</div>
+          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>최근 6개월 · 대여 시작일 기준</div>
+          <ResponsiveContainer width="100%" height={150}>
             <LineChart data={monthlyData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="month" tick={{ fontSize: 12, fill: C.muted }} />
               <YAxis tick={{ fontSize: 11, fill: C.muted }} allowDecimals={false} />
@@ -127,9 +135,9 @@ export default function Stats() {
 
         {/* 장비 가동률 TOP 6 */}
         <Card>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 4 }}>장비 가동률 TOP 6</div>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>전체 기간 누적 대여 횟수</div>
-          <ResponsiveContainer width="100%" height={200}>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.navy, marginBottom: 3 }}>장비 가동률 TOP 6</div>
+          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>전체 기간 누적 대여 횟수</div>
+          <ResponsiveContainer width="100%" height={150}>
             <BarChart data={utilData} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
               <XAxis dataKey="name" tick={{ fontSize: 10, fill: C.muted }} />
               <YAxis tick={{ fontSize: 11, fill: C.muted }} allowDecimals={false} />
@@ -144,17 +152,17 @@ export default function Stats() {
         </Card>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {/* 학과별 대여 현황 */}
         <Card>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 4 }}>학과별 대여 현황</div>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>전체 신청 건수 기준</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.navy, marginBottom: 3 }}>학과별 대여 현황</div>
+          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>전체 신청 건수 기준</div>
           {topDepts.length === 0 && <div style={{ fontSize: 13, color: C.muted }}>데이터 없음</div>}
           {topDepts.map(([dept, cnt]) => (
-            <div key={dept} style={{ marginBottom: 14 }}>
+            <div key={dept} style={{ marginBottom: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                <span style={{ fontSize: 13, color: C.text }}>{dept}</span>
-                <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{cnt}건</span>
+                <span style={{ fontSize: 11, color: C.text }}>{dept}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.navy }}>{cnt}건</span>
               </div>
               <div style={{ background: C.border, borderRadius: 8, height: 10, overflow: "hidden" }}>
                 <div style={{ width: `${(cnt / maxD) * 100}%`, background: `linear-gradient(90deg,${C.blue},${C.teal})`, height: "100%", borderRadius: 8, transition: "width 0.5s" }} />
@@ -165,11 +173,11 @@ export default function Stats() {
 
         {/* 최다 대여 학생 - rentalRequests 집계 */}
         <Card>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 4 }}>🏆 최다 대여 학생</div>
-          <div style={{ fontSize: 11, color: C.muted, marginBottom: 14 }}>전체 신청 건수 기준 (실시간 집계)</div>
+          <div style={{ fontSize: 12, fontWeight: 800, color: C.navy, marginBottom: 3 }}>🏆 최다 대여 학생</div>
+          <div style={{ fontSize: 10, color: C.muted, marginBottom: 8 }}>전체 신청 건수 기준 (실시간 집계)</div>
           {topStudents.length === 0 && <div style={{ fontSize: 13, color: C.muted }}>데이터 없음</div>}
           {topStudents.map(([studentId, info], i) => (
-            <div key={studentId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+            <div key={studentId} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
               <div style={{
                 width: 32, height: 32, borderRadius: "50%", flexShrink: 0,
                 background: [
@@ -187,10 +195,10 @@ export default function Stats() {
                 {i + 1}
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{info.name}</div>
-                <div style={{ fontSize: 12, color: C.muted }}>{info.dept} · {studentId}</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{info.name}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>{info.dept} · {studentId}</div>
               </div>
-              <div style={{ fontSize: 22, fontWeight: 900, color: C.navy }}>
+              <div style={{ fontSize: 15, fontWeight: 900, color: C.navy }}>
                 {info.count}<span style={{ fontSize: 12, color: C.muted }}>건</span>
               </div>
             </div>
