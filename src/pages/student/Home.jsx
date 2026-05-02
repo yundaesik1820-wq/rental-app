@@ -3,7 +3,7 @@ import { C, NOTICE_CAT } from "../../theme";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../../firebase";
 import { LogOut } from "lucide-react";
 
@@ -426,9 +426,8 @@ export default function StudentHome() {
 
   // 친구 신청 수락
   const acceptFriend = async (req) => {
-    const { doc, updateDoc, addDoc, collection: col, serverTimestamp } = await import("firebase/firestore");
     await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
-    await addDoc(col(db, "friends"), {
+    await addDoc(collection(db, "friends"), {
       userId: req.fromId, userName: req.fromName, userStudentId: req.fromStudentId,
       friendId: req.toId, friendName: req.toName, friendStudentId: req.toStudentId,
       createdAt: serverTimestamp(),
@@ -437,7 +436,6 @@ export default function StudentHome() {
 
   // 친구 신청 거절
   const rejectFriend = async (req) => {
-    const { doc, updateDoc } = await import("firebase/firestore");
     await updateDoc(doc(db, "friendRequests", req.id), { status: "rejected" });
   };
 
@@ -452,14 +450,13 @@ export default function StudentHome() {
     setViewFriendLoading(true);
     setViewFriend(null);
     try {
-      const { doc, getDoc } = await import("firebase/firestore");
       const isMine = friendDoc.userId === profile?.uid;
       const targetId   = isMine ? friendDoc.friendId   : friendDoc.userId;
       const targetName = isMine ? friendDoc.friendName : friendDoc.userName;
       const ttSnap = await getDoc(doc(db, "timetables", targetId));
       const classes = ttSnap.exists() ? (ttSnap.data().classes || []) : [];
       setViewFriend({ name: targetName, classes });
-    } catch {}
+    } catch(e) { console.error(e); }
     setViewFriendLoading(false);
   };
 
@@ -682,6 +679,58 @@ export default function StudentHome() {
               ))}
             </div>
 
+            {/* 친구 요청 탭 */}
+            {friendSubTab === "req" && (
+              <div>
+                {receivedRequests.length === 0 && sentRequests.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:"24px 0", color:C.muted, fontSize:13 }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>📭</div>
+                    주고받은 친구 신청이 없어요
+                  </div>
+                ) : (
+                  <div>
+                    {/* 받은 신청 */}
+                    {receivedRequests.length > 0 && (
+                      <div style={{ marginBottom:14 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>받은 신청 ({receivedRequests.length})</div>
+                        {receivedRequests.map(r => (
+                          <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"10px 12px", marginBottom:6 }}>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{r.fromName}</div>
+                              <div style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</div>
+                            </div>
+                            <button onClick={() => acceptFriend(r)}
+                              style={{ background:C.teal, color:"#fff", border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                              수락
+                            </button>
+                            <button onClick={() => rejectFriend(r)}
+                              style={{ background:C.redLight, color:C.red, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+                              거절
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* 보낸 신청 */}
+                    {sentRequests.length > 0 && (
+                      <div>
+                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>보낸 신청 ({sentRequests.length})</div>
+                        {sentRequests.map(r => (
+                          <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"10px 12px", marginBottom:6 }}>
+                            <div style={{ flex:1 }}>
+                              <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{r.toName}</div>
+                              <div style={{ fontSize:11, color:C.muted }}>{r.toStudentId}</div>
+                            </div>
+                            <span style={{ fontSize:11, color:C.yellow, background:C.yellowLight, borderRadius:6, padding:"3px 8px", fontWeight:600 }}>대기 중</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* 친구 목록 */}
             {friendSubTab === "list" && (
               <div>
@@ -749,15 +798,9 @@ export default function StudentHome() {
                     {addFriendMsg.replace(/^(error|success):/, "")}
                   </div>
                 )}
-                {sentRequests.length > 0 && (
-                  <div style={{ marginTop:12 }}>
-                    <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>보낸 신청</div>
-                    {sentRequests.map(r => (
-                      <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:8, padding:"6px 10px", marginBottom:4 }}>
-                        <span style={{ flex:1, fontSize:12, color:C.text }}>{r.toName}</span>
-                        <span style={{ fontSize:10, color:C.muted }}>대기 중</span>
-                      </div>
-                    ))}
+                {addFriendMsg && addFriendMsg.startsWith("success:") && (
+                  <div style={{ fontSize:11, color:C.muted, marginTop:8, textAlign:"center" }}>
+                    친구 요청 탭에서 현황을 확인할 수 있어요
                   </div>
                 )}
               </div>
