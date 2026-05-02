@@ -112,12 +112,12 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>시작 시간 *</div>
-          <input type="time" value={form.startTime} onChange={e => f("startTime", e.target.value)}
+          <input type="time" step="600" value={form.startTime} onChange={e => f("startTime", e.target.value)}
             style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
         </div>
         <div>
           <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>종료 시간 *</div>
-          <input type="time" value={form.endTime} onChange={e => f("endTime", e.target.value)}
+          <input type="time" step="600" value={form.endTime} onChange={e => f("endTime", e.target.value)}
             style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
         </div>
       </div>
