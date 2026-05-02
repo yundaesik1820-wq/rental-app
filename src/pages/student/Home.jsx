@@ -143,6 +143,88 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
   );
 }
 
+
+// ── 학점 계산기 ──
+const GRADE_MAP = {
+  "A+":4.5,"A":4.0,"A-":3.7,
+  "B+":3.5,"B":3.0,"B-":2.7,
+  "C+":2.5,"C":2.0,"C-":1.7,
+  "D+":1.5,"D":1.0,
+  "F":0,
+};
+const GRADES = Object.keys(GRADE_MAP);
+
+function GpaCalculator() {
+  const [open, setOpen]  = useState(false);
+  const [rows, setRows]  = useState([{ name:"", credit:"3", grade:"A+" }]);
+
+  const addRow = () => setRows(p => [...p, { name:"", credit:"3", grade:"A+" }]);
+  const delRow = (i) => setRows(p => p.filter((_,j)=>j!==i));
+  const setRow = (i,k,v) => setRows(p => p.map((r,j)=>j===i?{...r,[k]:v}:r));
+
+  const totalCredit = rows.reduce((s,r) => s+(parseFloat(r.credit)||0), 0);
+  const totalPoint  = rows.reduce((s,r) => s+(parseFloat(r.credit)||0)*(GRADE_MAP[r.grade]??0), 0);
+  const gpa = totalCredit > 0 ? (totalPoint/totalCredit).toFixed(2) : "0.00";
+  const gpaColor = gpa>=4.0?C.teal:gpa>=3.0?C.blue:gpa>=2.0?C.yellow:C.red;
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      <button onClick={() => setOpen(o=>!o)}
+        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:16 }}>🎓</span>
+          <span style={{ fontSize:13, fontWeight:700, color:C.text }}>학점 계산기</span>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {!open && totalCredit>0 && <span style={{ fontSize:12, fontWeight:800, color:gpaColor }}>{gpa} / 4.5</span>}
+          <span style={{ fontSize:12, color:C.muted }}>{open?"▲":"▼"}</span>
+        </div>
+      </button>
+      {open && (
+        <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, background:C.bg, borderRadius:10, padding:"10px 14px" }}>
+            <div>
+              <div style={{ fontSize:11, color:C.muted }}>평점 평균 (4.5 기준)</div>
+              <div style={{ fontSize:22, fontWeight:900, color:gpaColor }}>{gpa}</div>
+            </div>
+            <div style={{ textAlign:"right" }}>
+              <div style={{ fontSize:11, color:C.muted }}>총 이수학점</div>
+              <div style={{ fontSize:18, fontWeight:800, color:C.text }}>{totalCredit}학점</div>
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:4, marginBottom:6 }}>
+            <div style={{ flex:3, fontSize:10, color:C.muted, fontWeight:600 }}>과목명</div>
+            <div style={{ width:48, fontSize:10, color:C.muted, fontWeight:600, textAlign:"center" }}>학점</div>
+            <div style={{ width:72, fontSize:10, color:C.muted, fontWeight:600, textAlign:"center" }}>등급</div>
+            <div style={{ width:24 }}/>
+          </div>
+          {rows.map((r,i) => (
+            <div key={i} style={{ display:"flex", gap:4, marginBottom:6, alignItems:"center" }}>
+              <input value={r.name} onChange={e=>setRow(i,"name",e.target.value)}
+                placeholder={`과목 ${i+1}`}
+                style={{ flex:3, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"6px 8px", fontSize:12, fontFamily:"inherit", outline:"none", minWidth:0 }} />
+              <select value={r.credit} onChange={e=>setRow(i,"credit",e.target.value)}
+                style={{ width:48, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"6px 2px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+                {[1,2,3].map(n=><option key={n} value={n}>{n}</option>)}
+              </select>
+              <select value={r.grade} onChange={e=>setRow(i,"grade",e.target.value)}
+                style={{ width:72, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"6px 2px", fontSize:12, fontFamily:"inherit", outline:"none" }}>
+                {GRADES.map(g=><option key={g} value={g}>{g}</option>)}
+              </select>
+              <button onClick={()=>delRow(i)}
+                style={{ width:24, height:28, background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:14, flexShrink:0 }}>✕</button>
+            </div>
+          ))}
+          <button onClick={addRow}
+            style={{ width:"100%", background:"none", border:`1px dashed ${C.border}`, borderRadius:8, padding:"6px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>
+            + 과목 추가
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StudentHome() {
   const { profile, logout } = useAuth();
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
