@@ -173,87 +173,55 @@ function DetailModal({ item, onClose, onSave }) {
   );
 }
 
-// ── 장비 카드 (1대) ────────────────────────────────────────
+// ── 장비 카드 (가로형) ─────────────────────────────────────
 function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
-  const [photoIdx, setPhotoIdx] = useState(0);
-  // displayPhotoUrl(송출용)과 photoUrls(점검용) 합쳐서 표시
-  const displayPhoto = e.displayPhotoUrl ? [e.displayPhotoUrl] : [];
-  const inspPhotos   = e.photoUrls || (e.photoUrl ? [e.photoUrl] : []);
-  const photos       = [...displayPhoto, ...inspPhotos];
-  const photoLabels  = [...displayPhoto.map(() => "송출"), ...inspPhotos.map(() => "점검")];
-
+  const thumb = e.displayPhotoUrl || (e.photoUrls?.[0]) || null;
   const statusColor = { 대여가능: C.green, 대여중: C.blue, 수리중: C.yellow, 대여불가: C.red }[e.status] || C.muted;
+  const statusBg    = { 대여가능: C.greenLight, 대여중: C.blueLight, 수리중: C.yellowLight, 대여불가: C.redLight }[e.status] || C.bg;
 
   return (
-    <Card style={{ border: `2px solid ${statusColor}25` }}>
-      {/* 상태 + 분류 태그 */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {e.isSet && <span style={{ background: C.orangeLight, color: C.orange, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700, border: `1px solid ${C.orange}40` }}>📦 세트</span>}
-          {e.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[e.licenseLevel]; return lv ? <span style={{ background:lv.bg, color:lv.color, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>🔒 {lv.label}</span> : null; })()}
-          {e.majorCategory && <span style={{ background: C.blueLight, color: C.blue, borderRadius: 6, padding: "2px 8px", fontSize: 11, fontWeight: 700 }}>{e.majorCategory}</span>}
-          {e.minorCategory && <span style={{ background: C.bg, color: C.muted, borderRadius: 6, padding: "2px 8px", fontSize: 11, border: `1px solid ${C.border}` }}>{e.minorCategory}</span>}
+    <div style={{ background:C.surface, borderRadius:12, border:`1.5px solid ${statusColor}40`, padding:"9px 12px", display:"flex", alignItems:"center", gap:10 }}>
+      {/* 썸네일 */}
+      <div style={{ width:42, height:42, borderRadius:8, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+        {thumb
+          ? <img src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+          : <span style={{ fontSize:18 }}>📷</span>
+        }
+      </div>
+
+      {/* 정보 */}
+      <div style={{ flex:1, minWidth:0 }}>
+        {/* 1행: 모델명 + 호기 + 상태 */}
+        <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
+          <span style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{e.modelName}</span>
+          {e.unitNo && <span style={{ fontSize:10, background:C.navy, color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>{e.unitNo}</span>}
+          {e.isSet && <span style={{ fontSize:10, background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>세트</span>}
+          {e.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[e.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>Lv.{e.licenseLevel}</span> : null; })()}
+          <span style={{ fontSize:10, background:statusBg, color:statusColor, borderRadius:4, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>{e.status||"대여가능"}</span>
         </div>
-        <Badge label={e.status || "대여가능"} />
-      </div>
-
-      {/* 모델명 + 호기 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: C.navy }}>{e.modelName}</div>
-        {e.unitNo && (
-          <span style={{ background: C.navy, color: "#fff", borderRadius: 6, padding: "2px 10px", fontSize: 12, fontWeight: 700 }}>{e.unitNo}</span>
-        )}
-      </div>
-
-      {/* 품명 + 제조사 */}
-      {e.itemName && <div style={{ fontSize: 13, color: C.text, marginBottom: 3 }}>{e.itemName}</div>}
-      <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
-        {e.manufacturer && <span style={{ fontSize: 12, color: C.muted }}>🏭 {e.manufacturer}</span>}
-        {e.itemNo        && <span style={{ fontSize: 12, color: C.muted, fontFamily: "monospace" }}>#{e.itemNo}</span>}
-        {e.location      && <span style={{ fontSize: 11, color: C.muted }}>📍 {e.location}</span>}
-        {e.serialNo      && <span style={{ fontSize: 11, color: C.muted, fontFamily: "monospace" }}>S/N: {e.serialNo}</span>}
-      </div>
-
-      {/* 사진 슬라이드 */}
-      {photos.length > 0 && (
-        <div style={{ marginBottom: 12, position: "relative", paddingTop: "60%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
-          <img src={photos[photoIdx]} alt="제품사진" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
-          <div style={{ position:"absolute", top:6, left:6, background: photoLabels[photoIdx]==="송출" ? "rgba(59,108,248,0.85)" : "rgba(0,0,0,0.45)", color:"#fff", borderRadius:4, padding:"2px 7px", fontSize:10, fontWeight:700 }}>
-            {photoLabels[photoIdx]==="송출" ? "🖼️ 송출용" : "🔍 점검용"}
-          </div>
-          {photos.length > 1 && (
-            <>
-              <button onClick={() => setPhotoIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: "absolute", left: 6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer" }}>‹</button>
-              <button onClick={() => setPhotoIdx(i => (i + 1) % photos.length)}                style={{ position: "absolute", right: 6, top: "50%", transform: "translateY(-50%)", background: "rgba(0,0,0,0.4)", color: "#fff", border: "none", borderRadius: "50%", width: 26, height: 26, cursor: "pointer" }}>›</button>
-              <div style={{ position: "absolute", bottom: 6, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
-                {photos.map((_, i) => <div key={i} onClick={() => setPhotoIdx(i)} style={{ width: i === photoIdx ? 16 : 6, height: 6, borderRadius: 3, background: i === photoIdx ? "#fff" : "rgba(255,255,255,0.5)", cursor: "pointer" }} />)}
-              </div>
-            </>
-          )}
+        {/* 2행: 분류 + 제조사 + 위치 */}
+        <div style={{ display:"flex", gap:4, flexWrap:"wrap", alignItems:"center" }}>
+          {e.majorCategory && <span style={{ fontSize:10, color:C.blue, background:C.blueLight, borderRadius:4, padding:"0px 5px" }}>{e.majorCategory}</span>}
+          {e.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{e.minorCategory}</span>}
+          {e.subCategory   && <span style={{ fontSize:10, color:C.muted }}>· {e.subCategory}</span>}
+          {e.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {e.manufacturer}</span>}
+          {e.location      && <span style={{ fontSize:10, color:C.muted }}>📍{e.location}</span>}
+          {e.itemNo        && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>#{e.itemNo}</span>}
         </div>
-      )}
-
-      {e.isSet && e.setItems && (
-        <div style={{ background: C.orangeLight, borderRadius: 10, padding: "10px 14px", marginBottom: 12, border: `1px solid ${C.orange}30` }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: C.orange, marginBottom: 6 }}>📦 세트 구성품</div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-            {e.setItems.split("\n").filter(Boolean).map((item, i) => (
-              <span key={i} style={{ background: C.surface, color: C.text, borderRadius: 6, padding: "2px 8px", fontSize: 11, border: `1px solid ${C.border}` }}>{item.trim()}</span>
-            ))}
-          </div>
-        </div>
-      )}
-      {e.note && <div style={{ background: C.yellowLight, borderRadius: 8, padding: "7px 12px", marginBottom: 12, fontSize: 12, color: "#92400E" }}>💬 {e.note}</div>}
-
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Btn onClick={() => onEdit(e)}    small color={C.green}>✏️ 수정</Btn>
-        <Btn onClick={() => onCopy(e)}    small color={C.teal} outline>📋 복사</Btn>
-        <Btn onClick={() => onDetail(e)} small color={C.blue}>세부사항</Btn>
-        <Btn onClick={() => onInsp(e)}   small color={C.purple}>🔧 점검</Btn>
-        <Btn onClick={() => onCycleStatus(e)} small color={C.yellow} text={C.text} outline>상태변경</Btn>
-        <Btn onClick={() => onDelete(e.id)}   small color={C.red}   outline>삭제</Btn>
       </div>
-    </Card>
+
+      {/* 버튼 */}
+      <div style={{ display:"flex", flexDirection:"column", gap:4, flexShrink:0 }}>
+        <div style={{ display:"flex", gap:3 }}>
+          <button onClick={() => onEdit(e)}        style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>수정</button>
+          <button onClick={() => onCycleStatus(e)} style={{ background:C.yellowLight, color:C.yellow, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>상태</button>
+        </div>
+        <div style={{ display:"flex", gap:3 }}>
+          <button onClick={() => onDetail(e)}      style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>상세</button>
+          <button onClick={() => onDelete(e.id)}   style={{ background:C.redLight, color:C.red, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>삭제</button>
+        </div>
+      </div>
+    </div>
   );
 }
 
