@@ -7,10 +7,11 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 
-const CATEGORIES  = ["전체", "자유", "질문", "정보", "강의", "취업·진로", "장터"];
-const ANON_CATS   = ["자유", "질문", "강의"]; // 익명
-const REAL_CATS   = ["정보", "취업·진로", "장터"]; // 실명
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "장터", "새내기"];
+const ANON_CATS   = ["자유", "질문", "강의", "새내기"]; // 익명
+const REAL_CATS   = ["정보", "취업", "장터"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
+const NEWBIE_CAT  = "새내기"; // 새내기 전용
 
 async function uploadImage(file) {
   return new Promise((resolve, reject) => {
@@ -113,6 +114,10 @@ export default function Community() {
       return;
     }
     setSubmitting(true);
+    if (writeForm.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
+      alert(`새내기 게시판은 ${newbiePrefix}학번 신입생만 이용할 수 있어요!`);
+      return;
+    }
     const isLecture = writeForm.category === LECTURE_CAT;
     await addItem("communityPosts", {
       title:       isLecture ? writeForm.lectureName.trim() : writeForm.title.trim(),
@@ -132,7 +137,7 @@ export default function Community() {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    setWriteForm({ title:"", content:"", category:"자유", images:[], lectureName:"", professor:"", schedule:"" });
+    setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -190,6 +195,11 @@ export default function Community() {
 
   // 조회수 증가
   const openPost = async (post) => {
+    // 새내기 게시판은 신입생만 열람 가능
+    if (post.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
+      alert("🌱 새내기 게시판은 신입생만 열람할 수 있어요!");
+      return;
+    }
     await updateItem("communityPosts", post.id, { views: (post.views || 0) + 1 });
     setSelPost({ ...post, views: (post.views || 0) + 1 });
     setCommentText("");
@@ -207,11 +217,11 @@ export default function Community() {
   };
 
   const catColor = (c) => {
-    const m = { "자유":C.blue, "질문":C.orange, "정보":C.green, "강의":C.purple, "취업·진로":C.teal, "장터":C.yellow };
+    const m = { "자유":C.blue, "질문":C.orange, "강의":C.purple, "정보":C.green, "취업":C.teal, "장터":C.yellow, "새내기":C.orange };
     return m[c] || C.muted;
   };
   const catBg = (c) => {
-    const m = { "자유":C.blueLight, "질문":C.orangeLight, "정보":C.greenLight, "강의":C.purpleLight, "취업·진로":C.tealLight, "장터":C.yellowLight };
+    const m = { "자유":C.blueLight, "질문":C.orangeLight, "강의":C.purpleLight, "정보":C.greenLight, "취업":C.tealLight, "장터":C.yellowLight, "새내기":C.orangeLight };
     return m[c] || C.bg;
   };
   // 카테고리에 따라 익명/실명 판단
@@ -289,20 +299,23 @@ export default function Community() {
         <Btn onClick={() => setShowWrite(true)} color={C.navy}>✏️ 글쓰기</Btn>
       </div>
 
-      {/* 카테고리 탭 */}
-      <div style={{ display:"flex", gap:5, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
-        {CATEGORIES.map(c => (
-          <button key={c} onClick={() => { setCat(c); setPage(1); }}
-            style={{ padding:"5px 12px", borderRadius:14, border:`1px solid ${cat===c?C.navy:C.border}`,
-              background:cat===c?C.navy:C.bg, color:cat===c?"#fff":C.muted,
-              fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {c}
-          </button>
-        ))}
+      {/* 카테고리 탭 - 1줄 스크롤 */}
+      <div style={{ display:"flex", gap:4, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
+        {CATEGORIES.map(c => {
+          const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
+          return (
+            <button key={c} onClick={() => { setCat(c); setPage(1); }}
+              style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${cat===c?C.navy:C.border}`,
+                background:cat===c?C.navy:C.bg, color:cat===c?"#fff":isLocked?C.border:C.muted,
+                fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
+                display:"flex", alignItems:"center", gap:3 }}>
+              {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
+            </button>
+          );
+        })}
       </div>
-      {/* 익명/실명 안내 */}
       <div style={{ fontSize:10, color:C.muted, marginBottom:10 }}>
-        익명: 자유·질문·강의 &nbsp;|&nbsp; 실명: 정보·취업·진로·장터
+        익명: 자유·질문·강의·새내기 &nbsp;|&nbsp; 실명: 정보·취업·장터
       </div>
 
       {/* 검색 */}
@@ -540,12 +553,15 @@ export default function Community() {
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>카테고리</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {CATEGORIES.filter(c => c !== "전체").map(c => (
-                <button key={c} onClick={() => setWriteForm(p=>({...p, category:c}))}
-                  style={{ padding:"5px 12px", borderRadius:12, border:`1px solid ${writeForm.category===c?catColor(c):C.border}`, background:writeForm.category===c?catBg(c):C.bg, color:writeForm.category===c?catColor(c):C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                  {c}
-                </button>
-              ))}
+              {CATEGORIES.filter(c => c !== "전체").map(c => {
+                const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
+                return (
+                  <button key={c} onClick={() => !isLocked && setWriteForm(p=>({...p, category:c}))}
+                    style={{ padding:"5px 12px", borderRadius:12, border:`1px solid ${writeForm.category===c?catColor(c):C.border}`, background:writeForm.category===c?catBg(c):C.bg, color:writeForm.category===c?catColor(c):isLocked?C.border:C.muted, fontSize:12, fontWeight:600, cursor:isLocked?"not-allowed":"pointer" }}>
+                    {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
+                  </button>
+                );
+              })}
             </div>
             <div style={{ fontSize:10, color:C.muted, marginTop:6 }}>
               {REAL_CATS.includes(writeForm.category) ? "✅ 실명으로 게시됩니다" : "🔒 익명으로 게시됩니다"}
