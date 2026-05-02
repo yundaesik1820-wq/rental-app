@@ -1,11 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, NOTICE_CAT } from "../../theme";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
-import { useEffect } from "react";
 import { LogOut } from "lucide-react";
 
 const DAYS   = ["월", "화", "수", "목", "금"];
@@ -166,7 +165,7 @@ export default function StudentHome() {
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
 
   // 팝업 공지 체크 (notices는 위에서 이미 선언됨)
-  React.useEffect(() => {
+  useEffect(() => {
     if (!notices?.length) return;
     const popups = notices.filter(n => n.popup);
     if (!popups.length) return;
