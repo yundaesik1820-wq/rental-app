@@ -110,17 +110,20 @@ export default function Community() {
 
   // 게시글 작성
   const submitPost = async () => {
-    if (!writeForm.title.trim() || !writeForm.content.trim()) return;
-    if (writeForm.category === "새내기" && !isNewbie && profile?.role !== "admin") {
-      alert(`새내기 탭은 ${newbiePrefix}학번만 이용할 수 있습니다.`);
-      return;
+    const isLecturePost = writeForm.category === LECTURE_CAT;
+    // 카테고리별 유효성 검사
+    if (isLecturePost) {
+      if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
+    } else {
+      if (!writeForm.title.trim() || !writeForm.content.trim()) return;
+      if (writeForm.category === "장터" && writeForm.images.length === 0) return;
     }
-    setSubmitting(true);
     if (writeForm.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
       alert(`새내기 게시판은 ${newbiePrefix}학번 신입생만 이용할 수 있어요!`);
       return;
     }
-    const isLecture = writeForm.category === LECTURE_CAT;
+    setSubmitting(true);
+    const isLecture = isLecturePost;
     await addItem("communityPosts", {
       title:       isLecture ? writeForm.lectureName.trim() : writeForm.title.trim(),
       content:     isLecture ? "" : writeForm.content.trim(),
