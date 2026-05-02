@@ -114,7 +114,9 @@ exports.onFacilityStatusChange = functions.firestore
 exports.onNewNotice = functions.firestore
   .document("notices/{noticeId}")
   .onCreate(async (snap) => {
-    const notice    = snap.data();
+    const notice = snap.data();
+    // sendAlert가 false면 알림 전송 안 함
+    if (notice.sendAlert === false) return;
     const usersSnap = await admin.firestore().collection("users")
       .where("status", "==", "approved").where("role", "==", "student").get();
     const sends = usersSnap.docs

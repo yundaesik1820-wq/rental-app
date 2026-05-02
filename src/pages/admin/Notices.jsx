@@ -11,7 +11,7 @@ export default function Notices({ isAdmin = true }) {
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
-  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true });
+  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: true, popup: false });
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
 
@@ -22,7 +22,7 @@ export default function Notices({ isAdmin = true }) {
                         authorRole === "assistant" ? "조교" :
                         authorRole === "professor" ? "교수" : "관리자";
     await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
-    setForm({ title: "", content: "", category: "공지", pinned: true });
+    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: true, popup: false });
     setShowAdd(false);
   };
 
@@ -97,7 +97,7 @@ export default function Notices({ isAdmin = true }) {
             <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 공지사항 페이지야!</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비대여실의 소식과 공지를 확인할 수 있는 곳!<br/>중요한 내용은 꼭 읽어봐 📢</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비대여실의 새로운 소식과 공지를<br/>확인할 수 있어.<br/>중요한 내용은 꼭 읽어봐 📢</div>
             </div>
           </div>
         </div>
@@ -128,10 +128,30 @@ export default function Notices({ isAdmin = true }) {
               })}
             </div>
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, cursor: "pointer" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, cursor: "pointer" }}>
             <input type="checkbox" checked={form.pinned} onChange={e => setForm(p => ({ ...p, pinned: e.target.checked }))} style={{ width: 18, height: 18 }} />
             <span style={{ fontSize: 13, color: C.text }}>📌 상단에 고정</span>
           </label>
+
+          {/* 알림/팝업 설정 */}
+          <div style={{ background:C.bg, borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:10 }}>발송 설정</div>
+            <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, cursor:"pointer" }}>
+              <input type="checkbox" checked={form.sendAlert} onChange={e => setForm(p => ({ ...p, sendAlert: e.target.checked }))} style={{ width:17, height:17 }} />
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>🔔 푸시 알림 전송</div>
+                <div style={{ fontSize:11, color:C.muted }}>앱 설치 학생에게 알림을 보냅니다</div>
+              </div>
+            </label>
+            <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
+              <input type="checkbox" checked={form.popup} onChange={e => setForm(p => ({ ...p, popup: e.target.checked }))} style={{ width:17, height:17 }} />
+              <div>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>📢 홈 화면 팝업 표시</div>
+                <div style={{ fontSize:11, color:C.muted }}>학생 홈 진입 시 팝업으로 표시됩니다 (오늘 하루 안보기 포함)</div>
+              </div>
+            </label>
+          </div>
+
           <div style={{ display: "flex", gap: 10 }}>
             <Btn onClick={() => setShowAdd(false)} color={C.muted} outline full>취소</Btn>
             <Btn onClick={addNotice} full>게시</Btn>

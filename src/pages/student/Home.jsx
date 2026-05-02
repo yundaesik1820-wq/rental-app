@@ -163,6 +163,20 @@ export default function StudentHome() {
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
+  const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
+
+  // 팝업 공지 체크
+  const { data: notices } = useCollection("notices", "createdAt");
+  React.useEffect(() => {
+    if (!notices?.length) return;
+    const popups = notices.filter(n => n.popup);
+    if (!popups.length) return;
+    const latest = popups[popups.length - 1];
+    const hiddenKey = `popup_hidden_${latest.id}`;
+    const hiddenDate = localStorage.getItem(hiddenKey);
+    const today = new Date().toISOString().slice(0, 10);
+    if (hiddenDate !== today) setPopupNotice(latest);
+  }, [notices]);
   const [editClass,     setEditClass]     = useState(null);  // null=추가, obj=수정
   const [showClassForm, setShowClassForm] = useState(false);
 
@@ -303,25 +317,46 @@ export default function StudentHome() {
         </div>
       </div>
 
+      {/* 공지 팝업 모달 */}
+      {popupNotice && (
+        <Modal onClose={() => setPopupNotice(null)} width={440}>
+          <div style={{ marginBottom:6 }}>
+            <span style={{ background:C.blueLight, color:C.navy, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{popupNotice.category || "공지"}</span>
+          </div>
+          <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:12 }}>{popupNotice.title}</div>
+          <div style={{ fontSize:13, color:C.text, lineHeight:1.7, whiteSpace:"pre-wrap", background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:16 }}>
+            {popupNotice.content}
+          </div>
+          <div style={{ fontSize:11, color:C.muted, marginBottom:14 }}>{popupNotice.date} · {popupNotice.author}</div>
+          <div style={{ display:"flex", gap:10 }}>
+            <button onClick={() => {
+              localStorage.setItem(`popup_hidden_${popupNotice.id}`, new Date().toISOString().slice(0,10));
+              setPopupNotice(null);
+            }} style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
+              오늘 하루 안보기
+            </button>
+            <button onClick={() => setPopupNotice(null)}
+              style={{ flex:1, background:C.navy, border:"none", borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+              닫기
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* 렌토리 소개 모달 */}
       {showRentory && (
         <Modal onClose={() => setShowRentory(false)} width={420}>
           <div style={{ textAlign:"center", padding:"4px" }}>
-            <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
+            <img src="/mascot/hi.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
             <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-              렌토리는 한국방송예술진흥원<br/>
-              장비대여실 안에서 태어난 작은 수달이에요.<br/><br/>
-              카메라, 렌즈, 조명, 삼각대 사이에서 자라며<br/>
-              장비 이름과 사용법을 자연스럽게 익혔고<br/>
-              지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
+              렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
+              카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
               대여 신청부터 장비 확인, 반납 알림까지<br/>
               촬영의 시작과 끝을 함께하는<br/>
               여러분의 공식 장비 도우미랍니다.<br/><br/>
-              장비를 깨끗하게 쓰고 제시간에 반납하면<br/>
-              렌토리가 따봉을 날려줘요. 👍<br/>
-              하지만 반납이 늦거나 장비를 함부로 다루면…<br/>
-              7번 아이언과 함께 나타날지도 몰라요! ⛳<br/><br/>
+              장비를 깨끗하게 쓰고 제시간에 반납하면 렌토리가 따봉을 날려줘요. 👍<br/>
+              하지만 반납이 늦거나 장비를 함부로 다루면 7번 아이언과 함께 나타날지도 몰라요! ⛳<br/><br/>
               <div style={{ fontWeight:700, color:C.teal, textAlign:"center" }}>오늘의 촬영도 렌토리와 함께 준비해볼까요?</div>
             </div>
             <button onClick={() => setShowRentory(false)}
