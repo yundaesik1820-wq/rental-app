@@ -486,7 +486,7 @@ export default function StudentHome() {
               <input
                 value={friendId} onChange={e => setFriendId(e.target.value)}
                 onKeyDown={e => e.key==="Enter" && searchFriend()}
-                placeholder="학번 입력 (예: 25237001)"
+                placeholder="학번 입력"
                 style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}
               />
               <button onClick={searchFriend} disabled={friendLoading}
@@ -523,6 +523,9 @@ export default function StudentHome() {
           </div>
         )}
       </div>
+
+      {/* 학점 계산기 */}
+      <GpaCalculator />
 
       <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
