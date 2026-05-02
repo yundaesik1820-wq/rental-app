@@ -3,7 +3,7 @@ import { C, NOTICE_CAT } from "../../theme";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
 import { db } from "../../firebase";
 import { LogOut } from "lucide-react";
 
@@ -245,8 +245,36 @@ export default function StudentHome() {
   const { profile, logout } = useAuth();
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
-  const { data: friendRequests }    = useCollection("friendRequests",    "createdAt");
-  const { data: friends }           = useCollection("friends",           "createdAt");
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [friends,        setFriends]        = useState([]);
+
+  // 본인 관련 friendRequests 실시간
+  useEffect(() => {
+    if (!profile?.uid) return;
+    const map = {};
+    const merge = () => setFriendRequests(Object.values(map));
+    const u1 = onSnapshot(query(collection(db, "friendRequests"), where("toId",   "==", profile.uid)), snap => {
+      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; }); merge();
+    });
+    const u2 = onSnapshot(query(collection(db, "friendRequests"), where("fromId", "==", profile.uid)), snap => {
+      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; }); merge();
+    });
+    return () => { u1(); u2(); };
+  }, [profile?.uid]);
+
+  // 친구 목록 실시간
+  useEffect(() => {
+    if (!profile?.uid) return;
+    const map = {};
+    const merge = () => setFriends(Object.values(map));
+    const u1 = onSnapshot(query(collection(db, "friends"), where("userId",   "==", profile.uid)), snap => {
+      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; }); merge();
+    });
+    const u2 = onSnapshot(query(collection(db, "friends"), where("friendId", "==", profile.uid)), snap => {
+      snap.docs.forEach(d => { map[d.id] = { id: d.id, ...d.data() }; }); merge();
+    });
+    return () => { u1(); u2(); };
+  }, [profile?.uid]);
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
   const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
   const { data: communityComments } = useCollection("communityComments", "createdAt");
