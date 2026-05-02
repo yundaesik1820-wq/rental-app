@@ -119,10 +119,10 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
       <PageTitle>시설 대여 관리</PageTitle>
 
       {/* 탭 */}
-      <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:4, marginBottom:16, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            style={{ padding:"7px 18px", borderRadius:20, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?"#fff":C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+            style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?"#fff":C.muted, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
             {t} ({requests.filter(r=>r.status===t).length})
           </button>
         ))}
@@ -853,13 +853,14 @@ ${r.attachments?.length > 0 ? `
       )}
 
       {/* 탭 */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
+      <div style={{ display:"flex", gap:4, marginBottom:16, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
         {STATUS_TABS.map(s => (
           <button key={s} onClick={() => setTab(s)} style={{
             background: tab === s ? C.navy : C.surface,
             color: tab === s ? "#fff" : C.muted,
             border: `1px solid ${tab === s ? C.navy : C.border}`,
-            borderRadius: 20, padding: "7px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer",
+            borderRadius: 14, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer",
+            whiteSpace: "nowrap", flexShrink: 0,
           }}>
             {s} {counts[s] > 0 && <span style={{ opacity: 0.7 }}>({counts[s]})</span>}
           </button>
