@@ -1,26 +1,65 @@
-export const C = {
-  // 다크 배경
-  bg:      "#0F172A",   // 메인 배경 (딥 네이비)
-  surface: "#1E293B",   // 카드/패널 배경
+// 다크 테마
+const DARK = {
+  bg:      "#0F172A",
+  surface: "#1E293B",
   card:    "#1E293B",
-
-  // 포인트 색상 (밝게 유지)
-  navy:   "#60A5FA",    // 기존 네이비 → 밝은 블루로
-  blue:   "#60A5FA",    blueLight:   "#1E3A5F",
-  teal:   "#2DD4BF",    tealLight:   "#0F3D38",
-  red:    "#F87171",    redLight:    "#3B1515",
-  yellow: "#FBBF24",    yellowLight: "#3B2A00",
-  green:  "#34D399",    greenLight:  "#0F3028",
-  purple: "#A78BFA",    purpleLight: "#2D1F5E",
-  orange: "#FB923C",    orangeLight: "#3B1F00",
-
-  // 텍스트
-  text:   "#F1F5F9",    // 기본 텍스트 (밝은 흰색)
-  muted:  "#64748B",    // 보조 텍스트
-  border: "#334155",    // 테두리
-
-  shadow: "0 2px 12px rgba(0,0,0,0.4)",
+  navy:    "#60A5FA",
+  blue:    "#60A5FA",   blueLight:   "#1E3A5F",
+  teal:    "#2DD4BF",   tealLight:   "#0F3D38",
+  red:     "#F87171",   redLight:    "#3B1515",
+  yellow:  "#FBBF24",   yellowLight: "#3B2A00",
+  green:   "#34D399",   greenLight:  "#0F3028",
+  purple:  "#A78BFA",   purpleLight: "#2D1F5E",
+  orange:  "#FB923C",   orangeLight: "#3B1F00",
+  text:    "#F1F5F9",
+  muted:   "#64748B",
+  border:  "#334155",
+  shadow:  "0 2px 12px rgba(0,0,0,0.4)",
 };
+
+// 라이트 테마
+const LIGHT = {
+  bg:      "#F8FAFC",
+  surface: "#FFFFFF",
+  card:    "#FFFFFF",
+  navy:    "#1B2B6B",
+  blue:    "#3B6CF8",   blueLight:   "#EEF2FF",
+  teal:    "#0D9488",   tealLight:   "#CCFBF1",
+  red:     "#EF4444",   redLight:    "#FEE2E2",
+  yellow:  "#F59E0B",   yellowLight: "#FEF9C3",
+  green:   "#10B981",   greenLight:  "#D1FAE5",
+  purple:  "#7C3AED",   purpleLight: "#EDE9FE",
+  orange:  "#F97316",   orangeLight: "#FFEDD5",
+  text:    "#1E293B",
+  muted:   "#94A3B8",
+  border:  "#E2E8F0",
+  shadow:  "0 2px 12px rgba(0,0,0,0.08)",
+};
+
+// localStorage에서 테마 읽기 (기본: dark)
+const getSavedTheme = () => localStorage.getItem("kbas_theme") || "dark";
+
+// 현재 테마 객체
+let _currentTheme = getSavedTheme() === "light" ? LIGHT : DARK;
+
+// body 배경색 동기화
+const syncBodyBg = () => {
+  document.body.style.background = _currentTheme.bg;
+};
+syncBodyBg();
+
+export let C = { ..._currentTheme };
+
+export const setTheme = (mode) => {
+  localStorage.setItem("kbas_theme", mode);
+  _currentTheme = mode === "light" ? LIGHT : DARK;
+  Object.assign(C, _currentTheme);
+  syncBodyBg();
+  // 앱 리렌더 트리거 (커스텀 이벤트)
+  window.dispatchEvent(new CustomEvent("kbas-theme-change", { detail: { mode } }));
+};
+
+export const getThemeMode = () => getSavedTheme();
 
 const STATUS_COLOR = {
   대여가능: "#34D399", 대여중: "#60A5FA", 수리중: "#FBBF24",

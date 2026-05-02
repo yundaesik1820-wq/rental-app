@@ -165,8 +165,7 @@ export default function StudentHome() {
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
 
-  // 팝업 공지 체크
-  const { data: notices } = useCollection("notices", "createdAt");
+  // 팝업 공지 체크 (notices는 위에서 이미 선언됨)
   React.useEffect(() => {
     if (!notices?.length) return;
     const popups = notices.filter(n => n.popup);
