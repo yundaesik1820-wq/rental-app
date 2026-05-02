@@ -402,7 +402,7 @@ export default function StudentHome() {
         setAddFriendLoading(false); return;
       }
       // 상대방 찾기
-      const snap = await getDocs(q(col(db, "users"), w("studentId", "==", addFriendId.trim())));
+      const snap = await getDocs(q(col(db, "users"), w("studentId", "==", addFriendId.trim()), w("role", "==", "student")));
       if (snap.empty) { setAddFriendMsg("error:해당 학번의 학생을 찾을 수 없어요"); setAddFriendLoading(false); return; }
       const toUser = snap.docs[0];
       const toData = toUser.data();
