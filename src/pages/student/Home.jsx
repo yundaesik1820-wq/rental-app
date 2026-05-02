@@ -928,7 +928,8 @@ export default function StudentHome() {
           const newbiePrefix = String(currentYear).slice(2);
           const isNewbie = (profile?.studentId || "").startsWith(newbiePrefix);
           const recent5 = [...communityPosts]
-            .filter(p => p.category !== "새내기" || isNewbie) // 새내기 글은 새내기만
+            .filter(p => p.category !== "강의")   // 강의 게시글 제외
+            .filter(p => p.category !== "새내기")  // 새내기 게시글 제외
             .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
             .slice(0, 5);
           if (recent5.length === 0) return null;

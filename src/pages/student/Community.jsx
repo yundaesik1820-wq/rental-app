@@ -93,6 +93,8 @@ export default function Community() {
   const allFiltered = posts
     .filter(p => {
       if (cat !== "전체" && p.category !== cat) return false;
+      // 전체 탭에서는 강의 게시판 글 제외
+      if (cat === "전체" && p.category === LECTURE_CAT) return false;
       if (search && !p.title.includes(search) && !(p.content||"").includes(search) &&
           !(p.lectureName||"").includes(search) && !(p.professor||"").includes(search)) return false;
       return true;
