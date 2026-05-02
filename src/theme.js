@@ -37,14 +37,16 @@ const LIGHT = {
 };
 
 // localStorage에서 테마 읽기 (기본: dark)
-const getSavedTheme = () => localStorage.getItem("kbas_theme") || "dark";
+const getSavedTheme = () => {
+  try { return localStorage.getItem("kbas_theme") || "dark"; } catch { return "dark"; }
+};
 
 // 현재 테마 객체
 let _currentTheme = getSavedTheme() === "light" ? LIGHT : DARK;
 
 // body 배경색 동기화
 const syncBodyBg = () => {
-  document.body.style.background = _currentTheme.bg;
+  try { document.body.style.background = _currentTheme.bg; } catch {}
 };
 syncBodyBg();
 

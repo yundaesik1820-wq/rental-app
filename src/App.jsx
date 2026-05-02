@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { getThemeMode, setTheme } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
