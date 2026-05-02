@@ -245,6 +245,8 @@ export default function StudentHome() {
   const { profile, logout } = useAuth();
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
+  const { data: friendRequests }    = useCollection("friendRequests",    "createdAt");
+  const { data: friends }           = useCollection("friends",           "createdAt");
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
   const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
   const { data: communityComments } = useCollection("communityComments", "createdAt");
@@ -260,11 +262,13 @@ export default function StudentHome() {
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
-  const [showFriendTab, setShowFriendTab] = useState(false); // 친구 시간표 탭
-  const [friendId,      setFriendId]      = useState("");    // 검색 학번
-  const [friendData,    setFriendData]    = useState(null);  // { name, classes }
-  const [friendLoading, setFriendLoading] = useState(false);
-  const [friendErr,     setFriendErr]     = useState("");
+  const [showFriendTab,  setShowFriendTab]  = useState(false);
+  const [friendSubTab,   setFriendSubTab]   = useState("list"); // "list" | "add"
+  const [addFriendId,    setAddFriendId]    = useState("");
+  const [addFriendMsg,   setAddFriendMsg]   = useState("");
+  const [addFriendLoading, setAddFriendLoading] = useState(false);
+  const [viewFriend,     setViewFriend]     = useState(null); // { name, dept, classes }
+  const [viewFriendLoading, setViewFriendLoading] = useState(false);
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
   const [popupComment,  setPopupComment]  = useState("");    // 팝업 댓글 입력
   const [popupSubmitting, setPopupSubmitting] = useState(false);
@@ -365,28 +369,98 @@ export default function StudentHome() {
     setSubmitting(false);
   };
 
-  // 친구 시간표 검색
-  const searchFriend = async () => {
-    if (!friendId.trim()) return;
-    setFriendLoading(true);
-    setFriendErr("");
-    setFriendData(null);
+  // 내 친구 목록 (양방향)
+  const myFriends = friends.filter(f =>
+    f.userId === profile?.uid || f.friendId === profile?.uid
+  );
+
+  // 받은 친구 신청
+  const receivedRequests = friendRequests.filter(r =>
+    r.toId === profile?.uid && r.status === "pending"
+  );
+
+  // 보낸 친구 신청
+  const sentRequests = friendRequests.filter(r =>
+    r.fromId === profile?.uid && r.status === "pending"
+  );
+
+  // 친구 신청 보내기
+  const sendFriendRequest = async () => {
+    if (!addFriendId.trim()) return;
+    setAddFriendLoading(true);
+    setAddFriendMsg("");
     try {
-      // users에서 학번으로 검색
-      const { collection, query, where, getDocs, doc, getDoc } = await import("firebase/firestore");
-      const q = query(collection(db, "users"), where("studentId", "==", friendId.trim()));
-      const snap = await getDocs(q);
-      if (snap.empty) { setFriendErr("해당 학번의 학생을 찾을 수 없어요"); setFriendLoading(false); return; }
-      const user = snap.docs[0].data();
-      if (user.timetablePublic === false) { setFriendErr(`${user.name}님은 시간표를 비공개로 설정했어요`); setFriendLoading(false); return; }
-      // timetables에서 시간표 조회
-      const ttSnap = await getDoc(doc(db, "timetables", snap.docs[0].id));
-      const classes = ttSnap.exists() ? (ttSnap.data().classes || []) : [];
-      setFriendData({ name: user.name, dept: user.dept, classes });
+      const { collection: col, query: q, where: w, getDocs, addDoc, serverTimestamp } = await import("firebase/firestore");
+      // 본인 학번 체크
+      if (addFriendId.trim() === profile?.studentId) {
+        setAddFriendMsg("error:본인에게는 신청할 수 없어요");
+        setAddFriendLoading(false); return;
+      }
+      // 상대방 찾기
+      const snap = await getDocs(q(col(db, "users"), w("studentId", "==", addFriendId.trim())));
+      if (snap.empty) { setAddFriendMsg("error:해당 학번의 학생을 찾을 수 없어요"); setAddFriendLoading(false); return; }
+      const toUser = snap.docs[0];
+      const toData = toUser.data();
+      // 이미 친구인지 체크
+      const alreadyFriend = myFriends.some(f =>
+        (f.userId===profile?.uid && f.friendId===toUser.id) ||
+        (f.friendId===profile?.uid && f.userId===toUser.id)
+      );
+      if (alreadyFriend) { setAddFriendMsg("error:이미 친구예요!"); setAddFriendLoading(false); return; }
+      // 이미 신청한지 체크
+      const alreadySent = sentRequests.some(r => r.toId === toUser.id);
+      if (alreadySent) { setAddFriendMsg("error:이미 신청을 보냈어요"); setAddFriendLoading(false); return; }
+      // 신청 전송
+      await addDoc(col(db, "friendRequests"), {
+        fromId: profile?.uid, fromName: profile?.name, fromStudentId: profile?.studentId,
+        toId: toUser.id, toName: toData.name, toStudentId: toData.studentId,
+        status: "pending", createdAt: serverTimestamp(),
+      });
+      setAddFriendMsg(`success:${toData.name}님께 친구 신청을 보냈어요!`);
+      setAddFriendId("");
     } catch(e) {
-      setFriendErr("검색 중 오류가 발생했어요");
+      setAddFriendMsg("error:오류가 발생했어요");
     }
-    setFriendLoading(false);
+    setAddFriendLoading(false);
+  };
+
+  // 친구 신청 수락
+  const acceptFriend = async (req) => {
+    const { doc, updateDoc, addDoc, collection: col, serverTimestamp } = await import("firebase/firestore");
+    await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
+    await addDoc(col(db, "friends"), {
+      userId: req.fromId, userName: req.fromName, userStudentId: req.fromStudentId,
+      friendId: req.toId, friendName: req.toName, friendStudentId: req.toStudentId,
+      createdAt: serverTimestamp(),
+    });
+  };
+
+  // 친구 신청 거절
+  const rejectFriend = async (req) => {
+    const { doc, updateDoc } = await import("firebase/firestore");
+    await updateDoc(doc(db, "friendRequests", req.id), { status: "rejected" });
+  };
+
+  // 친구 삭제
+  const deleteFriend = async (friendDoc) => {
+    if (!window.confirm("친구를 삭제하시겠어요?")) return;
+    await deleteItem("friends", friendDoc.id);
+  };
+
+  // 친구 시간표 보기
+  const viewFriendTimetable = async (friendDoc) => {
+    setViewFriendLoading(true);
+    setViewFriend(null);
+    try {
+      const { doc, getDoc } = await import("firebase/firestore");
+      const isMine = friendDoc.userId === profile?.uid;
+      const targetId   = isMine ? friendDoc.friendId   : friendDoc.userId;
+      const targetName = isMine ? friendDoc.friendName : friendDoc.userName;
+      const ttSnap = await getDoc(doc(db, "timetables", targetId));
+      const classes = ttSnap.exists() ? (ttSnap.data().classes || []) : [];
+      setViewFriend({ name: targetName, classes });
+    } catch {}
+    setViewFriendLoading(false);
   };
 
   const submitPopupComment = async () => {
@@ -566,54 +640,124 @@ export default function StudentHome() {
         )}
       </div>
 
-      {/* 친구 시간표 보기 */}
+      {/* 친구 시간표 */}
       <div style={{ marginBottom:16 }}>
-        <button onClick={() => { setShowFriendTab(o=>!o); setFriendData(null); setFriendErr(""); setFriendId(""); }}
-          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
+        <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontSize:16 }}>🗓️</span>
-            <span style={{ fontSize:13, fontWeight:700, color:C.text }}>친구 시간표 보기</span>
+            <span style={{ fontSize:16 }}>👥</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.text }}>친구 시간표</span>
+            {receivedRequests.length > 0 && (
+              <span style={{ background:C.red, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:10, fontWeight:700 }}>{receivedRequests.length}</span>
+            )}
           </div>
-          <span style={{ fontSize:12, color:C.muted }}>{showFriendTab ? "▲" : "▼"}</span>
+          <span style={{ fontSize:12, color:C.muted }}>{showFriendTab?"▲":"▼"}</span>
         </button>
 
         {showFriendTab && (
-          <div style={{ background:C.surface, borderRadius:"0 0 12px 12px", border:`1px solid ${C.border}`, borderTop:"none", padding:"14px 16px" }}>
-            {/* 검색창 */}
-            <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-              <input
-                value={friendId} onChange={e => setFriendId(e.target.value)}
-                onKeyDown={e => e.key==="Enter" && searchFriend()}
-                placeholder="학번 입력"
-                style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}
-              />
-              <button onClick={searchFriend} disabled={friendLoading}
-                style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
-                {friendLoading ? "..." : "검색"}
-              </button>
-            </div>
+          <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
 
-            {/* 에러 */}
-            {friendErr && (
-              <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"8px 12px", fontSize:12, marginBottom:10 }}>
-                {friendErr}
+            {/* 받은 신청 */}
+            {receivedRequests.length > 0 && (
+              <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.yellow, marginBottom:8 }}>📩 친구 신청이 왔어요</div>
+                {receivedRequests.map(r => (
+                  <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
+                    <span style={{ flex:1, fontSize:13, color:C.text, fontWeight:600 }}>{r.fromName}</span>
+                    <span style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</span>
+                    <button onClick={() => acceptFriend(r)} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
+                    <button onClick={() => rejectFriend(r)} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>거절</button>
+                  </div>
+                ))}
               </div>
             )}
 
-            {/* 결과 */}
-            {friendData && (
+            {/* 서브탭 */}
+            <div style={{ display:"flex", gap:4, marginBottom:12 }}>
+              {[["list","친구 목록"],["add","친구 추가"]].map(([v,l]) => (
+                <button key={v} onClick={() => { setFriendSubTab(v); setViewFriend(null); setAddFriendMsg(""); }}
+                  style={{ padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?"#fff":C.muted }}>
+                  {l}
+                </button>
+              ))}
+            </div>
+
+            {/* 친구 목록 */}
+            {friendSubTab === "list" && (
               <div>
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{friendData.name}</span>
-                  <span style={{ fontSize:11, color:C.muted }}>{friendData.dept}</span>
-                </div>
-                {friendData.classes.length === 0 ? (
-                  <div style={{ textAlign:"center", padding:"20px 0", color:C.muted, fontSize:13 }}>등록된 시간표가 없어요</div>
+                {myFriends.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:"20px 0", color:C.muted, fontSize:13 }}>
+                    아직 친구가 없어요<br/>
+                    <span style={{ fontSize:11 }}>친구 추가 탭에서 학번으로 신청해보세요</span>
+                  </div>
                 ) : (
-                  <div style={{ overflowX:"auto" }}>
-                    <div style={{ minWidth:320 }}>
-                      <Timetable classes={friendData.classes} onEdit={null} readOnly />
-                    </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    {myFriends.map(f => {
+                      const isMine = f.userId === profile?.uid;
+                      const name = isMine ? f.friendName : f.userName;
+                      const sid  = isMine ? f.friendStudentId : f.userStudentId;
+                      const isViewing = viewFriend?.name === name;
+                      return (
+                        <div key={f.id}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"8px 12px" }}>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{name}</span>
+                              <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{sid}</span>
+                            </div>
+                            <button onClick={() => isViewing ? setViewFriend(null) : viewFriendTimetable(f)}
+                              style={{ background:isViewing?C.border:C.blueLight, color:isViewing?C.muted:C.blue, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                              {viewFriendLoading&&!isViewing?"...":isViewing?"접기":"시간표"}
+                            </button>
+                            <button onClick={() => deleteFriend(f)}
+                              style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, cursor:"pointer", flexShrink:0 }}>
+                              삭제
+                            </button>
+                          </div>
+                          {isViewing && viewFriend && (
+                            <div style={{ marginTop:6, overflowX:"auto" }}>
+                              <div style={{ minWidth:320 }}>
+                                {viewFriend.classes.length === 0
+                                  ? <div style={{ textAlign:"center", padding:"16px 0", fontSize:12, color:C.muted }}>등록된 시간표가 없어요</div>
+                                  : <Timetable classes={viewFriend.classes} readOnly />
+                                }
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 친구 추가 */}
+            {friendSubTab === "add" && (
+              <div>
+                <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                  <input value={addFriendId} onChange={e => { setAddFriendId(e.target.value); setAddFriendMsg(""); }}
+                    onKeyDown={e => e.key==="Enter" && sendFriendRequest()}
+                    placeholder="학번 입력"
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={sendFriendRequest} disabled={addFriendLoading}
+                    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                    {addFriendLoading?"...":"신청"}
+                  </button>
+                </div>
+                {addFriendMsg && (
+                  <div style={{ background:addFriendMsg.startsWith("error:")?C.redLight:C.greenLight, color:addFriendMsg.startsWith("error:")?C.red:C.green, borderRadius:8, padding:"8px 12px", fontSize:12 }}>
+                    {addFriendMsg.replace(/^(error|success):/, "")}
+                  </div>
+                )}
+                {sentRequests.length > 0 && (
+                  <div style={{ marginTop:12 }}>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>보낸 신청</div>
+                    {sentRequests.map(r => (
+                      <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:8, padding:"6px 10px", marginBottom:4 }}>
+                        <span style={{ flex:1, fontSize:12, color:C.text }}>{r.toName}</span>
+                        <span style={{ fontSize:10, color:C.muted }}>대기 중</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
