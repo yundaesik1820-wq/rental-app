@@ -163,6 +163,8 @@ export default function StudentHome() {
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
+  const [popupComment,  setPopupComment]  = useState("");    // 팝업 댓글 입력
+  const [popupSubmitting, setPopupSubmitting] = useState(false);
 
   // 팝업 공지 체크 (notices는 위에서 이미 선언됨)
   useEffect(() => {
@@ -260,6 +262,20 @@ export default function StudentHome() {
     setSubmitting(false);
   };
 
+  const submitPopupComment = async () => {
+    if (!popupComment.trim() || !popupNotice) return;
+    setPopupSubmitting(true);
+    await addItem("noticeComments", {
+      noticeId:   popupNotice.id,
+      authorId:   profile?.uid || "",
+      authorName: profile?.name || "익명",
+      authorRole: profile?.role === "admin" ? (profile?.adminRole || "super") : "student",
+      content:    popupComment.trim(),
+    });
+    setPopupComment("");
+    setPopupSubmitting(false);
+  };
+
   const deleteComment = async (commentId) => {
     if (!window.confirm("댓글을 삭제하시겠습니까?")) return;
     await deleteItem("noticeComments", commentId);
@@ -326,6 +342,40 @@ export default function StudentHome() {
             {popupNotice.content}
           </div>
           <div style={{ fontSize:11, color:C.muted, marginBottom:14 }}>{popupNotice.date} · {popupNotice.author}</div>
+
+          {/* 댓글 목록 */}
+          {(() => {
+            const popupComments = comments.filter(c => c.noticeId === popupNotice.id);
+            return popupComments.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>댓글 {popupComments.length}</div>
+                <div style={{ maxHeight:140, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+                  {popupComments.map(c => (
+                    <div key={c.id} style={{ background:C.bg, borderRadius:8, padding:"8px 12px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                        <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{c.authorName}</span>
+                        <span style={{ fontSize:10, color:C.muted }}>{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("ko") : ""}</span>
+                      </div>
+                      <div style={{ fontSize:12, color:C.text, lineHeight:1.5 }}>{c.content}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* 댓글 입력 */}
+          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+            <input value={popupComment} onChange={e => setPopupComment(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitPopupComment(); }}}
+              placeholder="댓글을 입력하세요..."
+              style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+            <button onClick={submitPopupComment} disabled={popupSubmitting || !popupComment.trim()}
+              style={{ background:C.navy, color:"#fff", border:"none", borderRadius:9, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", opacity: popupComment.trim() ? 1 : 0.5 }}>
+              {popupSubmitting ? "..." : "등록"}
+            </button>
+          </div>
+
           <div style={{ display:"flex", gap:10 }}>
             <button onClick={() => {
               localStorage.setItem(`popup_hidden_${popupNotice.id}`, new Date().toISOString().slice(0,10));
