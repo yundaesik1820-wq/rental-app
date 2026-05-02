@@ -712,7 +712,7 @@ export default function Equipment() {
             <div style={{ marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:8 }}>
               <div style={{ fontSize:11, color:C.purple, fontWeight:600 }}>🧭 가이드 유형: {form.equipType || "소분류 선택 시 자동 설정"}</div>
             </div>
-            {(form.equipType==="camera" || form.equipType==="lens") && (
+            {(form.equipType==="camera" || form.equipType==="lens" || form.equipType==="camcorder" || ["카메라","드론/액션캠","단렌즈","줌렌즈","시네렌즈"].includes(form.minorCategory)) && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>마운트</div>
                 <div style={{ display:"flex", gap:6 }}>
@@ -725,7 +725,7 @@ export default function Equipment() {
                 </div>
               </div>
             )}
-            {form.equipType==="camera" && (
+            {(form.equipType==="camera" || ["카메라","드론/액션캠"].includes(form.minorCategory)) && (
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
@@ -1022,7 +1022,7 @@ export default function Equipment() {
             <div style={{ marginBottom:12, padding:"8px 12px", background:C.bg, borderRadius:8 }}>
               <div style={{ fontSize:11, color:C.purple, fontWeight:600 }}>🧭 가이드 유형: {form.equipType || "소분류 선택 시 자동 설정"}</div>
             </div>
-            {(form.equipType==="camera" || form.equipType==="lens") && (
+            {(form.equipType==="camera" || form.equipType==="lens" || form.equipType==="camcorder" || ["카메라","드론/액션캠","단렌즈","줌렌즈","시네렌즈"].includes(form.minorCategory)) && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>마운트</div>
                 <div style={{ display:"flex", gap:6 }}>
@@ -1035,7 +1035,7 @@ export default function Equipment() {
                 </div>
               </div>
             )}
-            {form.equipType==="camera" && (
+            {(form.equipType==="camera" || ["카메라","드론/액션캠"].includes(form.minorCategory)) && (
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
