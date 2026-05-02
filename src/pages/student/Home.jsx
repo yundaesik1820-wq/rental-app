@@ -8,7 +8,7 @@ import { db } from "../../firebase";
 import { LogOut } from "lucide-react";
 
 const DAYS   = ["월", "화", "수", "목", "금"];
-const HOURS  = Array.from({ length: 13 }, (_, i) => i + 9); // 9~21
+const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
 const SLOT_H = 28; // px per hour
 const COLORS = [
   "#E57373","#64B5F6","#81C784","#FFB74D","#BA68C8",
@@ -109,18 +109,34 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
       <Inp label="강의실 위치 *" placeholder="예: 1관 502호" value={form.location} onChange={e => f("location", e.target.value)} />
       <Inp label="교수님 성함" placeholder="예: 송경희 교수님" value={form.professor} onChange={e => f("professor", e.target.value)} />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>시작 시간 *</div>
-          <input type="time" step="600" value={form.startTime} onChange={e => f("startTime", e.target.value)}
-            style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
-        </div>
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 5 }}>종료 시간 *</div>
-          <input type="time" step="600" value={form.endTime} onChange={e => f("endTime", e.target.value)}
-            style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", boxSizing: "border-box" }} />
-        </div>
-      </div>
+      {/* 시작/종료 시간 - 10분 단위 select */}
+      {(() => {
+        const timeOptions = [];
+        for (let h = 9; h <= 22; h++) {
+          for (let m = 0; m < 60; m += 10) {
+            const hh = String(h).padStart(2,"0");
+            const mm = String(m).padStart(2,"0");
+            timeOptions.push(`${hh}:${mm}`);
+          }
+        }
+        const selStyle = { display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", cursor:"pointer" };
+        return (
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>시작 시간 *</div>
+              <select value={form.startTime} onChange={e => f("startTime", e.target.value)} style={selStyle}>
+                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>종료 시간 *</div>
+              <select value={form.endTime} onChange={e => f("endTime", e.target.value)} style={selStyle}>
+                {timeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+          </div>
+        );
+      })()}
 
       <div style={{ marginBottom: 16 }}>
         <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>색상</div>
