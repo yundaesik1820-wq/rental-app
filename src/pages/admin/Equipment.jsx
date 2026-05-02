@@ -1174,7 +1174,6 @@ export default function Equipment() {
 
       {/* 모델별 그룹화 */}
       {(() => {
-        // 모델명 기준 그룹화
         const groups = Object.values(
           filtered.reduce((acc, e) => {
             const key = e.modelName || e.id;
@@ -1200,6 +1199,10 @@ export default function Equipment() {
             </div>
           );
       })()}
+      </div>}
+
+      {/* 시설 탭 */}
+      {activeTab === "facility" && <FacilityAdmin />}
 
       {inspItem   && <InspModal   item={inspItem}   inspections={inspections} onClose={() => setInspItem(null)} />}
       {detailItem && <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onSave={(id, data) => updateItem("equipments", id, data)} />}
