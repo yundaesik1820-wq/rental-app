@@ -671,10 +671,15 @@ export default function StudentHome() {
 
             {/* 서브탭 */}
             <div style={{ display:"flex", gap:4, marginBottom:12 }}>
-              {[["list","친구 목록"],["add","친구 추가"]].map(([v,l]) => (
+              {[
+                ["list","친구 목록",0],
+                ["req","친구 요청",receivedRequests.length],
+                ["add","친구 추가",0],
+              ].map(([v,l,cnt]) => (
                 <button key={v} onClick={() => { setFriendSubTab(v); setViewFriend(null); setAddFriendMsg(""); }}
-                  style={{ padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?"#fff":C.muted }}>
+                  style={{ position:"relative", padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?"#fff":C.muted }}>
                   {l}
+                  {cnt > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:10, padding:"0 5px", fontSize:9, fontWeight:700 }}>{cnt}</span>}
                 </button>
               ))}
             </div>
