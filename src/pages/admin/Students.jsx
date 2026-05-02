@@ -36,7 +36,8 @@ export default function Students({ readOnly = false }) {
   const adminList     = allUsers.filter(s => s.role === "admin");
   const profList      = allUsers.filter(s => s.role === "professor");
 
-  const [tab, setTab]     = useState("pending");
+  const [tab, setTab]           = useState("pending");
+  const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [search, setSearch] = useState("");
 
   // ── 학생 직접 추가 ──────────────────────────────────────
@@ -264,13 +265,14 @@ export default function Students({ readOnly = false }) {
   const pendingResets = resetRequests.filter(r => r.status === "pending");
 
   const allTabs = [
-    { id:"pwreset",   label:`비밀번호 초기화 요청 ${pendingResets.length > 0 ? `(${pendingResets.length})` : ""}`, color:C.orange },
-    { id:"pending",   label:`승인 대기 (${pendingList.length})`,   color:C.yellow  },
-    { id:"approved",  label:`승인됨 (${approvedList.length})`,     color:C.green   },
-    { id:"rejected",  label:`거절됨 (${rejectedList.length})`,     color:C.red     },
-    { id:"professor", label:`교수 (${profList.length})`,           color:C.blue    },
-    { id:"admin",     label:`직원 (${adminList.length})`,          color:C.purple  },
-    { id:"withdrawn", label:`탈퇴 (${withdrawnList.length})`,      color:C.muted   },
+    { id:"create",    label:"계정 생성",  color:C.teal,   row:1 },
+    { id:"pwreset",   label:`비번 초기화 ${pendingResets.length > 0 ? `(${pendingResets.length})` : ""}`, color:C.orange, row:2 },
+    { id:"pending",   label:`가입 승인 대기 (${pendingList.length})`, color:C.yellow, row:2 },
+    { id:"approved",  label:`학생 목록 (${approvedList.length})`,    color:C.green,  row:3 },
+    { id:"professor", label:`교수님 목록 (${profList.length})`,       color:C.blue,   row:3 },
+    { id:"admin",     label:`관리자 목록 (${adminList.length})`,      color:C.purple, row:3 },
+    { id:"rejected",  label:`거절됨 (${rejectedList.length})`,        color:C.red,    row:4, hidden:true },
+    { id:"withdrawn", label:`탈퇴 (${withdrawnList.length})`,         color:C.muted,  row:4, hidden:true },
   ];
   const tabs = readOnly ? allTabs.filter(t => t.id === "approved") : allTabs;
 
@@ -471,6 +473,31 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 학생 직접 추가 모달 ── */}
+      {/* 계정 생성 선택 메뉴 */}
+      {showCreateMenu && (
+        <Modal onClose={() => setShowCreateMenu(false)} width={360}>
+          <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:16 }}>계정 생성</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <button onClick={() => { setShowCreateMenu(false); setShowAddProf(true); }}
+              style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:12, padding:"14px 16px", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"left" }}>
+              🎓 교수 계정 생성
+            </button>
+            <button onClick={() => { setShowCreateMenu(false); setShowAddAdmin(true); }}
+              style={{ background:C.purpleLight, color:C.purple, border:"none", borderRadius:12, padding:"14px 16px", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"left" }}>
+              🔑 관리자 추가
+            </button>
+            <button onClick={() => { setShowCreateMenu(false); setShowBulk(true); setBulkRows([]); setBulkErr(""); }}
+              style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:12, padding:"14px 16px", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"left" }}>
+              📥 학생 일괄 등록
+            </button>
+            <button onClick={() => { setShowCreateMenu(false); setShowAdd(true); }}
+              style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:12, padding:"14px 16px", fontSize:14, fontWeight:700, cursor:"pointer", textAlign:"left" }}>
+              + 학생 직접 추가
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {showAdd && (
         <Modal onClose={() => { setShowAdd(false); setAddErr(""); }}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>학생 직접 추가</div>
@@ -527,13 +554,32 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 탭 ── */}
-      <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap" }}>
-        {tabs.map(t => (
-          <button key={t.id} onClick={() => { setTab(t.id); setSearch(""); }}
-            style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:20, padding:"7px 18px", fontSize:13, fontWeight:600, cursor:"pointer" }}>
-            {t.label}
-          </button>
-        ))}
+      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
+        {[1,2,3,4].map(row => {
+          const rowTabs = tabs.filter(t => t.row === row);
+          if (rowTabs.length === 0) return null;
+          // 4행(거절/탈퇴)은 현재 선택된 탭이 없으면 숨기기
+          const isHiddenRow = row === 4;
+          const hasSelected = rowTabs.some(t => t.id === tab);
+          return (
+            <div key={row} style={{ display:"flex", gap:5 }}>
+              {/* 4행은 아이콘 버튼으로 축소 표시 */}
+              {isHiddenRow && !hasSelected ? (
+                <button onClick={() => { setTab(rowTabs[0].id); setSearch(""); }}
+                  style={{ background:C.surface, color:C.muted, border:`1px solid ${C.border}`, borderRadius:10, padding:"4px 10px", fontSize:10, fontWeight:600, cursor:"pointer" }}>
+                  더보기 (거절됨/탈퇴)
+                </button>
+              ) : (
+                rowTabs.map(t => (
+                  <button key={t.id} onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
+                    style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+                    {t.label}
+                  </button>
+                ))
+              )}
+            </div>
+          );
+        })}
       </div>
 
       {/* ── 검색 (학생 탭에서만) ── */}
