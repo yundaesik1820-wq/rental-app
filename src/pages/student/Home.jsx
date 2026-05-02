@@ -21,7 +21,7 @@ const timeToFrac = (t) => {
 };
 
 // ── 시간표 그리드 컴포넌트 ──
-function Timetable({ classes, onEdit }) {
+function Timetable({ classes, onEdit, readOnly = false }) {
   const colW = `calc((100% - 36px) / 5)`;
 
   return (
@@ -162,6 +162,11 @@ export default function StudentHome() {
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
+  const [showFriendTab, setShowFriendTab] = useState(false); // 친구 시간표 탭
+  const [friendId,      setFriendId]      = useState("");    // 검색 학번
+  const [friendData,    setFriendData]    = useState(null);  // { name, classes }
+  const [friendLoading, setFriendLoading] = useState(false);
+  const [friendErr,     setFriendErr]     = useState("");
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
   const [popupComment,  setPopupComment]  = useState("");    // 팝업 댓글 입력
   const [popupSubmitting, setPopupSubmitting] = useState(false);
@@ -260,6 +265,30 @@ export default function StudentHome() {
     });
     setCommentText("");
     setSubmitting(false);
+  };
+
+  // 친구 시간표 검색
+  const searchFriend = async () => {
+    if (!friendId.trim()) return;
+    setFriendLoading(true);
+    setFriendErr("");
+    setFriendData(null);
+    try {
+      // users에서 학번으로 검색
+      const { collection, query, where, getDocs, doc, getDoc } = await import("firebase/firestore");
+      const q = query(collection(db, "users"), where("studentId", "==", friendId.trim()));
+      const snap = await getDocs(q);
+      if (snap.empty) { setFriendErr("해당 학번의 학생을 찾을 수 없어요"); setFriendLoading(false); return; }
+      const user = snap.docs[0].data();
+      if (user.timetablePublic === false) { setFriendErr(`${user.name}님은 시간표를 비공개로 설정했어요`); setFriendLoading(false); return; }
+      // timetables에서 시간표 조회
+      const ttSnap = await getDoc(doc(db, "timetables", snap.docs[0].id));
+      const classes = ttSnap.exists() ? (ttSnap.data().classes || []) : [];
+      setFriendData({ name: user.name, dept: user.dept, classes });
+    } catch(e) {
+      setFriendErr("검색 중 오류가 발생했어요");
+    }
+    setFriendLoading(false);
   };
 
   const submitPopupComment = async () => {
@@ -435,6 +464,62 @@ export default function StudentHome() {
                 onEdit={(cls) => { setEditClass(cls); setShowClassForm(true); }}
               />
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* 친구 시간표 보기 */}
+      <div style={{ marginBottom:16 }}>
+        <button onClick={() => { setShowFriendTab(o=>!o); setFriendData(null); setFriendErr(""); setFriendId(""); }}
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ fontSize:16 }}>🗓️</span>
+            <span style={{ fontSize:13, fontWeight:700, color:C.text }}>친구 시간표 보기</span>
+          </div>
+          <span style={{ fontSize:12, color:C.muted }}>{showFriendTab ? "▲" : "▼"}</span>
+        </button>
+
+        {showFriendTab && (
+          <div style={{ background:C.surface, borderRadius:"0 0 12px 12px", border:`1px solid ${C.border}`, borderTop:"none", padding:"14px 16px" }}>
+            {/* 검색창 */}
+            <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+              <input
+                value={friendId} onChange={e => setFriendId(e.target.value)}
+                onKeyDown={e => e.key==="Enter" && searchFriend()}
+                placeholder="학번 입력 (예: 25237001)"
+                style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}
+              />
+              <button onClick={searchFriend} disabled={friendLoading}
+                style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                {friendLoading ? "..." : "검색"}
+              </button>
+            </div>
+
+            {/* 에러 */}
+            {friendErr && (
+              <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"8px 12px", fontSize:12, marginBottom:10 }}>
+                {friendErr}
+              </div>
+            )}
+
+            {/* 결과 */}
+            {friendData && (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+                  <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{friendData.name}</span>
+                  <span style={{ fontSize:11, color:C.muted }}>{friendData.dept}</span>
+                </div>
+                {friendData.classes.length === 0 ? (
+                  <div style={{ textAlign:"center", padding:"20px 0", color:C.muted, fontSize:13 }}>등록된 시간표가 없어요</div>
+                ) : (
+                  <div style={{ overflowX:"auto" }}>
+                    <div style={{ minWidth:320 }}>
+                      <Timetable classes={friendData.classes} onEdit={null} readOnly />
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -15,6 +15,7 @@ export default function Profile() {
   const [phoneDone,      setPhoneDone]      = useState(false);
   const [phoneErr,       setPhoneErr]       = useState("");
   const [themeMode,      setThemeModeState] = useState(getThemeMode());
+  const [ttPublic,       setTtPublic]       = useState(profile?.timetablePublic !== false);
 
   const handleTheme = (mode) => { setTheme(mode); setThemeModeState(mode); };
 
@@ -155,6 +156,24 @@ export default function Profile() {
         style={{ width: "100%", background: C.tealLight, color: C.teal, border: `1.5px solid ${C.teal}30`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
         📱 전화번호 변경
       </button>
+
+      {/* 시간표 공개 설정 */}
+      <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:"14px 16px", marginBottom:10 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>🗓️ 시간표 공개</div>
+            <div style={{ fontSize:11, color:C.muted }}>다른 학생이 내 시간표를 볼 수 있어요</div>
+          </div>
+          <button onClick={async () => {
+            const next = !ttPublic;
+            setTtPublic(next);
+            await updateItem("users", profile.uid, { timetablePublic: next });
+          }}
+            style={{ width:44, height:24, borderRadius:12, border:"none", cursor:"pointer", background:ttPublic?C.teal:C.border, position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+            <div style={{ position:"absolute", top:3, left:ttPublic?22:3, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
+          </button>
+        </div>
+      </div>
 
       {/* 테마 설정 */}
       <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
