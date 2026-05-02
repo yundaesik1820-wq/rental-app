@@ -7,7 +7,7 @@ import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase";
 import { LogOut } from "lucide-react";
 
-const DAYS   = ["월", "화", "수", "목", "금"];
+const DAYS   = ["월", "화", "수", "목", "금", "토", "일"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
 const SLOT_H = 28; // px per hour
 const COLORS = [
