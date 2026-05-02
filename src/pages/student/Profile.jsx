@@ -170,7 +170,6 @@ export default function Profile() {
           </button>
         </div>
       </div>
-      </div>
 
       <button onClick={logout} style={{ width: "100%", background: C.redLight, color: C.red, border: `1.5px solid ${C.red}30`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
         로그아웃
@@ -203,7 +202,7 @@ export default function Profile() {
         </Modal>
       )}
 
-      {/* 비밀번호 변경 모달 */}}
+      {/* 비밀번호 변경 모달 */}
       {showPwModal && (
         <Modal onClose={() => { setShowPwModal(false); setPwDone(false); setPwErr(""); }} width={420}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>🔒 비밀번호 변경</div>
