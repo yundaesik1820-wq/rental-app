@@ -727,6 +727,12 @@ export default function StudentHome() {
                               <div style={{ fontSize:11, color:C.muted }}>{r.toStudentId}</div>
                             </div>
                             <span style={{ fontSize:11, color:C.yellow, background:C.yellowLight, borderRadius:6, padding:"3px 8px", fontWeight:600 }}>대기 중</span>
+                            <button onClick={async () => {
+                              if (!window.confirm("친구 신청을 취소할까요?")) return;
+                              await deleteItem("friendRequests", r.id);
+                            }} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                              취소
+                            </button>
                           </div>
                         ))}
                       </div>
