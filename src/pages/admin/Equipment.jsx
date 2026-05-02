@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { C } from "../../theme";
+import FacilityAdmin from "./FacilityAdmin.jsx";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { storage } from "../../firebase";
@@ -662,14 +663,27 @@ export default function Equipment() {
 
   return (
     <div>
-      <div style={{ marginBottom:14 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-          <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>🔧 장비 관리</div>
-          <div style={{ display:"flex", gap:6 }}>
-            <button onClick={exportExcel}              style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📤 내보내기</button>
-            <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📥 일괄등록</button>
-            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>+ 추가</button>
-          </div>
+      {/* 탭 + 버튼 헤더 */}
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+        {/* 탭 */}
+        <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, gap:2 }}>
+          {[["equip","🔧 장비"],["facility","🏢 시설"]].map(([v,l]) => (
+            <button key={v} onClick={() => setActiveTab(v)}
+              style={{ padding:"6px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:activeTab===v?C.navy:"transparent", color:activeTab===v?"#fff":C.muted }}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {/* 버튼 */}
+        <div style={{ display:"flex", gap:5 }}>
+          {activeTab === "equip" && <>
+            <button onClick={exportExcel}               style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📤 내보내기</button>
+            <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 일괄등록</button>
+            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
+          </>}
+          {activeTab === "facility" && <>
+            <button onClick={() => setActiveTab("facility")} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }} id="facility-add-btn">+ 추가</button>
+          </>}
         </div>
       </div>
 
@@ -1145,6 +1159,8 @@ export default function Equipment() {
 
       {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
 
+      {/* 장비 탭 */}
+      {activeTab === "equip" && <div>
       {/* 검색 + 필터 */}
       <div style={{ display:"flex", gap:14, marginBottom:14, flexWrap:"wrap" }}>
         <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}

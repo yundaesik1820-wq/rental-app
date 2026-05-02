@@ -308,7 +308,6 @@ function AppContent() {
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
         case "community": return <Community />;
-        case "facility-admin": return <FacilityAdmin />;
         default:         return <Dashboard setTab={setTab} />;
       }
     } else {
@@ -322,7 +321,6 @@ function AppContent() {
         case "profile":  return <Profile />;
         case "license":  return <License />;
         case "community": return <Community />;
-        case "facility-admin": return <FacilityAdmin />;
         case "inquiry":  return <StudentInquiry />;
         default:         return <StudentHome />;
       }
