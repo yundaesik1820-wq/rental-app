@@ -619,20 +619,7 @@ export default function Equipment() {
         </div>
       </div>
 
-      {/* 모델별 요약 */}
-      {Object.keys(modelStats).length > 0 && (
-        <div style={{ background:C.surface, borderRadius:14, padding:"14px 18px", marginBottom:20, border:`1px solid ${C.border}` }}>
-          <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>📊 모델별 재고 요약</div>
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {Object.entries(modelStats).map(([model, { total, available }]) => (
-              <div key={model} style={{ background: available === 0 ? C.redLight : C.greenLight, borderRadius:10, padding:"6px 14px", fontSize:12 }}>
-                <span style={{ fontWeight:700, color: available === 0 ? C.red : C.green }}>{model}</span>
-                <span style={{ color:C.muted, marginLeft:6 }}>{available}/{total}대</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+
 
       {/* 장비 추가 모달 */}
       {showAdd && (

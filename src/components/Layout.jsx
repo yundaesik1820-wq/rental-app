@@ -3,7 +3,7 @@ import { useAuth } from "../hooks/useAuth.jsx";
 import { C } from "../theme";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
-  Megaphone, Camera, MessageCircle, Settings, Search,
+  Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
   ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Building2
 } from "lucide-react";
@@ -16,7 +16,6 @@ const ADMIN_NAV = [
   { id: "calendar", icon: Calendar,      label: "캘린더"    },
   { id: "stats",    icon: BarChart2,     label: "통계"      },
   { id: "notices",  icon: Megaphone,     label: "공지사항"  },
-  { id: "qrscan",   icon: Camera,        label: "QR 스캔"  },
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
   { id: "license",  icon: GraduationCap, label: "라이센스"  },
   { id: "facility-admin", icon: Building2,     label: "시설관리"    },

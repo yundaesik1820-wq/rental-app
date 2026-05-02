@@ -15,7 +15,6 @@ import CalendarPage from "./pages/admin/Calendar";
 import Stats      from "./pages/admin/Stats";
 import Notices    from "./pages/admin/Notices";
 import Settings   from "./pages/admin/Settings";
-import QRScan       from "./pages/admin/QRScan";
 import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
@@ -306,7 +305,6 @@ function AppContent() {
         case "stats":    return <Stats />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
-        case "qrscan":   return <QRScan />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
         case "community": return <Community />;
