@@ -61,6 +61,8 @@ export default function Community() {
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"" }); // 강의 전용 필드
   const [commentRating, setCommentRating] = useState(0); // 별점
+  const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
+  const [editForm,    setEditForm]    = useState({ title:"", content:"" });
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
@@ -226,6 +228,27 @@ export default function Community() {
     await deleteItem("communityPosts", postId);
     setSelPost(null);
   };
+
+  // 본인 글 삭제 (실명 게시판)
+  const deleteMyPost = async (postId) => {
+    if (!window.confirm("게시글을 삭제하시겠습니까?")) return;
+    await deleteItem("communityPosts", postId);
+    setSelPost(null);
+  };
+
+  // 본인 글 수정 (실명 게시판)
+  const updateMyPost = async () => {
+    if (!editForm.title.trim() || !editForm.content.trim()) return;
+    await updateItem("communityPosts", selPost.id, {
+      title:   editForm.title.trim(),
+      content: editForm.content.trim(),
+    });
+    setSelPost({ ...selPost, title: editForm.title.trim(), content: editForm.content.trim() });
+    setShowEdit(false);
+  };
+
+  const canEditDelete = (post) =>
+    REAL_CATS.includes(post?.category) && post?.authorId === profile?.uid;
   const adminDeleteComment = async (commentId) => {
     if (!window.confirm("이 댓글을 삭제하시겠습니까?")) return;
     await deleteItem("communityComments", commentId);
@@ -447,7 +470,15 @@ export default function Community() {
         <Modal onClose={() => setSelPost(null)} width={600}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
             <span style={{ background:catBg(selPost.category), color:catColor(selPost.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{selPost.category}</span>
-            {isSuper && <Btn onClick={() => adminDeletePost(selPost.id)} color={C.red} small>삭제</Btn>}
+            <div style={{ display:"flex", gap:6 }}>
+              {canEditDelete(selPost) && (
+                <>
+                  <Btn onClick={() => { setEditForm({ title:selPost.title, content:selPost.content }); setShowEdit(true); }} color={C.green} small>수정</Btn>
+                  <Btn onClick={() => deleteMyPost(selPost.id)} color={C.red} small outline>삭제</Btn>
+                </>
+              )}
+              {isSuper && <Btn onClick={() => adminDeletePost(selPost.id)} color={C.red} small>관리자삭제</Btn>}
+            </div>
           </div>
           {selPost.category === LECTURE_CAT ? (
             <div style={{ marginBottom:16 }}>
@@ -555,6 +586,23 @@ export default function Community() {
           </div>
           <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>
             {REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다"}
+          </div>
+        </Modal>
+      )}
+
+      {/* 수정 모달 */}
+      {showEdit && selPost && (
+        <Modal onClose={() => setShowEdit(false)} width={540}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:16 }}>✏️ 게시글 수정</div>
+          <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
+            <textarea value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
+          </div>
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={() => setShowEdit(false)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={updateMyPost} color={C.navy} full disabled={!editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
       )}
