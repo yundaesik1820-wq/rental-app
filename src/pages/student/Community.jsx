@@ -115,6 +115,8 @@ export default function Community() {
       views:      0,
       likes:      0,
       likedBy:    [],
+      dislikes:   0,
+      dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[] });
@@ -133,6 +135,8 @@ export default function Community() {
       authorName: profile?.name || "",
       likes:      0,
       likedBy:    [],
+      dislikes:   0,
+      dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
     setCommentText("");
@@ -151,6 +155,21 @@ export default function Community() {
     await updateItem(col, item.id, { likes: newLikes, likedBy: newLikedBy });
     if (type === "post" && selPost?.id === item.id) {
       setSelPost({ ...selPost, likes: newLikes, likedBy: newLikedBy });
+    }
+  };
+
+  // 비추천
+  const toggleDislike = async (type, item) => {
+    const uid        = profile?.uid || "";
+    const disliked   = (item.dislikedBy || []).includes(uid);
+    const newDislikes   = disliked ? item.dislikes - 1 : (item.dislikes || 0) + 1;
+    const newDislikedBy = disliked
+      ? (item.dislikedBy || []).filter(id => id !== uid)
+      : [...(item.dislikedBy || []), uid];
+    const col = type === "post" ? "communityPosts" : "communityComments";
+    await updateItem(col, item.id, { dislikes: newDislikes, dislikedBy: newDislikedBy });
+    if (type === "post" && selPost?.id === item.id) {
+      setSelPost({ ...selPost, dislikes: newDislikes, dislikedBy: newDislikedBy });
     }
   };
 
@@ -311,6 +330,7 @@ export default function Community() {
                 <div style={{ display:"flex", gap:8, fontSize:11, color:C.muted, flexShrink:0 }}>
                   <span>👁 {p.views||0}</span>
                   <span>👍 {p.likes||0}</span>
+                  {(p.dislikes||0) > 0 && <span>👎 {p.dislikes||0}</span>}
                   <span>💬 {postComments(p.id).length}</span>
                 </div>
               </div>
@@ -394,11 +414,15 @@ export default function Community() {
             </div>
           )}
 
-          {/* 좋아요 */}
-          <div style={{ display:"flex", justifyContent:"center", marginBottom:20 }}>
+          {/* 추천/비추천 */}
+          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:20 }}>
             <button onClick={() => toggleLike("post", selPost)}
-              style={{ background:(selPost.likedBy||[]).includes(profile?.uid)?C.blueLight:C.bg, border:`1px solid ${C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
+              style={{ background:(selPost.likedBy||[]).includes(profile?.uid)?C.blueLight:C.bg, border:`1px solid ${(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer", fontWeight:600 }}>
               👍 {selPost.likes||0}
+            </button>
+            <button onClick={() => toggleDislike("post", selPost)}
+              style={{ background:(selPost.dislikedBy||[]).includes(profile?.uid)?C.redLight:C.bg, border:`1px solid ${(selPost.dislikedBy||[]).includes(profile?.uid)?C.red:C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.dislikedBy||[]).includes(profile?.uid)?C.red:C.muted, cursor:"pointer", fontWeight:600 }}>
+              👎 {selPost.dislikes||0}
             </button>
           </div>
 
@@ -415,8 +439,12 @@ export default function Community() {
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                   <button onClick={() => toggleLike("comment", c)}
-                    style={{ background:"none", border:"none", fontSize:11, color:(c.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer" }}>
+                    style={{ background:"none", border:"none", fontSize:11, color:(c.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer", fontWeight:600 }}>
                     👍 {c.likes||0}
+                  </button>
+                  <button onClick={() => toggleDislike("comment", c)}
+                    style={{ background:"none", border:"none", fontSize:11, color:(c.dislikedBy||[]).includes(profile?.uid)?C.red:C.muted, cursor:"pointer", fontWeight:600 }}>
+                    👎 {c.dislikes||0}
                   </button>
                   {isSuper && (
                     <button onClick={() => adminDeleteComment(c.id)}
