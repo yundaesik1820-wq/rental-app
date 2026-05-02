@@ -7,7 +7,10 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 
-const CATEGORIES = ["전체", "자유", "질문", "정보", "저격", "새내기"];
+const CATEGORIES  = ["전체", "자유", "질문", "정보", "강의", "취업·진로", "장터"];
+const ANON_CATS   = ["자유", "질문", "강의"]; // 익명
+const REAL_CATS   = ["정보", "취업·진로", "장터"]; // 실명
+const LECTURE_CAT = "강의"; // 강의 전용
 
 async function uploadImage(file) {
   return new Promise((resolve, reject) => {
@@ -54,7 +57,9 @@ export default function Community() {
   const [cat, setCat]           = useState("전체");
   const [selPost, setSelPost]   = useState(null); // 상세 모달
   const [showWrite, setShowWrite] = useState(false);
-  const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[] });
+  const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
+    lectureName:"", professor:"", schedule:"" }); // 강의 전용 필드
+  const [commentRating, setCommentRating] = useState(0); // 별점
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
@@ -69,12 +74,16 @@ export default function Community() {
     return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
-  // 표시 이름 (권한에 따라 실명/익명)
+  // 카테고리 기반 이름 표시
   const displayName = (post) => {
-    if (canSeeReal) return `${post.authorName || "익명"} (익명)`;
+    if (post.category === LECTURE_CAT) return "익명"; // 강의는 항상 완전 익명
+    if (REAL_CATS.includes(post.category)) return post.authorName || ""; // 실명
+    if (canSeeReal) return `${post.authorName || "익명"} (익명)`; // 관리자는 실명 보임
     return "익명";
   };
-  const displayCommentName = (c) => {
+  const displayCommentName = (c, postCategory) => {
+    if (postCategory === LECTURE_CAT) return "익명"; // 강의 댓글 항상 익명
+    if (REAL_CATS.includes(postCategory)) return c.authorName || ""; // 실명 게시판 댓글
     if (canSeeReal) return `${c.authorName || "익명"} (익명)`;
     return "익명";
   };
@@ -83,9 +92,8 @@ export default function Community() {
   const allFiltered = posts
     .filter(p => {
       if (cat !== "전체" && p.category !== cat) return false;
-      // 새내기 글은 새내기만 볼 수 있음 (전체 탭에서도)
-      if (p.category === "새내기" && !isNewbie && profile?.role !== "admin") return false;
-      if (search && !p.title.includes(search) && !p.content.includes(search)) return false;
+      if (search && !p.title.includes(search) && !(p.content||"").includes(search) &&
+          !(p.lectureName||"").includes(search) && !(p.professor||"").includes(search)) return false;
       return true;
     })
     .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
@@ -105,13 +113,18 @@ export default function Community() {
       return;
     }
     setSubmitting(true);
+    const isLecture = writeForm.category === LECTURE_CAT;
     await addItem("communityPosts", {
-      title:      writeForm.title.trim(),
-      content:    writeForm.content.trim(),
-      category:   writeForm.category,
-      authorId:   profile?.uid || "",
-      authorName: profile?.name || "",
-      images:     writeForm.images || [],
+      title:       isLecture ? writeForm.lectureName.trim() : writeForm.title.trim(),
+      content:     isLecture ? "" : writeForm.content.trim(),
+      category:    writeForm.category,
+      authorId:    profile?.uid || "",
+      authorName:  profile?.name || "",
+      images:      writeForm.images || [],
+      // 강의 전용 필드
+      lectureName: isLecture ? writeForm.lectureName.trim() : "",
+      professor:   isLecture ? writeForm.professor.trim() : "",
+      schedule:    isLecture ? writeForm.schedule.trim() : "",
       views:      0,
       likes:      0,
       likedBy:    [],
@@ -119,7 +132,7 @@ export default function Community() {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    setWriteForm({ title:"", content:"", category:"자유", images:[] });
+    setWriteForm({ title:"", content:"", category:"자유", images:[], lectureName:"", professor:"", schedule:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -133,6 +146,7 @@ export default function Community() {
       content:    commentText.trim(),
       authorId:   profile?.uid || "",
       authorName: profile?.name || "",
+      rating:     commentRating || 0,
       likes:      0,
       likedBy:    [],
       dislikes:   0,
@@ -140,6 +154,7 @@ export default function Community() {
       createdAt:  serverTimestamp(),
     });
     setCommentText("");
+    setCommentRating(0);
     setSubmitting(false);
   };
 
@@ -192,13 +207,15 @@ export default function Community() {
   };
 
   const catColor = (c) => {
-    const m = { "자유":C.blue, "질문":C.orange, "정보":C.green, "저격":C.red, "새내기":C.purple };
+    const m = { "자유":C.blue, "질문":C.orange, "정보":C.green, "강의":C.purple, "취업·진로":C.teal, "장터":C.yellow };
     return m[c] || C.muted;
   };
   const catBg = (c) => {
-    const m = { "자유":C.blueLight, "질문":C.orangeLight, "정보":C.greenLight, "저격":C.redLight, "새내기":C.purpleLight };
+    const m = { "자유":C.blueLight, "질문":C.orangeLight, "정보":C.greenLight, "강의":C.purpleLight, "취업·진로":C.tealLight, "장터":C.yellowLight };
     return m[c] || C.bg;
   };
+  // 카테고리에 따라 익명/실명 판단
+  const isAnon = (category) => ANON_CATS.includes(category) || !REAL_CATS.includes(category);
 
   return (
     <div>
@@ -273,31 +290,20 @@ export default function Community() {
       </div>
 
       {/* 카테고리 탭 */}
-      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
-        {CATEGORIES.map(c => {
-          const isLocked = c === "새내기" && !isNewbie && profile?.role !== "admin";
-          return (
-            <button key={c} onClick={() => { if(!isLocked) { setCat(c); setPage(1); } }}
-              style={{
-                padding:"7px 16px", borderRadius:20, border:`1px solid ${cat===c ? C.navy : C.border}`,
-                background: cat===c ? C.navy : C.bg,
-                color: cat===c ? "#fff" : isLocked ? C.border : C.muted,
-                fontSize:13, fontWeight:600, cursor: isLocked ? "not-allowed" : "pointer",
-                display:"flex", alignItems:"center", gap:5,
-              }}>
-              {c === "새내기" && "🌱"} {c}
-              {isLocked && <span style={{ fontSize:10 }}>🔒</span>}
-            </button>
-          );
-        })}
+      <div style={{ display:"flex", gap:5, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
+        {CATEGORIES.map(c => (
+          <button key={c} onClick={() => { setCat(c); setPage(1); }}
+            style={{ padding:"5px 12px", borderRadius:14, border:`1px solid ${cat===c?C.navy:C.border}`,
+              background:cat===c?C.navy:C.bg, color:cat===c?"#fff":C.muted,
+              fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            {c}
+          </button>
+        ))}
       </div>
-
-      {/* 새내기 안내 */}
-      {cat === "새내기" && !isNewbie && profile?.role !== "admin" && (
-        <div style={{ background:C.purpleLight, borderRadius:12, padding:"14px 18px", marginBottom:16, fontSize:13, color:C.purple }}>
-          🌱 새내기 탭은 {newbiePrefix}학번({currentYear}년 입학) 학생만 이용할 수 있습니다.
-        </div>
-      )}
+      {/* 익명/실명 안내 */}
+      <div style={{ fontSize:10, color:C.muted, marginBottom:10 }}>
+        익명: 자유·질문·강의 &nbsp;|&nbsp; 실명: 정보·취업·진로·장터
+      </div>
 
       {/* 검색 */}
       <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
@@ -341,25 +347,42 @@ export default function Community() {
 
       {/* 게시글 목록 */}
       {filtered.length === 0 && <Empty icon="📝" text="게시글이 없습니다" />}
-      {filtered.map(p => (
-        <Card key={p.id} onClick={() => openPost(p)} style={{ marginBottom:10, cursor:"pointer" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-            <div style={{ display:"flex", gap:6, alignItems:"center" }}>
-              <span style={{ background:catBg(p.category), color:catColor(p.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{p.category}</span>
-              <span style={{ fontSize:14, fontWeight:700, color:C.text }}>{p.title}</span>
+      {filtered.map(p => {
+        const pComments = postComments(p.id);
+        const isLecture = p.category === LECTURE_CAT;
+        const avgRating = isLecture && pComments.length > 0
+          ? (pComments.reduce((s,c) => s+(c.rating||0), 0) / pComments.length).toFixed(1)
+          : null;
+        return (
+          <Card key={p.id} onClick={() => openPost(p)} style={{ marginBottom:10, cursor:"pointer" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
+              <div style={{ display:"flex", gap:6, alignItems:"center", flex:1, minWidth:0 }}>
+                <span style={{ background:catBg(p.category), color:catColor(p.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700, flexShrink:0 }}>{p.category}</span>
+                <span style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {isLecture ? p.lectureName : p.title}
+                </span>
+              </div>
+              <span style={{ fontSize:11, color:C.muted, flexShrink:0, marginLeft:8 }}>{formatDate(p.createdAt)}</span>
             </div>
-            <span style={{ fontSize:11, color:C.muted, flexShrink:0, marginLeft:8 }}>{formatDate(p.createdAt)}</span>
-          </div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
-          <div style={{ display:"flex", gap:14, fontSize:12, color:C.muted }}>
-            <span>👁 {p.views||0}</span>
-            <span>👍 {p.likes||0}</span>
-            <span>💬 {postComments(p.id).length}</span>
-            <span>익명</span>
-            {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
-          </div>
-        </Card>
-      ))}
+            {isLecture ? (
+              <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>
+                <span>👨‍🏫 {p.professor}</span>
+                {p.schedule && <span style={{ marginLeft:10 }}>🕐 {p.schedule}</span>}
+                {avgRating && <span style={{ marginLeft:10, color:C.yellow, fontWeight:700 }}>⭐ {avgRating}</span>}
+              </div>
+            ) : (
+              <div style={{ fontSize:13, color:C.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+            )}
+            <div style={{ display:"flex", gap:14, fontSize:12, color:C.muted }}>
+              <span>👁 {p.views||0}</span>
+              {!isLecture && <span>👍 {p.likes||0}</span>}
+              <span>💬 {pComments.length}{isLecture && avgRating ? ` · ⭐${avgRating}` : ""}</span>
+              <span style={{ marginLeft:"auto" }}>{displayName(p)}</span>
+              {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
+            </div>
+          </Card>
+        );
+      })}
 
       {/* 페이지네이션 */}
       {totalPages > 1 && (
@@ -398,13 +421,33 @@ export default function Community() {
             <span style={{ background:catBg(selPost.category), color:catColor(selPost.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{selPost.category}</span>
             {isSuper && <Btn onClick={() => adminDeletePost(selPost.id)} color={C.red} small>삭제</Btn>}
           </div>
-          <div style={{ fontSize:19, fontWeight:800, color:C.navy, marginBottom:6 }}>{selPost.title}</div>
-          <div style={{ display:"flex", gap:12, fontSize:12, color:C.muted, marginBottom:16 }}>
-            <span>{canSeeReal ? `${selPost.authorName} (익명)` : "익명"}</span>
-            <span>{formatDate(selPost.createdAt)}</span>
-            <span>👁 {selPost.views||0}</span>
-          </div>
-          <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+          {selPost.category === LECTURE_CAT ? (
+            <div style={{ marginBottom:16 }}>
+              <div style={{ fontSize:19, fontWeight:800, color:C.navy, marginBottom:6 }}>{selPost.lectureName}</div>
+              <div style={{ display:"flex", gap:12, fontSize:13, color:C.muted, flexWrap:"wrap" }}>
+                <span>👨‍🏫 {selPost.professor}</span>
+                {selPost.schedule && <span>🕐 {selPost.schedule}</span>}
+                {(() => {
+                  const pcs = postComments(selPost.id);
+                  const rated = pcs.filter(c => c.rating > 0);
+                  if (!rated.length) return null;
+                  const avg = (rated.reduce((s,c)=>s+(c.rating||0),0)/rated.length).toFixed(1);
+                  return <span style={{ color:C.yellow, fontWeight:700 }}>⭐ {avg} ({rated.length}명)</span>;
+                })()}
+                <span>👁 {selPost.views||0}</span>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div style={{ fontSize:19, fontWeight:800, color:C.navy, marginBottom:6 }}>{selPost.title}</div>
+              <div style={{ display:"flex", gap:12, fontSize:12, color:C.muted, marginBottom:16 }}>
+                <span>{displayName(selPost)}</span>
+                <span>{formatDate(selPost.createdAt)}</span>
+                <span>👁 {selPost.views||0}</span>
+              </div>
+              <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+            </div>
+          )}
           {selPost.images?.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
               {selPost.images.map((url, i) => (
@@ -434,7 +477,7 @@ export default function Community() {
             <div key={c.id} style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:8 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
                 <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{displayCommentName(c)}</span>
+                  <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{displayCommentName(c, selPost.category)}</span>
                   <span style={{ fontSize:11, color:C.muted }}>{formatDate(c.createdAt)}</span>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -452,18 +495,39 @@ export default function Community() {
                   )}
                 </div>
               </div>
+              {selPost.category === LECTURE_CAT && c.rating > 0 && (
+                <div style={{ fontSize:13, color:C.yellow, marginBottom:4 }}>
+                  {"⭐".repeat(c.rating)} <span style={{ fontSize:11, color:C.muted }}>({c.rating}/5)</span>
+                </div>
+              )}
               <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{c.content}</div>
             </div>
           ))}
 
           {/* 댓글 작성 */}
-          <div style={{ display:"flex", gap:8, marginTop:12 }}>
-            <input placeholder="댓글을 입력하세요..." value={commentText} onChange={e => setCommentText(e.target.value)}
+          {selPost.category === LECTURE_CAT && (
+            <div style={{ marginTop:12, marginBottom:6 }}>
+              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>별점</div>
+              <div style={{ display:"flex", gap:4 }}>
+                {[1,2,3,4,5].map(n => (
+                  <button key={n} onClick={() => setCommentRating(commentRating===n?0:n)}
+                    style={{ background:"none", border:"none", fontSize:24, cursor:"pointer", opacity:n<=commentRating?1:0.3 }}>
+                    ⭐
+                  </button>
+                ))}
+                {commentRating > 0 && <span style={{ fontSize:12, color:C.muted, alignSelf:"center" }}>{commentRating}점</span>}
+              </div>
+            </div>
+          )}
+          <div style={{ display:"flex", gap:8, marginTop:8 }}>
+            <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
               style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
             <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()}>등록</Btn>
           </div>
-          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>댓글은 익명으로 게시됩니다. Enter로 등록</div>
+          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>
+            {REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다"}
+          </div>
         </Modal>
       )}
 
@@ -475,25 +539,36 @@ export default function Community() {
           {/* 카테고리 선택 */}
           <div style={{ marginBottom:12 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>카테고리</div>
-            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-              {CATEGORIES.filter(c => c !== "전체").map(c => {
-                const isLocked = c === "새내기" && !isNewbie && profile?.role !== "admin";
-                return (
-                  <button key={c} onClick={() => !isLocked && setWriteForm(p=>({...p,category:c}))}
-                    style={{ padding:"7px 16px", borderRadius:20, border:`1px solid ${writeForm.category===c?catColor(c):C.border}`, background:writeForm.category===c?catBg(c):C.bg, color:writeForm.category===c?catColor(c):isLocked?C.border:C.muted, fontSize:13, fontWeight:600, cursor:isLocked?"not-allowed":"pointer" }}>
-                    {c === "새내기" && "🌱"}{c}{isLocked && " 🔒"}
-                  </button>
-                );
-              })}
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {CATEGORIES.filter(c => c !== "전체").map(c => (
+                <button key={c} onClick={() => setWriteForm(p=>({...p, category:c}))}
+                  style={{ padding:"5px 12px", borderRadius:12, border:`1px solid ${writeForm.category===c?catColor(c):C.border}`, background:writeForm.category===c?catBg(c):C.bg, color:writeForm.category===c?catColor(c):C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+            <div style={{ fontSize:10, color:C.muted, marginTop:6 }}>
+              {REAL_CATS.includes(writeForm.category) ? "✅ 실명으로 게시됩니다" : "🔒 익명으로 게시됩니다"}
             </div>
           </div>
 
-          <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
-            <textarea placeholder="내용을 입력하세요..." value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
-          </div>
+          {/* 강의 게시판 전용 폼 */}
+          {writeForm.category === LECTURE_CAT ? (
+            <div>
+              <Inp label="강의명 *" placeholder="예: TV촬영실습I" value={writeForm.lectureName} onChange={e => setWriteForm(p=>({...p,lectureName:e.target.value}))} />
+              <Inp label="담당 교수님 *" placeholder="예: 홍길동 교수님" value={writeForm.professor} onChange={e => setWriteForm(p=>({...p,professor:e.target.value}))} />
+              <Inp label="강의 요일/시간" placeholder="예: 월 09:00~12:00" value={writeForm.schedule} onChange={e => setWriteForm(p=>({...p,schedule:e.target.value}))} />
+            </div>
+          ) : (
+            <div>
+              <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
+                <textarea placeholder="내용을 입력하세요..." value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
+              </div>
+            </div>
+          )}
           {/* 이미지 첨부 */}
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>
@@ -535,7 +610,11 @@ export default function Community() {
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowWrite(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={submitPost} color={C.navy} full disabled={submitting || !writeForm.title.trim() || !writeForm.content.trim()}>
+            <Btn onClick={submitPost} color={C.navy} full disabled={submitting ||
+              (writeForm.category === LECTURE_CAT
+                ? !writeForm.lectureName.trim() || !writeForm.professor.trim()
+                : !writeForm.title.trim() || !writeForm.content.trim())
+            }>
               {submitting ? "게시 중..." : "게시하기"}
             </Btn>
           </div>
