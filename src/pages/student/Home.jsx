@@ -270,6 +270,18 @@ export default function StudentHome() {
   const [addFriendLoading, setAddFriendLoading] = useState(false);
   const [viewFriend,     setViewFriend]     = useState(null); // { name, dept, classes }
   const [viewFriendLoading, setViewFriendLoading] = useState(false);
+  const [friendSort,     setFriendSort]     = useState("name"); // "name" | "id"
+  const [pinnedFriends,  setPinnedFriends]  = useState(() => {
+    try { return JSON.parse(localStorage.getItem("pinnedFriends") || "[]"); } catch { return []; }
+  });
+
+  const togglePin = (fid) => {
+    setPinnedFriends(prev => {
+      const next = prev.includes(fid) ? prev.filter(id => id !== fid) : [...prev, fid];
+      localStorage.setItem("pinnedFriends", JSON.stringify(next));
+      return next;
+    });
+  };
   const [popupNotice,   setPopupNotice]   = useState(null);  // 팝업 공지
   const [popupComment,  setPopupComment]  = useState("");    // 팝업 댓글 입력
   const [popupSubmitting, setPopupSubmitting] = useState(false);
@@ -754,41 +766,72 @@ export default function StudentHome() {
                     <span style={{ fontSize:11 }}>친구 추가 탭에서 학번으로 신청해보세요</span>
                   </div>
                 ) : (
-                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                    {myFriends.map(f => {
-                      const isMine = f.userId === profile?.uid;
-                      const name = isMine ? f.friendName : f.userName;
-                      const sid  = isMine ? f.friendStudentId : f.userStudentId;
-                      const isViewing = viewFriend?.name === name;
-                      return (
-                        <div key={f.id}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"8px 12px" }}>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{name}</span>
-                              <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{sid}</span>
-                            </div>
-                            <button onClick={() => isViewing ? setViewFriend(null) : viewFriendTimetable(f)}
-                              style={{ background:isViewing?C.border:C.blueLight, color:isViewing?C.muted:C.blue, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
-                              {viewFriendLoading&&!isViewing?"...":isViewing?"접기":"시간표"}
-                            </button>
-                            <button onClick={() => deleteFriend(f)}
-                              style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, cursor:"pointer", flexShrink:0 }}>
-                              삭제
-                            </button>
-                          </div>
-                          {isViewing && viewFriend && (
-                            <div style={{ marginTop:6, overflowX:"auto" }}>
-                              <div style={{ minWidth:320 }}>
-                                {viewFriend.classes.length === 0
-                                  ? <div style={{ textAlign:"center", padding:"16px 0", fontSize:12, color:C.muted }}>등록된 시간표가 없어요</div>
-                                  : <Timetable classes={viewFriend.classes} readOnly />
-                                }
+                  <div>
+                    {/* 정렬 선택 */}
+                    <div style={{ display:"flex", gap:4, marginBottom:8 }}>
+                      <span style={{ fontSize:11, color:C.muted, alignSelf:"center" }}>정렬:</span>
+                      {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
+                        <button key={v} onClick={() => setFriendSort(v)}
+                          style={{ padding:"3px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      {[...myFriends]
+                        .map(f => {
+                          const isMine = f.userId === profile?.uid;
+                          return {
+                            ...f,
+                            _name: isMine ? f.friendName : f.userName,
+                            _sid:  isMine ? f.friendStudentId : f.userStudentId,
+                            _pinned: pinnedFriends.includes(f.id),
+                          };
+                        })
+                        .sort((a, b) => {
+                          if (a._pinned !== b._pinned) return a._pinned ? -1 : 1;
+                          if (friendSort === "name") return a._name?.localeCompare(b._name, "ko");
+                          return a._sid?.localeCompare(b._sid);
+                        })
+                        .map(f => {
+                          const isViewing = viewFriend?.name === f._name;
+                          return (
+                            <div key={f.id}>
+                              <div style={{ display:"flex", alignItems:"center", gap:6, background:f._pinned?C.tealLight:C.bg, borderRadius:10, padding:"8px 12px", border:f._pinned?`1px solid ${C.teal}30`:"none" }}>
+                                <div style={{ flex:1, minWidth:0 }}>
+                                  <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{f._name}</span>
+                                  {f._pinned && <span style={{ fontSize:9, color:C.teal, marginLeft:4 }}>📌</span>}
+                                  <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{f._sid}</span>
+                                </div>
+                                <button onClick={() => togglePin(f.id)}
+                                  style={{ background:f._pinned?C.teal:C.bg, color:f._pinned?"#fff":C.muted, border:`1px solid ${f._pinned?C.teal:C.border}`, borderRadius:7, padding:"4px 8px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                                  📌
+                                </button>
+                                <button onClick={() => isViewing ? setViewFriend(null) : viewFriendTimetable(f)}
+                                  style={{ background:isViewing?C.border:C.blueLight, color:isViewing?C.muted:C.blue, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                                  {viewFriendLoading&&!isViewing?"...":isViewing?"접기":"시간표"}
+                                </button>
+                                <button onClick={() => deleteFriend(f)}
+                                  style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, cursor:"pointer", flexShrink:0 }}>
+                                  삭제
+                                </button>
                               </div>
+                              {isViewing && viewFriend && (
+                                <div style={{ marginTop:6, overflowX:"auto" }}>
+                                  <div style={{ minWidth:320 }}>
+                                    {viewFriend.classes.length === 0
+                                      ? <div style={{ textAlign:"center", padding:"16px 0", fontSize:12, color:C.muted }}>등록된 시간표가 없어요</div>
+                                      : <Timetable classes={viewFriend.classes} readOnly />
+                                    }
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+                          );
+                        })
+                      }
+                    </div>
                   </div>
                 )}
               </div>
