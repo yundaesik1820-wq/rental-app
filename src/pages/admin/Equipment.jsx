@@ -225,6 +225,90 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
   );
 }
 
+// ── 모델별 그룹 카드 ────────────────────────────────────────
+function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
+  const [open, setOpen] = useState(false);
+  const thumb = rep.displayPhotoUrl || (rep.photoUrls?.[0]) || null;
+
+  // 상태별 카운트
+  const avail    = units.filter(u => (u.status||"대여가능") === "대여가능").length;
+  const renting  = units.filter(u => u.status === "대여중").length;
+  const repair   = units.filter(u => u.status === "수리중").length;
+  const total    = units.length;
+
+  const statusSummaryColor = avail === 0 ? C.red : avail < total ? C.yellow : C.green;
+
+  return (
+    <div style={{ background:C.surface, borderRadius:12, border:`1.5px solid ${statusSummaryColor}40`, overflow:"hidden" }}>
+      {/* 대표 행 */}
+      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px" }}>
+        {/* 썸네일 */}
+        <div style={{ width:42, height:42, borderRadius:8, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {thumb
+            ? <img src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+            : <span style={{ fontSize:18 }}>📷</span>
+          }
+        </div>
+
+        {/* 정보 */}
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
+            <span style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{rep.modelName}</span>
+            {rep.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[rep.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>Lv.{rep.licenseLevel}</span> : null; })()}
+            {/* 재고 요약 */}
+            <span style={{ fontSize:10, fontWeight:700, color:statusSummaryColor, flexShrink:0 }}>
+              {avail}/{total}대
+            </span>
+          </div>
+          <div style={{ display:"flex", gap:4, flexWrap:"wrap", alignItems:"center" }}>
+            {rep.majorCategory && <span style={{ fontSize:10, color:C.blue, background:C.blueLight, borderRadius:4, padding:"0px 5px" }}>{rep.majorCategory}</span>}
+            {rep.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{rep.minorCategory}</span>}
+            {rep.subCategory   && <span style={{ fontSize:10, color:C.muted }}>· {rep.subCategory}</span>}
+            {rep.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {rep.manufacturer}</span>}
+            {renting > 0 && <span style={{ fontSize:10, color:C.blue }}>대여중 {renting}</span>}
+            {repair  > 0 && <span style={{ fontSize:10, color:C.yellow }}>수리중 {repair}</span>}
+          </div>
+        </div>
+
+        {/* 펼치기 + 추가 버튼 */}
+        <div style={{ display:"flex", gap:4, flexShrink:0, alignItems:"center" }}>
+          <button onClick={() => onEdit(rep)}       style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>수정</button>
+          <button onClick={() => { setOpen(o => !o); }} style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
+            {open ? "접기" : `${total}대 ▾`}
+          </button>
+        </div>
+      </div>
+
+      {/* 개별 호기 목록 (펼침) */}
+      {open && (
+        <div style={{ borderTop:`1px solid ${C.border}` }}>
+          {units.map(u => {
+            const sc = { 대여가능: C.green, 대여중: C.blue, 수리중: C.yellow, 대여불가: C.red }[u.status] || C.muted;
+            const sb = { 대여가능: C.greenLight, 대여중: C.blueLight, 수리중: C.yellowLight, 대여불가: C.redLight }[u.status] || C.bg;
+            return (
+              <div key={u.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 12px 7px 18px", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ flex:1, display:"flex", gap:6, alignItems:"center", minWidth:0 }}>
+                  <span style={{ fontSize:11, fontWeight:700, color:C.muted }}>{u.unitNo || "-"}</span>
+                  {u.itemNo && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>#{u.itemNo}</span>}
+                  {u.location && <span style={{ fontSize:10, color:C.muted }}>📍{u.location}</span>}
+                  {u.serialNo && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>S/N:{u.serialNo}</span>}
+                </div>
+                <span style={{ fontSize:10, background:sb, color:sc, borderRadius:4, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>{u.status||"대여가능"}</span>
+                <div style={{ display:"flex", gap:3, flexShrink:0 }}>
+                  <button onClick={() => onEdit(u)}         style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>수정</button>
+                  <button onClick={() => onCycleStatus(u)}  style={{ background:C.yellowLight, color:C.yellow, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>상태</button>
+                  <button onClick={() => onDetail(u)}       style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>상세</button>
+                  <button onClick={() => onDelete(u.id)}    style={{ background:C.redLight, color:C.red, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>삭제</button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── 엑셀 임포트 모달 ──────────────────────────────────────
 function ExcelImportModal({ onClose, onImport }) {
   const inputRef              = useRef();
@@ -578,12 +662,14 @@ export default function Equipment() {
 
   return (
     <div>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <PageTitle>🔧 장비 관리 <span style={{ fontSize:14, color:C.muted, fontWeight:400 }}>— 1대 = 1행</span></PageTitle>
-        <div style={{ display:"flex", gap:10 }}>
-          <Btn onClick={exportExcel} color={C.green}>📤 엑셀 내보내기</Btn>
-          <Btn onClick={() => setShowImport(true)} color={C.teal}>📥 엑셀 일괄 등록</Btn>
-          <Btn onClick={() => setShowAdd(true)}>+ 장비 추가</Btn>
+      <div style={{ marginBottom:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+          <div style={{ fontSize:15, fontWeight:800, color:C.navy }}>🔧 장비 관리</div>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={exportExcel}              style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📤 내보내기</button>
+            <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>📥 일괄등록</button>
+            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>+ 추가</button>
+          </div>
         </div>
       </div>
 
@@ -1070,19 +1156,34 @@ export default function Equipment() {
         </div>
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(320px,1fr))", gap:14 }}>
-        {filtered.map(e => (
-          <EquipCard key={e.id} e={e}
-            onDetail={setDetailItem}
-            onInsp={setInspItem}
-            onDelete={id => deleteItem("equipments", id)}
-            onCycleStatus={cycleStatus}
-            onEdit={startEdit}
-            onCopy={startCopy}
-          />
-        ))}
-      </div>
-      {filtered.length === 0 && <Empty icon="🔧" text="등록된 장비가 없습니다" />}
+      {/* 모델별 그룹화 */}
+      {(() => {
+        // 모델명 기준 그룹화
+        const groups = Object.values(
+          filtered.reduce((acc, e) => {
+            const key = e.modelName || e.id;
+            if (!acc[key]) acc[key] = { rep: e, units: [] };
+            acc[key].units.push(e);
+            return acc;
+          }, {})
+        );
+        return groups.length === 0
+          ? <Empty icon="🔧" text="등록된 장비가 없습니다" />
+          : (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {groups.map(({ rep, units }) => (
+                <EquipCardGroup key={rep.modelName||rep.id} rep={rep} units={units}
+                  onDetail={setDetailItem}
+                  onInsp={setInspItem}
+                  onDelete={id => deleteItem("equipments", id)}
+                  onCycleStatus={cycleStatus}
+                  onEdit={startEdit}
+                  onCopy={startCopy}
+                />
+              ))}
+            </div>
+          );
+      })()}
 
       {inspItem   && <InspModal   item={inspItem}   inspections={inspections} onClose={() => setInspItem(null)} />}
       {detailItem && <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onSave={(id, data) => updateItem("equipments", id, data)} />}
