@@ -136,7 +136,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         </div>
       )}
 
-      <div style={{ display:"grid", gridTemplateColumns: sel ? "1fr 360px" : "1fr", gap:20, alignItems:"start" }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
         {/* 캘린더 */}
         <Card style={{ padding: "20px 16px" }}>
@@ -169,34 +169,18 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
                   background: isSel ? C.navy : isToday ? C.blueLight : C.surface,
                   border:`2px solid ${isSel ? C.navy : isToday ? C.blue : C.border}`,
                   transition:"all 0.15s",
-                  minHeight: isAdmin ? 72 : 52,
+                  minHeight: isAdmin ? 56 : 44,
                 }}>
                   <div style={{ fontSize:13, fontWeight:isSel||isToday?800:400, color:isSel?"#fff":isToday?C.blue:dow===0?C.red:dow===6?C.blue:C.text, marginBottom:3 }}>{d}</div>
 
-                  {/* 관리자: 이벤트 태그 */}
-                  {isAdmin && (
-                    <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
-                      {events.slice(0,2).map((r,j) => {
+                  {/* 관리자: 이벤트 도트 + 건수 */}
+                  {isAdmin && events.length > 0 && (
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:2, justifyContent:"center" }}>
+                      {events.slice(0,3).map((r,j) => {
                         const sm = STATUS_META[r.status] || {};
-                        return (
-                          <div key={j} onClick={e => { e.stopPropagation(); setDetail(r); }} style={{
-                            background: isSel ? "rgba(255,255,255,0.2)" : sm.bg || C.bg,
-                            borderLeft: `3px solid ${sm.color || C.muted}`,
-                            borderRadius:4, padding:"1px 4px",
-                            fontSize:9, fontWeight:600,
-                            color: isSel ? "#fff" : sm.color || C.muted,
-                            whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis",
-                            cursor:"pointer",
-                          }}>
-                            {r.studentName} · {getItemLabel(r)}
-                          </div>
-                        );
+                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%", background:isSel?"rgba(255,255,255,0.8)":sm.color||C.muted, flexShrink:0 }} />;
                       })}
-                      {events.length > 2 && (
-                        <div style={{ fontSize:9, color:isSel?"rgba(255,255,255,0.7)":C.muted, textAlign:"center", fontWeight:600 }}>
-                          +{events.length-2}건 더
-                        </div>
-                      )}
+                      {events.length > 3 && <div style={{ fontSize:8, color:isSel?"rgba(255,255,255,0.7)":C.muted, fontWeight:700 }}>+{events.length-3}</div>}
                     </div>
                   )}
 
@@ -234,15 +218,17 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
           )}
         </Card>
 
-        {/* 선택 날짜 상세 패널 */}
+        {/* 선택 날짜 상세 패널 - 캘린더 아래 */}
         {sel && (
           <div>
             <Card style={{ border:`2px solid ${C.blue}25` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                <div style={{ fontSize:16, fontWeight:800, color:C.navy }}>{month}월 {sel}일</div>
-                <button onClick={() => setSel(null)} style={{ background:"none", border:"none", color:C.muted, fontSize:20, cursor:"pointer" }}>✕</button>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ fontSize:16, fontWeight:800, color:C.navy }}>{month}월 {sel}일</div>
+                  <span style={{ fontSize:12, color:C.muted, background:C.bg, borderRadius:12, padding:"2px 10px" }}>총 {selEvents.length}건</span>
+                </div>
+                <button onClick={() => setSel(null)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", color:C.muted, fontSize:12, cursor:"pointer" }}>닫기</button>
               </div>
-              <div style={{ fontSize:12, color:C.muted, marginBottom:12 }}>총 {selEvents.length}건</div>
 
               {selEvents.length === 0 && (
                 <div style={{ fontSize:13, color:C.muted, textAlign:"center", padding:"24px 0" }}>이 날 일정이 없습니다</div>
