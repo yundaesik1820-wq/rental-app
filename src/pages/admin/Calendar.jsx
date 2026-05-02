@@ -95,16 +95,16 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
       {/* 관리자 월간 통계 */}
       {isAdmin && (
-        <div style={{ display:"flex", gap:12, marginBottom:20, flexWrap:"wrap" }}>
+        <div style={{ display:"flex", gap:6, marginBottom:12 }}>
           {[
-            ["이번 달 전체", stats.total, C.blue, C.blueLight],
-            ["승인 대기",    stats.pending, C.yellow, "#FFFBEB"],
-            ["승인됨",       stats.approved, C.teal, C.tealLight],
-            ["대여 중",      stats.active, C.navy, "#EEF2FF"],
+            ["전체", stats.total, C.blue, C.blueLight],
+            ["대기", stats.pending, C.yellow, C.yellowLight],
+            ["승인", stats.approved, C.teal, C.tealLight],
+            ["대여중", stats.active, C.navy, C.blueLight],
           ].map(([label, val, col, bg]) => (
-            <div key={label} style={{ background: bg, borderRadius:12, padding:"12px 20px", border:`1px solid ${col}30`, flex:"1 1 100px", minWidth:100 }}>
-              <div style={{ fontSize:22, fontWeight:900, color:col }}>{val}</div>
-              <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{label}</div>
+            <div key={label} style={{ background:bg, borderRadius:10, padding:"6px 10px", border:`1px solid ${col}30`, flex:1, textAlign:"center" }}>
+              <div style={{ fontSize:16, fontWeight:900, color:col }}>{val}</div>
+              <div style={{ fontSize:10, color:C.muted }}>{label}</div>
             </div>
           ))}
         </div>
@@ -112,8 +112,8 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
       {/* 상태 필터 (관리자) */}
       {isAdmin && (
-        <div style={{ display:"flex", gap:8, marginBottom:16, flexWrap:"wrap" }}>
-          <span style={{ fontSize:12, color:C.muted, alignSelf:"center" }}>표시:</span>
+        <div style={{ display:"flex", gap:4, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", alignItems:"center" }}>
+          <span style={{ fontSize:10, color:C.muted, flexShrink:0 }}>표시:</span>
           {ALL_STATUSES.map(s => {
             const m = STATUS_META[s] || {};
             const on = statusFilter.includes(s);
@@ -121,16 +121,16 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               <button key={s} onClick={() => toggleStatus(s)} style={{
                 background: on ? m.color : C.surface,
                 color: on ? "#fff" : C.muted,
-                border: `1.5px solid ${on ? m.color : C.border}`,
-                borderRadius:20, padding:"4px 12px", fontSize:12,
-                fontWeight:600, cursor:"pointer", transition:"all 0.15s",
+                border: `1px solid ${on ? m.color : C.border}`,
+                borderRadius:12, padding:"3px 9px", fontSize:10,
+                fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
               }}>
                 {s}
               </button>
             );
           })}
           <button onClick={() => setStatusFilter(ALL_STATUSES.filter(s=>s!=="거절됨"))}
-            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:20, padding:"4px 12px", fontSize:12, color:C.muted, cursor:"pointer" }}>
+            style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:12, padding:"3px 9px", fontSize:10, color:C.muted, cursor:"pointer", flexShrink:0 }}>
             초기화
           </button>
         </div>
