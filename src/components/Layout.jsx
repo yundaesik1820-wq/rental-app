@@ -10,7 +10,7 @@ import {
 
 const ADMIN_NAV = [
   { id: "home",     icon: Home,          label: "대시보드" },
-  { id: "equip",    icon: Wrench,        label: "장비 관리" },
+  { id: "equip",    icon: Wrench,        label: "장비/시설" },
   { id: "rental",   icon: ClipboardList, label: "대여/반납" },
   { id: "students", icon: Users,         label: "학생 관리" },
   { id: "calendar", icon: Calendar,      label: "캘린더"    },
