@@ -585,11 +585,18 @@ export default function Community() {
               </div>
             </div>
           )}
-          {/* 이미지 첨부 */}
-          <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>
-              이미지 첨부 <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
+          {/* 이미지 첨부 - 강의 게시판 제외 */}
+          {writeForm.category !== LECTURE_CAT && <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
+              이미지 첨부{" "}
+              <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
+              {writeForm.category === "장터" && <span style={{ color:C.red, fontWeight:600, fontSize:11 }}> · 필수</span>}
             </div>
+            {writeForm.category === "장터" && (
+              <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>
+                📦 장터 게시판은 제품 사진을 최소 1장 이상 업로드해야 글 작성이 가능해요
+              </div>
+            )}
             {writeForm.images.length > 0 && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:8 }}>
                 {writeForm.images.map((url, i) => (
@@ -619,17 +626,22 @@ export default function Community() {
                 } catch { alert("이미지 업로드 실패"); }
                 finally { setImgUploading(false); e.target.value = ""; }
               }} />
-          </div>
+          </div>}
 
           <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
-            ⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다.
+            {writeForm.category === LECTURE_CAT
+              ? "⚠️ 익명으로 게시되며, 학생들이 댓글로 후기를 남길 수 있어요."
+              : REAL_CATS.includes(writeForm.category)
+              ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
+              : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowWrite(false)} color={C.muted} outline full>취소</Btn>
             <Btn onClick={submitPost} color={C.navy} full disabled={submitting ||
               (writeForm.category === LECTURE_CAT
                 ? !writeForm.lectureName.trim() || !writeForm.professor.trim()
-                : !writeForm.title.trim() || !writeForm.content.trim())
+                : !writeForm.title.trim() || !writeForm.content.trim() ||
+                  (writeForm.category === "장터" && writeForm.images.length === 0))
             }>
               {submitting ? "게시 중..." : "게시하기"}
             </Btn>
