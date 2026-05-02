@@ -13,7 +13,7 @@ const ADMIN_NAV = [
   { id: "equip",    icon: Wrench,        label: "장비/시설" },
   { id: "rental",   icon: ClipboardList, label: "대여/반납" },
   { id: "students", icon: Users,         label: "학생 관리" },
-  { id: "calendar", icon: Calendar,      label: "캘린더"    },
+  { id: "calendar", icon: Calendar,      label: "캘린더/통계" },
   { id: "notices",  icon: Megaphone,     label: "공지사항"  },
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
   { id: "license",  icon: GraduationCap, label: "라이센스"  },
@@ -29,7 +29,7 @@ const STU_NAV = [
   { id: "license",   icon: GraduationCap, label: "라이센스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
-  { id: "calendar",  icon: Calendar,      label: "캘린더"   },
+  { id: "calendar",  icon: Calendar,      label: "캘린더/통계" },
   { id: "inquiry",   icon: MessageCircle, label: "문의"     },
   { id: "profile",   icon: UserCircle,    label: "내 정보"  },
 ];
