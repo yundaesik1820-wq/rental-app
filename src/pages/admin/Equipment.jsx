@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { C } from "../../theme";
-import FacilityAdmin from "./FacilityAdmin.jsx";
+import { lazy, Suspense } from "react";
+const FacilityAdmin = lazy(() => import("./FacilityAdmin.jsx"));
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { storage } from "../../firebase";
@@ -1160,8 +1161,7 @@ export default function Equipment() {
       {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
 
       {/* 장비 탭 */}
-      {activeTab === "equip" && (
-      <div>
+      {activeTab === "equip" && (<>
       {/* 검색 + 필터 */}
       <div style={{ display:"flex", gap:14, marginBottom:14, flexWrap:"wrap" }}>
         <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
@@ -1200,11 +1200,10 @@ export default function Equipment() {
             </div>
           );
       })()}
-      </div>
-      )}
+      </>)}
 
       {/* 시설 탭 */}
-      {activeTab === "facility" && <FacilityAdmin />}
+      {activeTab === "facility" && <Suspense fallback={<div style={{padding:20,color:C.muted}}>로딩 중...</div>}><FacilityAdmin /></Suspense>}
 
       {inspItem   && <InspModal   item={inspItem}   inspections={inspections} onClose={() => setInspItem(null)} />}
       {detailItem && <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onSave={(id, data) => updateItem("equipments", id, data)} />}
