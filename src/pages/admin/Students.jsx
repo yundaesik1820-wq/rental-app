@@ -545,20 +545,32 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 탭 ── */}
-      <div style={{ display:"flex", gap:4, marginBottom:14, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, alignItems:"center" }}>
-        {tabs.map(t => (
-          <button key={t.id}
-            onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
-            style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {t.label}
+      <div style={{ display:"flex", flexDirection:"column", gap:5, marginBottom:14 }}>
+        {/* 1행: 계정생성 · 비번초기화 · 가입승인대기 */}
+        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+          {tabs.slice(0,3).map(t => (
+            <button key={t.id}
+              onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
+              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+        {/* 2행: 학생목록 · 교수님목록 · 관리자목록 · 🗑️ */}
+        <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+          {tabs.slice(3).map(t => (
+            <button key={t.id}
+              onClick={() => { setTab(t.id); setSearch(""); }}
+              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+              {t.label}
+            </button>
+          ))}
+          <button onClick={() => setShowArchive(true)}
+            title={`거절됨 (${rejectedList.length}) / 탈퇴 (${withdrawnList.length})`}
+            style={{ background:C.surface, color:C.muted, border:`1px solid ${C.border}`, borderRadius:10, padding:"5px 8px", fontSize:14, cursor:"pointer" }}>
+            🗑️
           </button>
-        ))}
-        {/* 거절됨/탈퇴 아카이브 버튼 */}
-        <button onClick={() => setShowArchive(true)}
-          title={`거절됨 (${rejectedList.length}) / 탈퇴 (${withdrawnList.length})`}
-          style={{ background:C.surface, color:C.muted, border:`1px solid ${C.border}`, borderRadius:10, padding:"5px 8px", fontSize:14, cursor:"pointer", flexShrink:0 }}>
-          🗑️
-        </button>
+        </div>
       </div>
 
       {/* ── 검색 (학생 탭에서만) ── */}
