@@ -38,6 +38,7 @@ export default function Students({ readOnly = false }) {
 
   const [tab, setTab]           = useState("pending");
   const [showCreateMenu, setShowCreateMenu] = useState(false);
+  const [showArchive,    setShowArchive]    = useState(false); // 거절됨/탈퇴 모달
   const [search, setSearch] = useState("");
 
   // ── 학생 직접 추가 ──────────────────────────────────────
@@ -265,14 +266,12 @@ export default function Students({ readOnly = false }) {
   const pendingResets = resetRequests.filter(r => r.status === "pending");
 
   const allTabs = [
-    { id:"create",    label:"계정 생성",  color:C.teal,   row:1 },
-    { id:"pwreset",   label:`비번 초기화 ${pendingResets.length > 0 ? `(${pendingResets.length})` : ""}`, color:C.orange, row:2 },
-    { id:"pending",   label:`가입 승인 대기 (${pendingList.length})`, color:C.yellow, row:2 },
-    { id:"approved",  label:`학생 목록 (${approvedList.length})`,    color:C.green,  row:3 },
-    { id:"professor", label:`교수님 목록 (${profList.length})`,       color:C.blue,   row:3 },
-    { id:"admin",     label:`관리자 목록 (${adminList.length})`,      color:C.purple, row:3 },
-    { id:"rejected",  label:`거절됨 (${rejectedList.length})`,        color:C.red,    row:4, hidden:true },
-    { id:"withdrawn", label:`탈퇴 (${withdrawnList.length})`,         color:C.muted,  row:4, hidden:true },
+    { id:"create",    label:"계정 생성",                              color:C.teal   },
+    { id:"pwreset",   label:`비번 초기화${pendingResets.length > 0 ? ` (${pendingResets.length})` : ""}`, color:C.orange },
+    { id:"pending",   label:`가입 승인 대기 (${pendingList.length})`, color:C.yellow },
+    { id:"approved",  label:`학생 목록 (${approvedList.length})`,     color:C.green  },
+    { id:"professor", label:`교수님 목록 (${profList.length})`,        color:C.blue   },
+    { id:"admin",     label:`관리자 목록 (${adminList.length})`,       color:C.purple },
   ];
   const tabs = readOnly ? allTabs.filter(t => t.id === "approved") : allTabs;
 
@@ -284,16 +283,8 @@ export default function Students({ readOnly = false }) {
   return (
     <div>
       {/* 헤더 */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20, flexWrap:"wrap", gap:10 }}>
+      <div style={{ marginBottom:16 }}>
         <PageTitle>👥 학생 관리</PageTitle>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <Btn onClick={() => setShowAddProf(true)}  color={C.blue}>🎓 교수 계정 생성</Btn>
-          {!readOnly && <>
-          <Btn onClick={() => { setShowBulk(true); setBulkRows([]); setBulkErr(""); }} color={C.blue}>📥 학생 일괄 등록</Btn>
-          <Btn onClick={() => setShowAddAdmin(true)} color={C.navy}>관리자 추가</Btn>
-        </>}
-          <Btn onClick={() => setShowAdd(true)}       color={C.purple}>+ 학생 직접 추가</Btn>
-        </div>
       </div>
 
       {/* 승인 대기 배너 */}
@@ -554,32 +545,20 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 탭 ── */}
-      <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:16 }}>
-        {[1,2,3,4].map(row => {
-          const rowTabs = tabs.filter(t => t.row === row);
-          if (rowTabs.length === 0) return null;
-          // 4행(거절/탈퇴)은 현재 선택된 탭이 없으면 숨기기
-          const isHiddenRow = row === 4;
-          const hasSelected = rowTabs.some(t => t.id === tab);
-          return (
-            <div key={row} style={{ display:"flex", gap:5 }}>
-              {/* 4행은 아이콘 버튼으로 축소 표시 */}
-              {isHiddenRow && !hasSelected ? (
-                <button onClick={() => { setTab(rowTabs[0].id); setSearch(""); }}
-                  style={{ background:C.surface, color:C.muted, border:`1px solid ${C.border}`, borderRadius:10, padding:"4px 10px", fontSize:10, fontWeight:600, cursor:"pointer" }}>
-                  더보기 (거절됨/탈퇴)
-                </button>
-              ) : (
-                rowTabs.map(t => (
-                  <button key={t.id} onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
-                    style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
-                    {t.label}
-                  </button>
-                ))
-              )}
-            </div>
-          );
-        })}
+      <div style={{ display:"flex", gap:4, marginBottom:14, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, alignItems:"center" }}>
+        {tabs.map(t => (
+          <button key={t.id}
+            onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
+            style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            {t.label}
+          </button>
+        ))}
+        {/* 거절됨/탈퇴 아카이브 버튼 */}
+        <button onClick={() => setShowArchive(true)}
+          title={`거절됨 (${rejectedList.length}) / 탈퇴 (${withdrawnList.length})`}
+          style={{ background:C.surface, color:C.muted, border:`1px solid ${C.border}`, borderRadius:10, padding:"5px 8px", fontSize:14, cursor:"pointer", flexShrink:0 }}>
+          🗑️
+        </button>
       </div>
 
       {/* ── 검색 (학생 탭에서만) ── */}
@@ -675,24 +654,58 @@ export default function Students({ readOnly = false }) {
         </>
       )}
 
-      {/* ── 거절됨 ── */}
-      {tab === "rejected" && (
-        <>
-          {filtered.length === 0 && <Empty icon="🚫" text="거절된 학생이 없습니다" />}
-          {filtered.map(s => (
-            <Card key={s.id} style={{ opacity:0.7 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <Avatar name={s.name||"?"} size={46} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</div>
-                  <div style={{ fontSize:12, color:C.blue, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
-                  <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.email}</div>
-                </div>
-                <Btn onClick={() => { setApproveTarget(s); setLicense("없음"); }} color={C.green} small>재승인</Btn>
+      {/* ── 아카이브 모달 (거절됨 + 탈퇴) ── */}
+      {showArchive && (
+        <Modal onClose={() => setShowArchive(false)} width={500}>
+          <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:16 }}>🗑️ 아카이브</div>
+
+          {/* 거절됨 */}
+          <div style={{ fontSize:13, fontWeight:700, color:C.red, marginBottom:8 }}>
+            거절됨 ({rejectedList.length})
+          </div>
+          {rejectedList.length === 0
+            ? <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>거절된 학생이 없습니다</div>
+            : <div style={{ marginBottom:16, display:"flex", flexDirection:"column", gap:6 }}>
+                {rejectedList.map(s => (
+                  <div key={s.id} style={{ background:C.bg, borderRadius:10, padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                    <Avatar name={s.name||"?"} size={36} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{s.name}</div>
+                      <div style={{ fontSize:11, color:C.muted }}>{s.studentId} · {s.dept}</div>
+                    </div>
+                    <button onClick={() => { setApproveTarget(s); setLicense("없음"); setShowArchive(false); }}
+                      style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                      재승인
+                    </button>
+                  </div>
+                ))}
               </div>
-            </Card>
-          ))}
-        </>
+          }
+
+          {/* 탈퇴 */}
+          <div style={{ fontSize:13, fontWeight:700, color:C.muted, marginBottom:8 }}>
+            탈퇴 ({withdrawnList.length})
+          </div>
+          {withdrawnList.length === 0
+            ? <div style={{ fontSize:12, color:C.muted }}>탈퇴된 학생이 없습니다</div>
+            : <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {withdrawnList.map(s => (
+                  <div key={s.id} style={{ background:C.bg, borderRadius:10, padding:"10px 14px", display:"flex", alignItems:"center", gap:10 }}>
+                    <Avatar name={s.name} size={36} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{s.name}</div>
+                      <div style={{ fontSize:11, color:C.muted }}>{s.dept} · {s.studentId}</div>
+                      {s.withdrawnAt && <div style={{ fontSize:10, color:C.red }}>탈퇴일: {new Date(s.withdrawnAt).toLocaleDateString("ko-KR")}</div>}
+                    </div>
+                    <button onClick={() => { restore(s); setShowArchive(false); }}
+                      style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                      복구
+                    </button>
+                  </div>
+                ))}
+              </div>
+          }
+        </Modal>
       )}
 
       {/* ── 교수 목록 ── */}
@@ -729,29 +742,7 @@ export default function Students({ readOnly = false }) {
       )}
 
       {/* ── 관리자 목록 ── */}
-      {tab === "withdrawn" && (
-        <>
-          <div style={{ background:C.yellowLight, borderRadius:12, padding:"12px 16px", marginBottom:16, fontSize:13, color:"#92400E" }}>
-            ⚠️ 탈퇴 처리된 학생 목록입니다. 계정은 유지되지만 로그인이 차단됩니다.
-          </div>
-          {withdrawnList.length === 0 && <Empty icon="🗑️" text="탈퇴된 학생이 없습니다" />}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:14 }}>
-            {withdrawnList.map(s => (
-              <Card key={s.id} style={{ border:`2px solid ${C.muted}30`, opacity:0.8 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
-                  <Avatar name={s.name} size={44} />
-                  <div>
-                    <div style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</div>
-                    <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.studentId}</div>
-                    {s.withdrawnAt && <div style={{ fontSize:11, color:C.red }}>탈퇴일: {new Date(s.withdrawnAt).toLocaleDateString("ko-KR")}</div>}
-                  </div>
-                </div>
-                <Btn onClick={() => restore(s)} color={C.green} full small>계정 복구</Btn>
-              </Card>
-            ))}
-          </div>
-        </>
-      )}
+
 
       {tab === "admin" && (
         <>
