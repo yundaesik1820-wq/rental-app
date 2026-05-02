@@ -392,6 +392,10 @@ export default function StudentHome() {
     try {
       const { collection: col, query: q, where: w, getDocs, addDoc, serverTimestamp } = await import("firebase/firestore");
       // 본인 학번 체크
+      if (addFriendId.trim().length < 8) {
+        setAddFriendMsg("error:학번을 정확히 입력해주세요 (8자리)");
+        setAddFriendLoading(false); return;
+      }
       if (addFriendId.trim() === profile?.studentId) {
         setAddFriendMsg("error:본인에게는 신청할 수 없어요");
         setAddFriendLoading(false); return;
