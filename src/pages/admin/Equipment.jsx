@@ -518,6 +518,7 @@ export default function Equipment() {
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: inspections } = useCollection("inspections", "createdAt");
 
+  const [activeTab, setActiveTab]     = useState("equip");
   const [search, setSearch]           = useState("");
   const [filter, setFilter]           = useState("전체");
   const [showAdd, setShowAdd]         = useState(false);
