@@ -246,34 +246,8 @@ export default function StudentHome() {
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
   // 받은/보낸 신청 완전 분리
-  const [receivedReqs, setReceivedReqs] = useState([]);
-  const [sentReqs,     setSentReqs]     = useState([]);
-  const [friendsFrom,  setFriendsFrom]  = useState([]);
-  const [friendsTo,    setFriendsTo]    = useState([]);
-
-  const friendRequests = [...receivedReqs, ...sentReqs];
-  const friends        = [...friendsFrom,  ...friendsTo];
-
-  useEffect(() => {
-    if (!profile?.uid) return;
-    const u1 = onSnapshot(
-      query(collection(db, "friendRequests"), where("toId",   "==", profile.uid)),
-      snap => setReceivedReqs(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    const u2 = onSnapshot(
-      query(collection(db, "friendRequests"), where("fromId", "==", profile.uid)),
-      snap => setSentReqs(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    const u3 = onSnapshot(
-      query(collection(db, "friends"), where("userId",   "==", profile.uid)),
-      snap => setFriendsFrom(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    const u4 = onSnapshot(
-      query(collection(db, "friends"), where("friendId", "==", profile.uid)),
-      snap => setFriendsTo(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-    );
-    return () => { u1(); u2(); u3(); u4(); };
-  }, [profile?.uid]);
+  const { data: friendRequests } = useCollection("friendRequests", "createdAt");
+  const { data: friends }        = useCollection("friends",        "createdAt");
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
   const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
   const { data: communityComments } = useCollection("communityComments", "createdAt");
