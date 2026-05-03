@@ -559,7 +559,7 @@ export default function Community() {
                   {"⭐".repeat(c.rating)} <span style={{ fontSize:11, color:C.muted }}>({c.rating}/5)</span>
                 </div>
               )}
-              <div style={{ fontSize:13, color:C.text, lineHeight:1.6 }}>{c.content}</div>
+              <div style={{ fontSize:13, color:C.text, lineHeight:1.6, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
             </div>
           ))}
 
@@ -578,14 +578,16 @@ export default function Community() {
               </div>
             </div>
           )}
-          <div style={{ display:"flex", gap:8, marginTop:8 }}>
+          <div style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"10px 14px", marginTop:8 }}>
             <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
-              style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
-            <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()}>등록</Btn>
-          </div>
-          <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>
-            {REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다"}
+              style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:11, color:C.muted }}>
+                {REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다"}
+              </span>
+              <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()} small>등록</Btn>
+            </div>
           </div>
         </Modal>
       )}

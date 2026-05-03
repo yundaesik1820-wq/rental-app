@@ -547,30 +547,30 @@ export default function StudentHome() {
 
       {/* 공지 팝업 모달 */}
       {popupNotice && (
-        <Modal onClose={() => setPopupNotice(null)} width={440}>
-          <div style={{ marginBottom:6 }}>
-            <span style={{ background:C.blueLight, color:C.navy, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{popupNotice.category || "공지"}</span>
+        <Modal onClose={() => setPopupNotice(null)} width={360}>
+          <div style={{ marginBottom:5 }}>
+            <span style={{ background:C.blueLight, color:C.navy, borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700 }}>{popupNotice.category || "공지"}</span>
           </div>
-          <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:12 }}>{popupNotice.title}</div>
-          <div style={{ fontSize:13, color:C.text, lineHeight:1.7, whiteSpace:"pre-wrap", background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:16 }}>
+          <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:8 }}>{popupNotice.title}</div>
+          <div style={{ fontSize:12, color:C.text, lineHeight:1.6, whiteSpace:"pre-wrap", background:C.bg, borderRadius:8, padding:"10px 12px", marginBottom:8, wordBreak:"break-word" }}>
             {popupNotice.content}
           </div>
-          <div style={{ fontSize:11, color:C.muted, marginBottom:14 }}>{popupNotice.date} · {popupNotice.author}</div>
+          <div style={{ fontSize:10, color:C.muted, marginBottom:10 }}>{popupNotice.date} · {popupNotice.author}</div>
 
           {/* 댓글 목록 */}
           {(() => {
             const popupComments = comments.filter(c => c.noticeId === popupNotice.id);
             return popupComments.length > 0 && (
-              <div style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>댓글 {popupComments.length}</div>
-                <div style={{ maxHeight:140, overflowY:"auto", display:"flex", flexDirection:"column", gap:6 }}>
+              <div style={{ marginBottom:8 }}>
+                <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>댓글 {popupComments.length}</div>
+                <div style={{ maxHeight:110, overflowY:"auto", display:"flex", flexDirection:"column", gap:4 }}>
                   {popupComments.map(c => (
-                    <div key={c.id} style={{ background:C.bg, borderRadius:8, padding:"8px 12px" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
-                        <span style={{ fontSize:11, fontWeight:700, color:C.text }}>{c.authorName}</span>
-                        <span style={{ fontSize:10, color:C.muted }}>{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("ko") : ""}</span>
+                    <div key={c.id} style={{ background:C.bg, borderRadius:7, padding:"6px 10px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:2 }}>
+                        <span style={{ fontSize:10, fontWeight:700, color:C.text }}>{c.authorName}</span>
+                        <span style={{ fontSize:9, color:C.muted }}>{c.createdAt?.toDate ? c.createdAt.toDate().toLocaleDateString("ko") : ""}</span>
                       </div>
-                      <div style={{ fontSize:12, color:C.text, lineHeight:1.5 }}>{c.content}</div>
+                      <div style={{ fontSize:11, color:C.text, lineHeight:1.5, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
                     </div>
                   ))}
                 </div>
@@ -578,27 +578,29 @@ export default function StudentHome() {
             );
           })()}
 
-          {/* 댓글 입력 */}
-          <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+          {/* 댓글 입력 - 박스 안에 */}
+          <div style={{ background:C.bg, borderRadius:9, padding:"8px 10px", marginBottom:10 }}>
             <input value={popupComment} onChange={e => setPopupComment(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitPopupComment(); }}}
               placeholder="댓글을 입력하세요..."
-              style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
-            <button onClick={submitPopupComment} disabled={popupSubmitting || !popupComment.trim()}
-              style={{ background:C.navy, color:"#fff", border:"none", borderRadius:9, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer", opacity: popupComment.trim() ? 1 : 0.5 }}>
-              {popupSubmitting ? "..." : "등록"}
-            </button>
+              style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
+            <div style={{ display:"flex", justifyContent:"flex-end" }}>
+              <button onClick={submitPopupComment} disabled={popupSubmitting || !popupComment.trim()}
+                style={{ background:popupComment.trim()?C.navy:C.border, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                {popupSubmitting ? "..." : "등록"}
+              </button>
+            </div>
           </div>
 
-          <div style={{ display:"flex", gap:10 }}>
+          <div style={{ display:"flex", gap:8 }}>
             <button onClick={() => {
               localStorage.setItem(`popup_hidden_${popupNotice.id}`, new Date().toISOString().slice(0,10));
               setPopupNotice(null);
-            }} style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
+            }} style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"8px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
               오늘 하루 안보기
             </button>
             <button onClick={() => setPopupNotice(null)}
-              style={{ flex:1, background:C.navy, border:"none", borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ flex:1, background:C.navy, border:"none", borderRadius:9, padding:"8px 0", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
               닫기
             </button>
           </div>
@@ -1053,12 +1055,14 @@ export default function StudentHome() {
                   );
                 })}
               </div>
-              <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"10px 14px" }}>
                 <input value={commentText} onChange={e => setCommentText(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); }}}
                   placeholder="댓글 입력 후 Enter"
-                  style={{ flex: 1, background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "9px 14px", fontSize: 13, fontFamily: "inherit", outline: "none" }} />
-                <Btn onClick={submitComment} color={C.navy} disabled={submitting || !commentText.trim()}>등록</Btn>
+                  style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:8 }} />
+                <div style={{ display:"flex", justifyContent:"flex-end" }}>
+                  <Btn onClick={submitComment} color={C.navy} disabled={submitting || !commentText.trim()} small>등록</Btn>
+                </div>
               </div>
             </div>
           </Modal>
