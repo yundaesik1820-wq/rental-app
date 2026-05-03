@@ -151,6 +151,27 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   );
 }
 
+// 학생용 문의 + 내정보 통합
+function StudentMyPage() {
+  const [view, setView] = React.useState("profile");
+  return (
+    <div>
+      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
+        {[["profile","👤 내 정보"],["inquiry","💬 문의"]].map(([v,l]) => (
+          <button key={v} onClick={() => setView(v)}
+            style={{ padding:"6px 18px", borderRadius:10, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
+              background: view===v ? "#1B2B6B" : "#1E293B",
+              color: view===v ? "#fff" : "#64748B" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {view === "profile" && <Profile />}
+      {view === "inquiry" && <StudentInquiry />}
+    </div>
+  );
+}
+
 // 학생용 대여이력 + 캘린더 통합
 function StudentCalendarHistory({ profile }) {
   const [view, setView] = React.useState("history");
@@ -337,10 +358,9 @@ function AppContent() {
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} />;
         case "notices":  return <Notices isAdmin={false} />;
-        case "profile":  return <Profile />;
         case "license":  return <License />;
         case "community": return <Community />;
-        case "inquiry":  return <StudentInquiry />;
+        case "mypage":   return <StudentMyPage />;
         default:         return <StudentHome />;
       }
     }

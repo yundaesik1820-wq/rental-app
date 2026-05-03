@@ -29,8 +29,7 @@ const STU_NAV = [
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
   { id: "calendar",  icon: Calendar,      label: "대여이력/캘린더" },
-  { id: "inquiry",   icon: MessageCircle, label: "문의"     },
-  { id: "profile",   icon: UserCircle,    label: "내 정보"  },
+  { id: "mypage",    icon: UserCircle,    label: "문의/내정보" },
 ];
 
 export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
@@ -51,10 +50,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
     ? ADMIN_NAV
     : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
-  // 모바일 하단 2줄 그리드
-  const half = Math.ceil(nav.length / 2);
-  const row1 = nav.slice(0, half);
-  const row2 = nav.slice(half);
+  // 모바일 하단 2줄 그리드 (4x2 고정)
+  const row1 = nav.slice(0, 4);
+  const row2 = nav.slice(4);
 
   const currentNav = nav.find(n => n.id === tab);
 
