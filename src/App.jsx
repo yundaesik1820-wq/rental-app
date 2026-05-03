@@ -376,75 +376,115 @@ function AppContent() {
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
-    const [mode, setMode]           = React.useState(null); // null=선택화면, "guide"=초보자, "expert"=전문가
-    const [reserveTab, setReserveTab] = React.useState("equip");
+    const [page, setPage] = React.useState("main"); // main | equip | equip-guide | equip-expert | facility | props
 
-    // 선택 화면
-    if (!mode) return (
+    const Back = ({ to="main" }) => (
+      <button onClick={() => setPage(to)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
+        ← 뒤로가기
+      </button>
+    );
+
+    const BannerCard = ({ onClick, mascot, gradient, title, desc, dark }) => (
+      <button onClick={onClick} style={{ background: dark ? "#1E293B" : `linear-gradient(135deg,${gradient})`, borderRadius:16, padding:"18px 20px", border: dark ? "2px solid #334155" : "none", cursor:"pointer", textAlign:"left", width:"100%", boxShadow: dark ? "none" : "0 4px 16px rgba(27,43,107,0.2)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+          <img src={`/mascot/${mascot}`} alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.25))" }} />
+          <div>
+            <div style={{ fontSize:17, fontWeight:800, color: dark ? "#F1F5F9" : "#fff", marginBottom:4 }}>{title}</div>
+            <div style={{ fontSize:13, color: dark ? "#64748B" : "rgba(255,255,255,0.8)" }}>{desc}</div>
+          </div>
+        </div>
+      </button>
+    );
+
+    // 메인 선택 화면
+    if (page === "main") return (
       <div>
-        {/* 상단 배너 */}
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
             <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 예약 신청 페이지야!</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>어떻게 장비를 고를지 선택해봐.<br/>초보자라면 렌토리랑 같이 골라봐 🎓</div>
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>무엇을 예약할까?</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비, 시설, 소품 중에서 선택해봐!<br/>필요한 걸 골라서 신청하면 돼 📋</div>
             </div>
           </div>
         </div>
-
-        {/* 선택 버튼 */}
-        <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-          <button onClick={() => setMode("guide")}
-            style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"20px", border:"none", cursor:"pointer", textAlign:"left", boxShadow:"0 4px 16px rgba(27,43,107,0.2)" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <img src="/mascot/hi.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
-              <div>
-                <div style={{ fontSize:17, fontWeight:800, color:"#fff", marginBottom:4 }}>초보자</div>
-                <div style={{ fontSize:13, color:"rgba(255,255,255,0.8)" }}>저와 함께 장비를 골라요!</div>
-              </div>
-            </div>
-          </button>
-          <button onClick={() => setMode("expert")}
-            style={{ background:"#1E293B", borderRadius:16, padding:"20px", border:"2px solid #334155", cursor:"pointer", textAlign:"left" }}>
-            <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-              <img src="/mascot/shrug.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
-              <div>
-                <div style={{ fontSize:17, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>전문가</div>
-                <div style={{ fontSize:13, color:"#64748B" }}>직접 장비를 고릅니다!</div>
-              </div>
-            </div>
-          </button>
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <BannerCard onClick={() => setPage("equip")} mascot="camera.png" gradient="#1B2B6B,#3B6CF8" title="🎬 장비 예약" desc="카메라, 렌즈, 조명 등 장비를 빌려요" />
+          <BannerCard onClick={() => setPage("facility")} mascot="curious.png" gradient="#0D9488,#0891B2" title="🏢 시설 예약" desc="스튜디오, 편집실 등 시설을 예약해요" />
+          <BannerCard onClick={() => setPage("props")} mascot="rental.png" gradient="#7C3AED,#DB2777" title="🎭 소품 예약" desc="의상, 소도구, 대도구를 빌려요" dark={false} />
         </div>
       </div>
     );
 
-    // 전문가 모드 (기존)
-    if (mode === "expert") return (
+    // 장비 예약 - 초보자/전문가 선택
+    if (page === "equip") return (
       <div>
-        <button onClick={() => setMode(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
-          ← 뒤로가기
-        </button>
-        <div style={{ display:"flex", background:"#F1F5F9", borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:"1px solid #E2E8F0" }}>
-          {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
-            <button key={v} onClick={() => setReserveTab(v)}
-              style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:reserveTab===v?"#1B2B6B":"transparent", color:reserveTab===v?"#fff":"#94A3B8", transition:"all 0.2s" }}>{l}</button>
-          ))}
+        <Back />
+        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#3B6CF8)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <img src="/mascot/hi.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>장비 예약이구나!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>처음이라면 렌토리와 함께 골라봐.<br/>익숙하다면 직접 선택해도 돼 📷</div>
+            </div>
+          </div>
         </div>
-        {reserveTab === "equip" ? <Reserve /> : <FacilityReserve />}
+        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+          <BannerCard onClick={() => setPage("equip-guide")} mascot="hi.png" gradient="#1B2B6B,#0D9488" title="🌱 초보자" desc="렌토리랑 같이 장비를 골라요!" />
+          <BannerCard onClick={() => setPage("equip-expert")} mascot="shrug.png" gradient="#334155,#1E293B" title="⚡ 전문가" desc="직접 장비를 선택합니다!" dark />
+        </div>
       </div>
     );
 
-    // 초보자 가이드 모드
-    return (
+    // 장비 - 초보자 가이드
+    if (page === "equip-guide") return (
       <div>
-        <button onClick={() => setMode(null)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
-          ← 뒤로가기
-        </button>
+        <Back to="equip" />
         <GuideReserve />
       </div>
     );
+
+    // 장비 - 전문가
+    if (page === "equip-expert") return (
+      <div>
+        <Back to="equip" />
+        <Reserve />
+      </div>
+    );
+
+    // 시설 예약
+    if (page === "facility") return (
+      <div>
+        <Back />
+        <FacilityReserve />
+      </div>
+    );
+
+    // 소품 예약
+    if (page === "props") return (
+      <div>
+        <Back />
+        <div style={{ background:"linear-gradient(135deg,#7C3AED,#DB2777)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <img src="/mascot/rental.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>소품 예약이구나!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>필요한 소품을 확인하고 대여 신청을 해봐 🎭</div>
+            </div>
+          </div>
+        </div>
+        <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748B" }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>🎭</div>
+          <div style={{ fontSize:14, fontWeight:600 }}>소품 예약 준비 중이에요</div>
+          <div style={{ fontSize:12, marginTop:6 }}>곧 이용할 수 있어요!</div>
+        </div>
+      </div>
+    );
+
+    return null;
   };
 
   const renderPage = () => {
