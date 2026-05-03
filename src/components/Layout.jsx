@@ -29,7 +29,7 @@ const STU_NAV = [
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
   { id: "calendar",  icon: Calendar,      label: "대여이력/캘린더" },
-  { id: "mypage",    icon: UserCircle,    label: "문의/내정보" },
+  { id: "mypage",    icon: UserCircle,    label: "내정보/문의" },
 ];
 
 export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
