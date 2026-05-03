@@ -182,10 +182,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
             grid-template-columns: 1fr !important;
           }
 
-          /* 3열 이상 그리드 → 1열 또는 2열 */
-          [style*="repeat(3"],
-          [style*="repeat(4"],
-          [style*="repeat(auto-fill"] {
+          /* 3열 이상 그리드 → 2열 (하단 탭 제외) */
+          :not(.bottom-nav-row)[style*="repeat(3"],
+          :not(.bottom-nav-row)[style*="repeat(auto-fill"] {
             grid-template-columns: repeat(2, 1fr) !important;
           }
 
@@ -276,7 +275,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         paddingBottom: "env(safe-area-inset-bottom, 8px)",
       }}>
         {[row1, row2].map((row, rowIdx) => (
-          <div key={rowIdx} style={{
+          <div key={rowIdx} className="bottom-nav-row" style={{
             display: "grid",
             gridTemplateColumns: `repeat(${row.length}, 1fr)`,
             borderTop: rowIdx === 1 ? `1px solid ${C.border}` : "none",
