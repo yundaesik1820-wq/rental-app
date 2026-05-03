@@ -49,7 +49,7 @@ export default function EquipList() {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
 
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("전체");
+  const [filter, setFilter]   = useState("");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
@@ -70,14 +70,14 @@ export default function EquipList() {
     ...CAT_ORDER.filter(c => rawCats.includes(c)),
     ...rawCats.filter(c => !CAT_ORDER.includes(c)), // 지정 안된 카테고리는 뒤에
   ];
-  const allCats = ["전체", ...sortedCats];
+  const allCats = sortedCats; // 전체 제거
 
   const filteredUnits = grouped.filter(e =>
-    (filter === "전체" || e.majorCategory === filter) &&
+    (!filter || e.majorCategory === filter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search) || e.manufacturer?.includes(search))
   );
   const filteredSets = setEquips.filter(e =>
-    (filter === "전체" || e.majorCategory === filter) &&
+    (!filter || e.majorCategory === filter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
@@ -98,11 +98,17 @@ export default function EquipList() {
         </div>
       </div>
 
-      {/* 1행: 대분류 카테고리 */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+      {/* 1행: 대분류 카테고리 (전체 제외, 1행 스크롤) */}
+      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
+        <button onClick={() => { setFilter(""); setSearch(""); }}
+          style={{ background:!filter?C.navy:C.surface, color:!filter?"#fff":C.muted, border:`1px solid ${!filter?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+          전체
+        </button>
         {allCats.map(c => (
           <button key={c} onClick={() => { setFilter(c); setSearch(""); }}
-            style={{ background: filter === c ? C.navy : C.surface, color: filter === c ? "#fff" : C.muted, border: `1px solid ${filter === c ? C.navy : C.border}`, borderRadius: 20, padding: "8px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>{c}</button>
+            style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            {c}
+          </button>
         ))}
       </div>
 

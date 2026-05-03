@@ -152,13 +152,13 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   );
 }
 
-// 학생용 대여 목록 통합 (장비/시설/소품)
+// 학생용 대여 목록 통합 (장비/시설/소품목록)
 function StudentRentalList() {
   const [view, setView] = React.useState("equip");
   return (
     <div>
       <div style={{ display:"flex", gap:4, marginBottom:16 }}>
-        {[["equip","🎬 장비 목록"],["facility","🏢 시설 목록"],["props","🎭 소품"]].map(([v,l]) => (
+        {[["equip","🎬 장비 목록"],["facility","🏢 시설 목록"],["props","🎭 소품목록"]].map(([v,l]) => (
           <button key={v} onClick={() => setView(v)}
             style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer",
               background: view===v ? "#1B2B6B" : "#1E293B",
@@ -177,15 +177,25 @@ function StudentRentalList() {
 // 학생용 시설 목록
 function StudentFacilityList() {
   const { data: facilities } = useCollectionHook("facilities", "createdAt");
-  const { C: colors } = { C: {} };
   return (
     <div>
+      {/* 시설 목록 배너 */}
+      <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 시설 목록 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 가능한 시설을 미리 확인해봐.<br/>촬영 스튜디오, 편집실 등을 예약할 수 있어 🏢</div>
+          </div>
+        </div>
+      </div>
       {facilities.length === 0
         ? <div style={{ textAlign:"center", padding:"40px 0", color:"#64748B" }}>등록된 시설이 없습니다</div>
         : facilities.map(f => (
           <div key={f.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
             <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{f.name}</div>
-            <div style={{ fontSize:12, color:"#64748B" }}>{f.location} · 수용 {f.capacity}명</div>
+            <div style={{ fontSize:12, color:"#64748B" }}>{f.location}{f.capacity ? ` · 수용 ${f.capacity}명` : ""}</div>
             {f.description && <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>{f.description}</div>}
           </div>
         ))
@@ -194,22 +204,49 @@ function StudentFacilityList() {
   );
 }
 
-// 학생용 소품 목록
+// 학생용 소품목록
 function StudentPropsList() {
   const { data: equipments } = useCollectionHook("equipments", "createdAt");
-  const props = equipments.filter(e => e.majorCategory === "소품" || e.minorCategory === "소품");
+  const PROP_CATS = ["의상", "소도구", "대도구"];
+  const [propCat, setPropCat] = React.useState("");
+  const allProps = equipments.filter(e => e.majorCategory === "소품" || PROP_CATS.includes(e.majorCategory));
+  const filtered = propCat ? allProps.filter(e => e.majorCategory === propCat || e.minorCategory === propCat) : allProps;
   return (
     <div>
-      {props.length === 0
+      {/* 소품목록 배너 */}
+      <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+          <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 소품 목록 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>촬영에 필요한 소품들을 확인해봐.<br/>의상, 소도구, 대도구를 빌릴 수 있어 🎭</div>
+          </div>
+        </div>
+      </div>
+      {/* 대분류 카테고리 버튼 */}
+      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
+        <button onClick={() => setPropCat("")}
+          style={{ background:!propCat?"#1B2B6B":"#1E293B", color:!propCat?"#fff":"#64748B", border:"none", borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+          전체
+        </button>
+        {PROP_CATS.map(c => (
+          <button key={c} onClick={() => setPropCat(c)}
+            style={{ background:propCat===c?"#1B2B6B":"#1E293B", color:propCat===c?"#fff":"#64748B", border:"none", borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            {c}
+          </button>
+        ))}
+      </div>
+      {filtered.length === 0
         ? <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748B" }}>
             <div style={{ fontSize:32, marginBottom:8 }}>🎭</div>
             <div>등록된 소품이 없습니다</div>
             <div style={{ fontSize:12, marginTop:4 }}>관리자가 소품을 등록하면 여기에 표시돼요</div>
           </div>
-        : props.map(e => (
+        : filtered.map(e => (
           <div key={e.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
             <div style={{ fontSize:14, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{e.modelName}</div>
-            <div style={{ fontSize:12, color:"#64748B" }}>{e.minorCategory} · {e.status || "대여가능"}</div>
+            <div style={{ fontSize:12, color:"#64748B" }}>{e.majorCategory} · {e.minorCategory} · {e.status||"대여가능"}</div>
           </div>
         ))
       }
