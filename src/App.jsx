@@ -193,10 +193,18 @@ function StudentFacilityList() {
       {facilities.length === 0
         ? <div style={{ textAlign:"center", padding:"40px 0", color:"#64748B" }}>등록된 시설이 없습니다</div>
         : facilities.map(f => (
-          <div key={f.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
-            <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{f.name}</div>
-            <div style={{ fontSize:12, color:"#64748B" }}>{f.location}{f.capacity ? ` · 수용 ${f.capacity}명` : ""}</div>
-            {f.description && <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>{f.description}</div>}
+          <div key={f.id} style={{ background:"#1E293B", borderRadius:12, overflow:"hidden", marginBottom:10, border:"1px solid #334155" }}>
+            {f.displayPhotoUrl && (
+              <div style={{ height:160, overflow:"hidden" }}>
+                <img src={f.displayPhotoUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              </div>
+            )}
+            <div style={{ padding:"12px 14px" }}>
+              <div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>{f.location}</div>
+              <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{f.name}</div>
+              {f.capacity && <div style={{ fontSize:12, color:"#64748B" }}>수용 {f.capacity}명</div>}
+              {f.desc && <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>{f.desc}</div>}
+            </div>
           </div>
         ))
       }
