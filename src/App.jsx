@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getThemeMode, setTheme } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
+import { useCollection as useCollectionHook } from "./hooks/useFirestore";
 import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -147,6 +148,71 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// 학생용 대여 목록 통합 (장비/시설/소품)
+function StudentRentalList() {
+  const [view, setView] = React.useState("equip");
+  return (
+    <div>
+      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
+        {[["equip","🎬 장비 목록"],["facility","🏢 시설 목록"],["props","🎭 소품"]].map(([v,l]) => (
+          <button key={v} onClick={() => setView(v)}
+            style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer",
+              background: view===v ? "#1B2B6B" : "#1E293B",
+              color: view===v ? "#fff" : "#64748B" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {view === "equip"    && <EquipList />}
+      {view === "facility" && <StudentFacilityList />}
+      {view === "props"    && <StudentPropsList />}
+    </div>
+  );
+}
+
+// 학생용 시설 목록
+function StudentFacilityList() {
+  const { data: facilities } = useCollectionHook("facilities", "createdAt");
+  const { C: colors } = { C: {} };
+  return (
+    <div>
+      {facilities.length === 0
+        ? <div style={{ textAlign:"center", padding:"40px 0", color:"#64748B" }}>등록된 시설이 없습니다</div>
+        : facilities.map(f => (
+          <div key={f.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
+            <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{f.name}</div>
+            <div style={{ fontSize:12, color:"#64748B" }}>{f.location} · 수용 {f.capacity}명</div>
+            {f.description && <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>{f.description}</div>}
+          </div>
+        ))
+      }
+    </div>
+  );
+}
+
+// 학생용 소품 목록
+function StudentPropsList() {
+  const { data: equipments } = useCollectionHook("equipments", "createdAt");
+  const props = equipments.filter(e => e.majorCategory === "소품" || e.minorCategory === "소품");
+  return (
+    <div>
+      {props.length === 0
+        ? <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748B" }}>
+            <div style={{ fontSize:32, marginBottom:8 }}>🎭</div>
+            <div>등록된 소품이 없습니다</div>
+            <div style={{ fontSize:12, marginTop:4 }}>관리자가 소품을 등록하면 여기에 표시돼요</div>
+          </div>
+        : props.map(e => (
+          <div key={e.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
+            <div style={{ fontSize:14, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{e.modelName}</div>
+            <div style={{ fontSize:12, color:"#64748B" }}>{e.minorCategory} · {e.status || "대여가능"}</div>
+          </div>
+        ))
+      }
     </div>
   );
 }
@@ -354,7 +420,7 @@ function AppContent() {
     } else {
       switch (tab) {
         case "home":     return <StudentHome />;
-        case "equip":    return <EquipList />;
+        case "equip":    return <StudentRentalList />;
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} />;
         case "notices":  return <Notices isAdmin={false} />;

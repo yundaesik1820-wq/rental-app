@@ -23,7 +23,7 @@ const ADMIN_NAV = [
 
 const STU_NAV = [
   { id: "home",      icon: Home,          label: "홈"       },
-  { id: "equip",     icon: Search,        label: "장비 목록" },
+  { id: "equip",     icon: Search,        label: "대여 목록" },
   { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
   { id: "license",   icon: GraduationCap, label: "라이센스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
