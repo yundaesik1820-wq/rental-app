@@ -151,6 +151,27 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   );
 }
 
+// 학생용 대여이력 + 캘린더 통합
+function StudentCalendarHistory({ profile }) {
+  const [view, setView] = React.useState("history");
+  return (
+    <div>
+      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
+        {[["history","📋 대여이력"],["calendar","📅 캘린더"]].map(([v,l]) => (
+          <button key={v} onClick={() => setView(v)}
+            style={{ padding:"6px 18px", borderRadius:10, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
+              background: view===v ? "#1B2B6B" : "#1E293B",
+              color: view===v ? "#fff" : "#64748B" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+      {view === "history"  && <History />}
+      {view === "calendar" && <CalendarPage isAdmin={false} userId={profile?.studentId} userEmail={profile?.email} userName={profile?.name} />}
+    </div>
+  );
+}
+
 function AppContent() {
   const { user, profile, loading } = useAuth();
   useFCM(profile?.uid);
