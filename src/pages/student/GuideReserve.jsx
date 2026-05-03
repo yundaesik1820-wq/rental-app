@@ -330,7 +330,7 @@ export default function GuideReserve() {
       {step === 1 && currentCam && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <img src="/mascot/camcorder.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+            <img src="/mascot/thunder.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
             <div>
               <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🔋 배터리를 선택해주세요</div>
               <div style={{ fontSize:12, color:C.muted }}>{currentCam.modelName} {camQty[currentCam.modelName]||1}대용 배터리예요</div>
