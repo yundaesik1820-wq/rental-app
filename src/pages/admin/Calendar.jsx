@@ -95,7 +95,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
       )}
       {/* 뷰 전환 탭 */}
       <div style={{ display:"flex", gap:4, marginBottom:12 }}>
-        {[["calendar","📅 캘린더"],["stats","📊 통계"]].map(([v,l]) => (
+        {(isAdmin ? [["calendar","📅 캘린더"],["stats","📊 통계"]] : [["calendar","📅 캘린더"]]).map(([v,l]) => (
           <button key={v} onClick={() => setCalView(v)}
             style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?"#fff":C.muted }}>
             {l}
@@ -103,8 +103,8 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         ))}
       </div>
 
-      {/* 통계 뷰 */}
-      {calView === "stats" && <Stats />}
+      {/* 통계 뷰 - 관리자만 */}
+      {isAdmin && calView === "stats" && <Stats />}
 
       {/* 캘린더 뷰 */}
       {calView === "calendar" && <div>
