@@ -334,9 +334,8 @@ function AppContent() {
       switch (tab) {
         case "home":     return <StudentHome />;
         case "equip":    return <EquipList />;
-        case "history":  return <History />;
         case "reserve":  return <ReserveWrapper />;
-        case "calendar": return <CalendarPage isAdmin={false} userId={profile.studentId} userEmail={profile.email} userName={profile.name} />;
+        case "calendar": return <StudentCalendarHistory profile={profile} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "profile":  return <Profile />;
         case "license":  return <License />;

@@ -25,11 +25,10 @@ const STU_NAV = [
   { id: "home",      icon: Home,          label: "홈"       },
   { id: "equip",     icon: Search,        label: "장비 목록" },
   { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
-  { id: "history",   icon: BookOpen,      label: "대여 이력" },
   { id: "license",   icon: GraduationCap, label: "라이센스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
-  { id: "calendar",  icon: Calendar,      label: "캘린더/통계" },
+  { id: "calendar",  icon: Calendar,      label: "대여이력/캘린더" },
   { id: "inquiry",   icon: MessageCircle, label: "문의"     },
   { id: "profile",   icon: UserCircle,    label: "내 정보"  },
 ];
