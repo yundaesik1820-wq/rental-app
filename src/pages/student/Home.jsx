@@ -5,8 +5,7 @@ import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { storage } from "../../firebase";
-import { db } from "../../firebase";
+import { db, storage } from "../../firebase";
 import { LogOut } from "lucide-react";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
