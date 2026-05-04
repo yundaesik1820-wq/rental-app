@@ -98,12 +98,8 @@ export default function EquipList() {
         </div>
       </div>
 
-      {/* 1행: 대분류 카테고리 (전체 제외, 1행 스크롤) */}
+      {/* 1행: 대분류 카테고리 (1행 스크롤) */}
       <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
-        <button onClick={() => { setFilter(""); setSearch(""); }}
-          style={{ background:!filter?C.navy:C.surface, color:!filter?"#fff":C.muted, border:`1px solid ${!filter?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-          전체
-        </button>
         {allCats.map(c => (
           <button key={c} onClick={() => { setFilter(c); setSearch(""); }}
             style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
