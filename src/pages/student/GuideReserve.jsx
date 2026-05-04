@@ -31,7 +31,7 @@ export default function GuideReserve({ onComplete }) {
 
   const [extraCart, setExtraCart] = useState({});
   // 추가장비 단계별 카테고리 순서
-  const EXTRA_STEPS = ["ACC", "트라이포드/그립", "모니터", "음향"];
+  const EXTRA_STEPS = ["ACC", "트라이포드/그립", "모니터", "조명", "음향"];
   const [extraStepIdx, setExtraStepIdx] = useState(0); // 추가장비 내 단계
   const [sig, setSig]             = useState("");
   const [showSign, setShowSign]   = useState(false);
@@ -484,7 +484,7 @@ export default function GuideReserve({ onComplete }) {
               <img src="/mascot/shrug.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
               <div>
                 <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>
-                  {curCat === "ACC" ? "🎒 ACC" : curCat === "트라이포드/그립" ? "🔩 트라이포드/그립" : curCat === "모니터" ? "🖥️ 모니터" : "🎤 음향"} 장비가 필요한가요?
+                  {curCat === "ACC" ? "🎒 ACC" : curCat === "트라이포드/그립" ? "🔩 트라이포드/그립" : curCat === "모니터" ? "🖥️ 모니터" : curCat === "조명" ? "💡 조명" : "🎤 음향"} 장비가 필요한가요?
                 </div>
                 <div style={{ fontSize:11, color:C.muted }}>
                   {extraStepIdx+1}/{EXTRA_STEPS.length} 단계 · 필요 없으면 건너뛰세요
