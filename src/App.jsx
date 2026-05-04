@@ -378,8 +378,8 @@ function AppContent() {
   const ReserveWrapper = () => {
     const [page, setPage] = React.useState("main"); // main | equip | equip-guide | equip-expert | facility | props
 
-    const Back = ({ to="main" }) => (
-      <button onClick={() => setPage(to)} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
+    const Back = ({ to="main", onClick }) => (
+      <button onClick={() => { if(onClick) onClick(); setPage(to); }} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
         ← 뒤로가기
       </button>
     );
@@ -439,10 +439,20 @@ function AppContent() {
     );
 
     // 장비 - 초보자 가이드
-    if (page === "equip-guide") return (
+    const [guideItems, setGuideItems] = React.useState(null);
+
+    if (page === "equip-guide" && !guideItems) return (
       <div>
         <Back to="equip" />
-        <GuideReserve />
+        <GuideReserve onComplete={(items) => setGuideItems(items)} />
+      </div>
+    );
+
+    // 초보자 가이드 완료 → Reserve 신청서로 이동
+    if (page === "equip-guide" && guideItems) return (
+      <div>
+        <Back to="equip-guide" onClick={() => setGuideItems(null)} />
+        <Reserve initialItems={guideItems} />
       </div>
     );
 

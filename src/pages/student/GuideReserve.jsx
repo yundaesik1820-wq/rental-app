@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { C } from "../../theme";
-import Reserve from "./Reserve";
 import { Card, Btn, Modal } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import SignaturePad from "../../components/SignaturePad";
 import { serverTimestamp } from "firebase/firestore";
 
-export default function GuideReserve() {
+export default function GuideReserve({ onComplete }) {
   const { profile }      = useAuth();
 
   const licenseToNum = (lic) => {
@@ -527,16 +526,11 @@ export default function GuideReserve() {
               <Btn onClick={() => setShowSign(true)} color={C.muted} outline full>✍️ 서명하기</Btn>
             )}
           </div>
-          <Btn onClick={() => setShowReserveForm(true)} color={C.teal} full style={{ marginTop:8 }}>
+          <Btn onClick={() => onComplete && onComplete(buildCart())} color={C.teal} full style={{ marginTop:8 }}>
             📋 신청서 작성
           </Btn>
           <Btn onClick={goPrev} color={C.muted} outline full style={{ marginTop:8 }}>← 이전</Btn>
         </div>
-      )}
-
-      {/* Reserve 신청서 모달 - 전문가 모드와 동일한 프로세스 */}
-      {showReserveForm && (
-        <Reserve initialItems={buildCart()} />
       )}
 
       {showSign && (
