@@ -406,6 +406,8 @@ export default function StudentHome() {
     const file = e.target.files[0];
     if (!file) return;
     if ((existingPhotos || []).length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
+    // input 초기화를 미리 (비동기 콜백 전)
+    const input = e.target;
     setReturnPhotoUploading(true);
     setReturnPhotoProgress(0);
     const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
@@ -419,7 +421,7 @@ export default function StudentHome() {
         await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
         setReturnPhotoUploading(false);
         setReturnPhotoProgress(0);
-        e.target.value = "";
+        input.value = ""; // e.target 대신 미리 저장한 참조 사용
       }
     );
   };
