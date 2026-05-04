@@ -377,6 +377,7 @@ function AppContent() {
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
     const [page, setPage] = React.useState("main"); // main | equip | equip-guide | equip-expert | facility | props
+    const [guideItems, setGuideItems] = React.useState(null);
 
     const Back = ({ to="main", onClick }) => (
       <button onClick={() => { if(onClick) onClick(); setPage(to); }} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
@@ -439,7 +440,6 @@ function AppContent() {
     );
 
     // 장비 - 초보자 가이드
-    const [guideItems, setGuideItems] = React.useState(null);
 
     if (page === "equip-guide" && !guideItems) return (
       <div>
