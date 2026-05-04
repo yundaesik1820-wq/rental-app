@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem } from "../../hooks/useFirestore";
@@ -177,15 +177,12 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     days: [],  // [{ day:"금", date:"", keeper:"", equipment:"", location:"", storageTime:"", outTime:"" }, ...]
   });
   const [showForm, setShowForm]     = useState(false);
-  const [_initOpened, _setInitOpened] = useState(false);
-
   // 가이드모드에서 진입 시 바로 안내사항 모달 열기
-  useState(() => {
-    if (initialItems && Object.keys(initialItems).length > 0 && !_initOpened) {
-      _setInitOpened(true);
-      setTimeout(() => setShowNotice(true), 100);
+  useEffect(() => {
+    if (initialItems && Object.keys(initialItems).length > 0) {
+      setShowNotice(true);
     }
-  });
+  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]           = useState(false);
   const [errors, setErrors]       = useState({});
