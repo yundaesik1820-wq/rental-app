@@ -402,28 +402,35 @@ export default function StudentHome() {
   );
 
   // 반납 준비 사진 업로드
-  const uploadReturnPhoto = (requestId, existingPhotos) => async (e) => {
+  const uploadReturnPhoto = (requestId) => async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if ((existingPhotos || []).length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
-    // input 초기화를 미리 (비동기 콜백 전)
     const input = e.target;
     setReturnPhotoUploading(true);
     setReturnPhotoProgress(0);
-    const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
-    const task = uploadBytesResumable(storageRef, file);
-    task.on("state_changed",
-      snap => setReturnPhotoProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
-      err  => { alert("업로드 실패: " + err.message); setReturnPhotoUploading(false); },
-      async () => {
-        const url = await getDownloadURL(task.snapshot.ref);
-        const newPhotos = [...(existingPhotos || []), url];
-        await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
-        setReturnPhotoUploading(false);
-        setReturnPhotoProgress(0);
-        input.value = ""; // e.target 대신 미리 저장한 참조 사용
-      }
-    );
+    try {
+      const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
+      const task = uploadBytesResumable(storageRef, file);
+      await new Promise((resolve, reject) => {
+        task.on("state_changed",
+          snap => setReturnPhotoProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+          reject,
+          resolve
+        );
+      });
+      const url = await getDownloadURL(task.snapshot.ref);
+      // Firestore에서 최신 데이터 직접 읽어서 업데이트
+      const docSnap = await getDoc(doc(db, "rentalRequests", requestId));
+      const current = docSnap.exists() ? (docSnap.data().returnPhotos || []) : [];
+      if (current.length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
+      await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: [...current, url] });
+      input.value = "";
+    } catch(err) {
+      alert("업로드 실패: " + err.message);
+    } finally {
+      setReturnPhotoUploading(false);
+      setReturnPhotoProgress(0);
+    }
   };
 
   const deleteReturnPhoto = async (requestId, photos, idx) => {
@@ -963,7 +970,7 @@ export default function StudentHome() {
                                     <div style={{ fontSize:9, color:C.muted }}>사진 추가</div>
                                   </div>
                                 }
-                                <input type="file" accept="image/*" style={{ display:"none" }} onChange={uploadReturnPhoto(r.id, photos)} disabled={returnPhotoUploading} />
+                                <input type="file" accept="image/*" style={{ display:"none" }} onChange={uploadReturnPhoto(r.id)} disabled={returnPhotoUploading} />
                               </label>
                             )}
                           </div>
