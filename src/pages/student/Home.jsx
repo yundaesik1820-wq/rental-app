@@ -875,6 +875,7 @@ export default function StudentHome() {
       {/* 학점 계산기 */}
       <GpaCalculator />
 
+      <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
         <section>
           <SectionTitle>📋 나의 예약현황</SectionTitle>
           {myRentals.length > 0 && (
@@ -967,8 +968,6 @@ export default function StudentHome() {
           )}
         </section>
       </div>
-
-      <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
         {/* 공지사항 */}
         <section>
