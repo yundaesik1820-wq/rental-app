@@ -1031,6 +1031,25 @@ ${r.attachments?.length > 0 ? `
               })()}
             </div>
           )}
+          {/* 반납완료 - 장비 사용 사진 */}
+          {r.status === "반납완료" && r.returnPhotos?.length > 0 && (
+            <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:8, border:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                <div style={{ fontSize:12, fontWeight:700, color:C.muted }}>📸 장비 사용 사진 ({r.returnPhotos.length}장)</div>
+                <button onClick={() => setPhotoModal({ photos: r.returnPhotos, idx: 0 })}
+                  style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                  확대 보기
+                </button>
+              </div>
+              <div style={{ display:"flex", gap:6 }}>
+                {r.returnPhotos.map((url, idx) => (
+                  <img key={idx} src={url} alt="" onClick={() => setPhotoModal({ photos: r.returnPhotos, idx })}
+                    style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                ))}
+              </div>
+            </div>
+          )}
+
           {r.status === "반납완료" && r.assignedUnits?.length > 0 && (
             <div style={{ background:"#F8FAFC", borderRadius:10, padding:"10px 14px", border:`1px solid ${C.border}` }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:6 }}>사용 장비 기록</div>
