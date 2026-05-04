@@ -875,6 +875,99 @@ export default function StudentHome() {
       {/* 학점 계산기 */}
       <GpaCalculator />
 
+        <section>
+          <SectionTitle>📋 나의 예약현황</SectionTitle>
+          {myRentals.length > 0 && (
+            <>
+              <div style={{ fontSize:12, color:C.muted, marginBottom:6, fontWeight:600 }}>대여중</div>
+              {myRentals.map(r => {
+                const photos = r.returnPhotos || [];
+                const isExpanded = expandedReturnId === r.id;
+                const photosDone = photos.length >= 3;
+                return (
+                  <div key={r.id} style={{ marginBottom:8 }}>
+                    <Card onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:0, borderRadius: isExpanded ? "12px 12px 0 0" : 12 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div>
+                          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                          <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>반납예정: {r.endDate} {r.endTime}</div>
+                        </div>
+                        <Badge label={r.status} />
+                      </div>
+                    </Card>
+                    {/* 반납 준비 배너 */}
+                    <div style={{ background: photosDone ? C.greenLight : C.yellowLight, border:`1px solid ${photosDone ? C.green : C.yellow}30`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"10px 14px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: isExpanded ? 10 : 0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontSize:13 }}>{photosDone ? "✅" : "📸"}</span>
+                          <div>
+                            <div style={{ fontSize:12, fontWeight:700, color: photosDone ? C.green : C.yellow }}>
+                              {photosDone ? "반납 준비 완료!" : `반납 전 사진 업로드 필요 (${photos.length}/3)`}
+                            </div>
+                            {!photosDone && <div style={{ fontSize:10, color:C.muted }}>사진 3장을 올려야 관리자가 반납 처리를 할 수 있어요</div>}
+                          </div>
+                        </div>
+                        <button onClick={e => { e.stopPropagation(); setExpandedReturnId(isExpanded ? null : r.id); }}
+                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", fontSize:11, color:C.muted, cursor:"pointer" }}>
+                          {isExpanded ? "접기" : "사진 업로드"}
+                        </button>
+                      </div>
+                      {isExpanded && (
+                        <div onClick={e => e.stopPropagation()}>
+                          {/* 업로드된 사진 미리보기 */}
+                          <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+                            {photos.map((url, idx) => (
+                              <div key={idx} style={{ position:"relative", width:80, height:80 }}>
+                                <img src={url} alt="" style={{ width:80, height:80, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}` }} />
+                                <button onClick={() => deleteReturnPhoto(r.id, photos, idx)}
+                                  style={{ position:"absolute", top:-6, right:-6, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:18, height:18, fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+                              </div>
+                            ))}
+                            {photos.length < 3 && (
+                              <label style={{ width:80, height:80, border:`2px dashed ${C.border}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexDirection:"column", gap:2 }}>
+                                {returnPhotoUploading
+                                  ? <span style={{ fontSize:10, color:C.muted }}>{returnPhotoProgress}%</span>
+                                  : <div style={{textAlign:"center"}}>
+                                    <div style={{ fontSize:20 }}>+</div>
+                                    <div style={{ fontSize:9, color:C.muted }}>사진 추가</div>
+                                  </div>
+                                }
+                                <input type="file" accept="image/*" style={{ display:"none" }} onChange={uploadReturnPhoto(r.id, photos)} disabled={returnPhotoUploading} />
+                              </label>
+                            )}
+                          </div>
+                          <div style={{ fontSize:10, color:C.muted }}>
+                            📷 장비 사용 사진을 3장 업로드해주세요. 업로드 완료 시 관리자가 반납 처리를 할 수 있어요.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </>
+          )}
+          {myRes.length > 0 ? (
+            <>
+              {myRentals.length > 0 && <div style={{ fontSize:12, color:C.muted, marginTop:8, marginBottom:6, fontWeight:600 }}>예약됨</div>}
+              {myRes.slice(0, 3).map(r => (
+                <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                      <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{r.startDate} ~ {r.endDate}</div>
+                    </div>
+                    <Badge label={r.status} />
+                  </div>
+                </Card>
+              ))}
+            </>
+          ) : myRentals.length === 0 && (
+            <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>예약 내역이 없습니다</div>
+          )}
+        </section>
+      </div>
+
       <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
 
         {/* 공지사항 */}
@@ -964,98 +1057,6 @@ export default function StudentHome() {
         })()}
 
         {/* 예약현황 */}
-        <section>
-          <SectionTitle>📋 예약 현황</SectionTitle>
-          {myRentals.length > 0 && (
-            <>
-              <div style={{ fontSize:12, color:C.muted, marginBottom:6, fontWeight:600 }}>대여중</div>
-              {myRentals.map(r => {
-                const photos = r.returnPhotos || [];
-                const isExpanded = expandedReturnId === r.id;
-                const photosDone = photos.length >= 3;
-                return (
-                  <div key={r.id} style={{ marginBottom:8 }}>
-                    <Card onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:0, borderRadius: isExpanded ? "12px 12px 0 0" : 12 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                        <div>
-                          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
-                          <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>반납예정: {r.endDate} {r.endTime}</div>
-                        </div>
-                        <Badge label={r.status} />
-                      </div>
-                    </Card>
-                    {/* 반납 준비 배너 */}
-                    <div style={{ background: photosDone ? C.greenLight : C.yellowLight, border:`1px solid ${photosDone ? C.green : C.yellow}30`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"10px 14px" }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: isExpanded ? 10 : 0 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontSize:13 }}>{photosDone ? "✅" : "📸"}</span>
-                          <div>
-                            <div style={{ fontSize:12, fontWeight:700, color: photosDone ? C.green : C.yellow }}>
-                              {photosDone ? "반납 준비 완료!" : `반납 전 사진 업로드 필요 (${photos.length}/3)`}
-                            </div>
-                            {!photosDone && <div style={{ fontSize:10, color:C.muted }}>사진 3장을 올려야 관리자가 반납 처리를 할 수 있어요</div>}
-                          </div>
-                        </div>
-                        <button onClick={e => { e.stopPropagation(); setExpandedReturnId(isExpanded ? null : r.id); }}
-                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", fontSize:11, color:C.muted, cursor:"pointer" }}>
-                          {isExpanded ? "접기" : "사진 관리"}
-                        </button>
-                      </div>
-                      {isExpanded && (
-                        <div onClick={e => e.stopPropagation()}>
-                          {/* 업로드된 사진 미리보기 */}
-                          <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
-                            {photos.map((url, idx) => (
-                              <div key={idx} style={{ position:"relative", width:80, height:80 }}>
-                                <img src={url} alt="" style={{ width:80, height:80, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}` }} />
-                                <button onClick={() => deleteReturnPhoto(r.id, photos, idx)}
-                                  style={{ position:"absolute", top:-6, right:-6, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:18, height:18, fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
-                              </div>
-                            ))}
-                            {photos.length < 3 && (
-                              <label style={{ width:80, height:80, border:`2px dashed ${C.border}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexDirection:"column", gap:2 }}>
-                                {returnPhotoUploading
-                                  ? <span style={{ fontSize:10, color:C.muted }}>{returnPhotoProgress}%</span>
-                                  : <>
-                                    <span style={{ fontSize:20 }}>+</span>
-                                    <span style={{ fontSize:9, color:C.muted }}>사진 추가</span>
-                                  </>
-                                }
-                                <input type="file" accept="image/*" style={{ display:"none" }} onChange={uploadReturnPhoto(r.id, photos)} disabled={returnPhotoUploading} />
-                              </label>
-                            )}
-                          </div>
-                          <div style={{ fontSize:10, color:C.muted }}>
-                            📷 장비 사용 사진을 3장 업로드해주세요. 업로드 완료 시 관리자가 반납 처리를 할 수 있어요.
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </>
-          )}
-          {myRes.length > 0 ? (
-            <>
-              {myRentals.length > 0 && <div style={{ fontSize:12, color:C.muted, marginTop:8, marginBottom:6, fontWeight:600 }}>예약됨</div>}
-              {myRes.slice(0, 3).map(r => (
-                <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:8 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <div>
-                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
-                      <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{r.startDate} ~ {r.endDate}</div>
-                    </div>
-                    <Badge label={r.status} />
-                  </div>
-                </Card>
-              ))}
-            </>
-          ) : myRentals.length === 0 && (
-            <div style={{ fontSize:13, color:C.muted, padding:"10px 0" }}>예약 내역이 없습니다</div>
-          )}
-        </section>
-      </div>
 
       {/* 수업 추가/수정 모달 */}
       {showClassForm && (
