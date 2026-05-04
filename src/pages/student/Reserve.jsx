@@ -112,7 +112,7 @@ function FileAttachSection({ form, f }) {
   );
 }
 
-export default function Reserve() {
+export default function Reserve({ initialItems = null, initialSets = null }) {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
@@ -150,7 +150,13 @@ export default function Reserve() {
   );
 
   // 장바구니 { modelName: qty } (단품), { modelName: true } (세트)
-  const [cart, setCart]         = useState({});
+  // initialItems: { modelName: qty } 형태로 가이드모드에서 전달 가능
+  const [cart, setCart]         = useState(() => {
+    if (!initialItems) return {};
+    const c = {};
+    Object.entries(initialItems).forEach(([name, qty]) => { c[name] = qty; });
+    return c;
+  });
   const [cartSets, setCartSets] = useState({});
   const [expandedSet, setExpandedSet] = useState(null);
   const [photoIdx, setPhotoIdx]       = useState({});
@@ -171,6 +177,15 @@ export default function Reserve() {
     days: [],  // [{ day:"금", date:"", keeper:"", equipment:"", location:"", storageTime:"", outTime:"" }, ...]
   });
   const [showForm, setShowForm]     = useState(false);
+  const [_initOpened, _setInitOpened] = useState(false);
+
+  // 가이드모드에서 진입 시 바로 안내사항 모달 열기
+  useState(() => {
+    if (initialItems && Object.keys(initialItems).length > 0 && !_initOpened) {
+      _setInitOpened(true);
+      setTimeout(() => setShowNotice(true), 100);
+    }
+  });
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]           = useState(false);
   const [errors, setErrors]       = useState({});
