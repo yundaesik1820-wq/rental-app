@@ -158,7 +158,8 @@ ${r.attachments?.length > 0 ? `
   };
 
   const [tabFilter, setTabFilter] = useState("전체");
-  const [expandedId, setExpandedId] = useState(null);
+  const [expandedId, setExpandedId]     = useState(null);
+  const [photoLightbox, setPhotoLightbox] = useState(null);
   const [showPrint, setShowPrint]   = useState(null);
 
   const overdue  = mine.filter(r => r.status === "연체").length;
