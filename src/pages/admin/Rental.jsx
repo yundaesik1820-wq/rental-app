@@ -1000,7 +1000,34 @@ ${r.attachments?.length > 0 ? `
                   </div>
                 </div>
               )}
-              <Btn onClick={() => openReturnModal(r)} color={C.teal} full>📦 반납 처리</Btn>
+              {/* 반납 처리 - 사진 3장 업로드 여부 체크 */}
+              {(() => {
+                const photos = r.returnPhotos || [];
+                const ready = photos.length >= 3;
+                return (
+                  <div>
+                    {/* 사진 미리보기 */}
+                    {photos.length > 0 && (
+                      <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
+                        {photos.map((url, idx) => (
+                          <img key={idx} src={url} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }}
+                            onClick={() => window.open(url, "_blank")} />
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                      <span style={{ fontSize:11, color: ready ? C.green : C.muted }}>
+                        {ready ? "✅ 사진 3장 확인됨 - 반납 처리 가능" : `📸 학생 사진 업로드 대기 중 (${photos.length}/3)`}
+                      </span>
+                    </div>
+                    <Btn onClick={() => ready && openReturnModal(r)} color={ready ? C.teal : C.muted}
+                      full disabled={!ready}
+                      style={{ opacity: ready ? 1 : 0.5, cursor: ready ? "pointer" : "not-allowed" }}>
+                      📦 반납 처리
+                    </Btn>
+                  </div>
+                );
+              })()}
             </div>
           )}
           {r.status === "반납완료" && r.assignedUnits?.length > 0 && (
