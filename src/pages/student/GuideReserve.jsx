@@ -54,9 +54,25 @@ export default function GuideReserve({ onComplete }) {
     : allCameraEquips;
   const batteries = equips.filter(e => e.equipType === "battery" || e.minorCategory === "배터리");
   const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
-  const lenses   = equips.filter(e => e.equipType === "lens" && !e.isSet);
+  const lenses   = equips.filter(e => (e.equipType === "lens" || ["단렌즈","줌렌즈","시네렌즈","렌즈"].includes(e.minorCategory)) && !e.isSet);
   const adapters = equips.filter(e => e.equipType === "adapter");
-  const extras   = equips.filter(e => e.equipType === "etc" || !e.equipType);
+  // 추가장비: 촬영/배터리/렌즈/어댑터/충전기 제외한 모든 장비
+  const EXCLUDED_CATS  = ["촬영"];
+  const EXCLUDED_MINOR = ["카메라","캠코더","드론/액션캠","배터리","충전기/전원","단렌즈","줌렌즈","시네렌즈","렌즈"];
+  const EXCLUDED_TYPES = ["camera","camcorder","battery","charger","lens","adapter"];
+  const extrasRaw = equips.filter(e =>
+    !EXCLUDED_CATS.includes(e.majorCategory) &&
+    !EXCLUDED_MINOR.includes(e.minorCategory) &&
+    !EXCLUDED_TYPES.includes(e.equipType) &&
+    e.status !== "수리중"
+  );
+  // 모델별 그룹화 (대표 장비 + 재고 합산)
+  const extrasGrouped = Object.values(extrasRaw.reduce((acc, e) => {
+    if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
+    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].total     += 1;
+    return acc;
+  }, {}));
 
   const currentCam = selectedCameras[camIdx];
 
@@ -351,13 +367,16 @@ export default function GuideReserve({ onComplete }) {
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
                     {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
+                    <div style={{ fontSize:10, color:e.available===0?C.red:C.muted }}>재고 {e.available||0}개</div>
                   </div>
-                  {qty > 0 ? (
+                  {e.available === 0 ? (
+                    <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                  ) : qty > 0 ? (
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
                       <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                      <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, qty+1)}
+                      <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
                     </div>
                   ) : (
@@ -436,23 +455,27 @@ export default function GuideReserve({ onComplete }) {
               <div style={{ fontSize:12, color:C.muted }}>선택하지 않아도 괜찮아요</div>
             </div>
           </div>
-          {extras.length === 0 && <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>등록된 액세서리가 없습니다</div>}
-          {extras.map(e => {
-            const qty = extraCart[e.modelName] || 0;
+          {extrasGrouped.length === 0 && <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>추가 장비가 없습니다</div>}
+          {extrasGrouped.map(e => {
+            const qty   = extraCart[e.modelName] || 0;
+            const avail = e.available || 0;
             return (
-              <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+              <Card key={e.modelName} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
                 <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                   <EquipPhoto e={e} />
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
                     {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
+                    <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
                   </div>
-                  {qty > 0 ? (
+                  {avail === 0 ? (
+                    <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                  ) : qty > 0 ? (
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.max(0,qty-1)}))}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
                       <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                      <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: qty+1}))}
+                      <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.min(avail, qty+1)}))}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
                     </div>
                   ) : (
