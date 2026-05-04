@@ -479,6 +479,7 @@ export default function Rental({ subAdmin = false }) {
   const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
   const [returnModal, setReturnModal] = useState(null);   // 반납 QR 체크 모달 { request, checklist }
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
+  const [photoModal, setPhotoModal]   = useState(null);   // 반납사진 라이트박스 { photos, idx }
   const [swapReason, setSwapReason]   = useState("");      // 교체 사유
 
   // 신청서 출력
@@ -1011,7 +1012,7 @@ ${r.attachments?.length > 0 ? `
                       <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
                         {photos.map((url, idx) => (
                           <img key={idx} src={url} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }}
-                            onClick={() => window.open(url, "_blank")} />
+                            onClick={() => setPhotoModal({ photos, idx })} />
                         ))}
                       </div>
                     )}
@@ -1120,6 +1121,31 @@ ${r.attachments?.length > 0 ? `
       )}
 
       {/* ── 반납 QR 체크 모달 ── */}
+      {/* 반납 사진 라이트박스 */}
+      {photoModal && (
+        <div onClick={() => setPhotoModal(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {/* 이미지 */}
+          <img src={photoModal.photos[photoModal.idx]} alt=""
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth:"90vw", maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
+          {/* 닫기 */}
+          <button onClick={() => setPhotoModal(null)}
+            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
+          {/* 이전/다음 */}
+          {photoModal.photos.length > 1 && (<>
+            <button onClick={e => { e.stopPropagation(); setPhotoModal(p => ({...p, idx:(p.idx-1+p.photos.length)%p.photos.length})); }}
+              style={{ position:"absolute", left:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:44, height:44, fontSize:24, cursor:"pointer" }}>‹</button>
+            <button onClick={e => { e.stopPropagation(); setPhotoModal(p => ({...p, idx:(p.idx+1)%p.photos.length})); }}
+              style={{ position:"absolute", right:70, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:44, height:44, fontSize:24, cursor:"pointer" }}>›</button>
+          </>)}
+          {/* 인덱스 표시 */}
+          <div style={{ position:"absolute", bottom:24, left:"50%", transform:"translateX(-50%)", color:"rgba(255,255,255,0.7)", fontSize:13 }}>
+            {photoModal.idx+1} / {photoModal.photos.length}
+          </div>
+        </div>
+      )}
+
       {returnModal && (
         <Modal onClose={() => setReturnModal(null)} width={520}>
           <QRChecklist
