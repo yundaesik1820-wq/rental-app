@@ -338,6 +338,19 @@ ${r.attachments?.length > 0 ? `
                   </div>
                 )}
 
+                {/* 반납 사진 */}
+                {r.returnPhotos?.length > 0 && (
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>📸 장비 사용 사진</div>
+                    <div style={{ display:"flex", gap:6 }}>
+                      {r.returnPhotos.map((url, idx) => (
+                        <img key={idx} src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
+                          style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* 보류/거절 사유 */}
                 {r.reason && (
                   <div style={{ background: r.status==="보류"?C.yellowLight:C.redLight, borderRadius:8, padding:"8px 12px", borderLeft:`3px solid ${r.status==="보류"?C.yellow:C.red}` }}>
@@ -352,6 +365,27 @@ ${r.attachments?.length > 0 ? `
           </Card>
         );
       })}
+    </div>
+      {/* 반납 사진 라이트박스 */}
+      {photoLightbox && (
+        <div onClick={() => setPhotoLightbox(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <img src={photoLightbox.photos[photoLightbox.idx]} alt=""
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth:"90vw", maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
+          <button onClick={() => setPhotoLightbox(null)}
+            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
+          {photoLightbox.photos.length > 1 && (<>
+            <button onClick={e => { e.stopPropagation(); setPhotoLightbox(p => ({...p, idx:(p.idx-1+p.photos.length)%p.photos.length})); }}
+              style={{ position:"absolute", left:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:44, height:44, fontSize:24, cursor:"pointer" }}>‹</button>
+            <button onClick={e => { e.stopPropagation(); setPhotoLightbox(p => ({...p, idx:(p.idx+1)%p.photos.length})); }}
+              style={{ position:"absolute", right:70, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:44, height:44, fontSize:24, cursor:"pointer" }}>›</button>
+          </>)}
+          <div style={{ position:"absolute", bottom:24, left:"50%", transform:"translateX(-50%)", color:"rgba(255,255,255,0.7)", fontSize:13 }}>
+            {photoLightbox.idx+1} / {photoLightbox.photos.length}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
