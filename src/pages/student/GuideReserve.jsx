@@ -143,6 +143,11 @@ export default function GuideReserve({ onComplete }) {
       else setStep(3);
       return;
     }
+    // step 3(액세서리) 다음 = 바로 신청서 작성
+    if (step === 3) {
+      onComplete && onComplete(buildCart());
+      return;
+    }
     setStep(s => s+1);
   };
   const goPrev = () => {
@@ -464,75 +469,8 @@ export default function GuideReserve({ onComplete }) {
         </div>
       )}
 
-      {/* Step 4: 최종 확인 */}
-      {step === 4 && (
-        <div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:16 }}>✅ 최종 확인</div>
-          {/* 선택 장비 */}
-          <div style={{ background:C.bg, borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>선택한 장비</div>
-            {Object.entries(buildCart()).map(([modelName, qty]) => (
-              <div key={modelName} style={{ display:"flex", justifyContent:"space-between", padding:"5px 0", borderBottom:`1px solid ${C.border}`, fontSize:13 }}>
-                <span style={{ color:C.text }}>{modelName}</span>
-                <span style={{ fontWeight:700, color:C.navy }}>{qty}개</span>
-              </div>
-            ))}
-          </div>
-          {/* 일시 */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>대여 일시 *</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
-              {[["시작일","startDate","date",today],["반납일","endDate","date",form.startDate||today]].map(([label,key,type,min]) => (
-                <div key={key}>
-                  <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{label}</div>
-                  <input type={type} value={form[key]} min={min} onChange={e => setForm(p=>({...p,[key]:e.target.value}))}
-                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                </div>
-              ))}
-            </div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {[["대여 시간","startTime","time"],["반납 시간","endTime","time"]].map(([label,key,type]) => (
-                <div key={key}>
-                  <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{label}</div>
-                  <input type={type} value={form[key]} onChange={e => setForm(p=>({...p,[key]:e.target.value}))}
-                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                </div>
-              ))}
-            </div>
-          </div>
-          {/* 목적 */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>목적 *</div>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
-              {["수업","과제","개인 프로젝트","기타"].map(p => (
-                <button key={p} onClick={() => setForm(f=>({...f,purpose:p}))}
-                  style={{ padding:"6px 14px", borderRadius:20, border:`1.5px solid ${form.purpose===p?C.teal:C.border}`, background:form.purpose===p?C.tealLight:C.bg, color:form.purpose===p?C.teal:C.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                  {p}
-                </button>
-              ))}
-            </div>
-            <textarea placeholder="세부 목적을 입력해주세요" value={form.purposeDetail} onChange={e => setForm(p=>({...p,purposeDetail:e.target.value}))}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:72, boxSizing:"border-box" }} />
-          </div>
-          {/* 서명 */}
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>신청자 서명 *</div>
-            {sig ? (
-              <div style={{ background:C.bg, borderRadius:10, padding:8, border:`1px solid ${C.border}`, position:"relative" }}>
-                <img src={sig} alt="서명" style={{ width:"100%", height:80, objectFit:"contain" }} />
-                <button onClick={() => setSig("")} style={{ position:"absolute", top:6, right:8, background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:13 }}>다시 서명</button>
-              </div>
-            ) : (
-              <Btn onClick={() => setShowSign(true)} color={C.muted} outline full>✍️ 서명하기</Btn>
-            )}
-          </div>
-          <Btn onClick={() => onComplete && onComplete(buildCart())} color={C.teal} full style={{ marginTop:8 }}>
-            📋 신청서 작성
-          </Btn>
-          <Btn onClick={goPrev} color={C.muted} outline full style={{ marginTop:8 }}>← 이전</Btn>
-        </div>
-      )}
 
+      
       {showSign && (
         <Modal onClose={() => setShowSign(false)} width={500}>
           <SignaturePad title="✍️ 서명" onSave={s => { setSig(s); setShowSign(false); }} onCancel={() => setShowSign(false)} />
