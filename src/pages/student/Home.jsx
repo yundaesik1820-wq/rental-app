@@ -401,6 +401,34 @@ export default function StudentHome() {
     r.fromId === profile?.uid && r.status === "pending"
   );
 
+  // 반납 준비 사진 업로드
+  const uploadReturnPhoto = (requestId, existingPhotos) => async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if ((existingPhotos || []).length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
+    setReturnPhotoUploading(true);
+    setReturnPhotoProgress(0);
+    const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed",
+      snap => setReturnPhotoProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+      err  => { alert("업로드 실패: " + err.message); setReturnPhotoUploading(false); },
+      async () => {
+        const url = await getDownloadURL(task.snapshot.ref);
+        const newPhotos = [...(existingPhotos || []), url];
+        await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
+        setReturnPhotoUploading(false);
+        setReturnPhotoProgress(0);
+        e.target.value = "";
+      }
+    );
+  };
+
+  const deleteReturnPhoto = async (requestId, photos, idx) => {
+    const newPhotos = photos.filter((_, i) => i !== idx);
+    await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
+  };
+
   // 친구 신청 보내기
   const sendFriendRequest = async () => {
     if (!addFriendId.trim()) return;
@@ -919,13 +947,13 @@ export default function StudentHome() {
                           <div style={{ display:"flex", gap:8, marginBottom:10, flexWrap:"wrap" }}>
                             {photos.map((url, idx) => (
                               <div key={idx} style={{ position:"relative", width:80, height:80 }}>
-                                <img src={url} alt="" style={{ width:80, height:80, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}` }} />
-                                <button onClick={() => deleteReturnPhoto(r.id, photos, idx)}
+                                <img src={url} alt="" onClick={e => { e.stopPropagation(); window.open(url,"_blank"); }} style={{ width:80, height:80, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                                <button onClick={e => { e.stopPropagation(); deleteReturnPhoto(r.id, photos, idx); }}
                                   style={{ position:"absolute", top:-6, right:-6, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:18, height:18, fontSize:10, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
                               </div>
                             ))}
                             {photos.length < 3 && (
-                              <label style={{ width:80, height:80, border:`2px dashed ${C.border}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexDirection:"column", gap:2 }}>
+                              <label onClick={e => e.stopPropagation()} style={{ width:80, height:80, border:`2px dashed ${C.border}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", flexDirection:"column", gap:2 }}>
                                 {returnPhotoUploading
                                   ? <span style={{ fontSize:10, color:C.muted }}>{returnPhotoProgress}%</span>
                                   : <div style={{textAlign:"center"}}>
