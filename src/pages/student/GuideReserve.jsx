@@ -30,6 +30,9 @@ export default function GuideReserve({ onComplete }) {
   const [step, setStep]           = useState(0);
 
   const [extraCart, setExtraCart] = useState({});
+  // 추가장비 단계별 카테고리 순서
+  const EXTRA_STEPS = ["ACC", "트라이포드/그립", "모니터", "음향"];
+  const [extraStepIdx, setExtraStepIdx] = useState(0); // 추가장비 내 단계
   const [sig, setSig]             = useState("");
   const [showSign, setShowSign]   = useState(false);
   const [form, setForm]           = useState({ startDate:"", endDate:"", startTime:"09:00", endTime:"18:00", purpose:"수업", purposeDetail:"" });
@@ -54,7 +57,14 @@ export default function GuideReserve({ onComplete }) {
     : allCameraEquips;
   const batteries = equips.filter(e => e.equipType === "battery" || e.minorCategory === "배터리");
   const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
-  const lenses   = equips.filter(e => (e.equipType === "lens" || ["단렌즈","줌렌즈","시네렌즈","렌즈"].includes(e.minorCategory)) && !e.isSet);
+  const lensesRaw = equips.filter(e => (e.equipType === "lens" || ["단렌즈","줌렌즈","시네렌즈","렌즈"].includes(e.minorCategory)) && !e.isSet);
+  // 렌즈 모델별 그룹화 (대표 장비 + 재고 합산)
+  const lenses = Object.values(lensesRaw.reduce((acc, e) => {
+    if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
+    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].total     += 1;
+    return acc;
+  }, {}));
   const adapters = equips.filter(e => e.equipType === "adapter");
   // 추가장비: 촬영/배터리/렌즈/어댑터/충전기 제외한 모든 장비
   const EXCLUDED_CATS  = ["촬영"];
@@ -135,20 +145,20 @@ export default function GuideReserve({ onComplete }) {
     if (step === 0) return "카메라 선택";
     if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}/${totalCams} - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대)` : `배터리 - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대`;
     if (step === 2) return totalCams > 1 ? `렌즈 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : `렌즈`;
-    if (step === 3) return "추가 액세서리";
-    return "최종 확인";
+    if (step === 3) return EXTRA_STEPS[extraStepIdx] || "추가 장비";
+    if (step === 4) return "추가 장비 필요하세요?";
+    return "신청";
   };
 
   const totalSteps = 2 + totalCams * 2 + 1; // 카메라 + (배터리+렌즈)*N + 액세서리 + 확인
   const currentStepNum = step === 0 ? 0 : step <= 2 ? camIdx * 2 + step : totalCams * 2 + step - 2;
 
   const goNext = () => {
-    // 캠코더 전용: 렌즈 단계 건너뜀
     const skipLens = camType === "camcorder";
     if (step === 1) {
       if (skipLens) {
         if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-        else setStep(3);
+        else { setExtraStepIdx(0); setStep(3); }
       } else {
         setStep(2);
       }
@@ -156,11 +166,20 @@ export default function GuideReserve({ onComplete }) {
     }
     if (step === 2) {
       if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-      else setStep(3);
+      else { setExtraStepIdx(0); setStep(3); }
       return;
     }
-    // step 3(액세서리) 다음 = 바로 신청서 작성
+    // step 3: 카테고리별 순환 (ACC → 트라이포드 → 모니터 → 음향)
     if (step === 3) {
+      if (extraStepIdx < EXTRA_STEPS.length - 1) {
+        setExtraStepIdx(i => i+1);
+      } else {
+        setStep(4); // 추가장비 필요하세요?
+      }
+      return;
+    }
+    // step 4: 추가장비 필요 여부 → 신청서 작성
+    if (step === 4) {
       onComplete && onComplete(buildCart());
       return;
     }
@@ -172,11 +191,13 @@ export default function GuideReserve({ onComplete }) {
     if (step === 1 && camIdx === 0) { setStep(0); return; }
     if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 1 : 2); return; }
     if (step === 2) { setStep(1); return; }
-    if (step === 3 && selectedCameras.length > 0) {
+    if (step === 3 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
+    if (step === 3 && extraStepIdx === 0) {
       setCamIdx(selectedCameras.length-1);
       setStep(skipLens ? 1 : 2);
       return;
     }
+    if (step === 4) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(3); return; }
     setStep(s => s-1);
   };
 
@@ -450,49 +471,120 @@ export default function GuideReserve({ onComplete }) {
         </div>
       )}
 
-      {/* Step 3: 추가 액세서리 */}
-      {step === 3 && (
-        <div>
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
-            <img src="/mascot/shrug.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
-            <div>
-              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>🎒 추가 장비가 필요한가요?</div>
-              <div style={{ fontSize:12, color:C.muted }}>선택하지 않아도 괜찮아요</div>
+      {/* Step 3: 카테고리별 추가 장비 (ACC → 트라이포드/그립 → 모니터 → 음향) */}
+      {step === 3 && (() => {
+        const curCat = EXTRA_STEPS[extraStepIdx];
+        const catEquips = extrasGrouped.filter(e =>
+          e.minorCategory === curCat || e.majorCategory === curCat ||
+          (curCat === "ACC" && (e.minorCategory === "ACC" || e.majorCategory === "ACC" || e.equipType === "acc"))
+        );
+        return (
+          <div>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+              <img src="/mascot/shrug.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
+              <div>
+                <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>
+                  {curCat === "ACC" ? "🎒 ACC" : curCat === "트라이포드/그립" ? "🔩 트라이포드/그립" : curCat === "모니터" ? "🖥️ 모니터" : "🎤 음향"} 장비가 필요한가요?
+                </div>
+                <div style={{ fontSize:11, color:C.muted }}>
+                  {extraStepIdx+1}/{EXTRA_STEPS.length} 단계 · 필요 없으면 건너뛰세요
+                </div>
+              </div>
+            </div>
+            {/* 카테고리 진행 표시 */}
+            <div style={{ display:"flex", gap:4, marginBottom:12 }}>
+              {EXTRA_STEPS.map((s, i) => (
+                <div key={s} style={{ flex:1, height:4, borderRadius:2,
+                  background: i < extraStepIdx ? C.teal : i === extraStepIdx ? C.navy : C.border }} />
+              ))}
+            </div>
+            {catEquips.length === 0
+              ? <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>등록된 {curCat} 장비가 없어요</div>
+              : catEquips.map(e => {
+                  const qty   = extraCart[e.modelName] || 0;
+                  const avail = e.available || 0;
+                  return (
+                    <Card key={e.modelName} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                        <EquipPhoto e={e} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                          {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
+                          <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
+                        </div>
+                        {avail === 0 ? (
+                          <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                        ) : qty > 0 ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.max(0,qty-1)}))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                            <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                            <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.min(avail, qty+1)}))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                          </div>
+                        ) : (
+                          <Btn onClick={() => setExtraCart(p => ({...p, [e.modelName]: 1}))} color={C.navy} small>+ 선택</Btn>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })
+            }
+            <div style={{ display:"flex", gap:10 }}>
+              <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
+              <Btn onClick={goNext} color={C.navy} full>
+                {extraStepIdx < EXTRA_STEPS.length - 1 ? `다음 → ${EXTRA_STEPS[extraStepIdx+1]}` : "다음 →"}
+              </Btn>
             </div>
           </div>
-          {extrasGrouped.length === 0 && <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>추가 장비가 없습니다</div>}
-          {extrasGrouped.map(e => {
-            const qty   = extraCart[e.modelName] || 0;
-            const avail = e.available || 0;
-            return (
-              <Card key={e.modelName} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  <EquipPhoto e={e} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                    {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
-                    <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
-                  </div>
-                  {avail === 0 ? (
-                    <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
-                  ) : qty > 0 ? (
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.max(0,qty-1)}))}
-                        style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
-                      <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                      <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.min(avail, qty+1)}))}
-                        style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+        );
+      })()}
+
+      {/* Step 4: 추가 장비 필요하세요? */}
+      {step === 4 && (
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🎒 추가 장비가 필요한가요?</div>
+              <div style={{ fontSize:12, color:C.muted }}>카테고리에 없는 다른 장비가 필요하면 추가하세요</div>
+            </div>
+          </div>
+          {extrasGrouped.length === 0
+            ? <div style={{ color:C.muted, fontSize:13, textAlign:"center", padding:"20px 0" }}>추가 장비가 없습니다</div>
+            : extrasGrouped.map(e => {
+                const qty   = extraCart[e.modelName] || 0;
+                const avail = e.available || 0;
+                return (
+                  <Card key={e.modelName} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                      <EquipPhoto e={e} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                        {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
+                        <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
+                      </div>
+                      {avail === 0 ? (
+                        <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                      ) : qty > 0 ? (
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.max(0,qty-1)}))}
+                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                          <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                          <button onClick={() => setExtraCart(p => ({...p, [e.modelName]: Math.min(avail, qty+1)}))}
+                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                        </div>
+                      ) : (
+                        <Btn onClick={() => setExtraCart(p => ({...p, [e.modelName]: 1}))} color={C.navy} small>+ 선택</Btn>
+                      )}
                     </div>
-                  ) : (
-                    <Btn onClick={() => setExtraCart(p => ({...p, [e.modelName]: 1}))} color={C.navy} small>+ 선택</Btn>
-                  )}
-                </div>
-              </Card>
-            );
-          })}
-          <div style={{ display:"flex", gap:10 }}>
+                  </Card>
+                );
+              })
+          }
+          <div style={{ display:"flex", gap:10, marginTop:8 }}>
             <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
-            <Btn onClick={goNext} color={C.navy} full>다음 →</Btn>
+            <Btn onClick={goNext} color={C.teal} full>📋 신청서 작성</Btn>
           </div>
         </div>
       )}
