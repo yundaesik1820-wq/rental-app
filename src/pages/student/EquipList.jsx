@@ -49,7 +49,7 @@ export default function EquipList() {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
 
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("");
+  const [filter, setFilter]   = useState("촬영");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
