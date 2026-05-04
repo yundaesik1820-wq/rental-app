@@ -407,6 +407,7 @@ export default function GuideReserve({ onComplete }) {
             const need    = needsAdapter(e);
             const adapter = need ? getAdapter(e) : null;
             const qty     = getSelection(currentCam.modelName).lens[e.modelName] || 0;
+            const avail   = e.available || (e.status === "대여가능" ? 1 : 0);
             return (
               <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
                 <div style={{ display:"flex", gap:10, alignItems:"center" }}>
@@ -416,20 +417,24 @@ export default function GuideReserve({ onComplete }) {
                     {e.itemName && <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{e.itemName}</div>}
                     <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
                       {e.mount && <span style={{ fontSize:10, background:C.blueLight, color:C.navy, borderRadius:4, padding:"1px 6px" }}>{e.mount}</span>}
-                      {need && <span style={{ fontSize:10, background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 6px" }}>⚠️ {adapter ? `${adapter.modelName} 자동추가` : "어댑터 없음"}</span>}
+                      {need && adapter && <span style={{ fontSize:10, background:C.tealLight, color:C.teal, borderRadius:4, padding:"1px 6px" }}>🔗 {adapter.modelName} 자동추가</span>}
+                      {need && !adapter && <span style={{ fontSize:10, background:C.yellowLight, color:C.yellow, borderRadius:4, padding:"1px 6px" }}>⚠️ 어댑터 미등록</span>}
+                      <span style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</span>
                     </div>
                   </div>
-                  {qty > 0 ? (
+                  {avail === 0 ? (
+                    <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                  ) : qty > 0 ? (
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <button onClick={() => setLensQty(currentCam.modelName, e.modelName, Math.max(0,qty-1), adapter?.modelName)}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
                       <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                      <button onClick={() => setLensQty(currentCam.modelName, e.modelName, qty+1, adapter?.modelName)}
+                      <button onClick={() => setLensQty(currentCam.modelName, e.modelName, Math.min(avail, qty+1), adapter?.modelName)}
                         style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
                     </div>
                   ) : (
-                    <Btn onClick={() => setLensQty(currentCam.modelName, e.modelName, 1, adapter?.modelName)} color={need && !adapter ? C.muted : C.navy} small disabled={need && !adapter}>
-                      {need && !adapter ? "불가" : "+ 선택"}
+                    <Btn onClick={() => setLensQty(currentCam.modelName, e.modelName, 1, adapter?.modelName)} color={C.navy} small>
+                      + 선택
                     </Btn>
                   )}
                 </div>
