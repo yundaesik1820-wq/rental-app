@@ -46,7 +46,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
   // 교사/교수 제외한 관리자만 계정 전환 가능
   const canSwitch = profile?.role === "admin" &&
-    (profile?.adminRole === "super" || profile?.adminRole === "assistant");
+    profile?.adminRole !== "teacher" && profile?.adminRole !== "professor";
 
   const handleAccountSwitch = async () => {
     if (!switchEmail.trim() || !switchPw.trim()) {
@@ -149,7 +149,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           {canSwitch && (
             <button onClick={() => setSwitchModal(true)}
               style={{ width:"100%", padding:"8px 12px", background:"rgba(255,255,255,0.08)", border:"none", borderRadius:8, color:"rgba(255,255,255,0.8)", cursor:"pointer", fontSize:13, marginTop:4, display:"flex", alignItems:"center", justifyContent:sideOpen?"flex-start":"center", gap:8 }}>
-              <ArrowLeftRight size={15} />
+              <RefreshCw size={15} />
               {sideOpen && "계정 전환"}
             </button>
           )}
