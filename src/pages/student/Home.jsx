@@ -239,7 +239,7 @@ function GpaCalculator() {
           </button>
         </div>
       )}
-
+    </div>
   );
 }
 
