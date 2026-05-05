@@ -59,6 +59,8 @@ export default function Dashboard({ setTab }) {
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
 
+  const adminRole2    = profile?.adminRole || "super";
+  const isTeacherProf = adminRole2 === "teacher" || adminRole2 === "professor";
   const canSwitch = !!profile?.linkedEmail;
   const storageKey = `linked_creds_${profile?.uid}`;
   const savedCreds = (() => {
@@ -378,8 +380,8 @@ export default function Dashboard({ setTab }) {
         );
       })()}
 
-      {/* 에브리타임 관리 */}
-      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
+      {/* 에브리타임 관리 - 슈퍼/조교만 */}
+      {!isTeacherProf && <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
         <div onClick={() => setTab?.("community")}
           style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
           <span style={{ fontSize:20 }}>💬</span>
@@ -402,7 +404,7 @@ export default function Dashboard({ setTab }) {
         {communityPosts.length === 0 && (
           <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, fontSize:12, color:C.muted }}>게시글이 없습니다</div>
         )}
-      </div>
+      </div>}
 
       {/* 문의 관리 */}
       <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
