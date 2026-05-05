@@ -330,8 +330,9 @@ function AppContent() {
 
   const isAdmin    = profile.role === "admin";
   const adminRole  = profile.adminRole || "super"; // super | teacher | assistant
-  const isSuper    = isAdmin && adminRole === "super";
-  const isSubAdmin = isAdmin && (adminRole === "teacher" || adminRole === "assistant");
+  const isSuper       = isAdmin && (adminRole === "super" || adminRole === "assistant"); // 슈퍼+조교: 모든 기능
+  const isTeacherProf = isAdmin && (adminRole === "teacher" || adminRole === "professor"); // 교사+교수: 제한됨
+  const isSubAdmin    = isTeacherProf; // 하위 호환
 
   const today    = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
@@ -502,14 +503,16 @@ function AppContent() {
       switch (tab) {
         case "home":     return <Dashboard setTab={setTab} />;
         case "equip":    return <Equipment />;
-        case "rental":   return <Rental subAdmin={!isSuper} />;
-        case "students": return isSuper ? <Students /> : <Students readOnly={true} />;
+        case "rental":   return <Rental subAdmin={isTeacherProf} />;
+        case "students": return <Students />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
-        case "community": return <Community />;
+        case "community":
+          if (isTeacherProf) return null;
+          return <Community />;
         default:         return <Dashboard setTab={setTab} />;
       }
     } else {
