@@ -12,10 +12,12 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getDoc(doc(db, "settings", "rules")).then(snap => {
-      if (snap.exists()) setForm({ ...DEFAULTS, ...snap.data() });
-      setLoading(false);
-    });
+    getDoc(doc(db, "settings", "rules"))
+      .then(snap => {
+        if (snap.exists()) setForm({ ...DEFAULTS, ...snap.data() });
+        setLoading(false);
+      })
+      .catch(() => setLoading(false)); // 권한 오류 등에서도 로딩 해제
   }, []);
 
   const save = async () => {
