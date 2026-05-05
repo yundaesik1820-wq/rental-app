@@ -47,7 +47,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   // 일반 직원(교사/조교)은 대여/반납 숨김
   // 일반관리자: 대여/반납 탭 보이되 제한된 뷰 (대여중~반납완료만)
   // 교사·교수는 에브리타임 숨김 (조교는 보임)
-  const hideEverytime = (profile?.role === "professor");
+  // 에브리타임: 영상계열 학생만 접근, 교수도 숨김
+  const hideEverytime = profile?.role === "professor" ||
+    (profile?.role === "student" && (profile?.dept||"") !== "영상계열");
   const isTeacherOrProf = profile?.role === "admin" &&
     (profile?.adminRole === "teacher" || profile?.adminRole === "professor");
 
