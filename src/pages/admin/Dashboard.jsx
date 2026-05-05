@@ -30,18 +30,14 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
           onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
-              전환할 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
-            </div>
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
-              <input value={setupEmail} onChange={e => setSetupEmail(e.target.value)} placeholder="전환할 계정 이메일"
-                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>비밀번호를 입력하면 바로 전환돼요</div>
+            <div style={{ background:C.bg, borderRadius:9, padding:"9px 12px", marginBottom:12, fontSize:13, color:C.text }}>
+              📧 {profile?.linkedEmail}
             </div>
             <div style={{ marginBottom: switchErr ? 8 : 16 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="전환할 계정 비밀번호"
+              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="비밀번호 입력" autoFocus
                 onKeyDown={e => e.key === "Enter" && handleSaveCreds()}
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
@@ -49,7 +45,7 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
               <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
             )}
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal(false); setSetupEmail(""); setSetupPw(""); setSwitchErr(""); }}
+              <button onClick={() => { setSwitchModal(false); setSetupPw(""); setSwitchErr(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
               <button onClick={handleSaveCreds} disabled={switchLoading}
                 style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
@@ -454,18 +450,14 @@ export default function Dashboard({ setTab }) {
           onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
-              전환할 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
-            </div>
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
-              <input value={setupEmail} onChange={e => setSetupEmail(e.target.value)} placeholder="전환할 계정 이메일"
-                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>비밀번호를 입력하면 바로 전환돼요</div>
+            <div style={{ background:C.bg, borderRadius:9, padding:"9px 12px", marginBottom:12, fontSize:13, color:C.text }}>
+              📧 {profile?.linkedEmail}
             </div>
             <div style={{ marginBottom: switchErr ? 8 : 16 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="전환할 계정 비밀번호"
+              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="비밀번호 입력" autoFocus
                 onKeyDown={e => e.key === "Enter" && handleSaveCreds()}
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
@@ -473,7 +465,7 @@ export default function Dashboard({ setTab }) {
               <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
             )}
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal(false); setSetupEmail(""); setSetupPw(""); setSwitchErr(""); }}
+              <button onClick={() => { setSwitchModal(false); setSetupPw(""); setSwitchErr(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
               <button onClick={handleSaveCreds} disabled={switchLoading}
                 style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>

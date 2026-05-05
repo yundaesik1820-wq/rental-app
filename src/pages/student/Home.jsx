@@ -252,18 +252,17 @@ export default function StudentHome() {
     try { return JSON.parse(atob(localStorage.getItem(switchKey) || "")); } catch { return null; }
   })();
   const [switchModal2,   setSwitchModal2]   = useState(false);
-  const [setupEmail2,    setSetupEmail2]    = useState("");
   const [setupPw2,       setSetupPw2]       = useState("");
   const [switchErr2,     setSwitchErr2]     = useState("");
   const [switchLoading2, setSwitchLoading2] = useState(false);
 
   const handleSaveCreds2 = async () => {
-    if (!setupEmail2.trim() || !setupPw2.trim()) { setSwitchErr2("이메일과 비밀번호를 모두 입력해주세요"); return; }
+    if (!setupPw2.trim()) { setSwitchErr2("비밀번호를 입력해주세요"); return; }
     setSwitchLoading2(true); setSwitchErr2("");
     try {
-      await signInWithEmailAndPassword(firebaseAuth, setupEmail2.trim(), setupPw2.trim());
-      localStorage.setItem(switchKey, btoa(JSON.stringify({ email: setupEmail2.trim(), pw: setupPw2.trim() })));
-      setSwitchModal2(false); setSetupEmail2(""); setSetupPw2("");
+      await signInWithEmailAndPassword(firebaseAuth, profile?.linkedEmail, setupPw2.trim());
+      localStorage.setItem(switchKey, btoa(JSON.stringify({ email: profile?.linkedEmail, pw: setupPw2.trim() })));
+      setSwitchModal2(false); setSetupPw2("");
     } catch { setSwitchErr2("이메일 또는 비밀번호가 맞지 않아요"); }
     finally { setSwitchLoading2(false); }
   };
@@ -590,9 +589,9 @@ export default function StudentHome() {
       <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
         {/* 버튼들 - 배너 우측 상단 */}
         <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
-          <button onClick={handleSwitch2} disabled={switchLoading2}
+          <button onClick={() => setSwitchModal2(true)} disabled={switchLoading2}
             style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading2?0.7:1 }}>
-            <RefreshCw size={14} /> {switchLoading2?"전환 중...": savedLinked?"계정 전환":"계정 연결"}
+            <RefreshCw size={14} /> {switchLoading2?"전환 중...":"계정 전환"}
           </button>
           <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
             <LogOut size={14} /> 로그아웃
