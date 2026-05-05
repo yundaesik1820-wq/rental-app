@@ -185,19 +185,20 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     if (keyword.trim().length < 1) { setParticipantResults([]); return; }
     setSearchLoading(true);
     try {
-      const snap = await getDocs(
-        query(collection(db, "users"),
-          where("name", ">=", keyword.trim()),
-          where("name", "<=", keyword.trim() + "")
-        )
+      // users 전체 가져와서 클라이언트 필터 (name 필드명 이슈 방지)
+      const snap = await getDocs(collection(db, "users"));
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const kw = keyword.trim().toLowerCase();
+      const results = all.filter(u =>
+        u.role === "student" &&
+        (u.uid || u.id) !== profile?.uid &&   // uid 필드 없으면 문서 ID(id) 사용
+        (u.name || u.userName || "").toLowerCase().includes(kw)
       );
-      // role 필터는 클라이언트에서 처리 (인덱스 불필요)
-      setParticipantResults(
-        snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(u => u.role === "student" && u.uid !== profile?.uid)
-      );
-    } catch { setParticipantResults([]); }
+      setParticipantResults(results);
+    } catch(e) {
+      console.error("participant search error:", e);
+      setParticipantResults([]);
+    }
     finally { setSearchLoading(false); }
   };
 
@@ -1078,7 +1079,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                         style={{ display:"block", width:"100%", background:"none", border:"none", padding:"10px 14px", textAlign:"left", cursor:"pointer", fontSize:13, color:C.text, borderBottom:`1px solid ${C.border}` }}
                         onMouseOver={e => e.currentTarget.style.background=C.bg}
                         onMouseOut={e => e.currentTarget.style.background="none"}>
-                        <span style={{ fontWeight:700 }}>{u.name}</span>
+                        <span style={{ fontWeight:700 }}>{u.name || u.userName}</span>
                         <span style={{ color:C.muted, fontSize:11, marginLeft:6 }}>{u.studentId}</span>
                         {u.dept && <span style={{ color:C.muted, fontSize:11, marginLeft:6 }}>· {u.dept}</span>}
                       </button>
