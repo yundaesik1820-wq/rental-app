@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import { C } from "../theme";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, RefreshCw
 } from "lucide-react";
 
 const ADMIN_NAV = [
