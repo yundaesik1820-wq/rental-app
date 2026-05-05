@@ -905,24 +905,65 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             <div style={{ fontSize:13, color:C.text }}>{profile?.name} · {profile?.dept} · {profile?.studentId} · {profile?.phone}</div>
           </div>
 
-          {/* 보관자 2명 */}
+          {/* 보관자 2명 - 이름 입력 시 참여인원에서 자동완성 */}
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>보관자 정보</div>
             {[1,2].map(n => {
               const key = `keeper${n}`;
               const k   = storageForm[key];
+              // 참여인원 목록 (form.participants에서 파싱)
+              const participants = participantList || [];
+              // 이름 입력 후 참여인원에 없는지 체크
+              const isValidKeeper = !k.name || participants.some(p => p.name === k.name);
               return (
                 <div key={n} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
                   <div style={{ fontSize:12, fontWeight:600, color:C.muted, marginBottom:8 }}>보관자 {n}</div>
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                    {[["name","이름"],["dept","계열"],["studentId","학번"],["phone","연락처"]].map(([field,label]) => (
-                      <div key={field}>
-                        <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{label}</div>
-                        <input placeholder={label} value={k[field]} onChange={e => setStorageForm(p=>({...p,[key]:{...p[key],[field]:e.target.value}}))}
-                          style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                      </div>
-                    ))}
+                  {/* 이름 선택 드롭다운 */}
+                  <div style={{ marginBottom:8 }}>
+                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>이름</div>
+                    <select
+                      value={k.name}
+                      onChange={e => {
+                        const selected = participants.find(p => p.name === e.target.value);
+                        // users 컬렉션에서 해당 학생 정보 자동 입력
+                        if (selected) {
+                          getDocs(query(collection(db, "users"), where("studentId", "==", selected.studentId), where("role", "==", "student")))
+                            .then(snap => {
+                              if (!snap.empty) {
+                                const u = snap.docs[0].data();
+                                setStorageForm(p => ({...p, [key]: { name: u.name||"", dept: u.dept||"", studentId: u.studentId||"", phone: u.phone||"" }}));
+                              } else {
+                                setStorageForm(p => ({...p, [key]: { name: selected.name, dept:"", studentId: selected.studentId, phone:"" }}));
+                              }
+                            })
+                            .catch(() => setStorageForm(p => ({...p, [key]: { name: selected.name, dept:"", studentId: selected.studentId, phone:"" }})));
+                        } else {
+                          setStorageForm(p => ({...p, [key]: { name:"", dept:"", studentId:"", phone:"" }}));
+                        }
+                      }}
+                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:k.name?C.text:C.muted, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
+                      <option value="">보관자 선택</option>
+                      {participants.map(p => (
+                        <option key={p.studentId} value={p.name}>{p.name} ({p.studentId})</option>
+                      ))}
+                    </select>
+                    {participants.length === 0 && (
+                      <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>참여인원을 먼저 입력해주세요</div>
+                    )}
                   </div>
+                  {/* 자동입력된 정보 표시 */}
+                  {k.name && (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      {[["dept","계열"],["studentId","학번"],["phone","연락처"]].map(([field,label]) => (
+                        <div key={field}>
+                          <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{label}</div>
+                          <input placeholder={label} value={k[field]}
+                            onChange={e => setStorageForm(p=>({...p,[key]:{...p[key],[field]:e.target.value}}))}
+                            style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -937,7 +978,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   <span style={{ background:day.day==="일"?"#FEF2F2":day.day==="토"?"#EFF6FF":"#F0FDF4", color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
                   <span style={{ fontSize:12, color:C.muted }}>{day.date}</span>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                {/* 1행: 보관자 + 보관장소 */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
                   <div>
                     <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관자</div>
                     <select value={day.keeper} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,keeper:e.target.value}:d)}))}
@@ -952,21 +994,25 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     <input placeholder="보관 장소" value={day.location} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,location:e.target.value}:d)}))}
                       style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
                   </div>
-                  <div>
-                    <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 장비</div>
-                    <input placeholder="보관할 장비명" value={day.equipment} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,equipment:e.target.value}:d)}))}
-                      style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                  </div>
+                </div>
+                {/* 2행: 보관 일시 + 불출 일시 */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:8 }}>
                   <div>
                     <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 일시</div>
                     <input placeholder="예: 18:00" value={day.storageTime} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,storageTime:e.target.value}:d)}))}
                       style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
                   </div>
-                  <div style={{ gridColumn:"1/-1" }}>
+                  <div>
                     <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>불출 일시</div>
                     <input placeholder="예: 09:00" value={day.outTime} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,outTime:e.target.value}:d)}))}
                       style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
                   </div>
+                </div>
+                {/* 3행: 보관 장비 (전체폭) */}
+                <div>
+                  <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>보관 장비</div>
+                  <textarea placeholder="보관할 장비명을 입력하세요" value={day.equipment} onChange={e => setStorageForm(p=>({...p,days:p.days.map((d,j)=>j===i?{...d,equipment:e.target.value}:d)}))}
+                    style={{ display:"block", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"7px 10px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:60, boxSizing:"border-box" }} />
                 </div>
               </div>
             ))}
