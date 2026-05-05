@@ -23,7 +23,7 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
           <span style={{ background:C.greenLight, color:C.green, borderRadius:20, padding:"2px 9px", fontSize:11, fontWeight:700 }}>정상</span>
         )}
       </div>
-
+    </div>
   );
 }
 
