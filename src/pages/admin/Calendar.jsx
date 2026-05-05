@@ -35,15 +35,14 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
   const toStr = d => `${year}-${String(month).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
 
+  const isMineReq = (r) =>
+    (userId && r.studentId === userId)
+    || (userEmail && r.phone === userEmail)
+    || (userName && r.studentName === userName);
+
   const getEvents = (d) => {
     const ds = toStr(d);
     return requests.filter(r => {
-      if (!isAdmin) {
-        const isMine = (userId && r.studentId === userId)
-          || (userEmail && r.phone === userEmail)
-          || (userName && r.studentName === userName);
-        if (!isMine) return false;
-      }
       if (!statusFilter.includes(r.status)) return false;
       return r.startDate <= ds && r.endDate >= ds;
     });
@@ -201,13 +200,15 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
                     </div>
                   )}
 
-                  {/* 학생: 도트 */}
+                  {/* 학생: 도트 (본인=teal, 타인=흐림) */}
                   {!isAdmin && (
                     <div style={{ display:"flex", justifyContent:"center", gap:2, flexWrap:"wrap" }}>
-                      {events.slice(0,3).map((_,j) => (
-                        <div key={j} style={{ width:6, height:6, borderRadius:"50%", background:isSel?"rgba(255,255,255,0.7)":C.teal }} />
-                      ))}
-                      {events.length > 3 && <div style={{ fontSize:9, color:isSel?"#fff":C.muted }}>+{events.length-3}</div>}
+                      {events.slice(0,4).map((r,j) => {
+                        const mine = isMineReq(r);
+                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%",
+                          background: isSel ? (mine?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.4)") : (mine?C.teal:C.border) }} />;
+                      })}
+                      {events.length > 4 && <div style={{ fontSize:9, color:isSel?"#fff":C.muted }}>+{events.length-4}</div>}
                     </div>
                   )}
                 </div>
