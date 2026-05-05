@@ -173,6 +173,46 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const [showStoragePlan, setShowStoragePlan] = useState(false);
   const [urgentRental, setUrgentRental] = useState(false); // 긴급대여 체크박스
 
+  // 참여인원 검색
+  const [participantSearch, setParticipantSearch] = useState("");
+  const [participantResults, setParticipantResults] = useState([]);
+  const [participantList, setParticipantList]   = useState([]); // [{ name, studentId }]
+  const [searchLoading, setSearchLoading]       = useState(false);
+
+  // 이름으로 users 컬렉션 검색
+  const searchParticipant = async (keyword) => {
+    setParticipantSearch(keyword);
+    if (keyword.trim().length < 1) { setParticipantResults([]); return; }
+    setSearchLoading(true);
+    try {
+      const snap = await getDocs(
+        query(collection(db, "users"),
+          where("name", ">=", keyword.trim()),
+          where("name", "<=", keyword.trim() + ""),
+          where("role", "==", "student")
+        )
+      );
+      setParticipantResults(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.uid !== profile?.uid));
+    } catch { setParticipantResults([]); }
+    finally { setSearchLoading(false); }
+  };
+
+  const addParticipant = (user) => {
+    if (participantList.find(p => p.studentId === user.studentId)) return;
+    const next = [...participantList, { name: user.name, studentId: user.studentId }];
+    setParticipantList(next);
+    // form.participants 동기화
+    f("participants", next.map(p => `${p.studentId} ${p.name}`).join("\n"));
+    setParticipantSearch("");
+    setParticipantResults([]);
+  };
+
+  const removeParticipant = (studentId) => {
+    const next = participantList.filter(p => p.studentId !== studentId);
+    setParticipantList(next);
+    f("participants", next.map(p => `${p.studentId} ${p.name}`).join("\n"));
+  };
+
   const [storageForm, setStorageForm] = useState({
     keeper1: { name:"", dept:"", studentId:"", phone:"" },
     keeper2: { name:"", dept:"", studentId:"", phone:"" },
@@ -993,15 +1033,56 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             ))}
           </div>
 
-          {/* 참여인원 - ✅ 수정된 부분: placeholder 줄바꿈을 \n으로 처리 */}
+          {/* 참여인원 - 이름 검색 자동완성 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>참여인원 학번 및 이름 * <span style={{ color:C.muted, fontWeight:400, fontSize:11 }}>(본인 제외)</span></div>
-            <textarea
-              placeholder={"예:\n20210001 홍길동\n20220042 이서연"}
-              value={form.participants}
-              onChange={e => f("participants", e.target.value)}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }}
-            />
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>
+              참여인원 * <span style={{ color:C.muted, fontWeight:400, fontSize:11 }}>(본인 제외)</span>
+            </div>
+
+            {/* 추가된 참여인원 태그 */}
+            {participantList.length > 0 && (
+              <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginBottom:8 }}>
+                {participantList.map(p => (
+                  <div key={p.studentId} style={{ display:"flex", alignItems:"center", gap:4, background:C.blueLight, borderRadius:20, padding:"4px 10px", fontSize:12 }}>
+                    <span style={{ color:C.navy, fontWeight:700 }}>{p.name}</span>
+                    <span style={{ color:C.muted, fontSize:11 }}>({p.studentId})</span>
+                    <button onClick={() => removeParticipant(p.studentId)}
+                      style={{ background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:13, lineHeight:1, padding:"0 2px" }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 이름 검색 입력창 */}
+            <div style={{ position:"relative" }}>
+              <input
+                value={participantSearch}
+                onChange={e => searchParticipant(e.target.value)}
+                placeholder="이름으로 검색 (예: 홍길동)"
+                style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${errors.participants?C.red:C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }}
+              />
+              {/* 검색 결과 드롭다운 */}
+              {participantSearch.trim() && (
+                <div style={{ position:"absolute", top:"100%", left:0, right:0, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, zIndex:100, maxHeight:200, overflowY:"auto", boxShadow:"0 4px 16px rgba(0,0,0,0.15)", marginTop:4 }}>
+                  {searchLoading ? (
+                    <div style={{ padding:"12px 14px", fontSize:12, color:C.muted }}>검색 중...</div>
+                  ) : participantResults.length === 0 ? (
+                    <div style={{ padding:"12px 14px", fontSize:12, color:C.muted }}>검색 결과가 없어요</div>
+                  ) : (
+                    participantResults.map(u => (
+                      <button key={u.id} onClick={() => addParticipant(u)}
+                        style={{ display:"block", width:"100%", background:"none", border:"none", padding:"10px 14px", textAlign:"left", cursor:"pointer", fontSize:13, color:C.text, borderBottom:`1px solid ${C.border}` }}
+                        onMouseOver={e => e.currentTarget.style.background=C.bg}
+                        onMouseOut={e => e.currentTarget.style.background="none"}>
+                        <span style={{ fontWeight:700 }}>{u.name}</span>
+                        <span style={{ color:C.muted, fontSize:11, marginLeft:6 }}>{u.studentId}</span>
+                        {u.dept && <span style={{ color:C.muted, fontSize:11, marginLeft:6 }}>· {u.dept}</span>}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
             {errors.participants && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.participants}</div>}
           </div>
 
