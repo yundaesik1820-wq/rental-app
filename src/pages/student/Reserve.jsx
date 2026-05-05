@@ -171,6 +171,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const [showWeekendNotice, setShowWeekendNotice] = useState(false);
   const [weekendAgreed, setWeekendAgreed]   = useState(false);
   const [showStoragePlan, setShowStoragePlan] = useState(false);
+  const [urgentRental, setUrgentRental] = useState(false); // 긴급대여 체크박스
+
   const [storageForm, setStorageForm] = useState({
     keeper1: { name:"", dept:"", studentId:"", phone:"" },
     keeper2: { name:"", dept:"", studentId:"", phone:"" },
@@ -250,6 +252,20 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
 
   const validate = () => {
     const errs = {};
+
+    // ── 신청일 기준 최소 3일 전 규칙 ──────────────────────────
+    if (form.startDate && !urgentRental) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const minDate = new Date(today);
+      minDate.setDate(today.getDate() + 3); // 오늘 포함 3일 후
+      const [sy, sm, sd] = form.startDate.split("-").map(Number);
+      const startDate = new Date(sy, sm-1, sd);
+      if (startDate < minDate) {
+        const minStr = `${minDate.getFullYear()}-${String(minDate.getMonth()+1).padStart(2,"0")}-${String(minDate.getDate()).padStart(2,"0")}`;
+        errs.date = `대여 신청은 대여일 기준 최소 3일 전까지 가능합니다. 가장 빠른 대여 가능일: ${minStr}`;
+      }
+    }
 
     // ── 평일 대여 규칙 ──────────────────────────────────────────
     if (form.startDate && form.endDate) {
@@ -1161,7 +1177,21 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 {errors.endDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.endDate}</div>}
               </div>
             </div>
-            {errors.date && (
+            {/* 긴급 대여 신청 */}
+            <div style={{ marginTop:10, background:urgentRental?C.yellowLight:C.bg, border:`1px solid ${urgentRental?C.yellow:C.border}`, borderRadius:10, padding:"10px 14px" }}>
+              <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                <input type="checkbox" checked={urgentRental} onChange={e => setUrgentRental(e.target.checked)}
+                  style={{ width:16, height:16, cursor:"pointer" }} />
+                <span style={{ fontSize:13, fontWeight:700, color:urgentRental?C.yellow:C.text }}>⚡ 긴급 대여 신청</span>
+              </label>
+              {urgentRental && (
+                <div style={{ fontSize:11, color:C.muted, marginTop:6, lineHeight:1.6 }}>
+                  담당자와 협의가 완료된 경우에만 사용하세요.<br/>
+                  (동아리 스터디, 학교행사 등 사전 협의 건)
+                </div>
+              )}
+            </div>
+            {errors.date && !urgentRental && (
               <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"12px 16px", fontSize:13, fontWeight:600, marginTop:10, border:`1px solid ${C.red}30` }}>
                 ⚠️ {errors.date}
               </div>
