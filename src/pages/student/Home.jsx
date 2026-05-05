@@ -273,6 +273,7 @@ export default function StudentHome() {
     try {
       await signInWithEmailAndPassword(firebaseAuth, savedLinked.email, savedLinked.pw);
     } catch {
+      // 비밀번호 변경됐으면 저장된 정보 삭제 후 다시 입력
       localStorage.removeItem(switchKey);
       setSwitchModal2(true);
     } finally { setSwitchLoading2(false); }
@@ -590,7 +591,7 @@ export default function StudentHome() {
         {/* 버튼들 - 배너 우측 상단 */}
         <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
           {profile?.linkedEmail && (
-            <button onClick={() => setSwitchModal2(true)} disabled={switchLoading2}
+            <button onClick={handleSwitch2} disabled={switchLoading2}
               style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading2?0.7:1 }}>
               <RefreshCw size={14} /> {switchLoading2?"전환 중...":"계정 전환"}
             </button>

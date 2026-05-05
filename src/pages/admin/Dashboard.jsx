@@ -87,9 +87,21 @@ export default function Dashboard({ setTab }) {
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:20, padding:"18px 20px", marginBottom:20, position:"relative" }}>
         <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
           {canSwitch && (
-            <button onClick={() => setSwitchModal(true)}
-              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-              <RefreshCw size={14} /> 계정 전환
+            <button onClick={async () => {
+              if (savedCreds) {
+                setSwitchLoading(true);
+                try {
+                  await signInWithEmailAndPassword(auth, savedCreds.email, savedCreds.pw);
+                } catch {
+                  localStorage.removeItem(storageKey);
+                  setSwitchModal(true);
+                } finally { setSwitchLoading(false); }
+              } else {
+                setSwitchModal(true);
+              }
+            }} disabled={switchLoading}
+              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading?0.7:1 }}>
+              <RefreshCw size={14} /> {switchLoading?"전환 중...":"계정 전환"}
             </button>
           )}
           <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
