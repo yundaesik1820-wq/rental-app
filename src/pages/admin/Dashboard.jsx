@@ -2,7 +2,9 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { LogOut } from "lucide-react";
+import { LogOut, RefreshCw } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../../firebase";
 
 function DashRow({ icon, label, onClick, alerts = [] }) {
   const totalCount = alerts.reduce((s, a) => s + a.count, 0);
@@ -21,6 +23,40 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
           <span style={{ background:C.greenLight, color:C.green, borderRadius:20, padding:"2px 9px", fontSize:11, fontWeight:700 }}>정상</span>
         )}
       </div>
+
+      {/* 계정 전환 모달 */}
+      {switchModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>전환할 계정의 이메일과 비밀번호를 입력하세요</div>
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
+              <input value={switchEmail} onChange={e => setSwitchEmail(e.target.value)} placeholder="example@kbas.ac.kr"
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ marginBottom: switchErr ? 8 : 16 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
+              <input value={switchPw} onChange={e => setSwitchPw(e.target.value)} type="password" placeholder="비밀번호 입력"
+                onKeyDown={e => e.key === "Enter" && handleSwitch()}
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            {switchErr && (
+              <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
+            )}
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => { setSwitchModal(false); setSwitchEmail(""); setSwitchPw(""); setSwitchErr(""); }}
+                style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
+              <button onClick={handleSwitch} disabled={switchLoading}
+                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
+                {switchLoading ? "전환 중..." : "계정 전환"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -57,13 +93,39 @@ export default function Dashboard({ setTab }) {
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
 
+  const canSwitch = profile?.adminRole !== "teacher" && profile?.adminRole !== "professor";
+  const [switchModal, setSwitchModal] = useState(false);
+  const [switchEmail,   setSwitchEmail]   = useState("");
+  const [switchPw,      setSwitchPw]      = useState("");
+  const [switchErr,     setSwitchErr]     = useState("");
+  const [switchLoading, setSwitchLoading] = useState(false);
+
+  const handleSwitch = async () => {
+    if (!switchEmail.trim() || !switchPw.trim()) { setSwitchErr("이메일과 비밀번호를 입력해주세요"); return; }
+    setSwitchLoading(true); setSwitchErr("");
+    try {
+      await signInWithEmailAndPassword(auth, switchEmail.trim(), switchPw.trim());
+      setSwitchModal(false); setSwitchEmail(""); setSwitchPw("");
+    } catch {
+      setSwitchErr("이메일 또는 비밀번호가 맞지 않아요");
+    } finally { setSwitchLoading(false); }
+  };
+
   return (
     <div>
       {/* Welcome banner */}
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:20, padding:"18px 20px", marginBottom:20, position:"relative" }}>
-        <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-          <LogOut size={14} /> 로그아웃
-        </button>
+        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
+          {canSwitch && (
+            <button onClick={() => setSwitchModal(true)}
+              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+              <RefreshCw size={14} /> 계정 전환
+            </button>
+          )}
+          <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+            <LogOut size={14} /> 로그아웃
+          </button>
+        </div>
         <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:3, display:"flex", alignItems:"center", gap:6 }}>
           {roleName}
           <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{roleName}</span>
@@ -379,6 +441,40 @@ export default function Dashboard({ setTab }) {
           </div>
         </div>
       </div>
+
+      {/* 계정 전환 모달 */}
+      {switchModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>전환할 계정의 이메일과 비밀번호를 입력하세요</div>
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
+              <input value={switchEmail} onChange={e => setSwitchEmail(e.target.value)} placeholder="example@kbas.ac.kr"
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ marginBottom: switchErr ? 8 : 16 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
+              <input value={switchPw} onChange={e => setSwitchPw(e.target.value)} type="password" placeholder="비밀번호 입력"
+                onKeyDown={e => e.key === "Enter" && handleSwitch()}
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            {switchErr && (
+              <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
+            )}
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => { setSwitchModal(false); setSwitchEmail(""); setSwitchPw(""); setSwitchErr(""); }}
+                style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
+              <button onClick={handleSwitch} disabled={switchLoading}
+                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
+                {switchLoading ? "전환 중..." : "계정 전환"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
