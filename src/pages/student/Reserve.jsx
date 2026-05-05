@@ -188,11 +188,15 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       const snap = await getDocs(
         query(collection(db, "users"),
           where("name", ">=", keyword.trim()),
-          where("name", "<=", keyword.trim() + ""),
-          where("role", "==", "student")
+          where("name", "<=", keyword.trim() + "")
         )
       );
-      setParticipantResults(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(u => u.uid !== profile?.uid));
+      // role 필터는 클라이언트에서 처리 (인덱스 불필요)
+      setParticipantResults(
+        snap.docs
+          .map(d => ({ id: d.id, ...d.data() }))
+          .filter(u => u.role === "student" && u.uid !== profile?.uid)
+      );
     } catch { setParticipantResults([]); }
     finally { setSearchLoading(false); }
   };
