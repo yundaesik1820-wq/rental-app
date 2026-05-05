@@ -124,3 +124,40 @@ exports.onNewNotice = functions.firestore
       .map(d => sendFCM(d.id, `📌 공지사항: ${notice.title}`, ""));
     await Promise.allSettled(sends);
   });
+
+// ── 에브리타임 댓글 알림 ──────────────────────────────────
+exports.onCommunityComment = functions.firestore
+  .document("communityComments/{commentId}")
+  .onCreate(async (snap) => {
+    const comment = snap.data();
+    if (!comment.postId) return;
+
+    // 게시글 조회
+    const postDoc = await admin.firestore()
+      .collection("communityPosts").doc(comment.postId).get();
+    if (!postDoc.exists) return;
+
+    const post = postDoc.data();
+    const postAuthorId = post.authorId;
+
+    // 본인 댓글은 알림 없음
+    if (!postAuthorId || postAuthorId === comment.authorId) return;
+
+    // 게시글 작성자 uid로 FCM 전송
+    const categoryNames = {
+      "자유": "자유게시판", "질문": "질문게시판", "강의": "강의게시판",
+      "정보": "정보게시판", "취업": "취업게시판", "장터": "장터게시판", "새내기": "새내기게시판"
+    };
+    const catName = categoryNames[post.category] || "에브리타임";
+    const postTitle = post.lectureName || post.title || "게시글";
+    // 익명 게시판은 작성자 이름 숨김
+    const anonCategories = ["자유", "질문", "강의", "새내기"];
+    const isAnon = anonCategories.includes(post.category);
+    const commenterDisplay = isAnon ? "익명의 누군가" : (comment.authorName || "누군가");
+
+    await sendFCM(
+      postAuthorId,
+      `💬 ${catName} 새 댓글`,
+      `"${postTitle.slice(0, 20)}${postTitle.length > 20 ? "..." : ""}"에 ${commenterDisplay}가 댓글을 달았어요!`
+    );
+  });
