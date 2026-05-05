@@ -59,18 +59,23 @@ export default function Dashboard({ setTab }) {
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
 
-  const canSwitch = !!profile?.linkedEmail; // Firestore users 문서에 linkedEmail 필드 있는 계정만
-  const [switchModal, setSwitchModal] = useState(false);
-  const [switchPw,      setSwitchPw]      = useState("");
+  const canSwitch = !!profile?.linkedEmail;
+  const storageKey = `linked_creds_${profile?.uid}`;
+  const savedCreds = (() => {
+    try { return JSON.parse(atob(localStorage.getItem(storageKey) || "")); } catch { return null; }
+  })();
+  const [switchModal,   setSwitchModal]   = useState(false);
+  const [setupPw,       setSetupPw]       = useState("");
   const [switchErr,     setSwitchErr]     = useState("");
   const [switchLoading, setSwitchLoading] = useState(false);
 
-  const handleSwitch = async () => {
-    if (!switchPw.trim()) { setSwitchErr("비밀번호를 입력해주세요"); return; }
+  const handleSaveCreds = async () => {
+    if (!setupPw.trim()) { setSwitchErr("비밀번호를 입력해주세요"); return; }
     setSwitchLoading(true); setSwitchErr("");
     try {
-      await signInWithEmailAndPassword(auth, profile?.linkedEmail, switchPw.trim());
-      setSwitchModal(false); setSwitchPw("");
+      await signInWithEmailAndPassword(auth, profile?.linkedEmail, setupPw.trim());
+      localStorage.setItem(storageKey, btoa(JSON.stringify({ email: profile?.linkedEmail, pw: setupPw.trim() })));
+      setSwitchModal(false); setSetupPw("");
     } catch {
       setSwitchErr("이메일 또는 비밀번호가 맞지 않아요");
     } finally { setSwitchLoading(false); }
