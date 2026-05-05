@@ -24,36 +24,44 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
         )}
       </div>
 
-      {/* 계정 전환 모달 */}
+      {/* 계정 연결 설정 모달 (처음 한 번만) */}
       {switchModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>전환할 계정의 이메일과 비밀번호를 입력하세요</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
+              전환할 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
+            </div>
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
-              <input value={switchEmail} onChange={e => setSwitchEmail(e.target.value)} placeholder="example@kbas.ac.kr"
+              <input value={setupEmail} onChange={e => setSetupEmail(e.target.value)} placeholder="전환할 계정 이메일"
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
             <div style={{ marginBottom: switchErr ? 8 : 16 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={switchPw} onChange={e => setSwitchPw(e.target.value)} type="password" placeholder="비밀번호 입력"
-                onKeyDown={e => e.key === "Enter" && handleSwitch()}
+              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="전환할 계정 비밀번호"
+                onKeyDown={e => e.key === "Enter" && handleSaveCreds()}
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
             {switchErr && (
               <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
             )}
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal(false); setSwitchEmail(""); setSwitchPw(""); setSwitchErr(""); }}
+              <button onClick={() => { setSwitchModal(false); setSetupEmail(""); setSetupPw(""); setSwitchErr(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
-              <button onClick={handleSwitch} disabled={switchLoading}
+              <button onClick={handleSaveCreds} disabled={switchLoading}
                 style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
-                {switchLoading ? "전환 중..." : "계정 전환"}
+                {switchLoading ? "확인 중..." : "💾 계정 저장"}
               </button>
             </div>
+            {savedCreds && (
+              <button onClick={() => { localStorage.removeItem(storageKey); setSwitchModal(false); }}
+                style={{ width:"100%", marginTop:8, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
+                저장된 계정 초기화
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -93,19 +101,18 @@ export default function Dashboard({ setTab }) {
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
 
-  const canSwitch = profile?.adminRole !== "teacher" && profile?.adminRole !== "professor";
+  const canSwitch = !!profile?.linkedEmail; // Firestore users 문서에 linkedEmail 필드 있는 계정만
   const [switchModal, setSwitchModal] = useState(false);
-  const [switchEmail,   setSwitchEmail]   = useState("");
   const [switchPw,      setSwitchPw]      = useState("");
   const [switchErr,     setSwitchErr]     = useState("");
   const [switchLoading, setSwitchLoading] = useState(false);
 
   const handleSwitch = async () => {
-    if (!switchEmail.trim() || !switchPw.trim()) { setSwitchErr("이메일과 비밀번호를 입력해주세요"); return; }
+    if (!switchPw.trim()) { setSwitchErr("비밀번호를 입력해주세요"); return; }
     setSwitchLoading(true); setSwitchErr("");
     try {
-      await signInWithEmailAndPassword(auth, switchEmail.trim(), switchPw.trim());
-      setSwitchModal(false); setSwitchEmail(""); setSwitchPw("");
+      await signInWithEmailAndPassword(auth, profile?.linkedEmail, switchPw.trim());
+      setSwitchModal(false); setSwitchPw("");
     } catch {
       setSwitchErr("이메일 또는 비밀번호가 맞지 않아요");
     } finally { setSwitchLoading(false); }
@@ -116,12 +123,11 @@ export default function Dashboard({ setTab }) {
       {/* Welcome banner */}
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:20, padding:"18px 20px", marginBottom:20, position:"relative" }}>
         <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
-          {canSwitch && (
-            <button onClick={() => setSwitchModal(true)}
-              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-              <RefreshCw size={14} /> 계정 전환
-            </button>
-          )}
+          <button onClick={canSwitch ? handleSwitch : () => setSwitchModal(true)}
+            disabled={switchLoading}
+            style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading?0.7:1 }}>
+            <RefreshCw size={14} /> {switchLoading ? "전환 중..." : canSwitch ? "계정 전환" : "계정 연결"}
+          </button>
           <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
             <LogOut size={14} /> 로그아웃
           </button>
@@ -442,36 +448,44 @@ export default function Dashboard({ setTab }) {
         </div>
       </div>
 
-      {/* 계정 전환 모달 */}
+      {/* 계정 연결 설정 모달 (처음 한 번만) */}
       {switchModal && (
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
           onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>전환할 계정의 이메일과 비밀번호를 입력하세요</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
+              전환할 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
+            </div>
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
-              <input value={switchEmail} onChange={e => setSwitchEmail(e.target.value)} placeholder="example@kbas.ac.kr"
+              <input value={setupEmail} onChange={e => setSetupEmail(e.target.value)} placeholder="전환할 계정 이메일"
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
             <div style={{ marginBottom: switchErr ? 8 : 16 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={switchPw} onChange={e => setSwitchPw(e.target.value)} type="password" placeholder="비밀번호 입력"
-                onKeyDown={e => e.key === "Enter" && handleSwitch()}
+              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="전환할 계정 비밀번호"
+                onKeyDown={e => e.key === "Enter" && handleSaveCreds()}
                 style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
             </div>
             {switchErr && (
               <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
             )}
             <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal(false); setSwitchEmail(""); setSwitchPw(""); setSwitchErr(""); }}
+              <button onClick={() => { setSwitchModal(false); setSetupEmail(""); setSetupPw(""); setSwitchErr(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
-              <button onClick={handleSwitch} disabled={switchLoading}
+              <button onClick={handleSaveCreds} disabled={switchLoading}
                 style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
-                {switchLoading ? "전환 중..." : "계정 전환"}
+                {switchLoading ? "확인 중..." : "💾 계정 저장"}
               </button>
             </div>
+            {savedCreds && (
+              <button onClick={() => { localStorage.removeItem(storageKey); setSwitchModal(false); }}
+                style={{ width:"100%", marginTop:8, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
+                저장된 계정 초기화
+              </button>
+            )}
           </div>
         </div>
       )}

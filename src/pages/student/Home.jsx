@@ -6,7 +6,9 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage } from "../../firebase";
-import { LogOut } from "lucide-react";
+import { LogOut, RefreshCw } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth as firebaseAuth } from "../../firebase";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -238,12 +240,85 @@ function GpaCalculator() {
           </button>
         </div>
       )}
+
+      {/* 계정 연결 설정 모달 */}
+      {switchModal2 && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => { setSwitchModal2(false); setSwitchErr2(""); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
+            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
+              전환할 관리자 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
+            </div>
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
+              <input value={setupEmail2} onChange={e => setSetupEmail2(e.target.value)} placeholder="관리자 계정 이메일"
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ marginBottom:switchErr2?8:16 }}>
+              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
+              <input value={setupPw2} onChange={e => setSetupPw2(e.target.value)} type="password" placeholder="관리자 계정 비밀번호"
+                onKeyDown={e => e.key==="Enter" && handleSaveCreds2()}
+                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+            </div>
+            {switchErr2 && <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr2}</div>}
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => { setSwitchModal2(false); setSetupEmail2(""); setSetupPw2(""); setSwitchErr2(""); }}
+                style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
+              <button onClick={handleSaveCreds2} disabled={switchLoading2}
+                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading2?0.7:1 }}>
+                {switchLoading2?"확인 중...":"💾 계정 저장"}
+              </button>
+            </div>
+            {savedLinked && (
+              <button onClick={() => { localStorage.removeItem(switchKey); setSwitchModal2(false); }}
+                style={{ width:"100%", marginTop:8, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
+                저장된 계정 초기화
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function StudentHome() {
   const { profile, logout } = useAuth();
+
+  // 계정 전환 (학생↔관리자)
+  const switchKey = `linked_creds_${profile?.uid}`;
+  const savedLinked = (() => {
+    try { return JSON.parse(atob(localStorage.getItem(switchKey) || "")); } catch { return null; }
+  })();
+  const [switchModal2,   setSwitchModal2]   = useState(false);
+  const [setupEmail2,    setSetupEmail2]    = useState("");
+  const [setupPw2,       setSetupPw2]       = useState("");
+  const [switchErr2,     setSwitchErr2]     = useState("");
+  const [switchLoading2, setSwitchLoading2] = useState(false);
+
+  const handleSaveCreds2 = async () => {
+    if (!setupEmail2.trim() || !setupPw2.trim()) { setSwitchErr2("이메일과 비밀번호를 모두 입력해주세요"); return; }
+    setSwitchLoading2(true); setSwitchErr2("");
+    try {
+      await signInWithEmailAndPassword(firebaseAuth, setupEmail2.trim(), setupPw2.trim());
+      localStorage.setItem(switchKey, btoa(JSON.stringify({ email: setupEmail2.trim(), pw: setupPw2.trim() })));
+      setSwitchModal2(false); setSetupEmail2(""); setSetupPw2("");
+    } catch { setSwitchErr2("이메일 또는 비밀번호가 맞지 않아요"); }
+    finally { setSwitchLoading2(false); }
+  };
+
+  const handleSwitch2 = async () => {
+    if (!savedLinked) { setSwitchModal2(true); return; }
+    setSwitchLoading2(true);
+    try {
+      await signInWithEmailAndPassword(firebaseAuth, savedLinked.email, savedLinked.pw);
+    } catch {
+      localStorage.removeItem(switchKey);
+      setSwitchModal2(true);
+    } finally { setSwitchLoading2(false); }
+  };
   const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
   // 받은/보낸 신청 완전 분리
@@ -554,10 +629,16 @@ export default function StudentHome() {
     <div>
       {/* Welcome banner */}
       <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
-        {/* 로그아웃 버튼 - 배너 우측 상단 */}
-        <button onClick={logout} style={{ position:"absolute", top:12, right:12, background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-          <LogOut size={14} /> 로그아웃
-        </button>
+        {/* 버튼들 - 배너 우측 상단 */}
+        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
+          <button onClick={handleSwitch2} disabled={switchLoading2}
+            style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading2?0.7:1 }}>
+            <RefreshCw size={14} /> {switchLoading2?"전환 중...": savedLinked?"계정 전환":"계정 연결"}
+          </button>
+          <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
+            <LogOut size={14} /> 로그아웃
+          </button>
+        </div>
         {/* 학번/계열만 표시 */}
         <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight:600, marginBottom: 14 }}>
           {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
