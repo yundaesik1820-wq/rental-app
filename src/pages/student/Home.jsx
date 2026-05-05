@@ -298,6 +298,8 @@ export default function StudentHome() {
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
+  const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('onboarding_done'));
+  const [onboardStep,    setOnboardStep]    = useState(0);
   const [installPrompt, setInstallPrompt] = useState(null);  // PWA 설치 프롬프트
   const [showInstall,   setShowInstall]   = useState(false); // 설치 배너 표시
   const [showIosInstall, setShowIosInstall] = useState(() => {
@@ -688,12 +690,24 @@ export default function StudentHome() {
           </div>
         </div>
 
-        {/* 친해지기 버튼 + Designed by - 한 행 */}
+        {/* 친해지기 버튼 + 공유 + Designed by */}
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <button onClick={() => setShowRentory(true)}
-            style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
-            렌토리랑 친해져보기 ♡
-          </button>
+          <div style={{ display:"flex", gap:6 }}>
+            <button onClick={() => setShowRentory(true)}
+              style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              렌토리랑 친해져보기 ♡
+            </button>
+            <button onClick={() => {
+              const url = "https://rental-app-delta-kohl.vercel.app";
+              if (navigator.share) {
+                navigator.share({ title:"KBAS 장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
+              } else {
+                navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐어요! 친구에게 공유해보세요 😊"));
+              }
+            }} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              📤 친구 초대
+            </button>
+          </div>
           <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
             Designed &amp; Developed by 윤대식
           </span>
@@ -1379,6 +1393,61 @@ export default function StudentHome() {
           </div>
         </Modal>
       )}
+
+      {/* 온보딩 튜토리얼 */}
+      {showOnboarding && (() => {
+        const steps = [
+    { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 나의 예약현황을 한눈에 볼 수 있어요!" },
+    { emoji:"🎬", title:"대여 목록", desc:"장비·시설·소품 목록을 미리 확인할 수 있어요!" },
+    { emoji:"📋", title:"예약 신청", desc:"초보자 가이드와 함께 장비를 골라보거나, 직접 선택할 수 있어요!" },
+    { emoji:"📅", title:"대여이력/캘린더", desc:"내 대여 기록과 전체 대여 일정을 캘린더로 확인해요!" },
+    { emoji:"💬", title:"에브리타임", desc:"자유·강의·장터 등 다양한 게시판으로 소통해요!" },
+    { emoji:"👤", title:"내정보/문의", desc:"내 프로필 설정과 문의를 여기서 할 수 있어요!" },
+  ];
+        const step  = steps[onboardStep];
+        const isLast = onboardStep === steps.length - 1;
+        return (
+          <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.75)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+            <div style={{ background:C.surface, borderRadius:20, padding:28, width:"100%", maxWidth:360, boxShadow:"0 8px 40px rgba(0,0,0,0.4)" }}>
+              {/* 진행 표시 */}
+              <div style={{ display:"flex", gap:4, marginBottom:20, justifyContent:"center" }}>
+                {steps.map((_,i) => (
+                  <div key={i} style={{ height:4, flex:1, borderRadius:2, background: i<=onboardStep ? C.teal : C.border, transition:"background 0.3s" }} />
+                ))}
+              </div>
+              {/* 내용 */}
+              <div style={{ textAlign:"center", marginBottom:24 }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>{step.emoji}</div>
+                <div style={{ fontSize:18, fontWeight:800, color:C.text, marginBottom:8 }}>{step.title}</div>
+                <div style={{ fontSize:13, color:C.muted, lineHeight:1.7 }}>{step.desc}</div>
+              </div>
+              {/* 버튼 */}
+              <div style={{ display:"flex", gap:8 }}>
+                {onboardStep > 0 && (
+                  <button onClick={() => setOnboardStep(s => s-1)}
+                    style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:10, padding:"11px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
+                    ← 이전
+                  </button>
+                )}
+                <button onClick={() => {
+                  if (isLast) {
+                    localStorage.setItem('onboarding_done','1');
+                    setShowOnboarding(false);
+                  } else {
+                    setOnboardStep(s => s+1);
+                  }
+                }} style={{ flex:2, background:C.navy, border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+                  {isLast ? "시작하기 🚀" : "다음 →"}
+                </button>
+              </div>
+              <button onClick={() => { localStorage.setItem('onboarding_done','1'); setShowOnboarding(false); }}
+                style={{ display:"block", width:"100%", marginTop:10, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
+                건너뛰기
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 계정 전환 모달 */}
       {switchModal2 && (
