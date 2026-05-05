@@ -1,9 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase";
-import { getDoc, doc } from "firebase/firestore";
-import { db } from "../firebase";
+import { auth, db } from "../firebase";
 import { C } from "../theme";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
