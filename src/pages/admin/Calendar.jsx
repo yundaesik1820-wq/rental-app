@@ -87,7 +87,9 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
             <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 캘린더 페이지야!</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 일정을 한눈에 확인할 수 있어.\n내 예약 현황도 여기서 볼 수 있어 📅</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>
+                대여 일정을 한눈에 확인할 수 있어.<br/>내 예약 현황도 여기서 볼 수 있어 📅
+              </div>
             </div>
           </div>
         </div>
@@ -191,24 +193,52 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
                   {/* 관리자: 이벤트 도트 + 건수 */}
                   {isAdmin && events.length > 0 && (
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:2, justifyContent:"center" }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:2, width:"100%" }}>
                       {events.slice(0,3).map((r,j) => {
                         const sm = STATUS_META[r.status] || {};
-                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%", background:isSel?"rgba(255,255,255,0.8)":sm.color||C.muted, flexShrink:0 }} />;
+                        const col = isSel?"rgba(255,255,255,0.8)":sm.color||C.muted;
+                        const isMultiDay = r.startDate !== r.endDate;
+                        const isStart = toStr(d) === r.startDate;
+                        const isEnd   = toStr(d) === r.endDate;
+                        if (isMultiDay) {
+                          return (
+                            <div key={j} style={{
+                              height:5, background:col,
+                              borderRadius: isStart?"3px 0 0 3px": isEnd?"0 3px 3px 0":"0",
+                              marginLeft: isStart?2:0, marginRight: isEnd?2:0,
+                              width:"100%", flexShrink:0
+                            }} />
+                          );
+                        }
+                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%", background:col, flexShrink:0, alignSelf:"center" }} />;
                       })}
-                      {events.length > 3 && <div style={{ fontSize:8, color:isSel?"rgba(255,255,255,0.7)":C.muted, fontWeight:700 }}>+{events.length-3}</div>}
+                      {events.length > 3 && <div style={{ fontSize:8, color:isSel?"rgba(255,255,255,0.7)":C.muted, fontWeight:700, textAlign:"center" }}>+{events.length-3}</div>}
                     </div>
                   )}
 
-                  {/* 학생: 도트 (본인=teal, 타인=흐림) */}
+                  {/* 학생: 당일=도트, 주말대여(연속)=바 */}
                   {!isAdmin && (
-                    <div style={{ display:"flex", justifyContent:"center", gap:2, flexWrap:"wrap" }}>
-                      {events.slice(0,4).map((r,j) => {
+                    <div style={{ display:"flex", flexDirection:"column", gap:2, width:"100%" }}>
+                      {events.slice(0,3).map((r,j) => {
                         const mine = isMineReq(r);
-                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%",
-                          background: isSel ? (mine?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.4)") : (mine?C.teal:C.border) }} />;
+                        const isMultiDay = r.startDate !== r.endDate;
+                        const isStart = toStr(d) === r.startDate;
+                        const isEnd   = toStr(d) === r.endDate;
+                        const baseColor = mine ? C.teal : C.border;
+                        const selColor  = mine ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.4)";
+                        const col = isSel ? selColor : baseColor;
+                        if (isMultiDay) {
+                          return (
+                            <div key={j} style={{
+                              height:5, borderRadius: isStart?"3px 0 0 3px": isEnd?"0 3px 3px 0":"0",
+                              background:col, marginLeft: isStart?2:0, marginRight: isEnd?2:0,
+                              width:"100%", flexShrink:0
+                            }} />
+                          );
+                        }
+                        return <div key={j} style={{ width:6, height:6, borderRadius:"50%", background:col, alignSelf:"center" }} />;
                       })}
-                      {events.length > 4 && <div style={{ fontSize:9, color:isSel?"#fff":C.muted }}>+{events.length-4}</div>}
+                      {events.length > 3 && <div style={{ fontSize:8, color:isSel?"#fff":C.muted, textAlign:"center" }}>+{events.length-3}</div>}
                     </div>
                   )}
                 </div>
