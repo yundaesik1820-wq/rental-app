@@ -250,6 +250,41 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
 
   const validate = () => {
     const errs = {};
+
+    // ── 평일 대여 규칙 ──────────────────────────────────────────
+    if (form.startDate && form.endDate) {
+      const [sy, sm, sd] = form.startDate.split("-").map(Number);
+      const [ey, em, ed] = form.endDate.split("-").map(Number);
+      const startDow = new Date(sy, sm-1, sd).getDay(); // 0=일,1=월,...,6=토
+      const endDow   = new Date(ey, em-1, ed).getDay();
+
+      // 주말 대여 여부: 금요일 17:30 이후 대여 시작 or 토·일 포함
+      const isWeekendStart = (startDow === 5 && (form.startTime || "09:00") >= "17:30")
+        || startDow === 0 || startDow === 6;
+      const isWeekendEnd   = (endDow   === 1 && (form.endTime   || "18:00") <= "09:00")
+        || endDow === 0 || endDow === 6;
+      const isWeekendRental = isWeekendStart && isWeekendEnd;
+
+      // 평일 대여인 경우
+      if (!isWeekendRental) {
+        // 같은 날이어야 함
+        if (form.startDate !== form.endDate) {
+          errs.date = "평일 대여는 당일 대여·반납만 가능합니다. 주말 대여(금 17:30 이후~월 09:00)가 아닌 경우 같은 날로 맞춰주세요.";
+        } else {
+          // 대여 시간 9:00~17:30 이내
+          const st = form.startTime || "09:00";
+          const et = form.endTime   || "18:00";
+          if (st < "09:00" || st > "17:30") {
+            errs.date = "평일 대여 시작 시간은 09:00~17:30 사이여야 합니다.";
+          } else if (et > "17:30") {
+            errs.date = "평일 반납 시간은 17:30을 초과할 수 없습니다. 반납 시간을 17:30 이내로 수정해주세요.";
+          } else if (st >= et) {
+            errs.date = "대여 시작 시간이 반납 시간보다 늦습니다.";
+          }
+        }
+      }
+    }
+    // ──────────────────────────────────────────────────────────
     if (cartTotal === 0)          errs.cart = "장비를 1개 이상 선택하세요";
     // 라이센스 체크 - 원본 equipments 데이터 기반
     const myLicNum = licenseToNum(profile?.license);
@@ -1126,6 +1161,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 {errors.endDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.endDate}</div>}
               </div>
             </div>
+            {errors.date && (
+              <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"12px 16px", fontSize:13, fontWeight:600, marginTop:10, border:`1px solid ${C.red}30` }}>
+                ⚠️ {errors.date}
+              </div>
+            )}
           </div>
 
           {errors.cart && (
