@@ -24,44 +24,6 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
         )}
       </div>
 
-      {/* 계정 연결 설정 모달 (처음 한 번만) */}
-      {switchModal && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-          onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>비밀번호를 입력하면 바로 전환돼요</div>
-            <div style={{ background:C.bg, borderRadius:9, padding:"9px 12px", marginBottom:12, fontSize:13, color:C.text }}>
-              📧 {profile?.linkedEmail}
-            </div>
-            <div style={{ marginBottom: switchErr ? 8 : 16 }}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={setupPw} onChange={e => setSetupPw(e.target.value)} type="password" placeholder="비밀번호 입력" autoFocus
-                onKeyDown={e => e.key === "Enter" && handleSaveCreds()}
-                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-            </div>
-            {switchErr && (
-              <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr}</div>
-            )}
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal(false); setSetupPw(""); setSwitchErr(""); }}
-                style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
-              <button onClick={handleSaveCreds} disabled={switchLoading}
-                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
-                {switchLoading ? "확인 중..." : "💾 계정 저장"}
-              </button>
-            </div>
-            {savedCreds && (
-              <button onClick={() => { localStorage.removeItem(storageKey); setSwitchModal(false); }}
-                style={{ width:"100%", marginTop:8, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
-                저장된 계정 초기화
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
