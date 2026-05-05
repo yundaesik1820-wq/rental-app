@@ -5,10 +5,9 @@ import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
-import { db, storage } from "../../firebase";
+import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth as firebaseAuth } from "../../firebase";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
