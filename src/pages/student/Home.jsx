@@ -298,6 +298,16 @@ export default function StudentHome() {
   const [classes,       setClasses]       = useState([]);
   const [showTimetable, setShowTimetable] = useState(false); // 편집 모달
   const [showRentory,   setShowRentory]   = useState(false); // 렌토리 소개 모달
+  const [installPrompt, setInstallPrompt] = useState(null);  // PWA 설치 프롬프트
+  const [showInstall,   setShowInstall]   = useState(false); // 설치 배너 표시
+  const [showIosInstall, setShowIosInstall] = useState(() => {
+    // iOS Safari이고 standalone 아닌 경우 + 이전에 닫은 적 없으면 표시
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const dismissed = localStorage.getItem('ios_install_dismissed');
+    return isIos && isSafari && !isStandalone && !dismissed;
+  });
   const [returnPhotoUploading, setReturnPhotoUploading] = useState(false);
   const [returnPhotoProgress,  setReturnPhotoProgress]  = useState(0);
   const [expandedReturnId,     setExpandedReturnId]     = useState(null); // 펼쳐진 반납준비 항목
@@ -586,6 +596,65 @@ export default function StudentHome() {
 
   return (
     <div>
+      {/* PWA 설치 배너 */}
+      {showInstall && (
+        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:14, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
+          <span style={{ fontSize:28 }}>📲</span>
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff", marginBottom:2 }}>앱으로 설치하기</div>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.8)" }}>홈 화면에 추가하면 더 빠르게 이용할 수 있어요!</div>
+          </div>
+          <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+            <button onClick={async () => {
+              if (!installPrompt) return;
+              installPrompt.prompt();
+              const { outcome } = await installPrompt.userChoice;
+              setInstallPrompt(null);
+              setShowInstall(false);
+            }} style={{ background:"#fff", color:"#1B2B6B", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+              설치
+            </button>
+            <button onClick={() => setShowInstall(false)}
+              style={{ background:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:12, cursor:"pointer" }}>
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* iOS PWA 설치 안내 배너 */}
+      {showIosInstall && (
+        <div style={{ background:"linear-gradient(135deg,#0F172A,#1B2B6B)", borderRadius:14, padding:"14px 16px", marginBottom:12, border:"1px solid rgba(255,255,255,0.15)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:22 }}>📲</span>
+              <div>
+                <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>앱으로 설치하기</div>
+                <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>홈 화면에서 바로 실행할 수 있어요!</div>
+              </div>
+            </div>
+            <button onClick={() => { setShowIosInstall(false); localStorage.setItem('ios_install_dismissed','1'); }}
+              style={{ background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:6, padding:"4px 8px", fontSize:12, cursor:"pointer" }}>✕</button>
+          </div>
+          <div style={{ background:"rgba(255,255,255,0.08)", borderRadius:10, padding:"10px 12px" }}>
+            <div style={{ fontSize:11, color:"rgba(255,255,255,0.9)", lineHeight:1.8 }}>
+              <div style={{ marginBottom:4 }}>
+                <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>1</span>
+                하단 Safari <span style={{ fontSize:14 }}>⬆️</span> <b style={{ color:"#93C5FD" }}>공유 버튼</b>을 눌러요
+              </div>
+              <div style={{ marginBottom:4 }}>
+                <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>2</span>
+                스크롤해서 <b style={{ color:"#93C5FD" }}>홈 화면에 추가</b> <span style={{ fontSize:14 }}>➕</span>를 눌러요
+              </div>
+              <div>
+                <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>3</span>
+                오른쪽 위 <b style={{ color:"#93C5FD" }}>추가</b>를 누르면 완료!
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Welcome banner */}
       <div style={{ background: `linear-gradient(135deg,#2D4A9B,${C.teal})`, borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
         {/* 버튼들 - 배너 우측 상단 */}
