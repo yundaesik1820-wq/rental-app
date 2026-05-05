@@ -240,46 +240,6 @@ function GpaCalculator() {
         </div>
       )}
 
-      {/* 계정 연결 설정 모달 */}
-      {switchModal2 && (
-        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
-          onClick={() => { setSwitchModal2(false); setSwitchErr2(""); }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔗 계정 연결 설정</div>
-            <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>
-              전환할 관리자 계정 정보를 저장하면<br/>다음부터 버튼 한 번에 바로 전환돼요
-            </div>
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>이메일</div>
-              <input value={setupEmail2} onChange={e => setSetupEmail2(e.target.value)} placeholder="관리자 계정 이메일"
-                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-            </div>
-            <div style={{ marginBottom:switchErr2?8:16 }}>
-              <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
-              <input value={setupPw2} onChange={e => setSetupPw2(e.target.value)} type="password" placeholder="관리자 계정 비밀번호"
-                onKeyDown={e => e.key==="Enter" && handleSaveCreds2()}
-                style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-            </div>
-            {switchErr2 && <div style={{ background:C.redLight, color:C.red, borderRadius:8, padding:"7px 12px", fontSize:12, marginBottom:12 }}>{switchErr2}</div>}
-            <div style={{ display:"flex", gap:8 }}>
-              <button onClick={() => { setSwitchModal2(false); setSetupEmail2(""); setSetupPw2(""); setSwitchErr2(""); }}
-                style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
-              <button onClick={handleSaveCreds2} disabled={switchLoading2}
-                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading2?0.7:1 }}>
-                {switchLoading2?"확인 중...":"💾 계정 저장"}
-              </button>
-            </div>
-            {savedLinked && (
-              <button onClick={() => { localStorage.removeItem(switchKey); setSwitchModal2(false); }}
-                style={{ width:"100%", marginTop:8, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>
-                저장된 계정 초기화
-              </button>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
   );
 }
 
