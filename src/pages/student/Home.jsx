@@ -318,7 +318,7 @@ export default function StudentHome() {
   const [addFriendId,    setAddFriendId]    = useState("");
   const [addFriendMsg,   setAddFriendMsg]   = useState("");
   const [addFriendLoading, setAddFriendLoading] = useState(false);
-  const [viewFriend,     setViewFriend]     = useState(null); // { name, dept, classes }
+  const [viewFriend,     setViewFriend]     = useState(null); // { id, name, dept, classes }
   const [viewFriendLoading, setViewFriendLoading] = useState(false);
   const [friendSort,     setFriendSort]     = useState("name"); // "name" | "id"
   const [friendSearch,   setFriendSearch]   = useState("");   // 검색어
@@ -561,7 +561,7 @@ export default function StudentHome() {
       const targetName = isMine ? friendDoc.friendName : friendDoc.userName;
       const ttSnap = await getDoc(doc(db, "timetables", targetId));
       const classes = ttSnap.exists() ? (ttSnap.data().classes || []) : [];
-      setViewFriend({ name: targetName, classes });
+      setViewFriend({ id: targetId, name: targetName, classes });
     } catch(e) { console.error(e); }
     setViewFriendLoading(false);
   };
@@ -979,7 +979,8 @@ export default function StudentHome() {
                       ) : (
                         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                           {paginated.map(f => {
-                            const isViewing = viewFriend?.name === f._name;
+                            const fid = f.userId === profile?.uid ? f.friendId : f.userId;
+                          const isViewing = viewFriend?.id === fid;
                             return (
                               <div key={f.id}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6, background:f._pinned?C.tealLight:C.bg, borderRadius:10, padding:"8px 12px", border:f._pinned?`1px solid ${C.teal}30`:"none" }}>
