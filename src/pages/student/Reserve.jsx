@@ -164,7 +164,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const getIdx = (key) => photoIdx[key] || 0;
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max-1)) }));
 
-  const [lightbox, setLightbox] = useState(null); // { photos: [], idx: 0 }
+  const [lightbox,    setLightbox]    = useState(null); // { photos: [], idx: 0 }
+  const [equipDetail, setEquipDetail] = useState(null); // 장비 상세 모달
   const [showNotice, setShowNotice]         = useState(false);
   const [showSignature, setShowSignature]   = useState(false);
   const [studentSignature, setStudentSignature] = useState("");
@@ -649,12 +650,10 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:4 }} />
                 </div>
                 {/* 장비가 궁금하다면? */}
-                {photos.length > 0 && (
-                  <button onClick={() => setLightbox({ photos, idx:0 })}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
-                    🔍 장비가 궁금하다면?
-                  </button>
-                )}
+                <button onClick={() => setEquipDetail(e)}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
+                  🔍 장비가 궁금하다면?
+                </button>
                 {/* 수량 조절 / 선택 버튼 */}
                 {isLocked ? (
                   <div style={{ fontSize:11, color:"#EF4444", fontWeight:600 }}>🔒 Lv.{eqLicNum} 이상 필요 (현재: {profile?.license || "없음"})</div>
@@ -724,12 +723,10 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:4 }} />
                 </div>
-                {photos.length > 0 && (
-                  <button onClick={() => setLightbox({ photos, idx:0 })}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
-                    🔍 장비가 궁금하다면?
-                  </button>
-                )}
+                <button onClick={() => setEquipDetail(e)}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
+                  🔍 장비가 궁금하다면?
+                </button>
                 {/* 구성품 */}
                 {items.length > 0 && (
                   <div style={{ marginBottom:8 }}>
@@ -764,6 +761,56 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             );
           })}
           {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
+        </div>
+      )}
+
+      {/* 장비 상세 모달 */}
+      {equipDetail && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", zIndex:9998, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => setEquipDetail(null)}>
+          <div onClick={ev => ev.stopPropagation()}
+            style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:380, boxShadow:"0 8px 32px rgba(0,0,0,0.3)", maxHeight:"80vh", overflowY:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{equipDetail.modelName}</div>
+                {(equipDetail.subCategory || equipDetail.minorCategory) && (
+                  <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+                    {equipDetail.subCategory || equipDetail.minorCategory}
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setEquipDetail(null)}
+                style={{ background:"none", border:"none", fontSize:20, color:C.muted, cursor:"pointer", lineHeight:1, padding:4 }}>✕</button>
+            </div>
+            {(() => {
+              const ps = equipDetail.displayPhotoUrl ? [equipDetail.displayPhotoUrl] : (equipDetail.photoUrls||[]);
+              return ps.length > 0 && (
+                <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+                  {ps.map((url, i) => (
+                    <img key={i} src={url} alt="" onClick={() => { setEquipDetail(null); setLightbox({ photos:ps, idx:i }); }}
+                      style={{ width:80, height:80, objectFit:"contain", borderRadius:8, border:`1px solid ${C.border}`, cursor:"zoom-in", background:C.bg }} />
+                  ))}
+                </div>
+              );
+            })()}
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {equipDetail.manufacturer && (
+                <div style={{ fontSize:13, color:C.muted }}>🏭 제조사 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.manufacturer}</span></div>
+              )}
+              {equipDetail.mount && (
+                <div style={{ fontSize:13, color:C.muted }}>🔗 마운트 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.mount}</span></div>
+              )}
+              {equipDetail.itemName && (
+                <div style={{ fontSize:13, color:C.muted }}>📌 품명 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.itemName}</span></div>
+              )}
+              {equipDetail.description && (
+                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px" }}>
+                  📝 {equipDetail.description}
+                </div>
+              )}
+              <div style={{ fontSize:13, color:C.muted }}>📦 재고 <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700, marginLeft:8 }}>{equipDetail.available}대 대여 가능</span></div>
+            </div>
+          </div>
         </div>
       )}
 
