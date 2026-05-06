@@ -343,6 +343,7 @@ export default function GuideReserve({ onComplete }) {
                         )}
                         <span style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}/{e.total}대</span>
                       </div>
+                      <EquipInfo e={e} />
                     </div>
                     {isLocked ? (
                       <span style={{ fontSize:11, color:C.red, flexShrink:0 }}>대여 불가</span>
@@ -408,6 +409,7 @@ export default function GuideReserve({ onComplete }) {
                     <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
                     {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
                     <div style={{ fontSize:10, color:e.available===0?C.red:C.muted }}>재고 {e.available||0}개</div>
+                    <EquipInfo e={e} />
                   </div>
                   {e.available === 0 ? (
                     <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
@@ -461,6 +463,7 @@ export default function GuideReserve({ onComplete }) {
                       {need && !adapter && <span style={{ fontSize:10, background:C.yellowLight, color:C.yellow, borderRadius:4, padding:"1px 6px" }}>⚠️ 어댑터 미등록</span>}
                       <span style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</span>
                     </div>
+                    <EquipInfo e={e} />
                   </div>
                   {avail === 0 ? (
                     <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
@@ -530,6 +533,7 @@ export default function GuideReserve({ onComplete }) {
                           <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
                           {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
                           <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
+                          <EquipInfo e={e} />
                         </div>
                         {avail === 0 ? (
                           <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
@@ -582,6 +586,7 @@ export default function GuideReserve({ onComplete }) {
                         <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
                         {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
                         <div style={{ fontSize:10, color:avail===0?C.red:C.muted }}>재고 {avail}개</div>
+                        <EquipInfo e={e} />
                       </div>
                       {avail === 0 ? (
                         <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
