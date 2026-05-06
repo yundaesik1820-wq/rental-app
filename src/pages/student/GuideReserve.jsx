@@ -38,6 +38,8 @@ export default function GuideReserve({ onComplete }) {
   const [form, setForm]           = useState({ startDate:"", endDate:"", startTime:"09:00", endTime:"18:00", purpose:"수업", purposeDetail:"" });
   const [done, setDone]           = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [lightbox,   setLightbox]   = useState(null);   // { photos, idx }
+  const [equipDetail, setEquipDetail] = useState(null); // 장비 상세 보기
 
   const today = new Date().toISOString().slice(0,10);
 
@@ -230,32 +232,30 @@ export default function GuideReserve({ onComplete }) {
   );
 
   const EquipPhoto = ({ e }) => {
-    const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls||[]);
-    return photos[0] ? (
-      <div style={{ width:52, height:52, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.border}`, cursor:"zoom-in" }}
-        onClick={() => setLightbox({ photos, idx:0 })}>
-        <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-      </div>
-    ) : null;
-  };
-
-  // 장비 소분류 + 궁금하다면 버튼
-  const EquipInfo = ({ e }) => {
-    const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls||[]);
+    const url = e.displayPhotoUrl || (e.photoUrls && e.photoUrls[0]) || "";
+    if (!url) return <div style={{ width:52, height:52, borderRadius:8, background:C.bg, border:`1px solid ${C.border}`, flexShrink:0 }} />;
     return (
-      <div>
-        {e.minorCategory && (
-          <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:4 }}>{e.minorCategory}</span>
-        )}
-        {photos.length > 0 && (
-          <button onClick={() => setLightbox({ photos, idx:0 })}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"1px 8px", fontSize:10, color:C.muted, cursor:"pointer" }}>
-            🔍 궁금하다면?
-          </button>
-        )}
+      <div style={{ width:52, height:52, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.border}`, cursor:"zoom-in" }}
+        onClick={(ev) => { ev.stopPropagation(); setLightbox({ photos:[url], idx:0 }); }}>
+        <img src={url} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
       </div>
     );
   };
+
+  // 장비 소분류 + 궁금하다면 버튼
+  const EquipInfo = ({ e }) => (
+    <div style={{ marginTop:4, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
+      {(e.subCategory || e.minorCategory) && (
+        <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
+          {e.subCategory || e.minorCategory}
+        </span>
+      )}
+      <button onClick={(ev) => { ev.stopPropagation(); setEquipDetail(e); }}
+        style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px", fontSize:10, color:C.muted, cursor:"pointer" }}>
+        🔍 장비가 궁금하다면?
+      </button>
+    </div>
+  );
 
   return (
     <div>
@@ -618,6 +618,60 @@ export default function GuideReserve({ onComplete }) {
       {showSign && (
         <Modal onClose={() => setShowSign(false)} width={500}>
           <SignaturePad title="✍️ 서명" onSave={s => { setSig(s); setShowSign(false); }} onCancel={() => setShowSign(false)} />
+        </Modal>
+      )}
+
+      {/* 사진 라이트박스 */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)}
+          style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.9)", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <img src={lightbox.photos[lightbox.idx]} alt=""
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth:"90vw", maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
+          <button onClick={() => setLightbox(null)}
+            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
+        </div>
+      )}
+
+      {/* 장비 상세 모달 */}
+      {equipDetail && (
+        <Modal onClose={() => setEquipDetail(null)} width={400}>
+          <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{equipDetail.modelName}</div>
+          {(equipDetail.subCategory || equipDetail.minorCategory) && (
+            <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+              {equipDetail.subCategory || equipDetail.minorCategory}
+            </span>
+          )}
+          {/* 사진 */}
+          {(() => {
+            const photos = equipDetail.displayPhotoUrl ? [equipDetail.displayPhotoUrl] : (equipDetail.photoUrls||[]);
+            return photos.length > 0 && (
+              <div style={{ display:"flex", gap:6, marginTop:10, flexWrap:"wrap" }}>
+                {photos.map((url, i) => (
+                  <img key={i} src={url} alt="" onClick={() => setLightbox({ photos, idx:i })}
+                    style={{ width:80, height:80, objectFit:"contain", borderRadius:8, border:`1px solid ${C.border}`, cursor:"zoom-in", background:C.bg }} />
+                ))}
+              </div>
+            );
+          })()}
+          {/* 스펙 정보 */}
+          <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:6 }}>
+            {equipDetail.manufacturer && (
+              <div style={{ fontSize:12, color:C.muted }}>🏭 제조사: <span style={{ color:C.text, fontWeight:600 }}>{equipDetail.manufacturer}</span></div>
+            )}
+            {equipDetail.mount && (
+              <div style={{ fontSize:12, color:C.muted }}>🔗 마운트: <span style={{ color:C.text, fontWeight:600 }}>{equipDetail.mount}</span></div>
+            )}
+            {equipDetail.description && (
+              <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>📝 {equipDetail.description}</div>
+            )}
+            {equipDetail.available !== undefined && (
+              <div style={{ fontSize:12, color:C.muted }}>📦 재고: <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span></div>
+            )}
+          </div>
+          <div style={{ marginTop:16 }}>
+            <Btn onClick={() => setEquipDetail(null)} color={C.navy} full>닫기</Btn>
+          </div>
         </Modal>
       )}
     </div>

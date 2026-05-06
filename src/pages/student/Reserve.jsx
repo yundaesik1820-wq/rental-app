@@ -638,7 +638,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     </div>
                     {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
-                      {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
+                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
                       {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}대</span>
                     </div>
@@ -714,7 +714,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
                       <span style={{ background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
-                      {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
+                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
                       {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}세트</span>
                     </div>

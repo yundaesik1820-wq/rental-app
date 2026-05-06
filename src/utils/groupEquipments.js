@@ -12,6 +12,7 @@ export function groupEquipments(equipments) {
         itemName:        e.itemName        || "",
         majorCategory:   e.majorCategory   || e.category || "",
         minorCategory:   e.minorCategory   || "",
+        subCategory:     e.subCategory     || "",
         manufacturer:    e.manufacturer    || "",
         description:     e.description     || "",
         subCategory:     e.subCategory     || "",
