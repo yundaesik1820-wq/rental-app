@@ -115,8 +115,8 @@ exports.onNewNotice = functions.firestore
   .document("notices/{noticeId}")
   .onCreate(async (snap) => {
     const notice = snap.data();
-    // sendAlert가 false면 알림 전송 안 함
-    if (notice.sendAlert === false) return;
+    // sendAlert가 명시적으로 true일 때만 전송 (undefined, null, false 모두 전송 안 함)
+    if (notice.sendAlert !== true) return;
     const usersSnap = await admin.firestore().collection("users")
       .where("status", "==", "approved").where("role", "==", "student").get();
     const sends = usersSnap.docs
