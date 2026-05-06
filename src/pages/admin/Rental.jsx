@@ -7,7 +7,7 @@ import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "대여중", "연체", "보류", "거절됨", "반납완료"];
 const STATUS_TABS_ASSIST  = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
 const STATUS_TABS_TEACHER = ["승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
@@ -879,7 +879,8 @@ ${r.attachments?.length > 0 ? `
             r.status === "보류"    ? C.orange + "50" :
             r.status === "거절됨"  ? C.red    + "40" :
             r.status === "승인됨"  ? C.teal   + "40" :
-            r.status === "대여중"  ? C.blue   + "50" : C.border
+            r.status === "대여중"  ? C.blue   + "50" :
+            r.status === "연체"    ? C.red    + "50" : C.border
           }`
         }}>
           {/* 신청자 정보 */}
@@ -974,7 +975,7 @@ ${r.attachments?.length > 0 ? `
               {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
-          {r.status === "대여중" && (
+          {(r.status === "대여중" || r.status === "연체") && (
             <div>
               {r.assignedUnits?.length > 0 && (
                 <div style={{ background:C.blueLight, borderRadius:10, padding:"10px 14px", marginBottom:10 }}>
@@ -1022,11 +1023,21 @@ ${r.attachments?.length > 0 ? `
                         {ready ? "✅ 사진 3장 확인됨 - 반납 처리 가능" : `📸 학생 사진 업로드 대기 중 (${photos.length}/3)`}
                       </span>
                     </div>
-                    <Btn onClick={() => ready && openReturnModal(r)} color={ready ? C.teal : C.muted}
-                      full disabled={!ready}
-                      style={{ opacity: ready ? 1 : 0.5, cursor: ready ? "pointer" : "not-allowed" }}>
-                      📦 반납 처리
-                    </Btn>
+                    <div style={{ display:"flex", gap:8 }}>
+                      {r.status === "대여중" && (
+                        <Btn onClick={() => {
+                          if (window.confirm("연체 처리하시겠습니까?"))
+                            updateItem("rentalRequests", r.id, { status: "연체", overdueAlerted: false });
+                        }} color={C.red} outline full>
+                          ⚠️ 연체 처리
+                        </Btn>
+                      )}
+                      <Btn onClick={() => ready && openReturnModal(r)} color={ready ? C.teal : C.muted}
+                        full disabled={!ready}
+                        style={{ opacity: ready ? 1 : 0.5, cursor: ready ? "pointer" : "not-allowed" }}>
+                        📦 반납 처리
+                      </Btn>
+                    </div>
                   </div>
                 );
               })()}

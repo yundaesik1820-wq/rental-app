@@ -161,3 +161,83 @@ exports.onCommunityComment = functions.firestore
       `"${postTitle.slice(0, 20)}${postTitle.length > 20 ? "..." : ""}"에 ${commenterDisplay}가 댓글을 달았어요!`
     );
   });
+
+// ── 연체 자동 처리 (30분마다 실행) ──────────────────────────
+exports.checkOverdue = functions.pubsub
+  .schedule("*/30 * * * *")   // 30분마다
+  .timeZone("Asia/Seoul")
+  .onRun(async () => {
+    const now = new Date();
+    // KST 현재 날짜/시간
+    const kst = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+    const todayStr = kst.toISOString().slice(0, 10);       // YYYY-MM-DD
+    const timeStr  = kst.toISOString().slice(11, 16);      // HH:MM
+    const alertTime = new Date(kst.getTime() - 30 * 60 * 1000); // 30분 전
+    const alertTimeStr = alertTime.toISOString().slice(11, 16);
+
+    const snap = await admin.firestore()
+      .collection("rentalRequests")
+      .where("status", "==", "대여중")
+      .get();
+
+    const statusBatch = admin.firestore().batch();
+    const newOverdue = [];
+    const alertTargets = [];
+
+    snap.docs.forEach(doc => {
+      const d = doc.data();
+      if (!d.endDate || !d.endTime) return;
+
+      const endDateTime = `${d.endDate}T${d.endTime}`;
+      const endKst = `${d.endDate}T${timeStr}`;
+
+      // 반납 시간이 지남 → 연체로 상태 변경
+      if (d.endDate < todayStr || (d.endDate === todayStr && d.endTime <= timeStr)) {
+        statusBatch.update(doc.ref, { status: "연체" });
+        newOverdue.push({ id: doc.id, uid: d.studentId, name: d.studentName });
+      }
+    });
+
+    // 연체 상태인 항목 조회 → 30분 초과 알림 (overdueAlerted 없는 것만)
+    const overdueSnap = await admin.firestore()
+      .collection("rentalRequests")
+      .where("status", "==", "연체")
+      .where("overdueAlerted", "==", false)
+      .get();
+
+    overdueSnap.docs.forEach(doc => {
+      const d = doc.data();
+      if (!d.endDate || !d.endTime) return;
+      // 반납 시간 + 30분이 현재보다 이전이면 알림
+      const endMs = new Date(`${d.endDate}T${d.endTime}:00+09:00`).getTime();
+      const nowMs  = now.getTime();
+      if (nowMs - endMs >= 30 * 60 * 1000) {
+        statusBatch.update(doc.ref, { overdueAlerted: true });
+        alertTargets.push({ uid: d.studentId, name: d.studentName });
+      }
+    });
+
+    if (Object.keys(statusBatch._ops || {}).length > 0 ||
+        newOverdue.length > 0 || alertTargets.length > 0) {
+      await statusBatch.commit();
+    }
+
+    // 새로 연체된 학생 - 상태 변경 알림 + overdueAlerted 초기화
+    await Promise.allSettled(
+      newOverdue.map(async r => {
+        await admin.firestore().collection("rentalRequests").doc(r.id)
+          .update({ overdueAlerted: false });
+        return sendFCM(r.uid, "⚠️ 반납 기한 초과", "반납 시간이 지났어요. 빠른 반납 부탁드려요!");
+      })
+    );
+
+    // 30분 초과 연체 알림
+    await Promise.allSettled(
+      alertTargets.map(r =>
+        sendFCM(r.uid, "🚨 반납 연체 중", "반납 기한이 30분 이상 초과됐어요! 즉시 반납해주세요.")
+      )
+    );
+
+    console.log(`연체 처리: ${newOverdue.length}건, 30분 알림: ${alertTargets.length}건`);
+    return null;
+  });
