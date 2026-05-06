@@ -645,9 +645,16 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   </div>
                 </div>
                 {/* 재고 바 */}
-                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 8px" }}>
+                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:4 }} />
                 </div>
+                {/* 장비가 궁금하다면? */}
+                {photos.length > 0 && (
+                  <button onClick={() => setLightbox({ photos, idx:0 })}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
+                    🔍 장비가 궁금하다면?
+                  </button>
+                )}
                 {/* 수량 조절 / 선택 버튼 */}
                 {isLocked ? (
                   <div style={{ fontSize:11, color:"#EF4444", fontWeight:600 }}>🔒 Lv.{eqLicNum} 이상 필요 (현재: {profile?.license || "없음"})</div>
@@ -714,9 +721,15 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   </div>
                 </div>
                 {/* 재고 바 */}
-                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0" }}>
+                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:4 }} />
                 </div>
+                {photos.length > 0 && (
+                  <button onClick={() => setLightbox({ photos, idx:0 })}
+                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
+                    🔍 장비가 궁금하다면?
+                  </button>
+                )}
                 {/* 구성품 */}
                 {items.length > 0 && (
                   <div style={{ marginBottom:8 }}>

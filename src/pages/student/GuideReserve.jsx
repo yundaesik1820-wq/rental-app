@@ -232,10 +232,29 @@ export default function GuideReserve({ onComplete }) {
   const EquipPhoto = ({ e }) => {
     const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls||[]);
     return photos[0] ? (
-      <div style={{ width:52, height:52, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.border}` }}>
+      <div style={{ width:52, height:52, borderRadius:8, overflow:"hidden", flexShrink:0, border:`1px solid ${C.border}`, cursor:"zoom-in" }}
+        onClick={() => setLightbox({ photos, idx:0 })}>
         <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
       </div>
     ) : null;
+  };
+
+  // 장비 소분류 + 궁금하다면 버튼
+  const EquipInfo = ({ e }) => {
+    const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls||[]);
+    return (
+      <div>
+        {e.minorCategory && (
+          <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700, marginRight:4 }}>{e.minorCategory}</span>
+        )}
+        {photos.length > 0 && (
+          <button onClick={() => setLightbox({ photos, idx:0 })}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"1px 8px", fontSize:10, color:C.muted, cursor:"pointer" }}>
+            🔍 궁금하다면?
+          </button>
+        )}
+      </div>
+    );
   };
 
   return (
