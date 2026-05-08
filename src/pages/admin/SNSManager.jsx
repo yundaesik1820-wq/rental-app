@@ -42,12 +42,11 @@ const fmtDate = s => {
   catch { return ""; }
 };
 
-async function naverSearch(endpoint, query, display, cid, csec) {
-  const url = PROXY + encodeURIComponent(
-    `https://openapi.naver.com/v1/search/${endpoint}.json?query=${encodeURIComponent(query)}&display=${display}&sort=date`
-  );
-  const res  = await fetch(url, { headers:{ "X-Naver-Client-Id":cid, "X-Naver-Client-Secret":csec } });
+async function naverSearch(endpoint, query, display) {
+  const params = new URLSearchParams({ endpoint, query, display, sort:"date" });
+  const res  = await fetch("/api/naver?" + params.toString());
   const data = await res.json();
+  if (data.error) throw new Error(data.error);
   return data.items || [];
 }
 
@@ -254,12 +253,12 @@ function KinTab({ cid, csec }) {
   const { copied, copy } = useCopy();
 
   const fetchAll = async () => {
-    if (!cid||!csec) { alert("API 키를 먼저 설정해주세요!"); return; }
+    
     setFetching(true); setQuestions([]); setSelected(null); setAnswer("");
     const seen = new Set(), all = [];
     for (const kw of KIN_KEYWORDS) {
       try {
-        const items = await naverSearch("kin", kw, 15, cid, csec);
+        const items = await naverSearch("kin", kw, 15);
         for (const item of items) {
           const url   = item.link||"";
           const title = cleanHtml(item.title||"");
@@ -376,7 +375,7 @@ function CafeTab({ cid, csec }) {
   const { copied, copy } = useCopy();
 
   const fetchAll = async () => {
-    if (!cid||!csec) { alert("API 키를 먼저 설정해주세요!"); return; }
+    
     setFetching(true); setArticles([]); setSelected(null);
     const all = [];
     for (let i=0; i<CAFE_CATS.length; i++) {
