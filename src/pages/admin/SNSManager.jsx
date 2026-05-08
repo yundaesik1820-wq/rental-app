@@ -82,7 +82,7 @@ const CopyBtn = ({ tag, text, copied, onCopy, label="복사" }) => (
     border:`1px solid ${copied===tag ? C.green : C.border}`,
     borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:600,
     cursor:"pointer", fontFamily:"inherit", transition:"all .15s",
-  }}>{copied===tag ? "✓ 복사됨" : label}</CopyBtn>
+  }}>{copied===tag ? "✓ 복사됨" : label}</button>
 );
 
 const ChipGroup = ({ options, value, onChange }) => (
