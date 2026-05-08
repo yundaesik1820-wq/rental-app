@@ -5,7 +5,7 @@ import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2
 } from "lucide-react";
 
 const ADMIN_NAV = [
@@ -18,6 +18,7 @@ const ADMIN_NAV = [
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
   { id: "license",  icon: GraduationCap, label: "라이센스"  },
   { id: "community", icon: MessageSquare, label: "에브리타임"   },
+  { id: "sns",      icon: Share2,        label: "SNS 관리"  },
   { id: "settings", icon: Settings,      label: "설정"      },
 ];
 

@@ -23,6 +23,7 @@ import FacilityReserve from "./pages/student/FacilityReserve.jsx";
 import GuideReserve  from "./pages/student/GuideReserve.jsx";
 import FacilityAdmin  from "./pages/admin/FacilityAdmin.jsx";
 import Community     from "./pages/student/Community.jsx";
+import SNSManager    from "./pages/admin/SNSManager";
 
 // Student pages
 import StudentHome    from "./pages/student/Home";
@@ -510,6 +511,7 @@ function AppContent() {
         case "settings": return <Settings />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
+        case "sns":      return <SNSManager />;
         case "community":
           if (isTeacherProf) return null;
           return <Community />;
