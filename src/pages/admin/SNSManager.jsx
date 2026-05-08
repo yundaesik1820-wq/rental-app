@@ -4,7 +4,7 @@ import { Card, Btn, PageTitle, Modal } from "../../components/UI";
 
 // ── 상수 ────────────────────────────────────────────────────────
 const PROXY        = "https://corsproxy.io/?";
-const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+const CLAUDE_MODEL = "claude-sonnet-4-5";
 
 const KIN_KEYWORDS = [
   "영상계열","한국방송예술진흥원","한예진 영상계열",
@@ -57,6 +57,8 @@ async function callClaude(messages) {
     body: JSON.stringify({ model:CLAUDE_MODEL, max_tokens:1000, messages }),
   });
   const data = await res.json();
+  if (data.error) throw new Error(JSON.stringify(data.error));
+  if (!res.ok)    throw new Error("API 오류 " + res.status);
   return data.content?.[0]?.text || "";
 }
 
@@ -145,7 +147,7 @@ function ActivityTab() {
 [본문]
 (3~5문장. 영상계열 재학생 시각에서 현장감 있게. 마지막에 해시태그 5개: #한예진 #한국방송예술진흥원 #영상계열 포함 2개 추가)
 위 형식 그대로만 출력해줘.` }
-    ]}]).catch(e => { alert("오류: "+e.message); return ""; });
+    ]}).catch(e => { alert("AI 오류: " + e.message); setLoading(false); throw e; });
     if (text) {
       const tM = text.match(/\[제목\]\s*([\s\S]*?)\s*\[본문\]/);
       const bM = text.match(/\[본문\]\s*([\s\S]*)/);
