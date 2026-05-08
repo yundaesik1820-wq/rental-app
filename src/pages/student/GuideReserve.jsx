@@ -88,16 +88,19 @@ export default function GuideReserve({ onComplete }) {
 
   const currentCam = selectedCameras[camIdx];
 
-  // 현재 카메라에 맞는 배터리
-  const matchedBatteries = currentCam
+  // 현재 카메라에 맞는 배터리 (모델별 그룹화)
+  const matchedBatteriesRaw = currentCam
     ? batteries.filter(b =>
-        // 구버전 호환: forCamera 단일 필드
         b.forCamera === currentCam.modelName ||
-        // 신버전: forCameras 배열
         (b.forCameras || []).includes(currentCam.modelName) ||
-        // 카메라의 batteryModel 필드와 매칭
         (currentCam.batteryModel && b.modelName === currentCam.batteryModel)
       )
+  const matchedBatteries = Object.values(matchedBatteriesRaw.reduce((acc, e) => {
+    if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
+    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].total     += 1;
+    return acc;
+  }, {}))
     : batteries;
 
   const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;
