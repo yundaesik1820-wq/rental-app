@@ -138,20 +138,22 @@ function ActivityTab() {
 
   const generate = async () => {
     setLoading(true); setResult(null);
-    const text = await callClaude([{ role:"user", content:[
-      { type:"image", source:{ type:"base64", media_type:imgType, data:imgB64 } },
-      { type:"text",  text:`한국방송예술진흥원(한예진) 영상계열 재학생 활동 게시판에 올릴 글을 작성해줘.
-활동 유형: ${actType}${memo ? `\n추가 정보: ${memo}` : ""}
-[제목]
-(간결하고 생동감 있는 제목, 20자 이내, 이모지 1개 포함)
-[본문]
-(3~5문장. 영상계열 재학생 시각에서 현장감 있게. 마지막에 해시태그 5개: #한예진 #한국방송예술진흥원 #영상계열 포함 2개 추가)
-위 형식 그대로만 출력해줘.` }
-    ]}).catch(e => { alert("AI 오류: " + e.message); setLoading(false); throw e; });
-    if (text) {
+    const memoLine = memo ? ("\n추가 정보: " + memo) : "";
+    const prompt = "한국방송예술진흥원(한예진) 영상계열 재학생 활동 게시판에 올릴 글을 작성해줘.\n"
+      + "활동 유형: " + actType + memoLine + "\n"
+      + "[제목]\n(간결하고 생동감 있는 제목, 20자 이내, 이모지 1개 포함)\n"
+      + "[본문]\n(3~5문장. 영상계열 재학생 시각에서 현장감 있게. 마지막에 해시태그 5개: #한예진 #한국방송예술진흥원 #영상계열 포함 2개 추가)\n"
+      + "위 형식 그대로만 출력해줘.";
+    try {
+      const text = await callClaude([{ role:"user", content:[
+        { type:"image", source:{ type:"base64", media_type:imgType, data:imgB64 } },
+        { type:"text",  text: prompt }
+      ]}]);
       const tM = text.match(/\[제목\]\s*([\s\S]*?)\s*\[본문\]/);
       const bM = text.match(/\[본문\]\s*([\s\S]*)/);
       setResult({ title: tM?.[1]?.trim()||"", body: bM?.[1]?.trim()||text });
+    } catch(e) {
+      alert("AI 오류: " + e.message);
     }
     setLoading(false);
   };
