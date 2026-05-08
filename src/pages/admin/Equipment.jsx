@@ -632,7 +632,8 @@ export default function Equipment() {
     const XLSX = await import("xlsx");
     const rows = equipments.map(e => ({
       "대분류":   e.majorCategory || "",
-      "소분류":   e.minorCategory || "",
+      "중분류":   e.minorCategory || "",
+      "소분류":   e.subCategory   || "",
       "제조사":   e.manufacturer  || "",
       "모델명":   e.modelName     || "",
       "품명":     e.itemName      || "",
@@ -650,7 +651,7 @@ export default function Equipment() {
     const ws = XLSX.utils.json_to_sheet(rows);
     // 컬럼 너비 설정
     ws["!cols"] = [
-      {wch:10},{wch:12},{wch:10},{wch:18},{wch:22},
+      {wch:10},{wch:12},{wch:16},{wch:10},{wch:18},{wch:22},
       {wch:8},{wch:12},{wch:10},{wch:20},{wch:16},{wch:8},{wch:30},{wch:20}
     ];
     XLSX.utils.book_append_sheet(wb, ws, "장비목록");
@@ -816,30 +817,43 @@ export default function Equipment() {
             )}
             {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                  {(form.forCameras||[]).map((cam, i) => (
-                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
-                      {cam}
-                      <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
-                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
-                    </span>
-                  ))}
-                </div>
-                <div style={{ display:"flex", gap:6 }}>
-                  <input id="camInput" placeholder="예: Sony FX3" onKeyDown={e => {
-                    if (e.key === "Enter" && e.target.value.trim()) {
-                      f("forCameras", [...(form.forCameras||[]), e.target.value.trim()]);
-                      e.target.value = "";
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>
+                {/* 선택된 카메라 태그 */}
+                {(form.forCameras||[]).length > 0 && (
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                    {(form.forCameras||[]).map((cam, i) => (
+                      <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                        {cam}
+                        <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
+                          style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* 드롭다운 선택 */}
+                <select
+                  value=""
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && !(form.forCameras||[]).includes(val)) {
+                      f("forCameras", [...(form.forCameras||[]), val]);
                     }
                   }}
-                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
-                  <button onClick={() => {
-                    const input = document.getElementById("camInput");
-                    if (input?.value.trim()) { f("forCameras", [...(form.forCameras||[]), input.value.trim()]); input.value = ""; }
-                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
-                </div>
-                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
+                  <option value="">카메라 선택...</option>
+                  {equipments
+                    .filter(eq => ["카메라","캠코더","드론/액션캠"].includes(eq.minorCategory) && !eq.isSet)
+                    .reduce((acc, eq) => acc.some(x => x.modelName === eq.modelName) ? acc : [...acc, eq], [])
+                    .sort((a,b) => a.modelName.localeCompare(b.modelName))
+                    .map(eq => (
+                      <option key={eq.id} value={eq.modelName}
+                        disabled={(form.forCameras||[]).includes(eq.modelName)}>
+                        {eq.modelName} {(form.forCameras||[]).includes(eq.modelName) ? "✓" : ""}
+                      </option>
+                    ))
+                  }
+                </select>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>중복 선택 시 자동으로 제외돼요</div>
               </div>
             )}
             {form.equipType==="adapter" && (
@@ -1098,30 +1112,43 @@ export default function Equipment() {
             )}
             {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
-                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
-                  {(form.forCameras||[]).map((cam, i) => (
-                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
-                      {cam}
-                      <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
-                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
-                    </span>
-                  ))}
-                </div>
-                <div style={{ display:"flex", gap:6 }}>
-                  <input id="camInput" placeholder="예: Sony FX3" onKeyDown={e => {
-                    if (e.key === "Enter" && e.target.value.trim()) {
-                      f("forCameras", [...(form.forCameras||[]), e.target.value.trim()]);
-                      e.target.value = "";
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>
+                {/* 선택된 카메라 태그 */}
+                {(form.forCameras||[]).length > 0 && (
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                    {(form.forCameras||[]).map((cam, i) => (
+                      <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                        {cam}
+                        <button onClick={() => f("forCameras", (form.forCameras||[]).filter((_,j)=>j!==i))}
+                          style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {/* 드롭다운 선택 */}
+                <select
+                  value=""
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val && !(form.forCameras||[]).includes(val)) {
+                      f("forCameras", [...(form.forCameras||[]), val]);
                     }
                   }}
-                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
-                  <button onClick={() => {
-                    const input = document.getElementById("camInput");
-                    if (input?.value.trim()) { f("forCameras", [...(form.forCameras||[]), input.value.trim()]); input.value = ""; }
-                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
-                </div>
-                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
+                  <option value="">카메라 선택...</option>
+                  {equipments
+                    .filter(eq => ["카메라","캠코더","드론/액션캠"].includes(eq.minorCategory) && !eq.isSet)
+                    .reduce((acc, eq) => acc.some(x => x.modelName === eq.modelName) ? acc : [...acc, eq], [])
+                    .sort((a,b) => a.modelName.localeCompare(b.modelName))
+                    .map(eq => (
+                      <option key={eq.id} value={eq.modelName}
+                        disabled={(form.forCameras||[]).includes(eq.modelName)}>
+                        {eq.modelName} {(form.forCameras||[]).includes(eq.modelName) ? "✓" : ""}
+                      </option>
+                    ))
+                  }
+                </select>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>중복 선택 시 자동으로 제외돼요</div>
               </div>
             )}
             {form.equipType==="adapter" && (
