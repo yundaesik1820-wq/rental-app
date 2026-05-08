@@ -16,13 +16,13 @@ const KIN_FILTER = [
   "진로","학과","입시","전공","취업","대학",
 ];
 const CAFE_CATS = [
-  { label:"영상연출", query:"영상연출",         count:3 },
-  { label:"영상촬영", query:"영상촬영",         count:3 },
-  { label:"영상편집", query:"영상편집",         count:3 },
-  { label:"유튜브",   query:"유튜브 크리에이터", count:3 },
-  { label:"영화",     query:"영화 산업",        count:3 },
-  { label:"디자인",   query:"영상디자인",       count:3 },
-  { label:"작가",     query:"방송작가",         count:6 },
+  { label:"영상연출", query:"영상 연출 기법 제작",         count:3 },
+  { label:"영상촬영", query:"방송 촬영 기법 카메라",       count:3 },
+  { label:"영상편집", query:"영상편집 프로그램 기술 트렌드", count:3 },
+  { label:"유튜브",   query:"유튜브 크리에이터 콘텐츠 제작", count:3 },
+  { label:"영화",     query:"영화 제작 촬영 산업",         count:3 },
+  { label:"디자인",   query:"모션그래픽 영상 디자인 트렌드", count:3 },
+  { label:"작가",     query:"방송작가 드라마 콘텐츠 스토리", count:6 },
 ];
 const ACT_TYPES  = ["수업/실습","촬영현장","행사/특강","작품발표","동아리","졸업작품"];
 const TONE_OPTS  = ["친절·상세","선배 말투","전문적","핵심만"];
