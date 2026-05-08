@@ -95,13 +95,13 @@ export default function GuideReserve({ onComplete }) {
         (b.forCameras || []).includes(currentCam.modelName) ||
         (currentCam.batteryModel && b.modelName === currentCam.batteryModel)
       )
+    : [];
   const matchedBatteries = Object.values(matchedBatteriesRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
     acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
     acc[e.modelName].total     += 1;
     return acc;
-  }, {}))
-    : batteries;
+  }, {}));
 
   const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;
   const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
