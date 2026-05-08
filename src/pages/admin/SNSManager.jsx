@@ -368,11 +368,27 @@ function KinTab({ cid, csec }) {
 // 탭 3 — 카페
 // ════════════════════════════════════════════════════════════════
 function CafeTab({ cid, csec }) {
-  const [articles,  setArticles]  = useState([]);
-  const [selected,  setSelected]  = useState(null);
-  const [fetching,  setFetching]  = useState(false);
-  const [progress,  setProgress]  = useState({ step:0, label:"" });
+  const [articles,    setArticles]    = useState([]);
+  const [selected,    setSelected]    = useState(null);
+  const [fullContent, setFullContent] = useState("");
+  const [scraping,    setScraping]    = useState(false);
+  const [fetching,    setFetching]    = useState(false);
+  const [progress,    setProgress]    = useState({ step:0, label:"" });
   const { copied, copy } = useCopy();
+
+  const selectArt = async (art) => {
+    setSelected(art);
+    setFullContent("");
+    setScraping(true);
+    try {
+      const res  = await fetch("/api/scrape?url=" + encodeURIComponent(art.url));
+      const data = await res.json();
+      setFullContent(data.content || art.desc);
+    } catch {
+      setFullContent(art.desc);
+    }
+    setScraping(false);
+  };
 
   const fetchAll = async () => {
     
@@ -437,7 +453,7 @@ function CafeTab({ cid, csec }) {
                   {cat.label} <span style={{ color:C.muted, fontWeight:400 }}>{cat.items.length}개</span>
                 </div>
                 {cat.items.map((art,j) => (
-                  <div key={j} onClick={() => setSelected(art)}
+                  <div key={j} onClick={() => selectArt(art)}
                     style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, cursor:"pointer",
                       background: selected===art ? C.greenLight : "#fff",
                       borderLeft: `3px solid ${selected===art ? C.green : "transparent"}`,
@@ -477,19 +493,19 @@ function CafeTab({ cid, csec }) {
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <SectionLabel>카페 본문</SectionLabel>
-                  <CopyBtn tag="cbody" text={selected.desc+"\n\n"+selected.url} copied={copied} onCopy={copy} />
+                  <CopyBtn tag="cbody" text={(fullContent||selected.desc)+"\n\n"+selected.url} copied={copied} onCopy={copy} />
                 </div>
                 <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10,
                   padding:"12px 14px", fontSize:13, color:C.text, lineHeight:1.75,
                   whiteSpace:"pre-wrap", wordBreak:"break-all", minHeight:140 }}>
-                  {selected.desc}
+                  {scraping ? "⏳ 기사 전체 내용 가져오는 중..." : (fullContent || selected.desc)}
                   {"\n\n"}
                   <span style={{ color:C.blue }}>{selected.url}</span>
                 </div>
               </div>
 
               <Btn color={C.green} full
-                onClick={() => copy("call", selected.title+"\n\n"+selected.desc+"\n\n"+selected.url)}>
+                onClick={() => copy("call", selected.title+"\n\n"+(fullContent||selected.desc)+"\n\n"+selected.url)}>
                 {copied==="call" ? "✓ 복사됨" : "📋 제목 + 본문 전체 복사"}
               </Btn>
             </>
