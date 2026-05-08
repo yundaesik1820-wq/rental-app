@@ -7,30 +7,24 @@ export default async function handler(req, res) {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
         "Accept-Language": "ko-KR,ko;q=0.9",
       },
     });
 
     const html = await response.text();
 
-    // 스크립트/스타일/태그 제거
-    let text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, "")
-      .replace(/<style[\s\S]*?<\/style>/gi, "")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, '"')
-      .replace(/\s{2,}/g, "\n")
-      .trim();
+    // OG 이미지 추출
+    const imgMatch = html.match(/<meta[^>]*property=["']og:image["'][^>]*content=["']([^"']+)["']/i)
+                  || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+    const image = imgMatch ? imgMatch[1] : null;
 
-    // 너무 길면 앞 2000자만
-    if (text.length > 2000) text = text.slice(0, 2000) + "...";
+    // OG description 추출
+    const descMatch = html.match(/<meta[^>]*property=["']og:description["'][^>]*content=["']([^"']+)["']/i)
+                   || html.match(/<meta[^>]*content=["']([^"']+)["'][^>]*property=["']og:description["']/i);
+    const description = descMatch ? descMatch[1] : null;
 
-    res.status(200).json({ content: text });
+    res.status(200).json({ image, description });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

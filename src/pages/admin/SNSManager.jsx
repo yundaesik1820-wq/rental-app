@@ -368,26 +368,49 @@ function KinTab({ cid, csec }) {
 // 탭 3 — 카페
 // ════════════════════════════════════════════════════════════════
 function CafeTab({ cid, csec }) {
-  const [articles,    setArticles]    = useState([]);
-  const [selected,    setSelected]    = useState(null);
-  const [fullContent, setFullContent] = useState("");
-  const [scraping,    setScraping]    = useState(false);
-  const [fetching,    setFetching]    = useState(false);
-  const [progress,    setProgress]    = useState({ step:0, label:"" });
+  const [articles,   setArticles]   = useState([]);
+  const [selected,   setSelected]   = useState(null);
+  const [artImage,   setArtImage]   = useState(null);
+  const [aiContent,  setAiContent]  = useState("");
+  const [scraping,   setScraping]   = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [fetching,   setFetching]   = useState(false);
+  const [progress,   setProgress]   = useState({ step:0, label:"" });
   const { copied, copy } = useCopy();
 
   const selectArt = async (art) => {
     setSelected(art);
-    setFullContent("");
+    setArtImage(null);
+    setAiContent("");
     setScraping(true);
     try {
       const res  = await fetch("/api/scrape?url=" + encodeURIComponent(art.url));
       const data = await res.json();
-      setFullContent(data.content || art.desc);
-    } catch {
-      setFullContent(art.desc);
-    }
+      if (data.image) setArtImage(data.image);
+    } catch {}
     setScraping(false);
+  };
+
+  const generatePost = async () => {
+    if (!selected) return;
+    setGenerating(true);
+    try {
+      const text = await callClaude([{ role:"user", content:
+        "다음 뉴스 기사를 바탕으로 네이버 카페 스크랩 글을 작성해줘.\n"
+        + "제목: " + selected.title + "\n"
+        + "요약: " + selected.desc + "\n"
+        + "출처: " + selected.url + "\n\n"
+        + "아래 형식으로 작성해줘:\n"
+        + "- 3~5문장으로 기사 핵심 내용 정리\n"
+        + "- 방송/영상 업계 종사자나 학생에게 유익한 시각으로\n"
+        + "- 마지막 줄에 출처 URL 포함\n"
+        + "- 자연스럽고 읽기 편하게"
+      }]);
+      setAiContent(text);
+    } catch(e) {
+      alert("오류: " + e.message);
+    }
+    setGenerating(false);
   };
 
   const fetchAll = async () => {
@@ -475,6 +498,7 @@ function CafeTab({ cid, csec }) {
               ← 왼쪽에서 기사를 선택하면<br/>카페 포스트가 자동으로 완성됩니다
             </div>
           : <>
+              {/* 메타 */}
               <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:14, flexWrap:"wrap" }}>
                 <span style={{ background:C.greenLight, color:C.green, borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:700 }}>{selected.cat}</span>
                 <span style={{ fontSize:11, color:C.muted }}>{fmtDate(selected.date)}</span>
@@ -482,6 +506,20 @@ function CafeTab({ cid, csec }) {
                   style={{ fontSize:12, color:C.blue, textDecoration:"none", fontWeight:600 }}>원문 보기 →</a>
               </div>
 
+              {/* 썸네일 이미지 */}
+              {scraping && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>⏳ 이미지 불러오는 중...</div>}
+              {artImage && (
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <SectionLabel>기사 이미지</SectionLabel>
+                    <span style={{ fontSize:11, color:C.muted }}>이미지 우클릭 → 복사</span>
+                  </div>
+                  <img src={artImage} alt="기사 이미지"
+                    style={{ width:"100%", maxHeight:200, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}` }} />
+                </div>
+              )}
+
+              {/* 제목 */}
               <div style={{ marginBottom:12 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <SectionLabel>카페 제목</SectionLabel>
@@ -490,22 +528,28 @@ function CafeTab({ cid, csec }) {
                 <FieldBox>{selected.title}</FieldBox>
               </div>
 
+              {/* AI 본문 생성 */}
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <SectionLabel>카페 본문</SectionLabel>
-                  <CopyBtn tag="cbody" text={(fullContent||selected.desc)+"\n\n"+selected.url} copied={copied} onCopy={copy} />
+                  <div style={{ display:"flex", gap:6 }}>
+                    {aiContent && <CopyBtn tag="cbody" text={aiContent} copied={copied} onCopy={copy} />}
+                    <button onClick={generatePost} disabled={generating}
+                      style={{ padding:"2px 10px", fontSize:11, fontWeight:600, fontFamily:"inherit",
+                        background: C.navy, color:"#fff", border:"none", borderRadius:6, cursor:"pointer" }}>
+                      {generating ? "⏳..." : "✨ AI 작성"}
+                    </button>
+                  </div>
                 </div>
                 <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10,
                   padding:"12px 14px", fontSize:13, color:C.text, lineHeight:1.75,
-                  whiteSpace:"pre-wrap", wordBreak:"break-all", minHeight:140 }}>
-                  {scraping ? "⏳ 기사 전체 내용 가져오는 중..." : (fullContent || selected.desc)}
-                  {"\n\n"}
-                  <span style={{ color:C.blue }}>{selected.url}</span>
+                  whiteSpace:"pre-wrap", wordBreak:"break-all", minHeight:120 }}>
+                  {aiContent || <span style={{ color:C.muted }}>AI 작성 버튼을 눌러 본문을 생성하세요</span>}
                 </div>
               </div>
 
               <Btn color={C.green} full
-                onClick={() => copy("call", selected.title+"\n\n"+(fullContent||selected.desc)+"\n\n"+selected.url)}>
+                onClick={() => copy("call", selected.title+"\n\n"+(aiContent||selected.desc)+"\n\n"+selected.url)}>
                 {copied==="call" ? "✓ 복사됨" : "📋 제목 + 본문 전체 복사"}
               </Btn>
             </>
