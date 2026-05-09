@@ -4,7 +4,7 @@ import { Card, Btn, PageTitle, Modal } from "../../components/UI";
 
 // ── 상수 ────────────────────────────────────────────────────────
 const PROXY        = "https://corsproxy.io/?";
-const CLAUDE_MODEL = "claude-sonnet-4-20250514";
+const CLAUDE_MODEL = "claude-sonnet-4-5";
 
 const KIN_KEYWORDS = [
   "영상계열","한국방송예술진흥원","한예진 영상계열",
@@ -16,13 +16,13 @@ const KIN_FILTER = [
   "진로","학과","입시","전공","취업","대학",
 ];
 const CAFE_CATS = [
-  { label:"영상연출", query:"영상연출",         count:3 },
-  { label:"영상촬영", query:"영상촬영",         count:3 },
-  { label:"영상편집", query:"영상편집",         count:3 },
-  { label:"유튜브",   query:"유튜브 크리에이터", count:3 },
-  { label:"영화",     query:"영화 산업",        count:3 },
-  { label:"디자인",   query:"영상디자인",       count:3 },
-  { label:"작가",     query:"방송작가",         count:6 },
+  { label:"영상연출", query:"영상 연출 기법 제작",         count:3 },
+  { label:"영상촬영", query:"방송 촬영 기법 카메라",       count:3 },
+  { label:"영상편집", query:"영상편집 프로그램 기술 트렌드", count:3 },
+  { label:"유튜브",   query:"유튜브 크리에이터 콘텐츠 제작", count:3 },
+  { label:"영화",     query:"영화 제작 촬영 산업",         count:3 },
+  { label:"디자인",   query:"모션그래픽 영상 디자인 트렌드", count:3 },
+  { label:"작가",     query:"방송작가 드라마 콘텐츠 스토리", count:6 },
 ];
 const ACT_TYPES  = ["수업/실습","촬영현장","행사/특강","작품발표","동아리","졸업작품"];
 const TONE_OPTS  = ["친절·상세","선배 말투","전문적","핵심만"];
@@ -42,12 +42,11 @@ const fmtDate = s => {
   catch { return ""; }
 };
 
-async function naverSearch(endpoint, query, display, cid, csec) {
-  const url = PROXY + encodeURIComponent(
-    `https://openapi.naver.com/v1/search/${endpoint}.json?query=${encodeURIComponent(query)}&display=${display}&sort=date`
-  );
-  const res  = await fetch(url, { headers:{ "X-Naver-Client-Id":cid, "X-Naver-Client-Secret":csec } });
+async function naverSearch(endpoint, query, display) {
+  const params = new URLSearchParams({ endpoint, query, display, sort:"date" });
+  const res  = await fetch("/api/naver?" + params.toString());
   const data = await res.json();
+  if (data.error) throw new Error(data.error);
   return data.items || [];
 }
 
@@ -57,6 +56,8 @@ async function callClaude(messages) {
     body: JSON.stringify({ model:CLAUDE_MODEL, max_tokens:1000, messages }),
   });
   const data = await res.json();
+  if (data.error) throw new Error(JSON.stringify(data.error));
+  if (!res.ok)    throw new Error("API 오류 " + res.status);
   return data.content?.[0]?.text || "";
 }
 
@@ -136,20 +137,22 @@ function ActivityTab() {
 
   const generate = async () => {
     setLoading(true); setResult(null);
-    const text = await callClaude([{ role:"user", content:[
-      { type:"image", source:{ type:"base64", media_type:imgType, data:imgB64 } },
-      { type:"text",  text:`한국방송예술진흥원(한예진) 영상계열 재학생 활동 게시판에 올릴 글을 작성해줘.
-활동 유형: ${actType}${memo ? `\n추가 정보: ${memo}` : ""}
-[제목]
-(간결하고 생동감 있는 제목, 20자 이내, 이모지 1개 포함)
-[본문]
-(3~5문장. 영상계열 재학생 시각에서 현장감 있게. 마지막에 해시태그 5개: #한예진 #한국방송예술진흥원 #영상계열 포함 2개 추가)
-위 형식 그대로만 출력해줘.` }
-    ]}]).catch(e => { alert("오류: "+e.message); return ""; });
-    if (text) {
+    const memoLine = memo ? ("\n추가 정보: " + memo) : "";
+    const prompt = "한국방송예술진흥원(한예진) 영상계열 재학생 활동 게시판에 올릴 글을 작성해줘.\n"
+      + "활동 유형: " + actType + memoLine + "\n"
+      + "[제목]\n(간결하고 생동감 있는 제목, 20자 이내, 이모지 1개 포함)\n"
+      + "[본문]\n(3~5문장. 영상계열 재학생 시각에서 현장감 있게. 마지막에 해시태그 5개: #한예진 #한국방송예술진흥원 #영상계열 포함 2개 추가)\n"
+      + "위 형식 그대로만 출력해줘.";
+    try {
+      const text = await callClaude([{ role:"user", content:[
+        { type:"image", source:{ type:"base64", media_type:imgType, data:imgB64 } },
+        { type:"text",  text: prompt }
+      ]}]);
       const tM = text.match(/\[제목\]\s*([\s\S]*?)\s*\[본문\]/);
       const bM = text.match(/\[본문\]\s*([\s\S]*)/);
       setResult({ title: tM?.[1]?.trim()||"", body: bM?.[1]?.trim()||text });
+    } catch(e) {
+      alert("AI 오류: " + e.message);
     }
     setLoading(false);
   };
@@ -250,12 +253,12 @@ function KinTab({ cid, csec }) {
   const { copied, copy } = useCopy();
 
   const fetchAll = async () => {
-    if (!cid||!csec) { alert("API 키를 먼저 설정해주세요!"); return; }
+    
     setFetching(true); setQuestions([]); setSelected(null); setAnswer("");
     const seen = new Set(), all = [];
     for (const kw of KIN_KEYWORDS) {
       try {
-        const items = await naverSearch("kin", kw, 15, cid, csec);
+        const items = await naverSearch("kin", kw, 15);
         for (const item of items) {
           const url   = item.link||"";
           const title = cleanHtml(item.title||"");
@@ -365,14 +368,53 @@ function KinTab({ cid, csec }) {
 // 탭 3 — 카페
 // ════════════════════════════════════════════════════════════════
 function CafeTab({ cid, csec }) {
-  const [articles,  setArticles]  = useState([]);
-  const [selected,  setSelected]  = useState(null);
-  const [fetching,  setFetching]  = useState(false);
-  const [progress,  setProgress]  = useState({ step:0, label:"" });
+  const [articles,   setArticles]   = useState([]);
+  const [selected,   setSelected]   = useState(null);
+  const [artImage,   setArtImage]   = useState(null);
+  const [aiContent,  setAiContent]  = useState("");
+  const [scraping,   setScraping]   = useState(false);
+  const [generating, setGenerating] = useState(false);
+  const [fetching,   setFetching]   = useState(false);
+  const [progress,   setProgress]   = useState({ step:0, label:"" });
   const { copied, copy } = useCopy();
 
+  const selectArt = async (art) => {
+    setSelected(art);
+    setArtImage(null);
+    setAiContent("");
+    setScraping(true);
+    try {
+      const res  = await fetch("/api/scrape?url=" + encodeURIComponent(art.url));
+      const data = await res.json();
+      if (data.image) setArtImage(data.image);
+    } catch {}
+    setScraping(false);
+  };
+
+  const generatePost = async () => {
+    if (!selected) return;
+    setGenerating(true);
+    try {
+      const text = await callClaude([{ role:"user", content:
+        "다음 뉴스 기사를 바탕으로 네이버 카페 스크랩 글을 작성해줘.\n"
+        + "제목: " + selected.title + "\n"
+        + "요약: " + selected.desc + "\n"
+        + "출처: " + selected.url + "\n\n"
+        + "아래 형식으로 작성해줘:\n"
+        + "- 3~5문장으로 기사 핵심 내용 정리\n"
+        + "- 방송/영상 업계 종사자나 학생에게 유익한 시각으로\n"
+        + "- 마지막 줄에 출처 URL 포함\n"
+        + "- 자연스럽고 읽기 편하게"
+      }]);
+      setAiContent(text);
+    } catch(e) {
+      alert("오류: " + e.message);
+    }
+    setGenerating(false);
+  };
+
   const fetchAll = async () => {
-    if (!cid||!csec) { alert("API 키를 먼저 설정해주세요!"); return; }
+    
     setFetching(true); setArticles([]); setSelected(null);
     const all = [];
     for (let i=0; i<CAFE_CATS.length; i++) {
@@ -434,7 +476,7 @@ function CafeTab({ cid, csec }) {
                   {cat.label} <span style={{ color:C.muted, fontWeight:400 }}>{cat.items.length}개</span>
                 </div>
                 {cat.items.map((art,j) => (
-                  <div key={j} onClick={() => setSelected(art)}
+                  <div key={j} onClick={() => selectArt(art)}
                     style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, cursor:"pointer",
                       background: selected===art ? C.greenLight : "#fff",
                       borderLeft: `3px solid ${selected===art ? C.green : "transparent"}`,
@@ -456,6 +498,7 @@ function CafeTab({ cid, csec }) {
               ← 왼쪽에서 기사를 선택하면<br/>카페 포스트가 자동으로 완성됩니다
             </div>
           : <>
+              {/* 메타 */}
               <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:14, flexWrap:"wrap" }}>
                 <span style={{ background:C.greenLight, color:C.green, borderRadius:6, padding:"2px 10px", fontSize:11, fontWeight:700 }}>{selected.cat}</span>
                 <span style={{ fontSize:11, color:C.muted }}>{fmtDate(selected.date)}</span>
@@ -463,6 +506,20 @@ function CafeTab({ cid, csec }) {
                   style={{ fontSize:12, color:C.blue, textDecoration:"none", fontWeight:600 }}>원문 보기 →</a>
               </div>
 
+              {/* 썸네일 이미지 */}
+              {scraping && <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>⏳ 이미지 불러오는 중...</div>}
+              {artImage && (
+                <div style={{ marginBottom:12 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                    <SectionLabel>기사 이미지</SectionLabel>
+                    <span style={{ fontSize:11, color:C.muted }}>이미지 우클릭 → 복사</span>
+                  </div>
+                  <img src={artImage} alt="기사 이미지"
+                    style={{ width:"100%", maxHeight:200, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}` }} />
+                </div>
+              )}
+
+              {/* 제목 */}
               <div style={{ marginBottom:12 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <SectionLabel>카페 제목</SectionLabel>
@@ -471,22 +528,28 @@ function CafeTab({ cid, csec }) {
                 <FieldBox>{selected.title}</FieldBox>
               </div>
 
+              {/* AI 본문 생성 */}
               <div style={{ marginBottom:14 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
                   <SectionLabel>카페 본문</SectionLabel>
-                  <CopyBtn tag="cbody" text={selected.desc+"\n\n"+selected.url} copied={copied} onCopy={copy} />
+                  <div style={{ display:"flex", gap:6 }}>
+                    {aiContent && <CopyBtn tag="cbody" text={aiContent} copied={copied} onCopy={copy} />}
+                    <button onClick={generatePost} disabled={generating}
+                      style={{ padding:"2px 10px", fontSize:11, fontWeight:600, fontFamily:"inherit",
+                        background: C.navy, color:"#fff", border:"none", borderRadius:6, cursor:"pointer" }}>
+                      {generating ? "⏳..." : "✨ AI 작성"}
+                    </button>
+                  </div>
                 </div>
                 <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10,
                   padding:"12px 14px", fontSize:13, color:C.text, lineHeight:1.75,
-                  whiteSpace:"pre-wrap", wordBreak:"break-all", minHeight:140 }}>
-                  {selected.desc}
-                  {"\n\n"}
-                  <span style={{ color:C.blue }}>{selected.url}</span>
+                  whiteSpace:"pre-wrap", wordBreak:"break-all", minHeight:120 }}>
+                  {aiContent || <span style={{ color:C.muted }}>AI 작성 버튼을 눌러 본문을 생성하세요</span>}
                 </div>
               </div>
 
               <Btn color={C.green} full
-                onClick={() => copy("call", selected.title+"\n\n"+selected.desc+"\n\n"+selected.url)}>
+                onClick={() => copy("call", selected.title+"\n\n"+(aiContent||selected.desc)+"\n\n"+selected.url)}>
                 {copied==="call" ? "✓ 복사됨" : "📋 제목 + 본문 전체 복사"}
               </Btn>
             </>
