@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useAuth } from "../../hooks/useAuth.jsx";
 import { C } from "../../theme";
 import { Card, Btn, PageTitle, Modal } from "../../components/UI";
 
@@ -113,7 +114,7 @@ const FieldBox = ({ children, mono }) => (
 // ════════════════════════════════════════════════════════════════
 // 탭 1 — 재학생 활동
 // ════════════════════════════════════════════════════════════════
-function ActivityTab() {
+function ActivityTab({ isRestricted, onRestrict }) {
   const [actType,   setActType]   = useState("수업/실습");
   const [memo,      setMemo]      = useState("");
   const [imgB64,    setImgB64]    = useState(null);
@@ -196,7 +197,7 @@ function ActivityTab() {
             borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit",
             outline:"none", resize:"none", height:64, boxSizing:"border-box", marginBottom:14 }} />
 
-        <Btn onClick={generate} color={C.navy} full disabled={!imgB64||loading}>
+        <Btn onClick={isRestricted ? onRestrict : generate} color={C.navy} full disabled={!isRestricted && (!imgB64||loading)}>
           {loading ? "⏳ AI 생성 중..." : "✨ AI 글 생성"}
         </Btn>
       </Card>
@@ -243,7 +244,7 @@ function ActivityTab() {
 // ════════════════════════════════════════════════════════════════
 // 탭 2 — 지식인
 // ════════════════════════════════════════════════════════════════
-function KinTab({ cid, csec }) {
+function KinTab({ cid, csec, isRestricted, onRestrict }) {
   const [questions, setQuestions] = useState([]);
   const [selected,  setSelected]  = useState(null);
   const [tone,      setTone]      = useState("친절·상세");
@@ -294,7 +295,7 @@ function KinTab({ cid, csec }) {
             <SectionLabel>질문 목록</SectionLabel>
             <span style={{ fontSize:11, color:C.muted }}>{questions.length}개</span>
           </div>
-          <Btn onClick={fetchAll} color={C.blue} full disabled={fetching}>
+          <Btn onClick={isRestricted ? onRestrict : fetchAll} color={C.blue} full disabled={!isRestricted && fetching}>
             {fetching ? "⏳ 수집 중..." : "🔍 질문 자동 수집"}
           </Btn>
         </Card>
@@ -339,7 +340,7 @@ function KinTab({ cid, csec }) {
             <span style={{ fontSize:12, fontWeight:600, color:C.text }}>답변 톤</span>
             <ChipGroup options={TONE_OPTS} value={tone} onChange={setTone} />
           </div>
-          <Btn onClick={generate} color={C.navy} full disabled={!selected||genLoading}>
+          <Btn onClick={isRestricted ? onRestrict : generate} color={C.navy} full disabled={!isRestricted && (!selected||genLoading)}>
             {genLoading ? "⏳ 작성 중..." : "✨ 답변 생성"}
           </Btn>
 
@@ -367,7 +368,7 @@ function KinTab({ cid, csec }) {
 // ════════════════════════════════════════════════════════════════
 // 탭 3 — 카페
 // ════════════════════════════════════════════════════════════════
-function CafeTab({ cid, csec }) {
+function CafeTab({ cid, csec, isRestricted, onRestrict }) {
   const [articles,   setArticles]   = useState([]);
   const [selected,   setSelected]   = useState(null);
   const [artImage,   setArtImage]   = useState(null);
@@ -451,7 +452,7 @@ function CafeTab({ cid, csec }) {
             <SectionLabel>기사 목록</SectionLabel>
             <span style={{ fontSize:11, color:C.muted }}>{articles.length}/24</span>
           </div>
-          <Btn onClick={fetchAll} color={C.green} full disabled={fetching}>
+          <Btn onClick={isRestricted ? onRestrict : fetchAll} color={C.green} full disabled={!isRestricted && fetching}>
             {fetching ? "⏳ 수집 중..." : "📰 기사 자동 수집"}
           </Btn>
           {fetching && (
@@ -534,7 +535,7 @@ function CafeTab({ cid, csec }) {
                   <SectionLabel>카페 본문</SectionLabel>
                   <div style={{ display:"flex", gap:6 }}>
                     {aiContent && <CopyBtn tag="cbody" text={aiContent} copied={copied} onCopy={copy} />}
-                    <button onClick={generatePost} disabled={generating}
+                    <button onClick={isRestricted ? onRestrict : generatePost} disabled={!isRestricted && generating}
                       style={{ padding:"2px 10px", fontSize:11, fontWeight:600, fontFamily:"inherit",
                         background: C.navy, color:"#fff", border:"none", borderRadius:6, cursor:"pointer" }}>
                       {generating ? "⏳..." : "✨ AI 작성"}
@@ -563,17 +564,36 @@ function CafeTab({ cid, csec }) {
 // 메인
 // ════════════════════════════════════════════════════════════════
 export default function SNSManager() {
+  const { profile } = useAuth();
+  const adminRole = profile?.adminRole || "super";
+  const isRestricted = adminRole === "teacher" || adminRole === "professor";
+
   const [tab,       setTab]       = useState("activity");
   const [showModal, setShowModal] = useState(false);
   const [inputId,   setInputId]   = useState("");
   const [inputSec,  setInputSec]  = useState("");
   const [cid,       setCid]       = useState("");
   const [csec,      setCsec]      = useState("");
+  const [restrictMsg, setRestrictMsg] = useState(false);
+
+  const handleRestrict = () => {
+    setRestrictMsg(true);
+    setTimeout(() => setRestrictMsg(false), 2500);
+  };
 
   const saveKey = () => { setCid(inputId.trim()); setCsec(inputSec.trim()); setShowModal(false); };
 
   return (
     <div>
+      {/* 접근 제한 토스트 */}
+      {restrictMsg && (
+        <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", zIndex:9999,
+          background:C.red, color:"#fff", borderRadius:12, padding:"12px 24px",
+          fontSize:14, fontWeight:700, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}>
+          🔒 접근 권한이 제한되어있습니다
+        </div>
+      )}
+
       {/* 헤더 */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
         <PageTitle>SNS 관리</PageTitle>
@@ -599,9 +619,9 @@ export default function SNSManager() {
       </div>
 
       {/* 탭 컨텐츠 */}
-      {tab==="activity" && <ActivityTab />}
-      {tab==="kin"      && <KinTab  cid={cid} csec={csec} />}
-      {tab==="cafe"     && <CafeTab cid={cid} csec={csec} />}
+      {tab==="activity" && <ActivityTab isRestricted={isRestricted} onRestrict={handleRestrict} />}
+      {tab==="kin"      && <KinTab  cid={cid} csec={csec} isRestricted={isRestricted} onRestrict={handleRestrict} />}
+      {tab==="cafe"     && <CafeTab cid={cid} csec={csec} isRestricted={isRestricted} onRestrict={handleRestrict} />}
 
       {/* API 키 모달 */}
       {showModal && (
