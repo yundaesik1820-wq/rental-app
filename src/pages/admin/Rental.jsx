@@ -7,8 +7,8 @@ import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "교사서명대기", "대여중", "연체", "보류", "거절됨", "반납완료"];
-const STATUS_TABS_ASSIST  = ["전체", "승인대기", "승인됨", "교사서명대기", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
+const STATUS_TABS_SUPER   = ["전체", "승인대기", "교사서명대기", "승인됨", "대여중", "연체", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_ASSIST  = ["전체", "승인대기", "교사서명대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
 const STATUS_TABS_TEACHER = ["교사서명대기", "승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 교사서명대기: "✍️", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
@@ -1001,12 +1001,7 @@ ${r.attachments?.length > 0 ? `
           )}
           {r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
-              {!isTeacher && <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>}
-              {isTeacher && (
-                <div style={{ flex:1, background:C.blueLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.blue, fontWeight:600, textAlign:"center" }}>
-                  ✅ 승인 완료 — 담당자가 대여를 시작할 예정입니다
-                </div>
-              )}
+              <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
               {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
