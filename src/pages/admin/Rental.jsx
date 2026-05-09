@@ -171,7 +171,7 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
           {/* 관리자 서명 표시 */}
           {r.adminSignature && (
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>담당자(슈퍼) 서명</div>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>조교 서명</div>
               <img src={r.adminSignature} alt="관리자서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
             </div>
           )}
@@ -611,11 +611,15 @@ ${r.attachments?.length > 0 ? `
 <div class="sign-area">
   <div class="sign-box">
     ${r.studentSignature ? `<img src="${r.studentSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>` : `<div class="sign-line"></div>`}
-    신청자 서명
+    학생 서명
   </div>
   <div class="sign-box">
     ${r.adminSignature ? `<img src="${r.adminSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>` : `<div class="sign-line"></div>`}
-    담당자 확인
+    조교 서명
+  </div>
+  <div class="sign-box">
+    ${r.teacherSignature ? `<img src="${r.teacherSignature}" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>` : `<div class="sign-line"></div>`}
+    교사 서명
   </div>
 </div>
 
@@ -988,14 +992,14 @@ ${r.attachments?.length > 0 ? `
           {/* 액션 버튼 */}
           {!isTeacher && r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 1차 승인 (슈퍼 서명)</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full><PauseCircle size={14} style={{ marginRight: 4 }} />보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
           {!isTeacher && r.status === "보류" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 1차 승인으로 변경</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인으로 변경</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
@@ -1131,7 +1135,7 @@ ${r.attachments?.length > 0 ? `
       {signTarget && (
         <Modal onClose={() => setSignTarget(null)} width={520}>
           <SignaturePad
-            title="✍️ 1차 승인 (슈퍼 서명)"
+            title="✍️ 서명"
             onSave={async (sig) => {
               try {
                 await approve(signTarget, sig);
