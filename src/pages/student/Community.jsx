@@ -66,6 +66,7 @@ export default function Community() {
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
+  const [lightbox, setLightbox] = useState(null); // { urls, idx }
   const imgInputRef = useRef(null);
   const [search, setSearch]           = useState("");
   const [page, setPage]               = useState(1);
@@ -510,7 +511,7 @@ export default function Community() {
           {selPost.images?.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
               {selPost.images.map((url, i) => (
-                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => window.open(url,"_blank")}
+                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => setLightbox({ urls: selPost.images, idx: i })}
                   style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}`, display:"block" }} />
               ))}
             </div>
@@ -607,6 +608,44 @@ export default function Community() {
             <Btn onClick={updateMyPost} color={C.navy} full disabled={!editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
+      )}
+
+      {/* 라이트박스 */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)}
+          style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)",
+            display:"flex", alignItems:"center", justifyContent:"center" }}>
+          {/* 이전 */}
+          {lightbox.urls.length > 1 && (
+            <button onClick={e => { e.stopPropagation(); setLightbox(l => ({ ...l, idx: (l.idx - 1 + l.urls.length) % l.urls.length })); }}
+              style={{ position:"absolute", left:16, top:"50%", transform:"translateY(-50%)",
+                background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%",
+                width:44, height:44, fontSize:22, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+          )}
+          {/* 사진 */}
+          <img src={lightbox.urls[lightbox.idx]} alt=""
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth:"92vw", maxHeight:"88vh", borderRadius:12, objectFit:"contain", boxShadow:"0 8px 40px rgba(0,0,0,0.6)" }} />
+          {/* 다음 */}
+          {lightbox.urls.length > 1 && (
+            <button onClick={e => { e.stopPropagation(); setLightbox(l => ({ ...l, idx: (l.idx + 1) % l.urls.length })); }}
+              style={{ position:"absolute", right:16, top:"50%", transform:"translateY(-50%)",
+                background:"rgba(255,255,255,0.15)", border:"none", borderRadius:"50%",
+                width:44, height:44, fontSize:22, color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+          )}
+          {/* 닫기 */}
+          <button onClick={() => setLightbox(null)}
+            style={{ position:"absolute", top:16, right:16, background:"rgba(255,255,255,0.15)",
+              border:"none", borderRadius:"50%", width:40, height:40, fontSize:20,
+              color:"#fff", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          {/* 인덱스 */}
+          {lightbox.urls.length > 1 && (
+            <div style={{ position:"absolute", bottom:20, left:"50%", transform:"translateX(-50%)",
+              color:"rgba(255,255,255,0.7)", fontSize:13, fontWeight:600 }}>
+              {lightbox.idx + 1} / {lightbox.urls.length}
+            </div>
+          )}
+        </div>
       )}
 
       {/* 글쓰기 모달 */}
