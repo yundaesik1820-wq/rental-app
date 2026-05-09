@@ -63,7 +63,7 @@ export default function GuideReserve({ onComplete }) {
   // 렌즈 모델별 그룹화 (대표 장비 + 재고 합산)
   const lenses = Object.values(lensesRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
-    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].available += (e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0));
     acc[e.modelName].total     += 1;
     return acc;
   }, {}));
@@ -81,7 +81,7 @@ export default function GuideReserve({ onComplete }) {
   // 모델별 그룹화 (대표 장비 + 재고 합산)
   const extrasGrouped = Object.values(extrasRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
-    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].available += (e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0));
     acc[e.modelName].total     += 1;
     return acc;
   }, {}));
@@ -98,7 +98,7 @@ export default function GuideReserve({ onComplete }) {
     : [];
   const matchedBatteries = Object.values(matchedBatteriesRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
-    acc[e.modelName].available += (e.available || (e.status === "대여가능" ? 1 : 0));
+    acc[e.modelName].available += (e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0));
     acc[e.modelName].total     += 1;
     return acc;
   }, {}));
@@ -452,7 +452,7 @@ export default function GuideReserve({ onComplete }) {
             const need    = needsAdapter(e);
             const adapter = need ? getAdapter(e) : null;
             const qty     = getSelection(currentCam.modelName).lens[e.modelName] || 0;
-            const avail   = e.available || (e.status === "대여가능" ? 1 : 0);
+            const avail   = e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0);
             return (
               <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
                 <div style={{ display:"flex", gap:10, alignItems:"center" }}>
