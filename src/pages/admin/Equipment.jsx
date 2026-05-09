@@ -507,10 +507,10 @@ const EMPTY = {
 };
 
 const LICENSE_LEVELS = [
-  { val:0, label:"0단계", desc:"누구나 대여 가능", color:"#10B981", bg:"#D1FAE5" },
-  { val:1, label:"1단계", desc:"1단계 이상",       color:"#3B6CF8", bg:"#EEF2FF" },
-  { val:2, label:"2단계", desc:"2단계 이상",       color:"#F59E0B", bg:"#FFFBEB" },
-  { val:3, label:"3단계", desc:"3단계만",          color:"#EF4444", bg:"#FEF2F2" },
+  { val:0, label:"0단계", desc:"누구나 대여 가능", color:C.green,  bg:C.greenLight  },
+  { val:1, label:"1단계", desc:"1단계 이상",       color:C.blue,   bg:C.blueLight   },
+  { val:2, label:"2단계", desc:"2단계 이상",       color:C.yellow, bg:C.yellowLight  },
+  { val:3, label:"3단계", desc:"3단계만",          color:C.red,    bg:C.redLight    },
 ];
 
 // ── 메인 ──────────────────────────────────────────────────

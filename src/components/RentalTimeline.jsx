@@ -34,7 +34,7 @@ export default function RentalTimeline({ modelName, requests, days = 3 }) {
   return (
     <div style={{ marginTop: 8, marginBottom: 4 }}>
       {/* 타임라인 바 */}
-      <div style={{ position: "relative", height: 20, background: "#F1F5F9", borderRadius: 10, overflow: "hidden" }}>
+      <div style={{ position: "relative", height: 20, background: C.border, borderRadius: 10, overflow: "hidden" }}>
         {/* 현재 시각 마커 */}
         {(() => {
           const nowMin = Date.now() / 60000;

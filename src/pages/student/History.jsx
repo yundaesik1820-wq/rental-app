@@ -190,7 +190,7 @@ ${r.attachments?.length > 0 ? `
           style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:`1.5px solid ${C.navy}`, borderRadius:10, padding:"8px 16px", fontSize:13, fontWeight:700, color:C.navy, cursor:"pointer", marginBottom:20 }}>
           ← 대여 이력으로 돌아가기
         </button>
-        <div style={{ background:"#fff", borderRadius:16, padding:20, border:`1px solid ${C.border}` }}>
+        <div style={{ background:C.surface, borderRadius:16, padding:20, border:`1px solid ${C.border}` }}>
           <div style={{ textAlign:"center", marginBottom:16 }}>
             <div style={{ fontSize:18, fontWeight:900, color:C.navy }}>장비 대여 신청서</div>
             <div style={{ fontSize:12, color:C.muted }}>한국방송예술진흥원 미디어센터 장비대여실</div>
@@ -239,7 +239,7 @@ ${r.attachments?.length > 0 ? `
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/history.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+          <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
             <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 대여 이력 페이지야!</div>
             <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>내가 신청한 대여 내역을 확인할 수 있어.
@@ -324,13 +324,13 @@ ${r.attachments?.length > 0 ? `
 
                 {/* 배치 장비 */}
                 {r.assignedUnits?.length > 0 && (
-                  <div style={{ background: r.status==="반납완료"?"#F8FAFC":C.blueLight, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                  <div style={{ background: r.status==="반납완료"?C.surface:C.blueLight, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
                     <div style={{ fontSize:11, fontWeight:700, color: r.status==="반납완료"?C.muted:C.blue, marginBottom:5 }}>
                       {r.status==="반납완료" ? "사용한 장비" : "배치된 장비"}
                     </div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                       {r.assignedUnits.map((u,i) => (
-                        <span key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:5, padding:"2px 7px", fontSize:11, color:C.text }}>
+                        <span key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:5, padding:"2px 7px", fontSize:11, color:C.text }}>
                           {u.itemName||u.modelName}
                           {u.itemNo && <span style={{ color:C.blue, marginLeft:3, fontWeight:600 }}>{u.itemNo}</span>}
                         </span>

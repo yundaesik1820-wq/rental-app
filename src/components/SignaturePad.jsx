@@ -71,7 +71,7 @@ export default function SignaturePad({ onSave, onCancel, title = "서명" }) {
   };
 
   return (
-    <div style={{ background:"#fff", borderRadius:16, padding:24, maxWidth:480, margin:"0 auto" }}>
+    <div style={{ background:C.surface, borderRadius:16, padding:24, maxWidth:480, margin:"0 auto" }}>
       <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>{title}</div>
       <div style={{ fontSize:13, color:C.muted, marginBottom:16 }}>아래 칸에 서명해주세요</div>
 

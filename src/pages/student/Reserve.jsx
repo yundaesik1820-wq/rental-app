@@ -509,7 +509,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/reserv.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+          <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
             <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 전문가 예약 페이지야!</div>
             <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>원하는 장비를 직접 골라서 신청할 수 있어.<br/>장비/시설 대여 모두 여기서 할 수 있어 📦</div>
@@ -640,7 +640,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
                       {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
-                      {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
+                      {eqLicNum > 0 && <span style={{ background:isLocked?C.redLight:C.blueLight, color:isLocked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}대</span>
                     </div>
                   </div>
@@ -714,7 +714,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
                       <span style={{ background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
                       {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
-                      {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
+                      {eqLicNum > 0 && <span style={{ background:isLocked?C.redLight:C.blueLight, color:isLocked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}세트</span>
                     </div>
                   </div>
@@ -1035,7 +1035,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             {storageForm.days.map((day, i) => (
               <div key={i} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                  <span style={{ background:day.day==="일"?"#FEF2F2":day.day==="토"?"#EFF6FF":"#F0FDF4", color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
+                  <span style={{ background:day.day==="일"?C.redLight:day.day==="토"?C.blueLight:C.greenLight, color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
                   <span style={{ fontSize:12, color:C.muted }}>{day.date}</span>
                 </div>
                 {/* 1행: 보관자 + 보관장소 */}
@@ -1240,7 +1240,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 const disabled = p === "강의" && !isProf;
                 return (
                   <button key={p} onClick={() => { if(disabled) return; f("purpose",p); f("club",""); f("clubDirect",""); f("courseName",""); f("professorName",""); f("eventName",""); f("eventProfessor",""); f("purposeDetail",""); f("attachments",[]); }}
-                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
+                    style={{ background:form.purpose===p?C.navy:disabled?C.border:C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
                     {p}{disabled?" (교수님 전용)":""}
                   </button>
                 );

@@ -27,7 +27,7 @@ function Timetable({ classes, onEdit, readOnly = false }) {
   const colW = `calc((100% - 36px) / 5)`;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+    <div style={{ background: C.surface, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
       {/* 헤더 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.bg }}>
         <div style={{ width: 36, flexShrink: 0 }} />
@@ -591,7 +591,7 @@ export default function StudentHome() {
       "승인됨":   { bg: C.greenLight,   col: C.green  },
       "대여중":   { bg: C.blueLight,    col: C.blue   },
       "연체":     { bg: C.redLight,     col: C.red    },
-      "반납완료": { bg: "#F8FAFC",      col: C.muted  },
+      "반납완료": { bg: C.surface,    col: C.muted  },
     };
     return map[status] || { bg: C.bg, col: C.muted };
   };
@@ -613,7 +613,7 @@ export default function StudentHome() {
               const { outcome } = await installPrompt.userChoice;
               setInstallPrompt(null);
               setShowInstall(false);
-            }} style={{ background:"#fff", color:"#1B2B6B", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+            }} style={{ background:C.surface, color:C.navy, border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
               설치
             </button>
             <button onClick={() => setShowInstall(false)}
@@ -679,7 +679,7 @@ export default function StudentHome() {
         {/* 마스코트 + 말풍선 */}
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
+          <div style={{ position:"relative", background:C.surface, borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
             <div style={{ fontSize:13, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
               난 장비대여실 마스코트 렌토리야!

@@ -298,7 +298,7 @@ function KinTab({ cid, csec }) {
             {fetching ? "⏳ 수집 중..." : "🔍 질문 자동 수집"}
           </Btn>
         </Card>
-        <div style={{ marginTop:8, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", background:"#fff" }}>
+        <div style={{ marginTop:8, border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", background:C.surface }}>
           {!questions.length
             ? <div style={{ padding:"24px 16px", textAlign:"center", fontSize:13, color:C.muted, lineHeight:1.8 }}>
                 API 키 설정 후<br/>질문 수집을 눌러주세요
@@ -306,7 +306,7 @@ function KinTab({ cid, csec }) {
             : questions.map((q,i) => (
               <div key={i} onClick={() => { setSelected(q); setAnswer(""); }}
                 style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, cursor:"pointer",
-                  background: selected===q ? C.blueLight : "#fff",
+                  background: selected===q ? C.blueLight : C.surface,
                   borderLeft: `3px solid ${selected===q ? C.blue : "transparent"}`,
                   transition:"background .15s" }}>
                 <div style={{ fontSize:10, color:C.blue, fontWeight:700, marginBottom:2 }}>{q.keyword}</div>
@@ -464,7 +464,7 @@ function CafeTab({ cid, csec }) {
             </div>
           )}
         </Card>
-        <div style={{ border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", background:"#fff" }}>
+        <div style={{ border:`1px solid ${C.border}`, borderRadius:12, overflow:"hidden", background:C.surface }}>
           {!catGroups.length
             ? <div style={{ padding:"24px 16px", textAlign:"center", fontSize:13, color:C.muted, lineHeight:1.8 }}>
                 API 키 설정 후<br/>기사 수집을 눌러주세요
@@ -478,7 +478,7 @@ function CafeTab({ cid, csec }) {
                 {cat.items.map((art,j) => (
                   <div key={j} onClick={() => selectArt(art)}
                     style={{ padding:"10px 14px", borderBottom:`1px solid ${C.border}`, cursor:"pointer",
-                      background: selected===art ? C.greenLight : "#fff",
+                      background: selected===art ? C.greenLight : C.surface,
                       borderLeft: `3px solid ${selected===art ? C.green : "transparent"}`,
                       transition:"background .15s" }}>
                     <div style={{ fontSize:12, color:C.text, lineHeight:1.4, marginBottom:2 }}>{art.title}</div>

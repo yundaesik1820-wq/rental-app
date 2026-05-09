@@ -427,7 +427,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
       <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:14 }}>
         {checklist.map((item, i) => (
           <div key={i} style={{ display:"flex", alignItems:"center", gap:12, background: item.checked ? C.greenLight : C.bg, borderRadius:10, padding:"10px 14px", border:`1.5px solid ${item.checked ? C.green : C.border}` }}>
-            <div style={{ width:24, height:24, borderRadius:6, flexShrink:0, background: item.checked ? C.green : "#fff", border:`2px solid ${item.checked ? C.green : C.border}`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:14, fontWeight:700 }}>
+            <div style={{ width:24, height:24, borderRadius:6, flexShrink:0, background: item.checked ? C.green : C.bg, border:`2px solid ${item.checked ? C.green : C.border}`, display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:14, fontWeight:700 }}>
               {item.checked ? "✓" : ""}
             </div>
             <div style={{ flex:1 }}>
@@ -830,7 +830,7 @@ ${r.attachments?.length > 0 ? `
   return (
     <div>
       {/* 장비 / 시설 탭 전환 */}
-      <div style={{ display:"flex", background:"#F1F5F9", borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:"1px solid #E2E8F0" }}>
+      <div style={{ display:"flex", background:C.bg, borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:`1px solid ${C.border}` }}>
         {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
           <button key={v} onClick={() => setMainTab(v)}
             style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:mainTab===v?C.navy:"transparent", color:mainTab===v?"#fff":C.muted, transition:"all 0.2s" }}>{l}</button>
@@ -982,7 +982,7 @@ ${r.attachments?.length > 0 ? `
                   <div style={{ fontSize:12, fontWeight:700, color:C.blue, marginBottom:6 }}>배치된 장비</div>
                   <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                     {r.assignedUnits.map((u, i) => (
-                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:"#fff", border:`1px solid ${C.blue}30`, borderRadius:8, padding:"6px 12px" }}>
+                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", background:C.surface, border:`1px solid ${C.blue}30`, borderRadius:8, padding:"6px 12px" }}>
                         <div>
                           <span style={{ fontSize:13, fontWeight:600, color:C.navy }}>
                             {u.itemName || u.modelName}
@@ -1063,11 +1063,11 @@ ${r.attachments?.length > 0 ? `
           )}
 
           {r.status === "반납완료" && r.assignedUnits?.length > 0 && (
-            <div style={{ background:"#F8FAFC", borderRadius:10, padding:"10px 14px", border:`1px solid ${C.border}` }}>
+            <div style={{ background:C.surface, borderRadius:10, padding:"10px 14px", border:`1px solid ${C.border}` }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:6 }}>사용 장비 기록</div>
               <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
                 {r.assignedUnits.map((u, i) => (
-                  <div key={i} style={{ background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:12, fontWeight:600, color:C.text }}>
+                  <div key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:12, fontWeight:600, color:C.text }}>
                     <div>
                       {u.itemName || u.modelName}
                       {u.itemNo && <span style={{ color:C.blue, marginLeft:4 }}>{u.itemNo}</span>}
@@ -1215,7 +1215,7 @@ ${r.attachments?.length > 0 ? `
                           setAssignModal(p => ({ ...p, assignments: newA }));
                         }} style={{
                           padding:"8px 16px", borderRadius:10, border:`2px solid ${a.selectedUnit?.id === unit.id ? C.blue : C.border}`,
-                          background: a.selectedUnit?.id === unit.id ? C.blueLight : "#fff",
+                          background: a.selectedUnit?.id === unit.id ? C.blueLight : C.surface,
                           color: a.selectedUnit?.id === unit.id ? C.blue : C.text,
                           fontSize:13, fontWeight:600, cursor:"pointer",
                         }}>

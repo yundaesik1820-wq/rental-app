@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getThemeMode, setTheme } from "./theme";
+import { getThemeMode, setTheme, C as themeC } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
 import { useFCM } from "./hooks/useFCM.js";
@@ -37,7 +37,7 @@ import StudentInquiry from "./pages/student/Inquiry";
 import { useCollection } from "./hooks/useFirestore";
 
 function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }) {
-  const CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
+  const CC = themeC;
   const [selCat, setSelCat] = React.useState("전체");
 
   // 읽은 알림 관리 (localStorage)
@@ -107,7 +107,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
 
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:360, background:CC.surface, boxShadow:"-10px 0 40px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column" }}>
         {/* 헤더 */}
         <div style={{ padding:"20px 20px 12px", borderBottom:`1px solid ${CC.border}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
@@ -184,7 +184,7 @@ function StudentFacilityList() {
       <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/object.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+          <div style={{ position:"relative", background:CC.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
             <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 시설 목록 페이지야!</div>
             <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 가능한 시설을 미리 확인해봐.<br/>촬영 스튜디오, 편집실 등을 예약할 수 있어 🏢</div>
@@ -226,7 +226,7 @@ function StudentPropsList() {
       <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/police.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+          <div style={{ position:"relative", background:CC.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
             <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 소품 목록 페이지야!</div>
             <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>촬영에 필요한 소품들을 확인해봐.<br/>의상, 소도구, 대도구를 빌릴 수 있어 🎭</div>
@@ -405,7 +405,7 @@ function AppContent() {
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"relative", background:CC.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>무엇을 예약할까?</div>
               <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비, 시설, 소품 중에서 선택해봐!<br/>필요한 걸 골라서 신청하면 돼 📋</div>
@@ -427,7 +427,7 @@ function AppContent() {
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#3B6CF8)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/hi.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"relative", background:CC.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>장비 예약이구나!</div>
               <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>처음이라면 렌토리와 함께 골라봐.<br/>익숙하다면 직접 선택해도 돼 📷</div>
@@ -481,7 +481,7 @@ function AppContent() {
         <div style={{ background:"linear-gradient(135deg,#7C3AED,#DB2777)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/rental.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"relative", background:CC.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>소품 예약이구나!</div>
               <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>필요한 소품을 확인하고 대여 신청을 해봐 🎭</div>

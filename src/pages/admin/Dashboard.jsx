@@ -221,7 +221,7 @@ export default function Dashboard({ setTab }) {
                   const baseCol = isLow ? "#D97706" : "#059669";
                   const dimCol  = isLow ? "#FCD34D" : "#6EE7B7";
                   return (
-                    <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? "#FFFBEB" : "#ECFDF5", borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
+                    <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? C.yellowLight : C.greenLight, borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
                       <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:0 }}>
                         <span style={{ fontSize:18, fontWeight:800, color:baseCol }}>{availModels}</span>
                         <span style={{ fontSize:18, fontWeight:400, color:dimCol }}>/{totalModels}</span>

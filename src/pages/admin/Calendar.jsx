@@ -8,7 +8,7 @@ const MONTH_NAMES = ["","1월","2월","3월","4월","5월","6월","7월","8월",
 const DAY_NAMES   = ["일","월","화","수","목","금","토"];
 
 const STATUS_META = {
-  "승인대기": { color: C.yellow,  bg: "#FFFBEB", label: "승인대기" },
+  "승인대기": { color: C.yellow,  bg: C.yellowLight, label: "승인대기" },
   "승인됨":   { color: C.blue,    bg: C.blueLight, label: "승인됨"   },
   "대여중":   { color: C.teal,    bg: C.tealLight, label: "대여중"   },
   "반납완료": { color: C.muted,   bg: "#F8FAFC",   label: "반납완료" },
@@ -84,7 +84,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/calander.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 캘린더 페이지야!</div>
               <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>
