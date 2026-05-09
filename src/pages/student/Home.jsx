@@ -700,7 +700,7 @@ export default function StudentHome() {
             <button onClick={() => {
               const url = "https://rental-app-delta-kohl.vercel.app";
               if (navigator.share) {
-                navigator.share({ title:"KBAS 장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
+                navigator.share({ title:"KBAS 영상장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
               } else {
                 navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐어요! 친구에게 공유해보세요 😊"));
               }
@@ -783,7 +783,7 @@ export default function StudentHome() {
             <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
             <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-              렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
+              렌토리는 한국방송예술진흥원 영상장비대여실에서 태어난 작은 수달이에요.<br/>
               카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
               대여 신청부터 장비 확인, 반납 알림까지<br/>
               촬영의 시작과 끝을 함께하는<br/>

@@ -98,8 +98,8 @@ export default function Login() {
         {/* 로고 */}
         <div style={{ textAlign:"center", marginBottom:28 }}>
           <img src="/logo.png" alt="한예진 로고" style={{ width:100, height:100, objectFit:"contain", marginBottom:10 }} />
-          <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>한국방송예술진흥원 장비대여실</div>
-          <div style={{ fontSize:14, color:C.muted, marginTop:6 }}>한예진 장비관리시스템</div>
+          <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>한국방송예술진흥원 영상장비대여실</div>
+          <div style={{ fontSize:14, color:C.muted, marginTop:6 }}>한예진 영상장비관리시스템</div>
         </div>
 
         {/* 탭 */}
