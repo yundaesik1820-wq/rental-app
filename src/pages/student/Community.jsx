@@ -272,9 +272,9 @@ export default function Community() {
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/community.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 에브리타임 페이지야!</div>
-            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>익명으로 자유롭게 소통할 수 있어.
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
+            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 에브리타임 페이지야!</div>
+            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>익명으로 자유롭게 소통할 수 있어.
 질문, 정보, 저격까지 다양한 글을 올릴 수 있어 💬</div>
           </div>
         </div>
