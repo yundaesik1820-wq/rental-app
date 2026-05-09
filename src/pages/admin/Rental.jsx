@@ -666,7 +666,7 @@ ${r.attachments?.length > 0 ? `
 
   // 예약 확정 (equipment.status 변경 없음 - 아직 물리 대여 전)
   const approve = async (r, adminSignature) => {
-    await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
+    await updateItem("rentalRequests", r.id, { status: "교사서명대기", reason: "", adminSignature: adminSignature || "" });
   };
 
   // 배치 선택 모달 열기 (자동배치 기본값 + 체크리스트)
@@ -698,7 +698,7 @@ ${r.attachments?.length > 0 ? `
     setAssignModal({ request: r, assignments, checklist, checkStep: false, qrInput: "" });
   };
 
-  // 배치 확정 → 교사서명대기 (장비 status는 교사 서명 후 변경)
+  // 배치 확정 → 대여 시작
   const confirmAssign = async () => {
     const { request, assignments } = assignModal;
     setSubmitting(true);
@@ -706,7 +706,7 @@ ${r.attachments?.length > 0 ? `
       const assignedUnits = [];
       for (const a of assignments) {
         if (!a.selectedUnit) continue;
-        // 장비 status는 교사 서명 후 변경 (배치만 기록)
+        await updateItem("equipments", a.selectedUnit.id, { status: "대여중" });
         assignedUnits.push({
           modelName: a.modelName,
           itemNo:    a.selectedUnit.itemNo || "",
@@ -714,21 +714,18 @@ ${r.attachments?.length > 0 ? `
           itemName:  a.selectedUnit.itemName || "",
         });
       }
-      await updateItem("rentalRequests", request.id, { status: "교사서명대기", assignedUnits });
+      await updateItem("rentalRequests", request.id, { status: "대여중", assignedUnits });
       setAssignModal(null);
     } catch(e) { alert("오류: " + e.message); }
     finally { setSubmitting(false); }
   };
 
-  // 교사 서명 완료 → 대여중 (장비 status 변경)
+  // 교사 2차 서명 완료 → 승인됨
   const confirmTeacherSign = async (teacherSignature) => {
     const r = teacherSignTarget;
     setSubmitting(true);
     try {
-      for (const unit of (r.assignedUnits || [])) {
-        if (unit.unitId) await updateItem("equipments", unit.unitId, { status: "대여중" });
-      }
-      await updateItem("rentalRequests", r.id, { status: "대여중", teacherSignature });
+      await updateItem("rentalRequests", r.id, { status: "승인됨", teacherSignature });
       setTeacherSignTarget(null);
     } catch(e) { alert("오류: " + e.message); }
     finally { setSubmitting(false); }
@@ -991,48 +988,38 @@ ${r.attachments?.length > 0 ? `
           {/* 액션 버튼 */}
           {!isTeacher && r.status === "승인대기" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 1차 승인 (슈퍼 서명)</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "보류" }); setReason(""); }} color={C.yellow} text={C.text} full><PauseCircle size={14} style={{ marginRight: 4 }} />보류</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
           {!isTeacher && r.status === "보류" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 승인으로 변경</Btn>
+              <Btn onClick={() => setSignTarget(r)} color={C.green} full>✅ 1차 승인으로 변경</Btn>
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {r.status === "승인됨" && !isTeacher && (
+          {r.status === "승인됨" && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => openAssignModal(r)} color={C.blue} full>📦 장비 배치</Btn>
+              {!isTeacher && <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>}
+              {isTeacher && (
+                <div style={{ flex:1, background:C.blueLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.blue, fontWeight:600, textAlign:"center" }}>
+                  ✅ 승인 완료 — 담당자가 대여를 시작할 예정입니다
+                </div>
+              )}
               {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
           {r.status === "교사서명대기" && (
-            <div>
-              {/* 배치된 장비 미리보기 */}
-              {r.assignedUnits?.length > 0 && (
-                <div style={{ background:C.purpleLight, borderRadius:10, padding:"10px 14px", marginBottom:10, border:`1px solid ${C.purple}30` }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:C.purple, marginBottom:6 }}>배치된 장비 (교사 서명 대기 중)</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                    {r.assignedUnits.map((u, i) => (
-                      <div key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:12, fontWeight:600, color:C.text }}>
-                        <div>{u.itemName || u.modelName}{u.itemNo && <span style={{ color:C.purple, marginLeft:4 }}>{u.itemNo}</span>}</div>
-                      </div>
-                    ))}
-                  </div>
+            <div style={{ display:"flex", gap:8 }}>
+              {isTeacher ? (
+                <Btn onClick={() => setTeacherSignTarget(r)} color={C.purple} full>✍️ 2차 승인 (교사 서명)</Btn>
+              ) : (
+                <div style={{ flex:1, background:C.purpleLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.purple, fontWeight:600, textAlign:"center" }}>
+                  ✍️ 교사 2차 승인 대기 중...
                 </div>
               )}
-              <div style={{ display:"flex", gap:8 }}>
-                {isTeacher ? (
-                  <Btn onClick={() => setTeacherSignTarget(r)} color={C.purple} full>✍️ 서명하고 대여 시작</Btn>
-                ) : (
-                  <div style={{ flex:1, background:C.purpleLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.purple, fontWeight:600, textAlign:"center" }}>
-                    ✍️ 교사 서명 대기 중...
-                  </div>
-                )}
-                {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
-              </div>
+              {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
             </div>
           )}
           {(r.status === "대여중" || r.status === "연체") && (
@@ -1149,7 +1136,7 @@ ${r.attachments?.length > 0 ? `
       {signTarget && (
         <Modal onClose={() => setSignTarget(null)} width={520}>
           <SignaturePad
-            title="✍️ 관리자 서명"
+            title="✍️ 1차 승인 (슈퍼 서명)"
             onSave={async (sig) => {
               try {
                 await approve(signTarget, sig);
@@ -1168,10 +1155,10 @@ ${r.attachments?.length > 0 ? `
       {teacherSignTarget && (
         <Modal onClose={() => setTeacherSignTarget(null)} width={520}>
           <div style={{ fontSize:14, color:C.muted, marginBottom:12 }}>
-            <span style={{ fontWeight:700, color:C.text }}>{teacherSignTarget.studentName}</span>님의 대여 신청을 최종 확인합니다.
+            <span style={{ fontWeight:700, color:C.text }}>{teacherSignTarget.studentName}</span>님의 대여 신청을 2차 승인합니다. 서명 후 승인됨 상태로 변경됩니다.
           </div>
           <SignaturePad
-            title="✍️ 교사 서명 (대여 최종 확인)"
+            title="✍️ 교사 서명 (2차 승인)"
             onSave={async (sig) => {
               try { await confirmTeacherSign(sig); }
               catch(e) { alert("오류: " + e.message); }
