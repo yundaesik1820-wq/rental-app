@@ -680,11 +680,11 @@ export default function StudentHome() {
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:C.surface, borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
-            <div style={{ fontSize:13, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:`10px solid ${C.surface}` }}></div>
+            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3, lineHeight:1.4 }}>
               난 장비대여실 마스코트 렌토리야!
             </div>
-            <div style={{ fontSize:12, color:"#475569", lineHeight:1.4 }}>
+            <div style={{ fontSize:12, color:C.muted, lineHeight:1.4 }}>
               오늘도 잘 부탁해, {profile?.name}님!
             </div>
           </div>
