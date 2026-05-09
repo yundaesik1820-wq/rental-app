@@ -7,10 +7,10 @@ import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "대여중", "연체", "보류", "거절됨", "반납완료"];
-const STATUS_TABS_ASSIST  = ["전체", "승인대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
-const STATUS_TABS_TEACHER = ["승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
-const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
+const STATUS_TABS_SUPER   = ["전체", "승인대기", "승인됨", "교사서명대기", "대여중", "연체", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_ASSIST  = ["전체", "승인대기", "승인됨", "교사서명대기", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
+const STATUS_TABS_TEACHER = ["교사서명대기", "승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
+const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 교사서명대기: "✍️", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
 
 // ── 시설 대여 관리 컴포넌트 ────────────────────────────────
 function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
@@ -171,8 +171,15 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
           {/* 관리자 서명 표시 */}
           {r.adminSignature && (
             <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>담당자 서명</div>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>담당자(슈퍼) 서명</div>
               <img src={r.adminSignature} alt="관리자서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
+            </div>
+          )}
+          {/* 교사 서명 표시 */}
+          {r.teacherSignature && (
+            <div style={{ marginBottom:10 }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>교사 서명</div>
+              <img src={r.teacherSignature} alt="교사서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
             </div>
           )}
 
@@ -471,9 +478,10 @@ export default function Rental({ subAdmin = false }) {
   const isSuper     = !isTeacher; // 슈퍼+조교는 전체 권한
   const isAssist    = adminRole === "assistant";
   const STATUS_TABS = isTeacher ? STATUS_TABS_TEACHER : STATUS_TABS_SUPER;
-  const [tab, setTab] = useState(subAdmin ? "승인됨" : "승인대기");
+  const [tab, setTab] = useState(isTeacher ? "교사서명대기" : (subAdmin ? "승인됨" : "승인대기"));
   const [actionTarget, setActionTarget] = useState(null);
   const [signTarget, setSignTarget]     = useState(null); // 서명 대상 request // { request, type: "보류"|"거절" }
+  const [teacherSignTarget, setTeacherSignTarget] = useState(null); // 교사 서명 대상
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [mainTab, setMainTab]       = useState("equip"); // "equip" | "facility"
@@ -690,7 +698,7 @@ ${r.attachments?.length > 0 ? `
     setAssignModal({ request: r, assignments, checklist, checkStep: false, qrInput: "" });
   };
 
-  // 배치 확정 → 대여 시작
+  // 배치 확정 → 교사서명대기 (장비 status는 교사 서명 후 변경)
   const confirmAssign = async () => {
     const { request, assignments } = assignModal;
     setSubmitting(true);
@@ -698,7 +706,7 @@ ${r.attachments?.length > 0 ? `
       const assignedUnits = [];
       for (const a of assignments) {
         if (!a.selectedUnit) continue;
-        await updateItem("equipments", a.selectedUnit.id, { status: "대여중" });
+        // 장비 status는 교사 서명 후 변경 (배치만 기록)
         assignedUnits.push({
           modelName: a.modelName,
           itemNo:    a.selectedUnit.itemNo || "",
@@ -706,8 +714,22 @@ ${r.attachments?.length > 0 ? `
           itemName:  a.selectedUnit.itemName || "",
         });
       }
-      await updateItem("rentalRequests", request.id, { status: "대여중", assignedUnits });
+      await updateItem("rentalRequests", request.id, { status: "교사서명대기", assignedUnits });
       setAssignModal(null);
+    } catch(e) { alert("오류: " + e.message); }
+    finally { setSubmitting(false); }
+  };
+
+  // 교사 서명 완료 → 대여중 (장비 status 변경)
+  const confirmTeacherSign = async (teacherSignature) => {
+    const r = teacherSignTarget;
+    setSubmitting(true);
+    try {
+      for (const unit of (r.assignedUnits || [])) {
+        if (unit.unitId) await updateItem("equipments", unit.unitId, { status: "대여중" });
+      }
+      await updateItem("rentalRequests", r.id, { status: "대여중", teacherSignature });
+      setTeacherSignTarget(null);
     } catch(e) { alert("오류: " + e.message); }
     finally { setSubmitting(false); }
   };
@@ -848,8 +870,18 @@ ${r.attachments?.length > 0 ? `
         <div style={{ background: C.yellowLight, borderRadius: 14, padding: "14px 18px", marginBottom: 20, border: `1px solid ${C.yellow}40`, display: "flex", gap: 12, alignItems: "center" }}>
           <span style={{ fontSize: 24 }}>⏳</span>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#92400E" }}>승인 대기 {counts["승인대기"]}건</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>승인 대기 {counts["승인대기"]}건</div>
             <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>대여 신청이 들어왔습니다. 확인 후 처리해주세요.</div>
+          </div>
+        </div>
+      )}
+      {/* 교사서명대기 알림 */}
+      {isTeacher && counts["교사서명대기"] > 0 && (
+        <div style={{ background: C.purpleLight, borderRadius: 14, padding: "14px 18px", marginBottom: 20, border: `1px solid ${C.purple}40`, display: "flex", gap: 12, alignItems: "center" }}>
+          <span style={{ fontSize: 24 }}>✍️</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.purple }}>서명 대기 {counts["교사서명대기"]}건</div>
+            <div style={{ fontSize: 12, color: C.muted, marginTop: 2 }}>교사 서명이 필요한 대여 신청이 있습니다.</div>
           </div>
         </div>
       )}
@@ -878,8 +910,9 @@ ${r.attachments?.length > 0 ? `
             r.status === "승인대기" ? C.yellow + "50" :
             r.status === "보류"    ? C.orange + "50" :
             r.status === "거절됨"  ? C.red    + "40" :
-            r.status === "승인됨"  ? C.teal   + "40" :
-            r.status === "대여중"  ? C.blue   + "50" :
+            r.status === "승인됨"        ? C.teal   + "40" :
+            r.status === "교사서명대기" ? C.purple + "50" :
+            r.status === "대여중"        ? C.blue   + "50" :
             r.status === "연체"    ? C.red    + "50" : C.border
           }`
         }}>
@@ -969,10 +1002,37 @@ ${r.attachments?.length > 0 ? `
               <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} full>❌ 거절</Btn>
             </div>
           )}
-          {r.status === "승인됨" && (
+          {r.status === "승인됨" && !isTeacher && (
             <div style={{ display: "flex", gap: 8 }}>
-              <Btn onClick={() => openAssignModal(r)} color={C.blue} full>🚀 대여 시작</Btn>
+              <Btn onClick={() => openAssignModal(r)} color={C.blue} full>📦 장비 배치</Btn>
               {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
+            </div>
+          )}
+          {r.status === "교사서명대기" && (
+            <div>
+              {/* 배치된 장비 미리보기 */}
+              {r.assignedUnits?.length > 0 && (
+                <div style={{ background:C.purpleLight, borderRadius:10, padding:"10px 14px", marginBottom:10, border:`1px solid ${C.purple}30` }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.purple, marginBottom:6 }}>배치된 장비 (교사 서명 대기 중)</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {r.assignedUnits.map((u, i) => (
+                      <div key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"5px 10px", fontSize:12, fontWeight:600, color:C.text }}>
+                        <div>{u.itemName || u.modelName}{u.itemNo && <span style={{ color:C.purple, marginLeft:4 }}>{u.itemNo}</span>}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <div style={{ display:"flex", gap:8 }}>
+                {isTeacher ? (
+                  <Btn onClick={() => setTeacherSignTarget(r)} color={C.purple} full>✍️ 서명하고 대여 시작</Btn>
+                ) : (
+                  <div style={{ flex:1, background:C.purpleLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:C.purple, fontWeight:600, textAlign:"center" }}>
+                    ✍️ 교사 서명 대기 중...
+                  </div>
+                )}
+                {(isSuper || isAssist) && <Btn onClick={() => { setActionTarget({ request: r, type: "거절됨" }); setReason(""); }} color={C.red} outline full>❌ 취소</Btn>}
+              </div>
             </div>
           )}
           {(r.status === "대여중" || r.status === "연체") && (
@@ -1100,6 +1160,23 @@ ${r.attachments?.length > 0 ? `
               }
             }}
             onCancel={() => setSignTarget(null)}
+          />
+        </Modal>
+      )}
+
+      {/* 교사 서명 모달 */}
+      {teacherSignTarget && (
+        <Modal onClose={() => setTeacherSignTarget(null)} width={520}>
+          <div style={{ fontSize:14, color:C.muted, marginBottom:12 }}>
+            <span style={{ fontWeight:700, color:C.text }}>{teacherSignTarget.studentName}</span>님의 대여 신청을 최종 확인합니다.
+          </div>
+          <SignaturePad
+            title="✍️ 교사 서명 (대여 최종 확인)"
+            onSave={async (sig) => {
+              try { await confirmTeacherSign(sig); }
+              catch(e) { alert("오류: " + e.message); }
+            }}
+            onCancel={() => setTeacherSignTarget(null)}
           />
         </Modal>
       )}
