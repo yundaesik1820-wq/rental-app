@@ -175,33 +175,33 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const [showStoragePlan, setShowStoragePlan] = useState(false);
   const [urgentRental, setUrgentRental] = useState(false); // 긴급대여 체크박스
 
-  // 참여인원 검색
+  // 참여인원 검색 - users를 한 번만 로드하고 클라이언트 필터링
+  const { data: allUsers } = useCollection("users", "createdAt");
   const [participantSearch, setParticipantSearch] = useState("");
   const [participantResults, setParticipantResults] = useState([]);
   const [participantList, setParticipantList]   = useState([]); // [{ name, studentId }]
   const [searchLoading, setSearchLoading]       = useState(false);
 
-  // 이름으로 users 컬렉션 검색
-  const searchParticipant = async (keyword) => {
-    setParticipantSearch(keyword);
+  // 디바운싱: 입력 멈춘 후 150ms 뒤에 필터링
+  useEffect(() => {
+    const keyword = participantSearch;
     if (keyword.trim().length < 1) { setParticipantResults([]); return; }
     setSearchLoading(true);
-    try {
-      // users 전체 가져와서 클라이언트 필터 (name 필드명 이슈 방지)
-      const snap = await getDocs(collection(db, "users"));
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const timer = setTimeout(() => {
       const kw = keyword.trim().toLowerCase();
-      const results = all.filter(u =>
+      const results = allUsers.filter(u =>
         u.role === "student" &&
-        (u.uid || u.id) !== profile?.uid &&   // uid 필드 없으면 문서 ID(id) 사용
+        (u.uid || u.id) !== profile?.uid &&
         (u.name || u.userName || "").toLowerCase().includes(kw)
       );
       setParticipantResults(results);
-    } catch(e) {
-      console.error("participant search error:", e);
-      setParticipantResults([]);
-    }
-    finally { setSearchLoading(false); }
+      setSearchLoading(false);
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [participantSearch, allUsers, profile?.uid]);
+
+  const searchParticipant = (keyword) => {
+    setParticipantSearch(keyword);
   };
 
   const addParticipant = (user) => {
