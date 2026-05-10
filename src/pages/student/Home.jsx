@@ -358,9 +358,11 @@ export default function StudentHome() {
   // 시간표 로드
   useEffect(() => {
     if (!uid) return;
-    getDoc(doc(db, "timetables", uid)).then(snap => {
-      if (snap.exists()) setClasses(snap.data().classes || []);
-    });
+    getDoc(doc(db, "timetables", uid))
+      .then(snap => {
+        if (snap.exists()) setClasses(snap.data().classes || []);
+      })
+      .catch(e => console.warn("시간표 로드 실패:", e.code));
   }, [uid]);
 
   // 시간표 저장

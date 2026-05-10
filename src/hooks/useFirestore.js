@@ -12,10 +12,17 @@ export function useCollection(collectionName, orderField = "createdAt") {
 
   useEffect(() => {
     const q = query(collection(db, collectionName), orderBy(orderField, "desc"));
-    const unsub = onSnapshot(q, (snap) => {
-      setData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        setData(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+        setLoading(false);
+      },
+      (error) => {
+        console.warn(`useCollection [${collectionName}] error:`, error.code);
+        setLoading(false);
+      }
+    );
     return unsub;
   }, [collectionName, orderField]);
 
