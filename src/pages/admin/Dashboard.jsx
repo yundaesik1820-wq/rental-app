@@ -200,7 +200,7 @@ export default function Dashboard({ setTab }) {
             <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px" }}>
               <span style={{ fontSize:20 }}>📦</span>
               <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 관리</span>
-              <span onClick={() => setTab?.("equipment")} style={{ fontSize:12, color:C.blue, fontWeight:600, cursor:"pointer" }}>바로가기 →</span>
+              <span onClick={() => setTab?.("equip")} style={{ fontSize:12, color:C.blue, fontWeight:600, cursor:"pointer" }}>바로가기 →</span>
             </div>
 
             {/* 1행: 장비/시설 탭 전환 */}
