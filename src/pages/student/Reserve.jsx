@@ -972,8 +972,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
               const key = `keeper${n}`;
               const k   = storageForm[key];
               // 참여인원 목록 (form.participants에서 파싱)
-              const participants = participantList || [];
-              // 이름 입력 후 참여인원에 없는지 체크
+              // 대여자(본인) + 참여인원 합치기
+              const applicant = profile ? [{ name: profile.name || "", studentId: profile.studentId || profile.profId || "" }] : [];
+              const participants = [...applicant, ...(participantList || [])].filter((p, i, arr) =>
+                p.name && arr.findIndex(x => x.studentId === p.studentId) === i
+              );
               const isValidKeeper = !k.name || participants.some(p => p.name === k.name);
               return (
                 <div key={n} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
