@@ -31,7 +31,7 @@ export default function GuideReserve({ onComplete }) {
 
   const [extraCart, setExtraCart] = useState({});
   // 추가장비 단계별 카테고리 순서
-  const EXTRA_STEPS = ["ACC", "트라이포드/그립", "모니터", "조명", "음향"];
+  const EXTRA_STEPS = ["기타"]; // 추가장비는 minorCategory==="기타"인 항목만
   const [extraStepIdx, setExtraStepIdx] = useState(0); // 추가장비 내 단계
   const [sig, setSig]             = useState("");
   const [showSign, setShowSign]   = useState(false);
@@ -68,14 +68,9 @@ export default function GuideReserve({ onComplete }) {
     return acc;
   }, {}));
   const adapters = equips.filter(e => e.equipType === "adapter");
-  // 추가장비: 촬영/배터리/렌즈/어댑터/충전기 제외한 모든 장비
-  const EXCLUDED_CATS  = ["촬영"];
-  const EXCLUDED_MINOR = ["카메라","캠코더","드론/액션캠","배터리","충전기/전원","단렌즈","줌렌즈","시네렌즈","렌즈"];
-  const EXCLUDED_TYPES = ["camera","camcorder","battery","charger","lens","adapter"];
+  // 추가장비: minorCategory가 "기타"인 항목만
   const extrasRaw = equips.filter(e =>
-    !EXCLUDED_CATS.includes(e.majorCategory) &&
-    !EXCLUDED_MINOR.includes(e.minorCategory) &&
-    !EXCLUDED_TYPES.includes(e.equipType) &&
+    e.minorCategory === "기타" &&
     e.status !== "수리중"
   );
   // 모델별 그룹화 (대표 장비 + 재고 합산)
@@ -107,7 +102,14 @@ export default function GuideReserve({ onComplete }) {
   const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
 
   // 선택 헬퍼
-  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{} };
+  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{}, chargers:{} };
+
+  const setChargerQty = (camModel, chgModel, qty) => {
+    setCameraSelections(p => ({
+      ...p,
+      [camModel]: { ...getSelection(camModel), chargers: { ...(getSelection(camModel).chargers || {}), [chgModel]: qty } }
+    }));
+  };
 
   const setBatteryQty = (camModel, battModel, qty) => {
     setCameraSelections(p => ({
@@ -137,6 +139,7 @@ export default function GuideReserve({ onComplete }) {
       const sel = getSelection(cam.modelName);
       // 배터리/렌즈는 선택한 수량 그대로 (카메라 대수와 무관)
       Object.entries(sel.batteries).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
+      Object.entries(sel.chargers || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.lens).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
     });
     Object.entries(extraCart).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
@@ -246,19 +249,34 @@ export default function GuideReserve({ onComplete }) {
   };
 
   // 장비 소분류 + 궁금하다면 버튼
-  const EquipInfo = ({ e }) => (
-    <div style={{ marginTop:4, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
-      {(e.subCategory || e.minorCategory) && (
-        <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
-          {e.subCategory || e.minorCategory}
-        </span>
-      )}
-      <button onClick={(ev) => { ev.stopPropagation(); setEquipDetail(e); }}
-        style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px", fontSize:10, color:C.muted, cursor:"pointer" }}>
-        🔍 장비가 궁금하다면?
-      </button>
-    </div>
-  );
+  const EquipInfo = ({ e }) => {
+    const kws = (e.keywords || "").split(",").map(s => s.trim()).filter(Boolean);
+    const bundle = (e.bundledItems || e.setItems || "").split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+    return (
+      <div>
+        <div style={{ marginTop:4, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
+          {(e.subCategory || e.minorCategory) && (
+            <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
+              {e.subCategory || e.minorCategory}
+            </span>
+          )}
+          {kws.map((kw, i) => (
+            <span key={i} style={{ background:C.tealLight, color:C.teal, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>⚡ {kw}</span>
+          ))}
+          <button onClick={(ev) => { ev.stopPropagation(); setEquipDetail(e); }}
+            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"2px 8px", fontSize:10, color:C.muted, cursor:"pointer" }}>
+            🔍 장비가 궁금하다면?
+          </button>
+        </div>
+        {bundle.length > 0 && (
+          <div style={{ marginTop:4, fontSize:10, color:C.muted }}>
+            <span style={{ fontWeight:700, color:C.orange }}>📦 포함: </span>
+            {bundle.join(" · ")}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div>
@@ -431,6 +449,41 @@ export default function GuideReserve({ onComplete }) {
               </Card>
             );
           })}
+          {/* 충전기 선택 영역 */}
+          {matchedChargers.length > 0 && (
+            <div style={{ background:C.bg, borderRadius:12, padding:14, marginTop:8, marginBottom:8, border:`1px solid ${C.border}` }}>
+              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>🔌 충전기도 필요해요?</div>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>{currentCam.modelName} 호환 충전기예요</div>
+              {matchedChargers.map(e => {
+                const qty = (getSelection(currentCam.modelName).chargers || {})[e.modelName] || 0;
+                return (
+                  <Card key={e.id} style={{ padding:"10px", marginBottom:6, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                      <EquipPhoto e={e} />
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                        <div style={{ fontSize:10, color:e.available===0?C.red:C.muted, marginTop:2 }}>재고 {e.available}/{e.total}</div>
+                        <EquipInfo e={e} />
+                      </div>
+                      {e.available === 0 ? (
+                        <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                      ) : qty > 0 ? (
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
+                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                          <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                          <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
+                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                        </div>
+                      ) : (
+                        <Btn onClick={() => setChargerQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
+                      )}
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
             <Btn onClick={goNext} color={C.navy} full>다음 →</Btn>

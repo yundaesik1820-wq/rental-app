@@ -118,12 +118,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
-  const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState("전체");
 
   // 단품 장비 (세트 아닌 것)
-  const unitEquips = equipments.filter(e => !e.isSet);
+  const unitEquips = equipments; // 세트 기능 제거 — 모든 장비를 단일로 처리
   const grouped    = groupEquipments(unitEquips);
 
   // 세트 장비
@@ -584,25 +583,10 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
         style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }} />
 
-      {/* 3차: 단품 / 세트 탭 */}
-      <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:16, border:`1px solid ${C.border}`, width:"fit-content" }}>
-        {["단품", "세트"].map(t => {
-          const cnt = t === "세트"
-            ? filteredSets.length
-            : filteredUnits.length;
-          return (
-            <button key={t} onClick={() => setTabView(t)} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>
-              {t} ({cnt})
-            </button>
-          );
-        })}
-      </div>
-
       {errors.cart && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {errors.cart}</div>}
 
       {/* ── 단품 목록 ── */}
-      {tabView === "단품" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {filteredUnits.map(e => {
             const rawUnits    = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName && !eq.isSet);
             const statusAvail = rawUnits.filter(u => (u.status || "대여가능") === "대여가능").length;
@@ -649,6 +633,30 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:4 }} />
                 </div>
+                {/* 키워드 배지 (제조사 푸시 스펙) */}
+                {(() => {
+                  const rawEq = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
+                  const kws = (rawEq?.keywords || "").split(",").map(s => s.trim()).filter(Boolean);
+                  return kws.length > 0 && (
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
+                      {kws.map((kw, i) => (
+                        <span key={i} style={{ background:C.tealLight, color:C.teal, borderRadius:5, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⚡ {kw}</span>
+                      ))}
+                    </div>
+                  );
+                })()}
+                {/* 구성품 (bundledItems 또는 setItems 호환) */}
+                {(() => {
+                  const rawEq = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
+                  const bundle = rawEq?.bundledItems || rawEq?.setItems || "";
+                  const items = bundle.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
+                  return items.length > 0 && (
+                    <div style={{ marginBottom:8, fontSize:11, color:C.muted }}>
+                      <span style={{ fontWeight:700, color:C.orange }}>📦 포함: </span>
+                      {items.join(" · ")}
+                    </div>
+                  );
+                })()}
                 {/* 장비가 궁금하다면? */}
                 <button onClick={() => setEquipDetail(e)}
                   style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
@@ -674,95 +682,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
               </Card>
             );
           })}
-          {filteredUnits.length === 0 && <Empty icon="🔍" text="단품 장비가 없습니다" />}
+          {filteredUnits.length === 0 && <Empty icon="🔍" text="장비가 없습니다" />}
         </div>
-      )}
 
       {/* ── 세트 목록 ── */}
-      {tabView === "세트" && (
-        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-          {filteredSets.map(e => {
-            const avail    = e.available;
-            const selected = !!cartSets[e.modelName];
-            const items    = (e.setItems || "").split("\n").filter(Boolean);
-            const expanded = expandedSet === e.modelName;
-            const myLicNum = licenseToNum(profile?.license);
-            const isProf   = profile?.role === "professor";
-            const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
-            const eqLicNum = rawEquip?.licenseLevel || 0;
-            const isLocked = !isProf && myLicNum < eqLicNum;
-            const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
-            return (
-              <Card key={e.modelName} style={{ padding:"12px 14px", border:`1.5px solid ${isLocked?"#FCA5A5":selected?C.orange:C.border}`, opacity: isLocked ? 0.8 : 1, transition:"border 0.15s" }}>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  {/* 썸네일 */}
-                  {photos.length > 0 ? (
-                    <div style={{ width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0, cursor:"zoom-in" }}
-                      onClick={() => setLightbox({ photos, idx:0 })}>
-                      <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                    </div>
-                  ) : (
-                    <div style={{ width:56, height:56, borderRadius:8, background:C.bg, border:`1px solid ${C.border}`, flexShrink:0 }} />
-                  )}
-                  {/* 정보 */}
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:6, marginBottom:2 }}>
-                      <span style={{ fontSize:14, fontWeight:700, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</span>
-                      <Badge label={isLocked?"잠김":avail>0?"대여가능":"대여불가"} />
-                    </div>
-                    {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
-                    <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
-                      <span style={{ background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
-                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
-                      {eqLicNum > 0 && <span style={{ background:isLocked?C.redLight:C.blueLight, color:isLocked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
-                      <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}세트</span>
-                    </div>
-                  </div>
-                </div>
-                {/* 재고 바 */}
-                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
-                  <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:4 }} />
-                </div>
-                <button onClick={() => setEquipDetail(e)}
-                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
-                  🔍 장비가 궁금하다면?
-                </button>
-                {/* 구성품 */}
-                {items.length > 0 && (
-                  <div style={{ marginBottom:8 }}>
-                    <button onClick={() => setExpandedSet(expanded ? null : e.modelName)} style={{ background:"none", border:"none", color:C.blue, fontSize:11, fontWeight:600, cursor:"pointer", padding:0 }}>
-                      📋 구성품 {items.length}개 {expanded?"▲":"▼"}
-                    </button>
-                    {expanded && (
-                      <div style={{ marginTop:6, display:"flex", flexWrap:"wrap", gap:4 }}>
-                        {items.map((item, i) => (
-                          <span key={i} style={{ background:C.orangeLight, color:"#92400E", borderRadius:5, padding:"1px 7px", fontSize:10 }}>{item.trim()}</span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* 선택 버튼 */}
-                {isLocked ? (
-                  <div style={{ fontSize:11, color:"#EF4444", fontWeight:600 }}>🔒 Lv.{eqLicNum} 이상 필요 (현재: {profile?.license || "없음"})</div>
-                ) : avail === 0 ? (
-                  <div style={{ fontSize:11, color:C.muted }}>재고 없음</div>
-                ) : selected ? (
-                  <div style={{ display:"flex", gap:8 }}>
-                    <div style={{ flex:1, background:C.orangeLight, borderRadius:8, padding:"7px 12px", textAlign:"center", border:`1px solid ${C.orange}40` }}>
-                      <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>✅ 선택됨</span>
-                    </div>
-                    <button onClick={() => toggleSet(e.modelName)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 12px", fontSize:11, color:C.muted, cursor:"pointer" }}>취소</button>
-                  </div>
-                ) : (
-                  <Btn onClick={() => toggleSet(e.modelName)} color={C.orange} full>📦 세트 선택</Btn>
-                )}
-              </Card>
-            );
-          })}
-          {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
-        </div>
-      )}
+      
 
       {/* 장비 상세 모달 */}
       {equipDetail && (

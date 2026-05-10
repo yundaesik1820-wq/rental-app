@@ -197,7 +197,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
         <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
           <span style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{e.modelName}</span>
           {e.unitNo && <span style={{ fontSize:10, background:C.navy, color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>{e.unitNo}</span>}
-          {e.isSet && <span style={{ fontSize:10, background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>세트</span>}
+          
           {e.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[e.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>Lv.{e.licenseLevel}</span> : null; })()}
           <span style={{ fontSize:10, background:statusBg, color:statusColor, borderRadius:4, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>{e.status||"대여가능"}</span>
         </div>
@@ -450,13 +450,13 @@ function ExcelImportModal({ onClose, onImport }) {
 const MAJOR_CATS = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
 
 const MINOR_CATS = {
-  "촬영":        ["카메라", "캠코더", "드론/액션캠", "배터리", "충전기/전원", "저장매체", "카드리더기"],
-  "렌즈":        ["단렌즈", "줌렌즈", "시네렌즈", "렌즈어댑터", "렌즈액세서리"],
+  "촬영":        ["카메라", "캠코더", "드론/액션캠", "배터리", "충전기/전원", "저장매체", "카드리더기", "기타"],
+  "렌즈":        ["단렌즈", "줌렌즈", "시네렌즈", "렌즈어댑터", "렌즈액세서리", "기타"],
   "ACC":         ["리그/케이지", "무선송수신", "라이브송출", "슬레이트/타임코드", "케이블/젠더", "가방/운반", "기타"],
-  "트라이포드/그립": ["비디오삼각대", "사진삼각대", "모노포드", "짐벌", "슬라이더", "숄더리그", "그립장비"],
-  "모니터":      ["카메라용 모니터", "감독용 모니터", "모니터액세서리"],
-  "조명":        ["조명본체", "조명액세서리", "그립장비"],
-  "음향":        ["마이크", "레코더/믹서", "음향액세서리"],
+  "트라이포드/그립": ["비디오삼각대", "사진삼각대", "모노포드", "짐벌", "슬라이더", "숄더리그", "그립장비", "기타"],
+  "모니터":      ["카메라용 모니터", "감독용 모니터", "모니터액세서리", "기타"],
+  "조명":        ["조명본체", "조명액세서리", "그립장비", "기타"],
+  "음향":        ["마이크", "레코더/믹서", "음향액세서리", "기타"],
 };
 
 // 소분류 → equipType 매핑
@@ -492,8 +492,10 @@ const EMPTY = {
   status:"대여가능",
   licenseLevel: 0,  // 0~3단계
   location:"", photoUrls:[], snPhotoUrl:"", serialNo:"", note:"",
-  isSet: false,
-  setItems: "",
+  keywords: "",       // 제조사 키워드 (예: "4K 120fps, S-Cinetone")
+  bundledItems: "",   // 구성품/포함 목록 (예: "리그셋, 메모리카드 64GB")
+  isSet: false,       // (사용 안함, 호환용)
+  setItems: "",       // (사용 안함, 호환용)
   displayPhotoUrl: "",  // 학생 송출용 이미지 URL
   // 가이드 모드용 필드
   equipType: "",        // "camera" | "lens" | "battery" | "adapter" | "etc"
@@ -574,6 +576,8 @@ export default function Equipment() {
       displayPhotoUrl:    e.displayPhotoUrl    || "",
       serialNo:           e.serialNo           || "",
       note:               e.note               || "",
+      keywords:           e.keywords           || "",
+      bundledItems:       e.bundledItems       || "",
       isSet:              e.isSet              || false,
       setItems:           e.setItems           || "",
       description:        e.description        || "",
@@ -608,6 +612,8 @@ export default function Equipment() {
       displayPhotoUrl: e.displayPhotoUrl || "",
       serialNo:        "",   // 시리얼 비움
       note:            e.note            || "",
+      keywords:        e.keywords        || "",
+      bundledItems:    e.bundledItems    || "",
       isSet:           e.isSet           || false,
       setItems:        e.setItems        || "",
     });
@@ -643,8 +649,8 @@ export default function Equipment() {
       "보관위치": e.location      || "",
       "S/N":      e.serialNo      || "",
       "라이센스제한": `${e.licenseLevel || 0}단계`,
-      "세트여부": e.isSet ? "O" : "",
-      "구성품":   e.isSet ? (e.setItems || "").split("\n").join(", ") : "",
+      "키워드":   e.keywords     || "",
+      "구성품":   e.bundledItems || "",
       "특이사항": e.note          || "",
     }));
     const wb = XLSX.utils.book_new();
@@ -898,26 +904,28 @@ export default function Equipment() {
             </div>
           </div>
 
-          {/* 세트 구성 */}
-          <div style={{ border:`1px dashed ${C.orange}`, borderRadius:12, padding:16, marginBottom:16, background:form.isSet?C.orangeLight:"transparent" }}>
-            <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", marginBottom: form.isSet ? 14 : 0 }}>
-              <input type="checkbox" checked={form.isSet} onChange={e => f("isSet", e.target.checked)} style={{ width:18, height:18, cursor:"pointer" }} />
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:C.orange }}>📦 세트 장비로 등록</div>
-                <div style={{ fontSize:11, color:C.muted }}>체크 시 구성품 전체가 세트로만 대여 가능</div>
-              </div>
-            </label>
-            {form.isSet && (
-              <div>
-                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록 *</div>
-                <textarea
-                  placeholder="한 줄에 하나씩 입력하세요 (예: Zoom F6 본체, 쇼크마운트, 윈드스크린)"
-                  value={form.setItems}
-                  onChange={e => f("setItems", e.target.value)}
-                  style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:120, boxSizing:"border-box" }}
-                />
-              </div>
-            )}
+          {/* 키워드 (제조사 푸시 스펙) */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>🏷️ 키워드 (스펙/특장점)</div>
+            <input
+              placeholder="쉼표로 구분 (예: 4K 120fps, S-Cinetone, 5축 손떨림보정)"
+              value={form.keywords}
+              onChange={e => f("keywords", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>예약 신청 시 학생에게 배지로 표시됩니다</div>
+          </div>
+
+          {/* 구성품 (포함 아이템) */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>📦 구성품 / 포함 아이템</div>
+            <textarea
+              placeholder="한 줄에 하나씩 또는 쉼표로 구분 (예: 리그셋, 메모리카드 64GB, 핸드그립)"
+              value={form.bundledItems}
+              onChange={e => f("bundledItems", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:80, boxSizing:"border-box" }}
+            />
+            <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>대여 시 함께 제공되는 항목들</div>
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
@@ -1069,22 +1077,26 @@ export default function Equipment() {
             </div>
           </div>
 
-          {/* 세트 구성 */}
-          <div style={{ border:`1px dashed ${C.orange}`, borderRadius:12, padding:16, marginBottom:16, background:form.isSet?C.orangeLight:"transparent" }}>
-            <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer", marginBottom: form.isSet ? 14 : 0 }}>
-              <input type="checkbox" checked={form.isSet} onChange={e => f("isSet", e.target.checked)} style={{ width:18, height:18, cursor:"pointer" }} />
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:C.orange }}>📦 세트 장비</div>
-                <div style={{ fontSize:11, color:C.muted }}>체크 시 구성품 전체가 세트로만 대여 가능</div>
-              </div>
-            </label>
-            {form.isSet && (
-              <div>
-                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>구성품 목록</div>
-                <textarea placeholder="한 줄에 하나씩 입력 (예: Zoom F6 본체, 쇼크마운트...)" value={form.setItems} onChange={e => f("setItems", e.target.value)}
-                  style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.orange}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
-              </div>
-            )}
+          {/* 키워드 (제조사 푸시 스펙) */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>🏷️ 키워드 (스펙/특장점)</div>
+            <input
+              placeholder="쉼표로 구분 (예: 4K 120fps, S-Cinetone)"
+              value={form.keywords || ""}
+              onChange={e => f("keywords", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+          </div>
+
+          {/* 구성품 */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>📦 구성품 / 포함 아이템</div>
+            <textarea
+              placeholder="쉼표 또는 줄바꿈으로 구분 (예: 리그셋, 메모리카드 64GB)"
+              value={form.bundledItems || ""}
+              onChange={e => f("bundledItems", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:80, boxSizing:"border-box" }}
+            />
           </div>
 
           {/* 가이드 모드 설정 (수정 모달) */}
