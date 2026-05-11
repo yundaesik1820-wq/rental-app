@@ -634,6 +634,22 @@ export default function Equipment() {
   const saveEdit = async () => {
     if (!form.modelName || !editItem) return;
     await updateItem("equipments", editItem.id, { ...form, name: form.modelName });
+
+    // 동일 modelName 다른 호기에도 공통 필드(설명/키워드/구성품) 자동 반영
+    const sameModel = equipments.filter(e =>
+      e.id !== editItem.id && (e.modelName || e.name) === form.modelName
+    );
+    if (sameModel.length > 0) {
+      const sharedFields = {
+        description:  form.description  || "",
+        keywords:     form.keywords     || "",
+        bundledItems: form.bundledItems || "",
+      };
+      await Promise.all(
+        sameModel.map(e => updateItem("equipments", e.id, sharedFields))
+      );
+    }
+
     setEditItem(null);
     setForm(EMPTY);
   };
@@ -984,10 +1000,19 @@ export default function Equipment() {
       )}
 
       {/* 수정 모달 */}
-      {editItem && (
+      {editItem && (() => {
+        const sameModelCount = equipments.filter(e =>
+          e.id !== editItem.id && (e.modelName || e.name) === editItem.modelName
+        ).length;
+        return (
         <Modal onClose={() => { setEditItem(null); setForm(EMPTY); }} width={520}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>✏️ 장비 수정</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:18 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:14 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
+          {sameModelCount > 0 && (
+            <div style={{ background:C.tealLight, color:C.teal, borderRadius:10, padding:"10px 14px", marginBottom:18, fontSize:12, border:`1px solid ${C.teal}30`, lineHeight:1.5 }}>
+              💡 <b>동일 모델 {sameModelCount}대에 자동 반영</b> — 장비 설명 · 키워드 · 구성품 항목은 같은 modelName의 다른 호기에도 자동으로 적용됩니다.
+            </div>
+          )}
           {/* 대분류 + 중분류 1행 */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
@@ -1201,7 +1226,8 @@ export default function Equipment() {
             <Btn onClick={saveEdit} color={C.green} full disabled={!form.modelName}>저장</Btn>
           </div>
         </Modal>
-      )}
+        );
+      })()}
 
       {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
 
