@@ -50,6 +50,7 @@ export default function EquipList() {
 
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState("촬영");
+  const [minorFilter, setMinorFilter] = useState("전체");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
@@ -72,12 +73,20 @@ export default function EquipList() {
   ];
   const allCats = sortedCats; // 전체 제거
 
+  // 선택된 대분류의 중분류 목록
+  const minorList = ["전체", ...new Set([
+    ...grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
+    ...setEquips.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
+  ].filter(Boolean))];
+
   const filteredUnits = grouped.filter(e =>
     (!filter || e.majorCategory === filter) &&
+    (minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search) || e.manufacturer?.includes(search))
   );
   const filteredSets = setEquips.filter(e =>
     (!filter || e.majorCategory === filter) &&
+    (minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
@@ -99,14 +108,26 @@ export default function EquipList() {
       </div>
 
       {/* 1행: 대분류 카테고리 (1행 스크롤) */}
-      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
+      <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
         {allCats.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setSearch(""); }}
+          <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); setSearch(""); }}
             style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
             {c}
           </button>
         ))}
       </div>
+
+      {/* 1.5행: 중분류 */}
+      {minorList.length > 1 && (
+        <div style={{ display:"flex", gap:5, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
+          {minorList.map(m => (
+            <button key={m} onClick={() => setMinorFilter(m)}
+              style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"3px 10px", fontSize:10, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+              {m}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 2행: 검색 */}
       <input placeholder="🔍 장비명, 제조사 검색" value={search} onChange={e => setSearch(e.target.value)}

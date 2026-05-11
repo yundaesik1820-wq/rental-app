@@ -523,6 +523,7 @@ export default function Equipment() {
   const [activeTab, setActiveTab]     = useState("equip");
   const [search, setSearch]           = useState("");
   const [filter, setFilter]           = useState("전체");
+  const [minorFilter, setMinorFilter] = useState("전체");
   const [showAdd, setShowAdd]         = useState(false);
   const [showImport, setShowImport]   = useState(false);
   const [form, setForm]               = useState(EMPTY);
@@ -532,8 +533,12 @@ export default function Equipment() {
   const [copyItem, setCopyItem]       = useState(null); // 복사 대상
 
   const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
+  const minorList = filter === "전체"
+    ? []
+    : ["전체", ...new Set(equipments.filter(e => e.majorCategory === filter).map(e => e.minorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
+    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search) ||
      e.manufacturer?.includes(search) || e.itemNo?.includes(search) || e.unitNo?.includes(search))
   );
@@ -1203,15 +1208,23 @@ export default function Equipment() {
       {/* 장비 탭 */}
       {activeTab === "equip" && (<>
       {/* 검색 + 필터 */}
-      <div style={{ display:"flex", gap:14, marginBottom:14, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:14, marginBottom:8, flexWrap:"wrap" }}>
         <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
           style={{ flex:1, minWidth:200, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {majorCats.map(c => (
-            <button key={c} onClick={() => setFilter(c)} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+            <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
           ))}
         </div>
       </div>
+      {/* 중분류 필터 */}
+      {minorList.length > 1 && (
+        <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
+          {minorList.map(m => (
+            <button key={m} onClick={() => setMinorFilter(m)} style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"4px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{m}</button>
+          ))}
+        </div>
+      )}
 
       {/* 모델별 그룹화 */}
       {(() => {
