@@ -713,16 +713,27 @@ export default function GuideReserve({ onComplete }) {
           {/* 스펙 정보 */}
           <div style={{ marginTop:12, display:"flex", flexDirection:"column", gap:6 }}>
             {equipDetail.manufacturer && (
-              <div style={{ fontSize:12, color:C.muted }}>🏭 제조사: <span style={{ color:C.text, fontWeight:600 }}>{equipDetail.manufacturer}</span></div>
+              <div style={{ display:"flex", fontSize:12, alignItems:"baseline" }}>
+                <span style={{ color:C.muted, width:74, flexShrink:0 }}>🏭 제조사</span>
+                <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.manufacturer}</span>
+              </div>
             )}
             {equipDetail.mount && (
-              <div style={{ fontSize:12, color:C.muted }}>🔗 마운트: <span style={{ color:C.text, fontWeight:600 }}>{equipDetail.mount}</span></div>
+              <div style={{ display:"flex", fontSize:12, alignItems:"baseline" }}>
+                <span style={{ color:C.muted, width:74, flexShrink:0 }}>🔗 마운트</span>
+                <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.mount}</span>
+              </div>
             )}
             {equipDetail.description && (
-              <div style={{ fontSize:12, color:C.muted, lineHeight:1.6 }}>📝 {equipDetail.description}</div>
+              <div style={{ fontSize:12, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                📝 {equipDetail.description}
+              </div>
             )}
             {equipDetail.available !== undefined && (
-              <div style={{ fontSize:12, color:C.muted }}>📦 재고: <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span></div>
+              <div style={{ display:"flex", fontSize:12, alignItems:"baseline" }}>
+                <span style={{ color:C.muted, width:74, flexShrink:0 }}>📦 재고</span>
+                <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span>
+              </div>
             )}
           </div>
           <div style={{ marginTop:16 }}>

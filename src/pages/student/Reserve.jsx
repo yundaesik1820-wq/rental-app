@@ -739,20 +739,32 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             })()}
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {equipDetail.manufacturer && (
-                <div style={{ fontSize:13, color:C.muted }}>🏭 제조사 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.manufacturer}</span></div>
+                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
+                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>🏭 제조사</span>
+                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.manufacturer}</span>
+                </div>
               )}
               {equipDetail.mount && (
-                <div style={{ fontSize:13, color:C.muted }}>🔗 마운트 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.mount}</span></div>
+                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
+                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>🔗 마운트</span>
+                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.mount}</span>
+                </div>
               )}
               {equipDetail.itemName && (
-                <div style={{ fontSize:13, color:C.muted }}>📌 품명 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.itemName}</span></div>
+                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
+                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>📌 품명</span>
+                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.itemName}</span>
+                </div>
               )}
               {equipDetail.description && (
-                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px" }}>
+                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
                   📝 {equipDetail.description}
                 </div>
               )}
-              <div style={{ fontSize:13, color:C.muted }}>📦 재고 <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700, marginLeft:8 }}>{equipDetail.available}대 대여 가능</span></div>
+              <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
+                <span style={{ color:C.muted, width:80, flexShrink:0 }}>📦 재고</span>
+                <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span>
+              </div>
             </div>
           </div>
         </div>
