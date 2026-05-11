@@ -119,7 +119,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("전체");
+  const [filter, setFilter]       = useState("전체"); // 대분류
+  const [minorFilter, setMinorFilter] = useState("전체"); // 중분류
 
   // 단품 장비 (세트 아닌 것)
   const unitEquips = equipments; // 세트 기능 제거 — 모든 장비를 단일로 처리
@@ -140,12 +141,22 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   ];
   const allCats = ["전체", ...sortedCats];
 
+  // 선택된 대분류에 속한 중분류 목록
+  const minorList = filter === "전체"
+    ? []
+    : ["전체", ...new Set([
+        ...grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
+        ...setEquips.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
+      ].filter(Boolean))];
+
   const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
+    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
   const filteredSets = setEquips.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
+    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
@@ -573,11 +584,20 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       )}
 
       {/* 1차: 대분류 카테고리 */}
-      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:8, flexWrap:"wrap" }}>
         {allCats.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+          <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
         ))}
       </div>
+
+      {/* 1.5차: 중분류 (대분류 선택 시에만 표시) */}
+      {minorList.length > 1 && (
+        <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
+          {minorList.map(m => (
+            <button key={m} onClick={() => setMinorFilter(m)} style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"4px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{m}</button>
+          ))}
+        </div>
+      )}
 
       {/* 2차: 검색 */}
       <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
