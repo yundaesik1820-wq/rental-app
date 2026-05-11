@@ -643,7 +643,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                     </div>
                     {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
-                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
+                      {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
                       {eqLicNum > 0 && <span style={{ background:isLocked?C.redLight:C.blueLight, color:isLocked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}대</span>
                     </div>
@@ -717,9 +717,9 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
               <div>
                 <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{equipDetail.modelName}</div>
-                {(equipDetail.subCategory || equipDetail.minorCategory) && (
+                {equipDetail.minorCategory && (
                   <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
-                    {equipDetail.subCategory || equipDetail.minorCategory}
+                    {equipDetail.minorCategory}
                   </span>
                 )}
               </div>

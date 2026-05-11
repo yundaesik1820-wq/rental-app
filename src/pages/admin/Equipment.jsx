@@ -205,7 +205,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
         <div style={{ display:"flex", gap:4, flexWrap:"wrap", alignItems:"center" }}>
           {e.majorCategory && <span style={{ fontSize:10, color:C.blue, background:C.blueLight, borderRadius:4, padding:"0px 5px" }}>{e.majorCategory}</span>}
           {e.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{e.minorCategory}</span>}
-          {e.subCategory   && <span style={{ fontSize:10, color:C.muted }}>· {e.subCategory}</span>}
+          
           {e.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {e.manufacturer}</span>}
           {e.location      && <span style={{ fontSize:10, color:C.muted }}>📍{e.location}</span>}
           {e.itemNo        && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>#{e.itemNo}</span>}
@@ -265,7 +265,7 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
           <div style={{ display:"flex", gap:4, flexWrap:"wrap", alignItems:"center" }}>
             {rep.majorCategory && <span style={{ fontSize:10, color:C.blue, background:C.blueLight, borderRadius:4, padding:"0px 5px" }}>{rep.majorCategory}</span>}
             {rep.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{rep.minorCategory}</span>}
-            {rep.subCategory   && <span style={{ fontSize:10, color:C.muted }}>· {rep.subCategory}</span>}
+            
             {rep.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {rep.manufacturer}</span>}
             {renting > 0 && <span style={{ fontSize:10, color:C.blue }}>대여중 {renting}</span>}
             {repair  > 0 && <span style={{ fontSize:10, color:C.yellow }}>수리중 {repair}</span>}

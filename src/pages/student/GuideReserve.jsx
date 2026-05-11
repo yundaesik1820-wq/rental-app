@@ -255,9 +255,9 @@ export default function GuideReserve({ onComplete }) {
     return (
       <div>
         <div style={{ marginTop:4, display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
-          {(e.subCategory || e.minorCategory) && (
+          {e.minorCategory && (
             <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
-              {e.subCategory || e.minorCategory}
+              {e.minorCategory}
             </span>
           )}
           {kws.map((kw, i) => (
@@ -693,9 +693,9 @@ export default function GuideReserve({ onComplete }) {
       {equipDetail && (
         <Modal onClose={() => setEquipDetail(null)} width={400}>
           <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{equipDetail.modelName}</div>
-          {(equipDetail.subCategory || equipDetail.minorCategory) && (
+          {equipDetail.minorCategory && (
             <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
-              {equipDetail.subCategory || equipDetail.minorCategory}
+              {equipDetail.minorCategory}
             </span>
           )}
           {/* 사진 */}
