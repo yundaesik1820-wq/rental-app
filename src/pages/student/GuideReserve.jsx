@@ -154,12 +154,26 @@ export default function GuideReserve({ onComplete }) {
     return acc;
   }, {}));
 
-  // 현재 카메라에 맞는 카드리더기 (모델별 그룹화)
-  const matchedReadersRaw = currentCam
-    ? readers.filter(r =>
-        r.forCamera === currentCam.modelName ||
-        (r.forCameras || []).includes(currentCam.modelName)
-      )
+  // 현재 카메라에 선택된 저장매체의 소분류 (타입) 목록
+  const selectedStorageTypes = currentCam
+    ? Object.entries(getSelection(currentCam.modelName).storages || {})
+        .filter(([_, q]) => q > 0)
+        .map(([modelName]) => {
+          const stg = storages.find(s => s.modelName === modelName);
+          return stg?.subCategory || "";
+        })
+        .filter(Boolean)
+    : [];
+
+  // 선택된 저장매체 타입을 읽을 수 있는 리더기 매칭
+  // 리더기의 subCategory를 "/"로 split해서 각 타입과 비교
+  const matchedReadersRaw = selectedStorageTypes.length > 0
+    ? readers.filter(r => {
+        const readerTypes = (r.subCategory || "").split("/").map(s => s.trim()).filter(Boolean);
+        return readerTypes.some(rt => selectedStorageTypes.some(st =>
+          rt === st || rt.includes(st) || st.includes(rt)
+        ));
+      })
     : [];
   const matchedReaders = Object.values(matchedReadersRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
@@ -754,7 +768,11 @@ export default function GuideReserve({ onComplete }) {
             <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
             <div>
               <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>📥 카드리더기가 필요한가요?</div>
-              <div style={{ fontSize:12, color:C.muted }}>{currentCam.modelName} 호환 리더기를 보여드려요</div>
+              <div style={{ fontSize:12, color:C.muted }}>
+                {selectedStorageTypes.length > 0
+                  ? `선택한 저장매체(${selectedStorageTypes.join(", ")}) 호환 리더기예요`
+                  : "저장매체를 선택해야 호환 리더기가 표시돼요"}
+              </div>
             </div>
           </div>
 
