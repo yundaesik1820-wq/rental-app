@@ -98,6 +98,20 @@ export default function GuideReserve({ onComplete }) {
     return acc;
   }, {}));
 
+  // 현재 카메라에 맞는 충전기 (모델별 그룹화)
+  const matchedChargersRaw = currentCam
+    ? chargers.filter(c =>
+        (c.chargerForCameras || []).includes(currentCam.modelName) ||
+        c.forCamera === currentCam.modelName
+      )
+    : [];
+  const matchedChargers = Object.values(matchedChargersRaw.reduce((acc, e) => {
+    if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
+    acc[e.modelName].available += (e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0));
+    acc[e.modelName].total     += 1;
+    return acc;
+  }, {}));
+
   const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;
   const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
 
