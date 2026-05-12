@@ -399,21 +399,56 @@ function ExcelImportModal({ onClose, onImport }) {
         <button onClick={async () => {
           const XLSX = await import("xlsx");
           // 헤더 + 예시 1행 (학생들이 어떻게 입력해야 할지 보기 좋게)
-          const example = {
-            "대분류": "촬영", "중분류": "카메라", "소분류": "", "제조사": "Sony",
-            "모델명": "Sony FX3", "호기": "1호기", "물품번호": "EQ-001",
-            "상태": "대여가능", "보관위치": "장비실 A-1", "S/N": "",
-            "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
-            "키워드": "4K 120fps, S-Cinetone, 풀프레임",
-            "구성품": "본체, 배터리 1개, 마운트 어댑터",
-            "마운트": "E-mount",
-            "호환배터리모델명": "NP-FZ100",
-            "호환카메라(배터리)": "",
-            "호환카메라(충전기)": "",
-            "호환배터리(충전기)": "",
-            "특이사항": "",
-          };
-          const ws = XLSX.utils.json_to_sheet([example]);
+          const examples = [
+            {
+              "대분류": "촬영", "중분류": "카메라", "소분류": "", "제조사": "Sony",
+              "모델명": "Sony FX3", "호기": "1호기", "물품번호": "EQ-001",
+              "상태": "대여가능", "보관위치": "장비실 A-1", "S/N": "",
+              "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
+              "키워드": "4K 120fps, S-Cinetone, 풀프레임",
+              "구성품": "본체, 마운트 어댑터",
+              "마운트": "E-mount",
+              "호환배터리모델명": "NP-FZ100",
+              "호환카메라(배터리)": "", "호환카메라(충전기)": "", "호환배터리(충전기)": "",
+              "특이사항": "",
+            },
+            {
+              "대분류": "촬영", "중분류": "배터리", "소분류": "", "제조사": "Sony",
+              "모델명": "NP-FZ100", "호기": "1호기", "물품번호": "EQ-002",
+              "상태": "대여가능", "보관위치": "장비실 B-1", "S/N": "",
+              "라이센스제한": "0단계", "장비설명": "",
+              "키워드": "", "구성품": "", "마운트": "",
+              "호환배터리모델명": "",
+              "호환카메라(배터리)": "Sony FX3, Sony A7S3",
+              "호환카메라(충전기)": "", "호환배터리(충전기)": "",
+              "특이사항": "",
+            },
+            {
+              "대분류": "촬영", "중분류": "충전기/전원", "소분류": "", "제조사": "Sony",
+              "모델명": "BC-QZ1", "호기": "1호기", "물품번호": "EQ-003",
+              "상태": "대여가능", "보관위치": "장비실 B-2", "S/N": "",
+              "라이센스제한": "0단계", "장비설명": "",
+              "키워드": "", "구성품": "", "마운트": "",
+              "호환배터리모델명": "",
+              "호환카메라(배터리)": "",
+              "호환카메라(충전기)": "",
+              "호환배터리(충전기)": "NP-FZ100",
+              "특이사항": "",
+            },
+            {
+              "대분류": "촬영", "중분류": "저장매체", "소분류": "", "제조사": "ProGrade",
+              "모델명": "CFexpress Type A 320GB", "호기": "1호기", "물품번호": "EQ-004",
+              "상태": "대여가능", "보관위치": "장비실 C-1", "S/N": "",
+              "라이센스제한": "0단계", "장비설명": "고속 CFexpress 카드",
+              "키워드": "CFexpress Type A, 320GB", "구성품": "", "마운트": "",
+              "호환배터리모델명": "",
+              "호환카메라(배터리)": "Sony FX3, Sony A7S3",
+              "호환카메라(충전기)": "", "호환배터리(충전기)": "",
+              "특이사항": "",
+            },
+          ];
+          const ws = XLSX.utils.json_to_sheet(examples);
+          const example = examples[0];
           ws["!cols"] = Object.keys(example).map(k => ({ wch: Math.max(14, k.length * 2) }));
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, "장비목록");
@@ -898,7 +933,7 @@ export default function Equipment() {
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>
             </>)}
-            {(form.equipType==="battery" || form.minorCategory==="배터리") && (
+            {(form.equipType==="battery" || form.minorCategory==="배터리" || form.equipType==="storage" || form.minorCategory==="저장매체" || form.minorCategory==="카드리더기") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>
                 {/* 선택된 카메라 태그 */}
@@ -1262,7 +1297,7 @@ export default function Equipment() {
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>
             </>)}
-            {(form.equipType==="battery" || form.minorCategory==="배터리") && (
+            {(form.equipType==="battery" || form.minorCategory==="배터리" || form.equipType==="storage" || form.minorCategory==="저장매체" || form.minorCategory==="카드리더기") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>
                 {/* 선택된 카메라 태그 */}
