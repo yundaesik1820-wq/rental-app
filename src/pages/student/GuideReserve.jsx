@@ -193,24 +193,42 @@ export default function GuideReserve({ onComplete }) {
   }, {}));
 
   const setReaderQty = (camModel, rdrModel, qty) => {
-    setCameraSelections(p => ({
-      ...p,
-      [camModel]: { ...getSelection(camModel), readers: { ...(getSelection(camModel).readers || {}), [rdrModel]: qty } }
-    }));
+    console.log("[setReaderQty] 호출됨:", { camModel, rdrModel, qty });
+    setCameraSelections(p => {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const updated = {
+        ...p,
+        [camModel]: { ...current, readers: { ...(current.readers || {}), [rdrModel]: qty } }
+      };
+      console.log("[setReaderQty] 새 selections:", updated);
+      return updated;
+    });
   };
 
   const setStorageQty = (camModel, stgModel, qty) => {
-    setCameraSelections(p => ({
-      ...p,
-      [camModel]: { ...getSelection(camModel), storages: { ...(getSelection(camModel).storages || {}), [stgModel]: qty } }
-    }));
+    console.log("[setStorageQty] 호출됨:", { camModel, stgModel, qty });
+    setCameraSelections(p => {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const updated = {
+        ...p,
+        [camModel]: { ...current, storages: { ...(current.storages || {}), [stgModel]: qty } }
+      };
+      console.log("[setStorageQty] 새 selections:", updated);
+      return updated;
+    });
   };
 
   const setChargerQty = (camModel, chgModel, qty) => {
-    setCameraSelections(p => ({
-      ...p,
-      [camModel]: { ...getSelection(camModel), chargers: { ...(getSelection(camModel).chargers || {}), [chgModel]: qty } }
-    }));
+    console.log("[setChargerQty] 호출됨:", { camModel, chgModel, qty });
+    setCameraSelections(p => {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const updated = {
+        ...p,
+        [camModel]: { ...current, chargers: { ...(current.chargers || {}), [chgModel]: qty } }
+      };
+      console.log("[setChargerQty] 새 selections:", updated);
+      return updated;
+    });
   };
 
   const setBatteryQty = (camModel, battModel, qty) => {
