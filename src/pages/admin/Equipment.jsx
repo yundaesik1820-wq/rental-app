@@ -1208,6 +1208,60 @@ export default function Equipment() {
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
+            {(form.equipType==="charger" || form.minorCategory==="충전기/전원") && (<>
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 배터리 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능, 학생에게 추천될 기준)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.chargerForBatteries||[]).map((bm, i) => (
+                    <span key={i} style={{ background:C.tealLight, color:C.teal, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      🔋 {bm}
+                      <button onClick={() => f("chargerForBatteries", (form.chargerForBatteries||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.teal, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="chargerBatInputEdit" placeholder="예: NP-FZ100, BP-U60" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("chargerForBatteries", [...(form.chargerForBatteries||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("chargerBatInputEdit");
+                    if (input?.value.trim()) { f("chargerForBatteries", [...(form.chargerForBatteries||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.muted, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능, 선택사항)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.chargerForCameras||[]).map((cam, i) => (
+                    <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      {cam}
+                      <button onClick={() => f("chargerForCameras", (form.chargerForCameras||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.navy, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="chargerCamInputEdit" placeholder="예: Sony FX3" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("chargerForCameras", [...(form.chargerForCameras||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("chargerCamInputEdit");
+                    if (input?.value.trim()) { f("chargerForCameras", [...(form.chargerForCameras||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
+            </>)}
             {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>
