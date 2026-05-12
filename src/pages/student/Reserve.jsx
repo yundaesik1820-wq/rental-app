@@ -166,6 +166,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     if (!initialItems) return {};
     const c = {};
     Object.entries(initialItems).forEach(([name, qty]) => { c[name] = qty; });
+    console.log("[Reserve] initialItems 받음:", initialItems);
+    console.log("[Reserve] cart 초기화:", c);
     return c;
   });
   const [cartSets, setCartSets] = useState({});
@@ -266,6 +268,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
 
   const cartUnitItems = grouped.filter(e => (cart[e.modelName] || 0) > 0);
   const cartSetItems  = setEquips.filter(e => cartSets[e.modelName]);
+  // 디버그: cart에 있지만 grouped에 매칭 안 되는 modelName 찾기
+  if (Object.keys(cart).length > 0 && grouped.length > 0) {
+    const missing = Object.keys(cart).filter(name => !grouped.find(e => e.modelName === name));
+    if (missing.length > 0) console.warn("[Reserve] cart에 있지만 grouped에서 못 찾는 modelName:", missing);
+  }
   const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0) + cartSetItems.length;
 
   const f = (key, val) => { setForm(p=>({...p,[key]:val})); setErrors(p=>({...p,[key]:""})); };

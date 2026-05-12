@@ -239,7 +239,7 @@ export default function GuideReserve({ onComplete }) {
       const qty = camQty[cam.modelName] || 1;
       cart[cam.modelName] = (cart[cam.modelName]||0) + qty;
       const sel = getSelection(cam.modelName);
-      // 배터리/렌즈는 선택한 수량 그대로 (카메라 대수와 무관)
+      console.log(`[GuideReserve] ${cam.modelName} selections:`, sel);
       Object.entries(sel.batteries).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.chargers || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.storages || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
@@ -247,6 +247,7 @@ export default function GuideReserve({ onComplete }) {
       Object.entries(sel.lens).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
     });
     Object.entries(extraCart).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
+    console.log("[GuideReserve] 최종 cart:", cart);
     return cart;
   };
 
