@@ -321,7 +321,7 @@ function ExcelImportModal({ onClose, onImport }) {
 
   const COL_MAP = {
     "대분류":"majorCategory","중분류":"minorCategory","소분류":"subCategory",
-    "제조사":"manufacturer","모델명":"modelName","품명":"itemName",
+    "제조사":"manufacturer","모델명":"modelName",
     "장비설명":"description","라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel","라이센스제한":"licenseLevel",
     "호기":"unitNo","물품번호":"itemNo",
     "보관위치":"location","S/N":"serialNo","상태":"status","특이사항":"note",
@@ -401,7 +401,7 @@ function ExcelImportModal({ onClose, onImport }) {
           // 헤더 + 예시 1행 (학생들이 어떻게 입력해야 할지 보기 좋게)
           const example = {
             "대분류": "촬영", "중분류": "카메라", "소분류": "", "제조사": "Sony",
-            "모델명": "FX3", "품명": "Sony FX3 카메라", "호기": "1호기", "물품번호": "EQ-001",
+            "모델명": "Sony FX3", "호기": "1호기", "물품번호": "EQ-001",
             "상태": "대여가능", "보관위치": "장비실 A-1", "S/N": "",
             "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
             "키워드": "4K 120fps, S-Cinetone, 풀프레임",
@@ -692,7 +692,6 @@ export default function Equipment() {
       "소분류":   e.subCategory   || "",
       "제조사":   e.manufacturer  || "",
       "모델명":   e.modelName     || "",
-      "품명":     e.itemName      || "",
       "호기":     e.unitNo        || "",
       "물품번호": e.itemNo        || "",
       "상태":     e.status        || "대여가능",
