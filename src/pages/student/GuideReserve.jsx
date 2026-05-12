@@ -27,6 +27,7 @@ export default function GuideReserve({ onComplete }) {
   // 현재 처리 중인 카메라 인덱스
   const [camIdx, setCamIdx]       = useState(0);
   const [chargerWanted, setChargerWanted] = useState({}); // {camModelName: true/false/undefined}
+  const [showVBP, setShowVBP] = useState({}); // {camModelName: true/false} VBP 펼침 여부
   // 전체 스텝: 0=카메라선택, 1=배터리, 2=렌즈, 3=액세서리, 4=확인
   const [step, setStep]           = useState(0);
 
@@ -458,35 +459,58 @@ export default function GuideReserve({ onComplete }) {
             </div>
           </div>
           {matchedBatteries.length === 0 && <div style={{ color:C.muted, fontSize:13, marginBottom:16, padding:"20px 0", textAlign:"center" }}>등록된 배터리가 없습니다</div>}
-          {matchedBatteries.map(e => {
-            const qty = getSelection(currentCam.modelName).batteries[e.modelName] || 0;
-            return (
-              <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
-                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                  <EquipPhoto e={e} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                    {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
-                    <div style={{ fontSize:10, color:e.available===0?C.red:C.muted }}>재고 {e.available||0}개</div>
-                    <EquipInfo e={e} />
-                  </div>
-                  {e.available === 0 ? (
-                    <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
-                  ) : qty > 0 ? (
-                    <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                      <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
-                        style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
-                      <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                      <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
-                        style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+          {(() => {
+            const isVBP = (b) => (b.subCategory || "").toUpperCase().includes("VBP") || (b.subCategory || "").includes("V-Mount") || (b.subCategory || "").includes("V마운트");
+            const dedicated = matchedBatteries.filter(b => !isVBP(b));
+            const vbpList   = matchedBatteries.filter(b => isVBP(b));
+            const vbpOpen   = showVBP[currentCam.modelName] === true;
+            const renderBatteryCard = (e) => {
+              const qty = getSelection(currentCam.modelName).batteries[e.modelName] || 0;
+              return (
+                <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                  <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                    <EquipPhoto e={e} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                      {e.itemName && <div style={{ fontSize:11, color:C.muted }}>{e.itemName}</div>}
+                      <div style={{ fontSize:10, color:e.available===0?C.red:C.muted }}>재고 {e.available||0}개</div>
+                      <EquipInfo e={e} />
                     </div>
-                  ) : (
-                    <Btn onClick={() => setBatteryQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
-                  )}
-                </div>
-              </Card>
+                    {e.available === 0 ? (
+                      <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                    ) : qty > 0 ? (
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
+                          style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                        <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                        <button onClick={() => setBatteryQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
+                          style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                      </div>
+                    ) : (
+                      <Btn onClick={() => setBatteryQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
+                    )}
+                  </div>
+                </Card>
+              );
+            };
+            return (
+              <>
+                {/* 전용 배터리 (VBP 외) */}
+                {dedicated.length > 0 && dedicated.map(renderBatteryCard)}
+
+                {/* VBP 펼치기 */}
+                {vbpList.length > 0 && (
+                  <div style={{ marginTop: dedicated.length > 0 ? 12 : 0 }}>
+                    <button onClick={() => setShowVBP(p => ({ ...p, [currentCam.modelName]: !vbpOpen }))}
+                      style={{ width:"100%", background:C.bg, border:`1px dashed ${C.border}`, borderRadius:10, padding:"10px 14px", fontSize:12, fontWeight:700, color:C.muted, cursor:"pointer", marginBottom:8, display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                      <span>🔋 V-Mount 배터리 {vbpList.length}개 {vbpOpen ? "접기 ▲" : "펼쳐보기 ▼"}</span>
+                    </button>
+                    {vbpOpen && vbpList.map(renderBatteryCard)}
+                  </div>
+                )}
+              </>
             );
-          })}
+          })()}
           {/* 충전기 선택 영역 */}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
