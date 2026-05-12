@@ -165,14 +165,24 @@ export default function GuideReserve({ onComplete }) {
         .filter(Boolean)
     : [];
 
+  // 카드 타입 정규화 (SDHC/SDXC → SD, microSDHC → microSD 등)
+  const normalizeCardType = (s) => {
+    const t = (s || "").toLowerCase().trim();
+    if (t.includes("microsd")) return "microsd";
+    if (t.includes("sd"))      return "sd";
+    if (t.includes("cfexpress")) return "cfexpress";
+    if (t.includes("sxs"))     return "sxs";
+    if (t.includes("p2"))      return "p2";
+    if (t === "cf" || (t.includes("cf") && !t.includes("cfexpress"))) return "cf";
+    return t;
+  };
+
   // 선택된 저장매체 타입을 읽을 수 있는 리더기 매칭
-  // 리더기의 subCategory를 "/"로 split해서 각 타입과 비교
   const matchedReadersRaw = selectedStorageTypes.length > 0
     ? readers.filter(r => {
-        const readerTypes = (r.subCategory || "").split("/").map(s => s.trim()).filter(Boolean);
-        return readerTypes.some(rt => selectedStorageTypes.some(st =>
-          rt === st || rt.includes(st) || st.includes(rt)
-        ));
+        const readerTypes = (r.subCategory || "").split("/").map(normalizeCardType).filter(Boolean);
+        const storageTypes = selectedStorageTypes.map(normalizeCardType);
+        return readerTypes.some(rt => storageTypes.some(st => rt === st));
       })
     : [];
   const matchedReaders = Object.values(matchedReadersRaw.reduce((acc, e) => {
