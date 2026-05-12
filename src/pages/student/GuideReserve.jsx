@@ -26,6 +26,7 @@ export default function GuideReserve({ onComplete }) {
   const [cameraSelections, setCameraSelections] = useState({});
   // 현재 처리 중인 카메라 인덱스
   const [camIdx, setCamIdx]       = useState(0);
+  const [chargerWanted, setChargerWanted] = useState({}); // {camModelName: true/false/undefined}
   // 전체 스텝: 0=카메라선택, 1=배터리, 2=렌즈, 3=액세서리, 4=확인
   const [step, setStep]           = useState(0);
 
