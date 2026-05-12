@@ -181,43 +181,49 @@ export default function GuideReserve({ onComplete }) {
   const getStepLabel = () => {
     if (step === 0 && camType === null) return "촬영 장비 종류 선택";
     if (step === 0) return "카메라 선택";
+    if (step === 2) return totalCams > 1 ? `충전기 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : "충전기";
     if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}/${totalCams} - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대)` : `배터리 - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대`;
-    if (step === 2) return totalCams > 1 ? `렌즈 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : `렌즈`;
-    if (step === 3) return EXTRA_STEPS[extraStepIdx] || "추가 장비";
-    if (step === 4) return "추가 장비 필요하세요?";
+    if (step === 3) return totalCams > 1 ? `렌즈 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : `렌즈`;
+    if (step === 4) return EXTRA_STEPS[extraStepIdx] || "추가 장비";
+    if (step === 5) return "추가 장비 필요하세요?";
     return "신청";
   };
 
   const totalSteps = 2 + totalCams * 2 + 1; // 카메라 + (배터리+렌즈)*N + 액세서리 + 확인
-  const currentStepNum = step === 0 ? 0 : step <= 2 ? camIdx * 2 + step : totalCams * 2 + step - 2;
+  const currentStepNum = step === 0 ? 0 : step <= 3 ? camIdx * 2 + step : totalCams * 2 + step - 2;
 
   const goNext = () => {
     const skipLens = camType === "camcorder";
     if (step === 1) {
-      if (skipLens) {
-        if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-        else { setExtraStepIdx(0); setStep(3); }
-      } else {
-        setStep(2);
-      }
+      setStep(2); // 배터리 → 충전기 단계로
       return;
     }
     if (step === 2) {
+      // 충전기 단계 → 캠코더면 다음 카메라 또는 추가장비, 아니면 렌즈
+      if (skipLens) {
+        if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
+        else { setExtraStepIdx(0); setStep(4); }
+      } else {
+        setStep(3);
+      }
+      return;
+    }
+    if (step === 3) {
       if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-      else { setExtraStepIdx(0); setStep(3); }
+      else { setExtraStepIdx(0); setStep(4); }
       return;
     }
     // step 3: 카테고리별 순환 (ACC → 트라이포드 → 모니터 → 음향)
-    if (step === 3) {
+    if (step === 4) {
       if (extraStepIdx < EXTRA_STEPS.length - 1) {
         setExtraStepIdx(i => i+1);
       } else {
-        setStep(4); // 추가장비 필요하세요?
+        setStep(5); // 추가장비 필요하세요?
       }
       return;
     }
     // step 4: 추가장비 필요 여부 → 신청서 작성
-    if (step === 4) {
+    if (step === 5) {
       onComplete && onComplete(buildCart());
       return;
     }
@@ -227,15 +233,16 @@ export default function GuideReserve({ onComplete }) {
     const skipLens = camType === "camcorder";
     if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); setCamQty({}); return; }
     if (step === 1 && camIdx === 0) { setStep(0); return; }
-    if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 1 : 2); return; }
+    if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 2 : 3); return; }
+    if (step === 3) { setStep(2); return; }
     if (step === 2) { setStep(1); return; }
-    if (step === 3 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
-    if (step === 3 && extraStepIdx === 0) {
+    if (step === 4 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
+    if (step === 4 && extraStepIdx === 0) {
       setCamIdx(selectedCameras.length-1);
-      setStep(skipLens ? 1 : 2);
+      setStep(skipLens ? 1 : 3);
       return;
     }
-    if (step === 4) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(3); return; }
+    if (step === 5) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(4); return; }
     setStep(s => s-1);
   };
 
@@ -480,40 +487,6 @@ export default function GuideReserve({ onComplete }) {
             );
           })}
           {/* 충전기 선택 영역 */}
-          {matchedChargers.length > 0 && (
-            <div style={{ background:C.bg, borderRadius:12, padding:14, marginTop:8, marginBottom:8, border:`1px solid ${C.border}` }}>
-              <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>🔌 충전기도 필요해요?</div>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>선택한 배터리({selectedBatteryModels.join(", ")}) 호환 충전기예요</div>
-              {matchedChargers.map(e => {
-                const qty = (getSelection(currentCam.modelName).chargers || {})[e.modelName] || 0;
-                return (
-                  <Card key={e.id} style={{ padding:"10px", marginBottom:6, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
-                    <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                      <EquipPhoto e={e} />
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                        <div style={{ fontSize:10, color:e.available===0?C.red:C.muted, marginTop:2 }}>재고 {e.available}/{e.total}</div>
-                        <EquipInfo e={e} />
-                      </div>
-                      {e.available === 0 ? (
-                        <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
-                      ) : qty > 0 ? (
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
-                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
-                          <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
-                          <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
-                            style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
-                        </div>
-                      ) : (
-                        <Btn onClick={() => setChargerQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
-                      )}
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
             <Btn onClick={goNext} color={C.navy} full>다음 →</Btn>
@@ -521,8 +494,93 @@ export default function GuideReserve({ onComplete }) {
         </div>
       )}
 
+      {/* Step 2: 충전기/전원선 필요 여부 + 선택 */}
+      {step === 2 && currentCam && (
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🔌 충전기/전원선이 필요한가요?</div>
+              <div style={{ fontSize:12, color:C.muted }}>
+                {selectedBatteryModels.length > 0
+                  ? `선택한 배터리(${selectedBatteryModels.join(", ")}) 호환 충전기를 보여드려요`
+                  : "배터리 충전이나 외부 전원이 필요하면 선택하세요"}
+              </div>
+            </div>
+          </div>
+
+          {/* 필요 여부 선택 */}
+          {chargerWanted[currentCam.modelName] === undefined && (
+            <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+              <Btn onClick={() => setChargerWanted(p => ({ ...p, [currentCam.modelName]: true }))} color={C.teal} full>
+                ✅ 네, 필요해요
+              </Btn>
+              <Btn onClick={() => {
+                setChargerWanted(p => ({ ...p, [currentCam.modelName]: false }));
+                goNext();
+              }} color={C.muted} outline full>
+                ❌ 아니요, 괜찮아요
+              </Btn>
+            </div>
+          )}
+
+          {/* 충전기 목록 */}
+          {chargerWanted[currentCam.modelName] === true && (
+            <>
+              {matchedChargers.length === 0 ? (
+                <div style={{ background:C.bg, borderRadius:10, padding:"20px 14px", textAlign:"center", marginBottom:16, border:`1px dashed ${C.border}` }}>
+                  <div style={{ fontSize:13, color:C.muted, marginBottom:4 }}>호환되는 충전기가 등록되어 있지 않아요</div>
+                  <div style={{ fontSize:11, color:C.muted }}>관리자에게 문의해주세요</div>
+                </div>
+              ) : (
+                matchedChargers.map(e => {
+                  const qty = (getSelection(currentCam.modelName).chargers || {})[e.modelName] || 0;
+                  return (
+                    <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                        <EquipPhoto e={e} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                          <div style={{ fontSize:10, color:e.available===0?C.red:C.muted, marginTop:2 }}>재고 {e.available}/{e.total}</div>
+                          <EquipInfo e={e} />
+                        </div>
+                        {e.available === 0 ? (
+                          <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                        ) : qty > 0 ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                            <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                            <button onClick={() => setChargerQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                          </div>
+                        ) : (
+                          <Btn onClick={() => setChargerQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+              <button onClick={() => setChargerWanted(p => ({ ...p, [currentCam.modelName]: undefined }))}
+                style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", marginBottom:10, marginTop:4 }}>
+                ← 다시 선택
+              </button>
+            </>
+          )}
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
+            <Btn onClick={goNext} color={C.navy} full
+              disabled={chargerWanted[currentCam.modelName] === undefined}>
+              다음 →
+            </Btn>
+          </div>
+        </div>
+      )}
+
       {/* Step 2: 렌즈 선택 */}
-      {step === 2 && currentCam && camType !== "camcorder" && (
+      {step === 3 && currentCam && camType !== "camcorder" && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/lens.png" alt="" style={{ width:64, height:64, objectFit:"contain", flexShrink:0 }} />
@@ -580,7 +638,7 @@ export default function GuideReserve({ onComplete }) {
       )}
 
       {/* Step 3: 카테고리별 추가 장비 (ACC → 트라이포드/그립 → 모니터 → 음향) */}
-      {step === 3 && (() => {
+      {step === 4 && (() => {
         const curCat = EXTRA_STEPS[extraStepIdx];
         const catEquips = extrasGrouped.filter(e =>
           e.minorCategory === curCat || e.majorCategory === curCat ||
@@ -650,7 +708,7 @@ export default function GuideReserve({ onComplete }) {
       })()}
 
       {/* Step 4: 추가 장비 필요하세요? */}
-      {step === 4 && (
+      {step === 5 && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
