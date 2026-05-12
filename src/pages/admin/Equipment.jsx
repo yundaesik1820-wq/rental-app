@@ -321,14 +321,17 @@ function ExcelImportModal({ onClose, onImport }) {
 
   const COL_MAP = {
     "대분류":"majorCategory","중분류":"minorCategory","소분류":"subCategory",
-    "제조사":"manufacturer","모델명":"modelName",
-    "장비설명":"description","라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel",
+    "제조사":"manufacturer","모델명":"modelName","품명":"itemName",
+    "장비설명":"description","라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel","라이센스제한":"licenseLevel",
     "호기":"unitNo","물품번호":"itemNo",
     "보관위치":"location","S/N":"serialNo","상태":"status","특이사항":"note",
     "마운트":"mount","마운트(E-mount/EF-mount)":"mount",
+    "키워드":"keywords",
+    "구성품":"bundledItems","구성품/포함아이템":"bundledItems",
     "호환배터리모델명":"batteryModel",
-    "호환카메라모델명(배터리)":"_forCamerasRaw",
-    "호환카메라모델명(충전기)":"_chargerCamerasRaw",
+    "호환카메라모델명(배터리)":"_forCamerasRaw","호환카메라(배터리)":"_forCamerasRaw",
+    "호환카메라모델명(충전기)":"_chargerCamerasRaw","호환카메라(충전기)":"_chargerCamerasRaw",
+    "호환배터리":"_chargerBatteriesRaw","호환배터리(충전기)":"_chargerBatteriesRaw",
   };
 
   const handleFile = async (e) => {
@@ -359,10 +362,10 @@ function ExcelImportModal({ onClose, onImport }) {
             obj.forCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
           } else if (en === "_chargerCamerasRaw") {
             obj.chargerForCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
-          } else if (h === "호환배터리" || h === "호환 배터리") {
+          } else if (en === "_chargerBatteriesRaw") {
             obj.chargerForBatteries = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
           } else if (en === "licenseLevel") {
-            obj[en] = parseInt(val) || 0;
+            obj[en] = parseInt(val.replace(/[^0-9]/g,"")) || 0; // "2단계" → 2
           } else {
             obj[en] = val;
           }
@@ -393,10 +396,32 @@ function ExcelImportModal({ onClose, onImport }) {
           <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:2 }}>📋 템플릿을 먼저 받아주세요</div>
           <div style={{ fontSize:11, color:C.muted }}>템플릿에 맞게 작성 후 업로드하면 자동 등록돼요</div>
         </div>
-        <a href="/장비_일괄등록_템플릿.xlsx" download="장비_일괄등록_템플릿.xlsx"
-          style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, color:"#fff", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, textDecoration:"none", flexShrink:0, whiteSpace:"nowrap" }}>
+        <button onClick={async () => {
+          const XLSX = await import("xlsx");
+          // 헤더 + 예시 1행 (학생들이 어떻게 입력해야 할지 보기 좋게)
+          const example = {
+            "대분류": "촬영", "중분류": "카메라", "소분류": "", "제조사": "Sony",
+            "모델명": "FX3", "품명": "Sony FX3 카메라", "호기": "1호기", "물품번호": "EQ-001",
+            "상태": "대여가능", "보관위치": "장비실 A-1", "S/N": "",
+            "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
+            "키워드": "4K 120fps, S-Cinetone, 풀프레임",
+            "구성품": "본체, 배터리 1개, 마운트 어댑터",
+            "마운트": "E-mount",
+            "호환배터리모델명": "NP-FZ100",
+            "호환카메라(배터리)": "",
+            "호환카메라(충전기)": "",
+            "호환배터리(충전기)": "",
+            "특이사항": "",
+          };
+          const ws = XLSX.utils.json_to_sheet([example]);
+          ws["!cols"] = Object.keys(example).map(k => ({ wch: Math.max(14, k.length * 2) }));
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "장비목록");
+          XLSX.writeFile(wb, "장비_일괄등록_템플릿.xlsx");
+        }}
+          style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, color:"#fff", border:"none", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap", fontFamily:"inherit" }}>
           ⬇️ 템플릿 받기
-        </a>
+        </button>
       </div>
       {rows.length === 0 && (
         <div onClick={() => inputRef.current.click()} style={{ border:`2px dashed ${C.border}`, borderRadius:12, padding:"36px 0", textAlign:"center", cursor:"pointer", background:C.bg, marginBottom:14 }}>
@@ -674,17 +699,19 @@ export default function Equipment() {
       "보관위치": e.location      || "",
       "S/N":      e.serialNo      || "",
       "라이센스제한": `${e.licenseLevel || 0}단계`,
-      "키워드":   e.keywords     || "",
-      "구성품":   e.bundledItems || "",
+      "장비설명": e.description   || "",
+      "키워드":   e.keywords      || "",
+      "구성품":   e.bundledItems  || "",
+      "마운트":   e.mount         || "",
+      "호환배터리모델명": e.batteryModel || "",
+      "호환카메라(배터리)": (e.forCameras || []).join(", "),
+      "호환카메라(충전기)": (e.chargerForCameras || []).join(", "),
+      "호환배터리(충전기)": (e.chargerForBatteries || []).join(", "),
       "특이사항": e.note          || "",
     }));
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(rows);
-    // 컬럼 너비 설정
-    ws["!cols"] = [
-      {wch:10},{wch:12},{wch:16},{wch:10},{wch:18},{wch:22},
-      {wch:8},{wch:12},{wch:10},{wch:20},{wch:16},{wch:8},{wch:30},{wch:20}
-    ];
+    ws["!cols"] = Object.keys(rows[0] || {}).map(() => ({ wch: 16 }));
     XLSX.utils.book_append_sheet(wb, ws, "장비목록");
     XLSX.writeFile(wb, `장비현황_${new Date().toISOString().slice(0,10)}.xlsx`);
   };
