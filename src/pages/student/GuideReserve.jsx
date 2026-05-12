@@ -193,60 +193,64 @@ export default function GuideReserve({ onComplete }) {
   }, {}));
 
   const setReaderQty = (camModel, rdrModel, qty) => {
-    console.log("[setReaderQty] 호출됨:", { camModel, rdrModel, qty });
     setCameraSelections(p => {
       const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
       const updated = {
         ...p,
         [camModel]: { ...current, readers: { ...(current.readers || {}), [rdrModel]: qty } }
       };
-      console.log("[setReaderQty] 새 selections:", updated);
       return updated;
     });
   };
 
   const setStorageQty = (camModel, stgModel, qty) => {
-    console.log("[setStorageQty] 호출됨:", { camModel, stgModel, qty });
     setCameraSelections(p => {
       const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
       const updated = {
         ...p,
         [camModel]: { ...current, storages: { ...(current.storages || {}), [stgModel]: qty } }
       };
-      console.log("[setStorageQty] 새 selections:", updated);
       return updated;
     });
   };
 
   const setChargerQty = (camModel, chgModel, qty) => {
-    console.log("[setChargerQty] 호출됨:", { camModel, chgModel, qty });
     setCameraSelections(p => {
       const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
       const updated = {
         ...p,
         [camModel]: { ...current, chargers: { ...(current.chargers || {}), [chgModel]: qty } }
       };
-      console.log("[setChargerQty] 새 selections:", updated);
       return updated;
     });
   };
 
   const setBatteryQty = (camModel, battModel, qty) => {
-    setCameraSelections(p => ({
-      ...p,
-      [camModel]: { ...getSelection(camModel), batteries: { ...getSelection(camModel).batteries, [battModel]: qty } }
-    }));
+    setCameraSelections(p => {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      return {
+        ...p,
+        [camModel]: { ...current, batteries: { ...(current.batteries || {}), [battModel]: qty } }
+      };
+    });
   };
   const setLensQty = (camModel, lensModel, qty, adapterModel) => {
     setCameraSelections(p => {
-      const sel = getSelection(camModel);
-      const newLens = { ...sel.lens, [lensModel]: qty };
-      const newAdapters = { ...sel.batteries }; // 어댑터는 배터리 slot에 같이 저장
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const newLens = { ...(current.lens || {}), [lensModel]: qty };
+      const newAdapters = { ...(current.batteries || {}) }; // 어댑터는 배터리 slot에 같이 저장 (METABONES 자동추가용)
       if (adapterModel) {
         if (qty > 0) newAdapters[adapterModel] = 1;
         else delete newAdapters[adapterModel];
       }
-      return { ...p, [camModel]: { batteries: newAdapters, lens: newLens } };
+      return {
+        ...p,
+        [camModel]: {
+          ...current,        // chargers, storages, readers 보존
+          batteries: newAdapters,
+          lens: newLens
+        }
+      };
     });
   };
 
@@ -257,7 +261,6 @@ export default function GuideReserve({ onComplete }) {
       const qty = camQty[cam.modelName] || 1;
       cart[cam.modelName] = (cart[cam.modelName]||0) + qty;
       const sel = getSelection(cam.modelName);
-      console.log(`[GuideReserve] ${cam.modelName} selections:`, sel);
       Object.entries(sel.batteries).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.chargers || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.storages || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
@@ -265,7 +268,6 @@ export default function GuideReserve({ onComplete }) {
       Object.entries(sel.lens).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
     });
     Object.entries(extraCart).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
-    console.log("[GuideReserve] 최종 cart:", cart);
     return cart;
   };
 
