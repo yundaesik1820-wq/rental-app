@@ -359,6 +359,8 @@ function ExcelImportModal({ onClose, onImport }) {
             obj.forCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
           } else if (en === "_chargerCamerasRaw") {
             obj.chargerForCameras = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
+          } else if (h === "호환배터리" || h === "호환 배터리") {
+            obj.chargerForBatteries = val ? val.split(",").map(s=>s.trim()).filter(Boolean) : [];
           } else if (en === "licenseLevel") {
             obj[en] = parseInt(val) || 0;
           } else {
@@ -503,7 +505,8 @@ const EMPTY = {
   batteryModel: "",     // 카메라용: 호환 배터리 모델명
   forCamera: "",        // 배터리용: 어떤 카메라에 쓰이는지 (구버전 호환)
   forCameras: [],       // 배터리용: 호환 카메라 목록 (다대다)
-  chargerForCameras: [], // 충전기/전원용: 호환 카메라 목록
+  chargerForCameras: [], // 충전기/전원용: 호환 카메라 목록 (구버전, 호환용)
+  chargerForBatteries: [], // 충전기/전원용: 호환 배터리 목록 (신버전)
   adapterFrom: "",      // 어댑터용: 렌즈 마운트
   adapterTo: "",        // 어댑터용: 카메라 마운트
 };
@@ -592,6 +595,7 @@ export default function Equipment() {
       forCamera:          e.forCamera          || "",
       forCameras:         e.forCameras         || [],
       chargerForCameras:  e.chargerForCameras  || [],
+      chargerForBatteries: e.chargerForBatteries || [],
       adapterFrom:        e.adapterFrom        || "",
       adapterTo:          e.adapterTo          || "",
       _minorCustom:       false,
@@ -814,9 +818,35 @@ export default function Equipment() {
               <Inp label="호환 배터리 모델명" placeholder="예: NP-FZ100"
                 value={form.batteryModel||""} onChange={e => f("batteryModel", e.target.value)} />
             )}
-            {(form.equipType==="charger" || form.minorCategory==="충전기/전원") && (
+            {(form.equipType==="charger" || form.minorCategory==="충전기/전원") && (<>
               <div style={{ marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능)</span></div>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 배터리 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능, 학생에게 추천될 기준)</span></div>
+                <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                  {(form.chargerForBatteries||[]).map((bm, i) => (
+                    <span key={i} style={{ background:C.tealLight, color:C.teal, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
+                      🔋 {bm}
+                      <button onClick={() => f("chargerForBatteries", (form.chargerForBatteries||[]).filter((_,j)=>j!==i))}
+                        style={{ background:"none", border:"none", color:C.teal, cursor:"pointer", fontSize:14, lineHeight:1, padding:0 }}>×</button>
+                    </span>
+                  ))}
+                </div>
+                <div style={{ display:"flex", gap:6 }}>
+                  <input id="chargerBatInput" placeholder="예: NP-FZ100, BP-U60" onKeyDown={e => {
+                    if (e.key === "Enter" && e.target.value.trim()) {
+                      f("chargerForBatteries", [...(form.chargerForBatteries||[]), e.target.value.trim()]);
+                      e.target.value = "";
+                    }
+                  }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                  <button onClick={() => {
+                    const input = document.getElementById("chargerBatInput");
+                    if (input?.value.trim()) { f("chargerForBatteries", [...(form.chargerForBatteries||[]), input.value.trim()]); input.value = ""; }
+                  }} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                </div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
+              </div>
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.muted, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 가능, 선택사항)</span></div>
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
                   {(form.chargerForCameras||[]).map((cam, i) => (
                     <span key={i} style={{ background:C.blueLight, color:C.navy, borderRadius:20, padding:"3px 10px", fontSize:12, fontWeight:600, display:"flex", alignItems:"center", gap:4 }}>
@@ -841,7 +871,7 @@ export default function Equipment() {
                 </div>
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>
-            )}
+            </>)}
             {(form.equipType==="battery" || form.minorCategory==="배터리") && (
               <div style={{ marginBottom:12 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>호환 카메라 모델명 <span style={{ fontSize:10, color:C.muted }}>(여러 개 선택 가능)</span></div>

@@ -98,12 +98,34 @@ export default function GuideReserve({ onComplete }) {
     return acc;
   }, {}));
 
-  // 현재 카메라에 맞는 충전기 (모델별 그룹화)
-  const matchedChargersRaw = currentCam
-    ? chargers.filter(c =>
-        (c.chargerForCameras || []).includes(currentCam.modelName) ||
-        c.forCamera === currentCam.modelName
-      )
+
+  const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;
+  const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
+
+  // 선택 헬퍼
+  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{}, chargers:{} };
+
+  // 현재 카메라용 선택된 배터리 모델 목록
+  const selectedBatteryModels = currentCam
+    ? Object.entries(getSelection(currentCam.modelName).batteries || {})
+        .filter(([_, q]) => q > 0)
+        .map(([m]) => m)
+    : [];
+
+  // 선택된 배터리에 호환되는 충전기 (모델별 그룹화)
+  const matchedChargersRaw = selectedBatteryModels.length > 0
+    ? chargers.filter(c => {
+        const forBats = c.chargerForBatteries || [];
+        // 신규: chargerForBatteries 우선
+        if (forBats.length > 0) {
+          return selectedBatteryModels.some(bm => forBats.includes(bm));
+        }
+        // 폴백: 구버전 chargerForCameras (호환성 유지)
+        return currentCam && (
+          (c.chargerForCameras || []).includes(currentCam.modelName) ||
+          c.forCamera === currentCam.modelName
+        );
+      })
     : [];
   const matchedChargers = Object.values(matchedChargersRaw.reduce((acc, e) => {
     if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
@@ -111,12 +133,6 @@ export default function GuideReserve({ onComplete }) {
     acc[e.modelName].total     += 1;
     return acc;
   }, {}));
-
-  const needsAdapter = (lens) => currentCam && lens.mount && lens.mount !== currentCam.mount;
-  const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
-
-  // 선택 헬퍼
-  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{}, chargers:{} };
 
   const setChargerQty = (camModel, chgModel, qty) => {
     setCameraSelections(p => ({
@@ -467,7 +483,7 @@ export default function GuideReserve({ onComplete }) {
           {matchedChargers.length > 0 && (
             <div style={{ background:C.bg, borderRadius:12, padding:14, marginTop:8, marginBottom:8, border:`1px solid ${C.border}` }}>
               <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:4 }}>🔌 충전기도 필요해요?</div>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>{currentCam.modelName} 호환 충전기예요</div>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:10 }}>선택한 배터리({selectedBatteryModels.join(", ")}) 호환 충전기예요</div>
               {matchedChargers.map(e => {
                 const qty = (getSelection(currentCam.modelName).chargers || {})[e.modelName] || 0;
                 return (
