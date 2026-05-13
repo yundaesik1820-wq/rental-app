@@ -699,15 +699,16 @@ export default function Equipment() {
     if (!form.modelName || !editItem) return;
     await updateItem("equipments", editItem.id, { ...form, name: form.modelName });
 
-    // 동일 modelName 다른 호기에도 공통 필드(설명/키워드/구성품) 자동 반영
+    // 동일 modelName 다른 호기에도 공통 필드(설명/키워드/구성품/송출이미지) 자동 반영
     const sameModel = equipments.filter(e =>
       e.id !== editItem.id && (e.modelName || e.name) === form.modelName
     );
     if (sameModel.length > 0) {
       const sharedFields = {
-        description:  form.description  || "",
-        keywords:     form.keywords     || "",
-        bundledItems: form.bundledItems || "",
+        description:     form.description     || "",
+        keywords:        form.keywords        || "",
+        bundledItems:    form.bundledItems    || "",
+        displayPhotoUrl: form.displayPhotoUrl || "",
       };
       await Promise.all(
         sameModel.map(e => updateItem("equipments", e.id, sharedFields))
