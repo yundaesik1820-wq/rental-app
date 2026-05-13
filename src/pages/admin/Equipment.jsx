@@ -1102,7 +1102,7 @@ export default function Equipment() {
           <div style={{ fontSize:13, color:C.muted, marginBottom:14 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
           {sameModelCount > 0 && (
             <div style={{ background:C.tealLight, color:C.teal, borderRadius:10, padding:"10px 14px", marginBottom:18, fontSize:12, border:`1px solid ${C.teal}30`, lineHeight:1.5 }}>
-              💡 <b>동일 모델 {sameModelCount}대에 자동 반영</b> — 장비 설명 · 키워드 · 구성품 항목은 같은 modelName의 다른 호기에도 자동으로 적용됩니다.
+              💡 <b>동일 모델 {sameModelCount}대에 자동 반영</b> — 장비 설명 · 키워드 · 구성품 · 송출 이미지 항목은 같은 modelName의 다른 호기에도 자동으로 적용됩니다.
             </div>
           )}
           {/* 대분류 + 중분류 1행 */}
