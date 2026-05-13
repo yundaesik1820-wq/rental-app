@@ -28,7 +28,8 @@ export default function GuideReserve({ onComplete }) {
   const [camIdx, setCamIdx]       = useState(0);
   const [chargerWanted, setChargerWanted] = useState({}); // {camModelName: true/false/undefined}
   const [storageWanted, setStorageWanted] = useState({});
-  const [readerWanted, setReaderWanted] = useState({}); // {camModelName: true/false/undefined}
+  const [readerWanted, setReaderWanted] = useState({});
+  const [tripodWanted, setTripodWanted] = useState({}); // {camModelName: true/false/undefined}
   const [showVBP, setShowVBP] = useState({}); // {camModelName: true/false} VBP 펼침 여부
   // 전체 스텝: 0=카메라선택, 1=배터리, 2=렌즈, 3=액세서리, 4=확인
   const [step, setStep]           = useState(0);
@@ -65,6 +66,7 @@ export default function GuideReserve({ onComplete }) {
   const chargers  = equips.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원");
   const storages  = equips.filter(e => e.equipType === "storage" || e.minorCategory === "저장매체");
   const readers   = equips.filter(e => e.minorCategory === "카드리더기");
+  const tripods   = equips.filter(e => e.majorCategory === "트라이포드/그립");
   const lensesRaw = equips.filter(e => (e.equipType === "lens" || ["단렌즈","줌렌즈","시네렌즈","렌즈"].includes(e.minorCategory)) && !e.isSet);
   // 렌즈 모델별 그룹화 (대표 장비 + 재고 합산)
   const lenses = Object.values(lensesRaw.reduce((acc, e) => {
@@ -109,7 +111,7 @@ export default function GuideReserve({ onComplete }) {
   const getAdapter   = (lens) => adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === currentCam?.mount);
 
   // 선택 헬퍼
-  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+  const getSelection = (camModel) => cameraSelections[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
 
   // 현재 카메라용 선택된 배터리 모델 목록
   const selectedBatteryModels = currentCam
@@ -192,20 +194,42 @@ export default function GuideReserve({ onComplete }) {
     return acc;
   }, {}));
 
+  // 삼각대/그립 - forCameras 없으면 모든 카메라용 (공용), 있으면 매칭만
+  const matchedTripodsRaw = tripods.filter(t => {
+    const forCams = t.forCameras || [];
+    if (forCams.length === 0) return true; // 공용 삼각대 (대부분)
+    return currentCam && (forCams.includes(currentCam.modelName) || t.forCamera === currentCam.modelName);
+  });
+  const matchedTripods = Object.values(matchedTripodsRaw.reduce((acc, e) => {
+    if (!acc[e.modelName]) acc[e.modelName] = { ...e, available: 0, total: 0 };
+    acc[e.modelName].available += (e.available || ((e.status || "대여가능") === "대여가능" ? 1 : 0));
+    acc[e.modelName].total     += 1;
+    return acc;
+  }, {}));
+
   const setReaderQty = (camModel, rdrModel, qty) => {
     setCameraSelections(p => {
-      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
-      const updated = {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
+      return {
         ...p,
         [camModel]: { ...current, readers: { ...(current.readers || {}), [rdrModel]: qty } }
       };
-      return updated;
+    });
+  };
+
+  const setTripodQty = (camModel, tpdModel, qty) => {
+    setCameraSelections(p => {
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
+      return {
+        ...p,
+        [camModel]: { ...current, tripods: { ...(current.tripods || {}), [tpdModel]: qty } }
+      };
     });
   };
 
   const setStorageQty = (camModel, stgModel, qty) => {
     setCameraSelections(p => {
-      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
       const updated = {
         ...p,
         [camModel]: { ...current, storages: { ...(current.storages || {}), [stgModel]: qty } }
@@ -216,7 +240,7 @@ export default function GuideReserve({ onComplete }) {
 
   const setChargerQty = (camModel, chgModel, qty) => {
     setCameraSelections(p => {
-      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
       const updated = {
         ...p,
         [camModel]: { ...current, chargers: { ...(current.chargers || {}), [chgModel]: qty } }
@@ -227,7 +251,7 @@ export default function GuideReserve({ onComplete }) {
 
   const setBatteryQty = (camModel, battModel, qty) => {
     setCameraSelections(p => {
-      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
       return {
         ...p,
         [camModel]: { ...current, batteries: { ...(current.batteries || {}), [battModel]: qty } }
@@ -236,7 +260,7 @@ export default function GuideReserve({ onComplete }) {
   };
   const setLensQty = (camModel, lensModel, qty, adapterModel) => {
     setCameraSelections(p => {
-      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{} };
+      const current = p[camModel] || { batteries:{}, lens:{}, chargers:{}, storages:{}, readers:{}, tripods:{} };
       const newLens = { ...(current.lens || {}), [lensModel]: qty };
       const newAdapters = { ...(current.batteries || {}) }; // 어댑터는 배터리 slot에 같이 저장 (METABONES 자동추가용)
       if (adapterModel) {
@@ -265,6 +289,7 @@ export default function GuideReserve({ onComplete }) {
       Object.entries(sel.chargers || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.storages || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.readers  || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
+      Object.entries(sel.tripods  || {}).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
       Object.entries(sel.lens).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
     });
     Object.entries(extraCart).forEach(([m,q]) => { if(q>0) cart[m] = (cart[m]||0)+q; });
@@ -280,9 +305,10 @@ export default function GuideReserve({ onComplete }) {
     if (step === 3) return totalCams > 1 ? `저장매체 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : "저장매체";
     if (step === 2) return totalCams > 1 ? `충전기 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : "충전기";
     if (step === 1) return totalCams > 1 ? `배터리 (${camIdx+1}/${totalCams} - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대)` : `배터리 - ${currentCam?.modelName} ${camQty[currentCam?.modelName]||1}대`;
+    if (step === 6) return totalCams > 1 ? `삼각대 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : "삼각대/그립";
     if (step === 5) return totalCams > 1 ? `렌즈 (${camIdx+1}/${totalCams} - ${currentCam?.modelName})` : `렌즈`;
-    if (step === 6) return EXTRA_STEPS[extraStepIdx] || "추가 장비";
-    if (step === 7) return "추가 장비 필요하세요?";
+    if (step === 7) return EXTRA_STEPS[extraStepIdx] || "추가 장비";
+    if (step === 8) return "추가 장비 필요하세요?";
     return "신청";
   };
 
@@ -308,29 +334,34 @@ export default function GuideReserve({ onComplete }) {
     if (step === 4) {
       // 카드리더기 → 캠코더면 다음 카메라 또는 추가장비, 아니면 렌즈
       if (skipLens) {
-        if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-        else { setExtraStepIdx(0); setStep(6); }
+        setStep(6); // 캠코더도 삼각대는 거침
       } else {
         setStep(5);
       }
       return;
     }
     if (step === 5) {
+      // 렌즈 → 삼각대 단계로
+      setStep(6);
+      return;
+    }
+    if (step === 6) {
+      // 삼각대 → 다음 카메라 또는 추가장비
       if (camIdx < selectedCameras.length - 1) { setCamIdx(i => i+1); setStep(1); }
-      else { setExtraStepIdx(0); setStep(6); }
+      else { setExtraStepIdx(0); setStep(7); }
       return;
     }
     // step 3: 카테고리별 순환 (ACC → 트라이포드 → 모니터 → 음향)
-    if (step === 6) {
+    if (step === 7) {
       if (extraStepIdx < EXTRA_STEPS.length - 1) {
         setExtraStepIdx(i => i+1);
       } else {
-        setStep(7); // 추가장비 필요하세요?
+        setStep(8); // 추가장비 필요하세요?
       }
       return;
     }
     // step 4: 추가장비 필요 여부 → 신청서 작성
-    if (step === 7) {
+    if (step === 8) {
       onComplete && onComplete(buildCart());
       return;
     }
@@ -341,17 +372,18 @@ export default function GuideReserve({ onComplete }) {
     if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); setCamQty({}); return; }
     if (step === 1 && camIdx === 0) { setStep(0); return; }
     if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 4 : 5); return; }
+    if (step === 6) { setStep(skipLens ? 4 : 5); return; }
     if (step === 5) { setStep(4); return; }
     if (step === 4) { setStep(3); return; }
     if (step === 3) { setStep(2); return; }
     if (step === 2) { setStep(1); return; }
-    if (step === 6 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
-    if (step === 6 && extraStepIdx === 0) {
+    if (step === 7 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
+    if (step === 7 && extraStepIdx === 0) {
       setCamIdx(selectedCameras.length-1);
       setStep(skipLens ? 1 : 5);
       return;
     }
-    if (step === 7) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(6); return; }
+    if (step === 8) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(7); return; }
     setStep(s => s-1);
   };
 
@@ -935,8 +967,89 @@ export default function GuideReserve({ onComplete }) {
         </div>
       )}
 
-      {/* Step 3: 카테고리별 추가 장비 (ACC → 트라이포드/그립 → 모니터 → 음향) */}
-      {step === 6 && (() => {
+      {/* Step 6: 삼각대/그립 필요 여부 + 선택 */}
+      {step === 6 && currentCam && (
+        <div>
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
+            <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
+            <div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:4 }}>🦿 삼각대/그립이 필요한가요?</div>
+              <div style={{ fontSize:12, color:C.muted }}>비디오삼각대, 짐벌, 슬라이더 등 안정화 장비예요</div>
+            </div>
+          </div>
+
+          {/* 필요 여부 선택 */}
+          {tripodWanted[currentCam.modelName] === undefined && (
+            <div style={{ display:"flex", gap:10, marginBottom:16 }}>
+              <Btn onClick={() => setTripodWanted(p => ({ ...p, [currentCam.modelName]: true }))} color={C.teal} full>
+                ✅ 네, 필요해요
+              </Btn>
+              <Btn onClick={() => {
+                setTripodWanted(p => ({ ...p, [currentCam.modelName]: false }));
+                goNext();
+              }} color={C.muted} outline full>
+                ❌ 아니요, 괜찮아요
+              </Btn>
+            </div>
+          )}
+
+          {/* 삼각대 목록 */}
+          {tripodWanted[currentCam.modelName] === true && (
+            <>
+              {matchedTripods.length === 0 ? (
+                <div style={{ background:C.bg, borderRadius:10, padding:"20px 14px", textAlign:"center", marginBottom:16, border:`1px dashed ${C.border}` }}>
+                  <div style={{ fontSize:13, color:C.muted, marginBottom:4 }}>등록된 삼각대/그립이 없어요</div>
+                  <div style={{ fontSize:11, color:C.muted }}>관리자에게 문의해주세요</div>
+                </div>
+              ) : (
+                matchedTripods.map(e => {
+                  const qty = (getSelection(currentCam.modelName).tripods || {})[e.modelName] || 0;
+                  return (
+                    <Card key={e.id} style={{ padding:"12px", marginBottom:8, border:`1.5px solid ${qty>0?C.teal:C.border}` }}>
+                      <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                        <EquipPhoto e={e} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                          <div style={{ fontSize:10, color:e.available===0?C.red:C.muted, marginTop:2 }}>재고 {e.available}/{e.total}</div>
+                          <EquipInfo e={e} />
+                        </div>
+                        {e.available === 0 ? (
+                          <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                        ) : qty > 0 ? (
+                          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                            <button onClick={() => setTripodQty(currentCam.modelName, e.modelName, Math.max(0, qty-1))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16 }}>−</button>
+                            <span style={{ fontSize:16, fontWeight:700, color:C.teal, minWidth:20, textAlign:"center" }}>{qty}</span>
+                            <button onClick={() => setTripodQty(currentCam.modelName, e.modelName, Math.min(e.available||1, qty+1))}
+                              style={{ width:28, height:28, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, color:C.teal }}>+</button>
+                          </div>
+                        ) : (
+                          <Btn onClick={() => setTripodQty(currentCam.modelName, e.modelName, 1)} color={C.navy} small>+ 선택</Btn>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })
+              )}
+              <button onClick={() => setTripodWanted(p => ({ ...p, [currentCam.modelName]: undefined }))}
+                style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", marginBottom:10, marginTop:4 }}>
+                ← 다시 선택
+              </button>
+            </>
+          )}
+
+          <div style={{ display:"flex", gap:10 }}>
+            <Btn onClick={goPrev} color={C.muted} outline full>← 이전</Btn>
+            <Btn onClick={goNext} color={C.navy} full
+              disabled={tripodWanted[currentCam.modelName] === undefined}>
+              {camIdx < selectedCameras.length - 1 ? `다음 카메라 →` : "다음 →"}
+            </Btn>
+          </div>
+        </div>
+      )}
+
+      {/* Step 7: 카테고리별 추가 장비 (ACC → 트라이포드/그립 → 모니터 → 음향) */}
+      {step === 7 && (() => {
         const curCat = EXTRA_STEPS[extraStepIdx];
         const catEquips = extrasGrouped.filter(e =>
           e.minorCategory === curCat || e.majorCategory === curCat ||
@@ -1006,7 +1119,7 @@ export default function GuideReserve({ onComplete }) {
       })()}
 
       {/* Step 4: 추가 장비 필요하세요? */}
-      {step === 7 && (
+      {step === 8 && (
         <div>
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/shrug.png" alt="" style={{ width:80, height:80, objectFit:"contain", flexShrink:0 }} />
