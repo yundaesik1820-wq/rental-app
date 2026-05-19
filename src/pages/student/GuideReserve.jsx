@@ -312,8 +312,14 @@ export default function GuideReserve({ onComplete }) {
     return "신청";
   };
 
-  const totalSteps = 2 + totalCams * 2 + 1; // 카메라 + (배터리+렌즈)*N + 액세서리 + 확인
-  const currentStepNum = step === 0 ? 0 : step <= 3 ? camIdx * 2 + step : totalCams * 2 + step - 2;
+  // 진행바 계산: 카메라선택(1) + 카메라당 6단계(배터리/충전기/저장매체/리더기/렌즈/삼각대) + 추가장비(1) + 확인(1)
+  const PER_CAM_STEPS = 6;
+  const totalSteps = 1 + totalCams * PER_CAM_STEPS + 2;
+  const currentStepNum =
+    step === 0 ? 0
+    : step >= 1 && step <= 6 ? 1 + camIdx * PER_CAM_STEPS + (step - 1)
+    : step === 7 ? 1 + totalCams * PER_CAM_STEPS
+    : 1 + totalCams * PER_CAM_STEPS + 1;
 
   const goNext = () => {
     const skipLens = camType === "camcorder";
@@ -371,7 +377,7 @@ export default function GuideReserve({ onComplete }) {
     const skipLens = camType === "camcorder";
     if (step === 0 && camType !== null) { setCamType(null); setSelectedCameras([]); setCameraSelections({}); setCamQty({}); return; }
     if (step === 1 && camIdx === 0) { setStep(0); return; }
-    if (step === 1) { setCamIdx(i => i-1); setStep(skipLens ? 4 : 5); return; }
+    if (step === 1) { setCamIdx(i => i-1); setStep(6); return; }  // 이전 카메라의 마지막 단계(삼각대)로
     if (step === 6) { setStep(skipLens ? 4 : 5); return; }
     if (step === 5) { setStep(4); return; }
     if (step === 4) { setStep(3); return; }
@@ -380,7 +386,7 @@ export default function GuideReserve({ onComplete }) {
     if (step === 7 && extraStepIdx > 0) { setExtraStepIdx(i => i-1); return; }
     if (step === 7 && extraStepIdx === 0) {
       setCamIdx(selectedCameras.length-1);
-      setStep(skipLens ? 1 : 5);
+      setStep(6);  // 마지막 카메라의 삼각대 단계로
       return;
     }
     if (step === 8) { setExtraStepIdx(EXTRA_STEPS.length-1); setStep(7); return; }

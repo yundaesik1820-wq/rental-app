@@ -30,39 +30,6 @@ for (let h = 0; h < 24; h++) {
 }
 
 // 세트 그룹화 (modelName 기준)
-function groupSets(equipments) {
-  const map = {};
-  equipments.filter(e => e.isSet).forEach(e => {
-    const key = e.modelName || "";
-    if (!key) return;
-    if (!map[key]) {
-      map[key] = {
-        modelName:     key,
-        itemName:      e.itemName      || "",
-        majorCategory: e.majorCategory || "",
-        minorCategory: e.minorCategory || "",
-        manufacturer:  e.manufacturer  || "",
-        setItems:      e.setItems      || "",
-        photoUrls:       [],
-        displayPhotoUrl: e.displayPhotoUrl || "",
-        units: [], total: 0, available: 0,
-      };
-    }
-    map[key].units.push(e);
-    map[key].total++;
-    if ((e.status || "대여가능") === "대여가능") map[key].available++;
-    if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
-    // itemNo가 01인 장비 사진 우선 사용
-    if (e.photoUrls?.length > 0) {
-      const isFirst = (e.itemNo || "").endsWith("01") || (e.itemNo || "").endsWith("1");
-      if (isFirst || map[key].photoUrls.length === 0) {
-        map[key].photoUrls = e.photoUrls;
-      }
-    }
-  });
-  return Object.values(map);
-}
-
 // Firebase Storage 파일 첨부 컴포넌트
 function FileAttachSection({ form, f }) {
   const [uploading, setUploading] = useState(false);
@@ -113,7 +80,7 @@ function FileAttachSection({ form, f }) {
   );
 }
 
-export default function Reserve({ initialItems = null, initialSets = null }) {
+export default function Reserve({ initialItems = null }) {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
@@ -127,14 +94,12 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   const grouped    = groupEquipments(unitEquips);
 
   // 세트 장비
-  const setEquips  = groupSets(equipments);
 
   // 카테고리 - 대분류 커스텀 순서
   const CAT_ORDER = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
-  const rawCats = [...new Set([
-    ...grouped.map(e => e.majorCategory),
-    ...setEquips.map(e => e.majorCategory),
-  ].filter(Boolean))];
+  const rawCats = [...new Set(
+    grouped.map(e => e.majorCategory).filter(Boolean)
+  )];
   const sortedCats = [
     ...CAT_ORDER.filter(c => rawCats.includes(c)),
     ...rawCats.filter(c => !CAT_ORDER.includes(c)),
@@ -144,17 +109,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
   // 선택된 대분류에 속한 중분류 목록
   const minorList = filter === "전체"
     ? []
-    : ["전체", ...new Set([
-        ...grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
-        ...setEquips.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
-      ].filter(Boolean))];
+    : ["전체", ...new Set(
+        grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory).filter(Boolean)
+      )];
 
   const filteredUnits = grouped.filter(e =>
-    (filter === "전체" || e.majorCategory === filter) &&
-    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
-    (e.modelName?.includes(search) || e.itemName?.includes(search))
-  );
-  const filteredSets = setEquips.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
     (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
@@ -168,7 +127,6 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     Object.entries(initialItems).forEach(([name, qty]) => { c[name] = qty; });
     return c;
   });
-  const [cartSets, setCartSets] = useState({});
   const [expandedSet, setExpandedSet] = useState(null);
   const [photoIdx, setPhotoIdx]       = useState({});
   const getIdx = (key) => photoIdx[key] || 0;
@@ -255,22 +213,9 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     const c = Math.max(0, Math.min(qty, max));
     setCart(p => ({ ...p, [modelName]: c }));
   };
-  const toggleSet = (modelName) => {
-    const isProf   = profile?.role === "professor";
-    const myLicNum = licenseToNum(profile?.license);
-    const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === modelName);
-    const eqLic    = rawEquip?.licenseLevel || 0;
-    if (!isProf && myLicNum < eqLic) return; // 라이센스 부족 시 차단
-    setCartSets(p => ({ ...p, [modelName]: !p[modelName] }));
-  };
 
   const cartUnitItems = grouped.filter(e => (cart[e.modelName] || 0) > 0);
-  const cartSetItems  = setEquips.filter(e => cartSets[e.modelName]);
-  // 디버그: cart에 있지만 grouped에 매칭 안 되는 modelName 찾기
-  if (Object.keys(cart).length > 0 && grouped.length > 0) {
-    const missing = Object.keys(cart).filter(name => !grouped.find(e => e.modelName === name));
-  }
-  const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0) + cartSetItems.length;
+  const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0);
 
   const f = (key, val) => { setForm(p=>({...p,[key]:val})); setErrors(p=>({...p,[key]:""})); };
 
@@ -373,12 +318,6 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
         const eqLic = raw?.licenseLevel || 0;
         if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
       });
-      // 세트 라이센스 체크
-      cartSetItems.forEach(item => {
-        const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
-        const eqLic = raw?.licenseLevel || 0;
-        if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
-      });
       if (lockedNames.length > 0) {
         errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
@@ -390,9 +329,9 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       const myE   = toStr(form.endDate,   form.endTime);
 
 
-      const calcAvail = (modelName, isSet) => {
+      const calcAvail = (modelName) => {
         const units      = equipments.filter(e =>
-          (e.modelName || e.name) === modelName && (isSet ? !!e.isSet : !e.isSet)
+          (e.modelName || e.name) === modelName
         );
         const totalUnits = units.length;
         const usedQty = allRequests
@@ -409,16 +348,10 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       };
 
       cartUnitItems.forEach(item => {
-        const avail  = calcAvail(item.modelName, false);
+        const avail  = calcAvail(item.modelName);
         const reqQty = cart[item.modelName] || 0;
         if (reqQty > avail) {
           errs.cart = `${item.modelName}: 해당 기간 대여 가능 수량은 ${avail}대입니다 (신청 ${reqQty}대)`;
-        }
-      });
-      cartSetItems.forEach(item => {
-        const avail = calcAvail(item.modelName, true);
-        if (avail <= 0) {
-          errs.cart = `${item.modelName} 세트: 해당 기간 대여 가능한 세트가 없습니다`;
         }
       });
     }
@@ -471,19 +404,11 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     }
     setSubmitting(true);
     try {
-      const items = [
-        ...cartUnitItems.map(e => ({
-          modelName: e.modelName, equipName: e.modelName,
-          itemName: e.itemName, category: e.majorCategory,
-          quantity: cart[e.modelName], isSet: false,
-        })),
-        ...cartSetItems.map(e => ({
-          modelName: e.modelName, equipName: e.modelName,
-          itemName: e.itemName, category: e.majorCategory,
-          quantity: 1, isSet: true,
-          setItems: e.setItems,
-        })),
-      ];
+      const items = cartUnitItems.map(e => ({
+        modelName: e.modelName, equipName: e.modelName,
+        itemName: e.itemName, category: e.majorCategory,
+        quantity: cart[e.modelName],
+      }));
       await addItem("rentalRequests", {
         studentId:   profile.role === "professor" ? (profile.profId || profile.email) : (profile.studentId || ""),
         studentName: profile.name,
@@ -566,22 +491,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
               </div>
             </div>
           ))}
-          {cartSetItems.map(e => (
-            <div key={e.modelName} style={{ padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                <div>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
-                  </div>
-                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.majorCategory}</div>
-                </div>
-                <button onClick={() => toggleSet(e.modelName)} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, cursor:"pointer" }}>취소</button>
-              </div>
-            </div>
-          ))}
           <div style={{ display:"flex", gap:10, marginTop:12 }}>
-            <Btn onClick={() => { setCart({}); setCartSets({}); }} color={C.muted} outline full small>전체 취소</Btn>
+            <Btn onClick={() => setCart({})} color={C.muted} outline full small>전체 취소</Btn>
             <Btn onClick={() => { setAgreed(false); setShowNotice(true); }} color={C.teal} full>신청서 작성 →</Btn>
           </div>
         </Card>
@@ -612,7 +523,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       {/* ── 단품 목록 ── */}
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {filteredUnits.map(e => {
-            const rawUnits    = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName && !eq.isSet);
+            const rawUnits    = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName);
             const statusAvail = rawUnits.filter(u => (u.status || "대여가능") === "대여가능").length;
             const pendingUsed = allRequests.filter(r => r.status === "승인대기").reduce((sum, r) => {
               const f = r.items?.find(i => (i.modelName || i.equipName) === e.modelName);
@@ -1086,24 +997,6 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   <div style={{ fontSize:11, color:C.muted }}>가능 {e.available}대 중</div>
                 </div>
                 <span style={{ fontSize:15, fontWeight:800, color:C.teal }}>{cart[e.modelName]}대</span>
-              </div>
-            ))}
-            {cartSetItems.map(e => (
-              <div key={e.modelName} style={{ padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
-                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
-                  </div>
-                  <span style={{ fontSize:15, fontWeight:800, color:C.orange }}>1세트</span>
-                </div>
-                {e.setItems && (
-                  <div style={{ fontSize:11, color:C.muted, paddingLeft:4 }}>
-                    {e.setItems.split("\n").filter(Boolean).map((i,idx) => (
-                      <span key={idx}>{i.trim()}{idx < e.setItems.split("\n").filter(Boolean).length-1 ? " · " : ""}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             ))}
           </div>
