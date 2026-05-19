@@ -8,6 +8,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
+import { youtubeEmbedUrl } from "../../utils/youtube";
 import RentalTimeline from "../../components/RentalTimeline";
 
 const PURPOSE_OPTIONS = ["강의", "개인스터디", "동아리스터디", "수업과제", "작품제작", "학교행사"];
@@ -680,6 +681,20 @@ export default function Reserve({ initialItems = null }) {
                 <span style={{ color:C.muted, width:80, flexShrink:0 }}>📦 재고</span>
                 <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span>
               </div>
+              {youtubeEmbedUrl(equipDetail.guideVideoUrl) && (
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:6 }}>🎬 사용 매뉴얼 영상</div>
+                  <div style={{ position:"relative", paddingBottom:"56.25%", height:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
+                    <iframe
+                      src={youtubeEmbedUrl(equipDetail.guideVideoUrl)}
+                      title="사용 매뉴얼"
+                      style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>

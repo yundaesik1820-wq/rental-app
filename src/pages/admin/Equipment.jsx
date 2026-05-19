@@ -4,6 +4,7 @@ import { lazy, Suspense } from "react";
 const FacilityAdmin = lazy(() => import("./FacilityAdmin.jsx"));
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
+import { isValidYoutubeUrl } from "../../utils/youtube";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 
@@ -328,6 +329,7 @@ function ExcelImportModal({ onClose, onImport }) {
     "마운트":"mount","마운트(E-mount/EF-mount)":"mount",
     "키워드":"keywords",
     "구성품":"bundledItems","구성품/포함아이템":"bundledItems",
+    "매뉴얼영상":"guideVideoUrl","매뉴얼영상(유튜브)":"guideVideoUrl","유튜브":"guideVideoUrl",
     "호환배터리모델명":"batteryModel",
     "호환카메라모델명(배터리)":"_forCamerasRaw","호환카메라(배터리)":"_forCamerasRaw",
     "호환카메라모델명(충전기)":"_chargerCamerasRaw","호환카메라(충전기)":"_chargerCamerasRaw",
@@ -407,6 +409,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
               "키워드": "4K 120fps, S-Cinetone, 풀프레임",
               "구성품": "본체, 마운트 어댑터",
+              "매뉴얼영상(유튜브)": "https://youtu.be/예시영상ID",
               "마운트": "E-mount",
               "호환배터리모델명": "NP-FZ100",
               "호환카메라(배터리)": "", "호환카메라(충전기)": "", "호환배터리(충전기)": "",
@@ -417,7 +420,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "모델명": "NP-FZ100", "호기": "1호기", "물품번호": "EQ-002",
               "상태": "대여가능", "보관위치": "장비실 B-1", "S/N": "",
               "라이센스제한": "0단계", "장비설명": "",
-              "키워드": "", "구성품": "", "마운트": "",
+              "키워드": "", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "Sony FX3, Sony A7S3",
               "호환카메라(충전기)": "", "호환배터리(충전기)": "",
@@ -428,7 +431,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "모델명": "BC-QZ1", "호기": "1호기", "물품번호": "EQ-003",
               "상태": "대여가능", "보관위치": "장비실 B-2", "S/N": "",
               "라이센스제한": "0단계", "장비설명": "",
-              "키워드": "", "구성품": "", "마운트": "",
+              "키워드": "", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "",
               "호환카메라(충전기)": "",
@@ -440,7 +443,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "모델명": "CFexpress Type A 320GB", "호기": "1호기", "물품번호": "EQ-004",
               "상태": "대여가능", "보관위치": "장비실 C-1", "S/N": "",
               "라이센스제한": "0단계", "장비설명": "고속 CFexpress 카드",
-              "키워드": "CFexpress Type A, 320GB", "구성품": "", "마운트": "",
+              "키워드": "CFexpress Type A, 320GB", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "Sony FX3, Sony A7S3",
               "호환카메라(충전기)": "", "호환배터리(충전기)": "",
@@ -559,6 +562,7 @@ const EMPTY = {
   isSet: false,       // (사용 안함, 호환용)
   setItems: "",       // (사용 안함, 호환용)
   displayPhotoUrl: "",  // 학생 송출용 이미지 URL
+  guideVideoUrl: "",    // 유튜브 사용 매뉴얼 영상 URL
   // 가이드 모드용 필드
   equipType: "",        // "camera" | "lens" | "battery" | "adapter" | "etc"
   mount: "",            // "E-mount" | "EF-mount"
@@ -699,7 +703,7 @@ export default function Equipment() {
     if (!form.modelName || !editItem) return;
     await updateItem("equipments", editItem.id, { ...form, name: form.modelName });
 
-    // 동일 modelName 다른 호기에도 공통 필드(설명/키워드/구성품/송출이미지) 자동 반영
+    // 동일 modelName 다른 호기에도 공통 필드(설명/키워드/구성품/송출이미지/매뉴얼영상) 자동 반영
     const sameModel = equipments.filter(e =>
       e.id !== editItem.id && (e.modelName || e.name) === form.modelName
     );
@@ -709,6 +713,7 @@ export default function Equipment() {
         keywords:        form.keywords        || "",
         bundledItems:    form.bundledItems    || "",
         displayPhotoUrl: form.displayPhotoUrl || "",
+        guideVideoUrl:   form.guideVideoUrl   || "",
       };
       await Promise.all(
         sameModel.map(e => updateItem("equipments", e.id, sharedFields))
@@ -737,6 +742,7 @@ export default function Equipment() {
       "장비설명": e.description   || "",
       "키워드":   e.keywords      || "",
       "구성품":   e.bundledItems  || "",
+      "매뉴얼영상(유튜브)": e.guideVideoUrl || "",
       "마운트":   e.mount         || "",
       "호환배터리모델명": e.batteryModel || "",
       "호환카메라(배터리)": (e.forCameras || []).join(", "),
@@ -1040,6 +1046,20 @@ export default function Equipment() {
             />
             <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>대여 시 함께 제공되는 항목들</div>
           </div>
+          {/* 사용 매뉴얼 영상 (유튜브) */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>🎬 사용 매뉴얼 영상 <span style={{ fontSize:10, color:C.muted }}>(유튜브 링크)</span></div>
+            <input
+              placeholder="https://youtu.be/... 또는 https://www.youtube.com/watch?v=..."
+              value={form.guideVideoUrl}
+              onChange={e => f("guideVideoUrl", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${form.guideVideoUrl && !isValidYoutubeUrl(form.guideVideoUrl) ? C.red : C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            {form.guideVideoUrl && !isValidYoutubeUrl(form.guideVideoUrl)
+              ? <div style={{ fontSize:11, color:C.red, marginTop:4 }}>⚠️ 올바른 유튜브 링크가 아니에요</div>
+              : <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>학생이 "장비가 궁금하다면?"에서 시청할 수 있어요</div>
+            }
+          </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => { setShowAdd(false); setForm(EMPTY); }} color={C.muted} outline full>취소</Btn>
             <Btn onClick={addEquip} full disabled={!form.modelName}>등록</Btn>
@@ -1102,7 +1122,7 @@ export default function Equipment() {
           <div style={{ fontSize:13, color:C.muted, marginBottom:14 }}>{editItem.modelName} {editItem.unitNo && `· ${editItem.unitNo}`}</div>
           {sameModelCount > 0 && (
             <div style={{ background:C.tealLight, color:C.teal, borderRadius:10, padding:"10px 14px", marginBottom:18, fontSize:12, border:`1px solid ${C.teal}30`, lineHeight:1.5 }}>
-              💡 <b>동일 모델 {sameModelCount}대에 자동 반영</b> — 장비 설명 · 키워드 · 구성품 · 송출 이미지 항목은 같은 modelName의 다른 호기에도 자동으로 적용됩니다.
+              💡 <b>동일 모델 {sameModelCount}대에 자동 반영</b> — 장비 설명 · 키워드 · 구성품 · 송출 이미지 · 매뉴얼 영상 항목은 같은 modelName의 다른 호기에도 자동으로 적용됩니다.
             </div>
           )}
           {/* 대분류 + 중분류 1행 */}
@@ -1219,6 +1239,21 @@ export default function Equipment() {
               onChange={e => f("bundledItems", e.target.value)}
               style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", resize:"vertical", minHeight:80, boxSizing:"border-box" }}
             />
+          </div>
+
+          {/* 사용 매뉴얼 영상 (유튜브) */}
+          <div style={{ marginBottom:16 }}>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>🎬 사용 매뉴얼 영상 <span style={{ fontSize:10, color:C.muted }}>(유튜브 링크)</span></div>
+            <input
+              placeholder="https://youtu.be/... 또는 https://www.youtube.com/watch?v=..."
+              value={form.guideVideoUrl || ""}
+              onChange={e => f("guideVideoUrl", e.target.value)}
+              style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${form.guideVideoUrl && !isValidYoutubeUrl(form.guideVideoUrl) ? C.red : C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, outline:"none", fontFamily:"inherit", boxSizing:"border-box" }}
+            />
+            {form.guideVideoUrl && !isValidYoutubeUrl(form.guideVideoUrl)
+              ? <div style={{ fontSize:11, color:C.red, marginTop:4 }}>⚠️ 올바른 유튜브 링크가 아니에요</div>
+              : <div style={{ fontSize:11, color:C.muted, marginTop:4 }}>학생이 "장비가 궁금하다면?"에서 시청할 수 있어요</div>
+            }
           </div>
 
           {/* 가이드 모드 설정 (수정 모달) */}

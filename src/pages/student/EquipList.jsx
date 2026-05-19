@@ -5,6 +5,7 @@ import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
 import { groupEquipments } from "../../utils/groupEquipments";
+import { youtubeEmbedUrl } from "../../utils/youtube";
 
 // 세트 그룹화
 function groupSets(equipments) {
@@ -290,6 +291,20 @@ export default function EquipList() {
               : <span style={{ color:C.muted }}>아직 장비 설명이 등록되지 않았어요.<br/>관리자에게 문의해주세요.</span>
             }
           </div>
+          {youtubeEmbedUrl(showDescModel.guideVideoUrl) && (
+            <div style={{ marginTop:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:6 }}>🎬 사용 매뉴얼 영상</div>
+              <div style={{ position:"relative", paddingBottom:"56.25%", height:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
+                <iframe
+                  src={youtubeEmbedUrl(showDescModel.guideVideoUrl)}
+                  title="사용 매뉴얼"
+                  style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            </div>
+          )}
           <div style={{ marginTop:16, textAlign:"right" }}>
             <button onClick={() => setShowDescModel(null)}
               style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"9px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
