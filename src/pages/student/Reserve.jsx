@@ -325,46 +325,65 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
 
     // ── 평일/비영업일 대여 규칙 ─────────────────────────────────
     if (form.startDate && form.endDate) {
-      const [sy, sm, sd] = form.startDate.split("-").map(Number);
-      const [ey, em, ed] = form.endDate.split("-").map(Number);
-      const startDow = new Date(sy, sm-1, sd).getDay(); // 0=일,1=월,...,6=토
-      const endDow   = new Date(ey, em-1, ed).getDay();
-
+      const sameDay = form.startDate === form.endDate;
       const startIsNonBiz = isNonBusinessDay(form.startDate);
       const endIsNonBiz   = isNonBusinessDay(form.endDate);
+      const startTime = form.startTime || "09:00";
+      const endTime   = form.endTime   || "18:00";
 
-      // 비영업일 대여 시작 조건: 시작일이 토·일·공휴일이거나, 금 17:30 이후 시작
-      const isNonBizStart = startIsNonBiz
-        || (startDow === 5 && (form.startTime || "09:00") >= "17:30");
-      // 비영업일 대여 종료 조건: 종료일이 토·일·공휴일이거나, 영업일 09:00 이전 종료
-      const isNonBizEnd   = endIsNonBiz
-        || (!startIsNonBiz && endDow !== 0 && endDow !== 6 && (form.endTime || "18:00") <= "09:00");
-      const isNonBizRental = isNonBizStart && isNonBizEnd;
-
-      // 평일 대여인 경우 (당일 대여)
-      if (!isNonBizRental) {
-        // 시작일이 공휴일인지 명시적으로 체크
+      if (sameDay) {
+        // ===== 당일 대여 (평일 대여 패턴) =====
         if (startIsNonBiz) {
           const hName = getKoreanHolidayName(form.startDate);
-          if (hName) {
-            errs.date = `${form.startDate}은(는) ${hName}이라 평일 대여 불가입니다. 비영업일 대여 패턴(직전 영업일 17:30 ~ 다음 영업일 09:00)을 사용해주세요.`;
-          } else {
-            errs.date = `${form.startDate}은(는) 주말이라 평일 대여 불가입니다.`;
-          }
+          errs.date = hName
+            ? `${form.startDate}은(는) ${hName}이라 당일 대여 불가입니다. 비영업일 대여(직전 영업일 17:30 ~ 다음 영업일 09:00)로 신청해주세요.`
+            : `${form.startDate}은(는) 주말이라 당일 대여 불가입니다. 비영업일 대여(금요일 17:30 ~ 월요일 09:00)로 신청해주세요.`;
+        } else if (startTime < "09:00" || startTime > "17:30") {
+          errs.date = "평일 대여 시작 시간은 09:00~17:30 사이여야 합니다.";
+        } else if (endTime > "17:30") {
+          errs.date = "평일 반납 시간은 17:30을 초과할 수 없습니다.";
+        } else if (startTime >= endTime) {
+          errs.date = "대여 시작 시간이 반납 시간보다 늦습니다.";
         }
-        // 같은 날이어야 함
-        else if (form.startDate !== form.endDate) {
-          errs.date = "평일 대여는 당일 대여·반납만 가능합니다. 비영업일 대여(직전 영업일 17:30 이후~다음 영업일 09:00 이전)가 아닌 경우 같은 날로 맞춰주세요.";
+      } else {
+        // ===== 여러 날 대여 (비영업일 대여 패턴) =====
+        // 시작: 영업일 17:30 이후, 종료: 영업일 09:00 이전, 중간: 모두 비영업일 + 최소 1일
+        if (startIsNonBiz) {
+          const hName = getKoreanHolidayName(form.startDate);
+          errs.date = hName
+            ? `시작일 ${form.startDate}은(는) ${hName}이라 대여 시작 불가입니다. 직전 영업일 17:30 이후로 변경해주세요.`
+            : `시작일 ${form.startDate}은(는) 주말이라 대여 시작 불가입니다. 직전 영업일(금요일) 17:30 이후로 변경해주세요.`;
+        } else if (endIsNonBiz) {
+          const hName = getKoreanHolidayName(form.endDate);
+          errs.date = hName
+            ? `반납일 ${form.endDate}은(는) ${hName}이라 반납 불가입니다. 다음 영업일 09:00 이전으로 변경해주세요.`
+            : `반납일 ${form.endDate}은(는) 주말이라 반납 불가입니다. 다음 영업일 09:00 이전으로 변경해주세요.`;
+        } else if (startTime < "17:30") {
+          errs.date = "여러 날 대여는 시작 시간이 17:30 이후여야 합니다. (당일 대여는 같은 날로 설정해주세요)";
+        } else if (endTime > "09:00") {
+          errs.date = "여러 날 대여는 반납 시간이 09:00 이전이어야 합니다.";
         } else {
-          // 대여 시간 9:00~17:30 이내
-          const st = form.startTime || "09:00";
-          const et = form.endTime   || "18:00";
-          if (st < "09:00" || st > "17:30") {
-            errs.date = "평일 대여 시작 시간은 09:00~17:30 사이여야 합니다.";
-          } else if (et > "17:30") {
-            errs.date = "평일 반납 시간은 17:30을 초과할 수 없습니다. 반납 시간을 17:30 이내로 수정해주세요.";
-          } else if (st >= et) {
-            errs.date = "대여 시작 시간이 반납 시간보다 늦습니다.";
+          // 시작/종료 사이 날짜 검사 — 모두 비영업일이고 최소 1일 이상
+          const [sy,sm,sd] = form.startDate.split("-").map(Number);
+          const [ey,em,ed] = form.endDate.split("-").map(Number);
+          const endDateObj = new Date(ey, em-1, ed);
+          const cur = new Date(sy, sm-1, sd);
+          cur.setDate(cur.getDate() + 1);
+          let hasMiddleDay = false;
+          let firstBizDay  = null;
+          while (cur < endDateObj) {
+            hasMiddleDay = true;
+            const curStr = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,"0")}-${String(cur.getDate()).padStart(2,"0")}`;
+            if (!isNonBusinessDay(curStr)) {
+              firstBizDay = curStr;
+              break;
+            }
+            cur.setDate(cur.getDate() + 1);
+          }
+          if (!hasMiddleDay) {
+            errs.date = "시작일과 반납일이 연속된 영업일입니다. 같은 날로 평일 대여하거나, 사이에 비영업일이 있는 날짜로 변경해주세요.";
+          } else if (firstBizDay) {
+            errs.date = `대여 기간 중 ${firstBizDay}(영업일)이 포함되어 있어 신청할 수 없습니다. 영업일에는 평일 대여 패턴(당일 09:00~17:30)으로 별도 신청해주세요.`;
           }
         }
       }
