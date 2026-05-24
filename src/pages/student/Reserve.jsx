@@ -8,7 +8,7 @@ import { collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
-import { youtubeEmbedUrl } from "../../utils/youtube";
+import { isKoreanHoliday, getKoreanHolidayName } from "../../utils/koreanHolidays";
 import RentalTimeline from "../../components/RentalTimeline";
 
 const PURPOSE_OPTIONS = ["강의", "개인스터디", "동아리스터디", "수업과제", "작품제작", "학교행사"];
@@ -31,6 +31,39 @@ for (let h = 0; h < 24; h++) {
 }
 
 // 세트 그룹화 (modelName 기준)
+function groupSets(equipments) {
+  const map = {};
+  equipments.filter(e => e.isSet).forEach(e => {
+    const key = e.modelName || "";
+    if (!key) return;
+    if (!map[key]) {
+      map[key] = {
+        modelName:     key,
+        itemName:      e.itemName      || "",
+        majorCategory: e.majorCategory || "",
+        minorCategory: e.minorCategory || "",
+        manufacturer:  e.manufacturer  || "",
+        setItems:      e.setItems      || "",
+        photoUrls:       [],
+        displayPhotoUrl: e.displayPhotoUrl || "",
+        units: [], total: 0, available: 0,
+      };
+    }
+    map[key].units.push(e);
+    map[key].total++;
+    if ((e.status || "대여가능") === "대여가능") map[key].available++;
+    if (!map[key].setItems && e.setItems) map[key].setItems = e.setItems;
+    // itemNo가 01인 장비 사진 우선 사용
+    if (e.photoUrls?.length > 0) {
+      const isFirst = (e.itemNo || "").endsWith("01") || (e.itemNo || "").endsWith("1");
+      if (isFirst || map[key].photoUrls.length === 0) {
+        map[key].photoUrls = e.photoUrls;
+      }
+    }
+  });
+  return Object.values(map);
+}
+
 // Firebase Storage 파일 첨부 컴포넌트
 function FileAttachSection({ form, f }) {
   const [uploading, setUploading] = useState(false);
@@ -81,42 +114,40 @@ function FileAttachSection({ form, f }) {
   );
 }
 
-export default function Reserve({ initialItems = null }) {
+export default function Reserve({ initialItems = null, initialSets = null }) {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
 
+  const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]       = useState("전체"); // 대분류
-  const [minorFilter, setMinorFilter] = useState("전체"); // 중분류
+  const [filter, setFilter]   = useState("전체");
 
   // 단품 장비 (세트 아닌 것)
-  const unitEquips = equipments; // 세트 기능 제거 — 모든 장비를 단일로 처리
+  const unitEquips = equipments.filter(e => !e.isSet);
   const grouped    = groupEquipments(unitEquips);
 
   // 세트 장비
+  const setEquips  = groupSets(equipments);
 
   // 카테고리 - 대분류 커스텀 순서
   const CAT_ORDER = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
-  const rawCats = [...new Set(
-    grouped.map(e => e.majorCategory).filter(Boolean)
-  )];
+  const rawCats = [...new Set([
+    ...grouped.map(e => e.majorCategory),
+    ...setEquips.map(e => e.majorCategory),
+  ].filter(Boolean))];
   const sortedCats = [
     ...CAT_ORDER.filter(c => rawCats.includes(c)),
     ...rawCats.filter(c => !CAT_ORDER.includes(c)),
   ];
   const allCats = ["전체", ...sortedCats];
 
-  // 선택된 대분류에 속한 중분류 목록
-  const minorList = filter === "전체"
-    ? []
-    : ["전체", ...new Set(
-        grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory).filter(Boolean)
-      )];
-
   const filteredUnits = grouped.filter(e =>
     (filter === "전체" || e.majorCategory === filter) &&
-    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
+    (e.modelName?.includes(search) || e.itemName?.includes(search))
+  );
+  const filteredSets = setEquips.filter(e =>
+    (filter === "전체" || e.majorCategory === filter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
@@ -128,6 +159,7 @@ export default function Reserve({ initialItems = null }) {
     Object.entries(initialItems).forEach(([name, qty]) => { c[name] = qty; });
     return c;
   });
+  const [cartSets, setCartSets] = useState({});
   const [expandedSet, setExpandedSet] = useState(null);
   const [photoIdx, setPhotoIdx]       = useState({});
   const getIdx = (key) => photoIdx[key] || 0;
@@ -144,33 +176,33 @@ export default function Reserve({ initialItems = null }) {
   const [showStoragePlan, setShowStoragePlan] = useState(false);
   const [urgentRental, setUrgentRental] = useState(false); // 긴급대여 체크박스
 
-  // 참여인원 검색 - users를 한 번만 로드하고 클라이언트 필터링
-  const { data: allUsers } = useCollection("users", "createdAt");
+  // 참여인원 검색
   const [participantSearch, setParticipantSearch] = useState("");
   const [participantResults, setParticipantResults] = useState([]);
   const [participantList, setParticipantList]   = useState([]); // [{ name, studentId }]
   const [searchLoading, setSearchLoading]       = useState(false);
 
-  // 디바운싱: 입력 멈춘 후 150ms 뒤에 필터링
-  useEffect(() => {
-    const keyword = participantSearch;
+  // 이름으로 users 컬렉션 검색
+  const searchParticipant = async (keyword) => {
+    setParticipantSearch(keyword);
     if (keyword.trim().length < 1) { setParticipantResults([]); return; }
     setSearchLoading(true);
-    const timer = setTimeout(() => {
+    try {
+      // users 전체 가져와서 클라이언트 필터 (name 필드명 이슈 방지)
+      const snap = await getDocs(collection(db, "users"));
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       const kw = keyword.trim().toLowerCase();
-      const results = allUsers.filter(u =>
+      const results = all.filter(u =>
         u.role === "student" &&
-        (u.uid || u.id) !== profile?.uid &&
+        (u.uid || u.id) !== profile?.uid &&   // uid 필드 없으면 문서 ID(id) 사용
         (u.name || u.userName || "").toLowerCase().includes(kw)
       );
       setParticipantResults(results);
-      setSearchLoading(false);
-    }, 150);
-    return () => clearTimeout(timer);
-  }, [participantSearch, allUsers, profile?.uid]);
-
-  const searchParticipant = (keyword) => {
-    setParticipantSearch(keyword);
+    } catch(e) {
+      console.error("participant search error:", e);
+      setParticipantResults([]);
+    }
+    finally { setSearchLoading(false); }
   };
 
   const addParticipant = (user) => {
@@ -214,9 +246,18 @@ export default function Reserve({ initialItems = null }) {
     const c = Math.max(0, Math.min(qty, max));
     setCart(p => ({ ...p, [modelName]: c }));
   };
+  const toggleSet = (modelName) => {
+    const isProf   = profile?.role === "professor";
+    const myLicNum = licenseToNum(profile?.license);
+    const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === modelName);
+    const eqLic    = rawEquip?.licenseLevel || 0;
+    if (!isProf && myLicNum < eqLic) return; // 라이센스 부족 시 차단
+    setCartSets(p => ({ ...p, [modelName]: !p[modelName] }));
+  };
 
   const cartUnitItems = grouped.filter(e => (cart[e.modelName] || 0) > 0);
-  const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0);
+  const cartSetItems  = setEquips.filter(e => cartSets[e.modelName]);
+  const cartTotal     = Object.values(cart).reduce((a,b)=>a+b,0) + cartSetItems.length;
 
   const f = (key, val) => { setForm(p=>({...p,[key]:val})); setErrors(p=>({...p,[key]:""})); };
 
@@ -274,25 +315,46 @@ export default function Reserve({ initialItems = null }) {
       }
     }
 
-    // ── 평일 대여 규칙 ──────────────────────────────────────────
+    // 비영업일 헬퍼: 토·일 또는 한국 공휴일
+    const isNonBusinessDay = (dateStr) => {
+      if (!dateStr) return false;
+      const [y, m, d] = dateStr.split("-").map(Number);
+      const dow = new Date(y, m-1, d).getDay();
+      return dow === 0 || dow === 6 || isKoreanHoliday(dateStr);
+    };
+
+    // ── 평일/비영업일 대여 규칙 ─────────────────────────────────
     if (form.startDate && form.endDate) {
       const [sy, sm, sd] = form.startDate.split("-").map(Number);
       const [ey, em, ed] = form.endDate.split("-").map(Number);
       const startDow = new Date(sy, sm-1, sd).getDay(); // 0=일,1=월,...,6=토
       const endDow   = new Date(ey, em-1, ed).getDay();
 
-      // 주말 대여 여부: 금요일 17:30 이후 대여 시작 or 토·일 포함
-      const isWeekendStart = (startDow === 5 && (form.startTime || "09:00") >= "17:30")
-        || startDow === 0 || startDow === 6;
-      const isWeekendEnd   = (endDow   === 1 && (form.endTime   || "18:00") <= "09:00")
-        || endDow === 0 || endDow === 6;
-      const isWeekendRental = isWeekendStart && isWeekendEnd;
+      const startIsNonBiz = isNonBusinessDay(form.startDate);
+      const endIsNonBiz   = isNonBusinessDay(form.endDate);
 
-      // 평일 대여인 경우
-      if (!isWeekendRental) {
+      // 비영업일 대여 시작 조건: 시작일이 토·일·공휴일이거나, 금 17:30 이후 시작
+      const isNonBizStart = startIsNonBiz
+        || (startDow === 5 && (form.startTime || "09:00") >= "17:30");
+      // 비영업일 대여 종료 조건: 종료일이 토·일·공휴일이거나, 영업일 09:00 이전 종료
+      const isNonBizEnd   = endIsNonBiz
+        || (!startIsNonBiz && endDow !== 0 && endDow !== 6 && (form.endTime || "18:00") <= "09:00");
+      const isNonBizRental = isNonBizStart && isNonBizEnd;
+
+      // 평일 대여인 경우 (당일 대여)
+      if (!isNonBizRental) {
+        // 시작일이 공휴일인지 명시적으로 체크
+        if (startIsNonBiz) {
+          const hName = getKoreanHolidayName(form.startDate);
+          if (hName) {
+            errs.date = `${form.startDate}은(는) ${hName}이라 평일 대여 불가입니다. 비영업일 대여 패턴(직전 영업일 17:30 ~ 다음 영업일 09:00)을 사용해주세요.`;
+          } else {
+            errs.date = `${form.startDate}은(는) 주말이라 평일 대여 불가입니다.`;
+          }
+        }
         // 같은 날이어야 함
-        if (form.startDate !== form.endDate) {
-          errs.date = "평일 대여는 당일 대여·반납만 가능합니다. 주말 대여(금 17:30 이후~월 09:00)가 아닌 경우 같은 날로 맞춰주세요.";
+        else if (form.startDate !== form.endDate) {
+          errs.date = "평일 대여는 당일 대여·반납만 가능합니다. 비영업일 대여(직전 영업일 17:30 이후~다음 영업일 09:00 이전)가 아닌 경우 같은 날로 맞춰주세요.";
         } else {
           // 대여 시간 9:00~17:30 이내
           const st = form.startTime || "09:00";
@@ -319,6 +381,12 @@ export default function Reserve({ initialItems = null }) {
         const eqLic = raw?.licenseLevel || 0;
         if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
       });
+      // 세트 라이센스 체크
+      cartSetItems.forEach(item => {
+        const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
+        const eqLic = raw?.licenseLevel || 0;
+        if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
+      });
       if (lockedNames.length > 0) {
         errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
       }
@@ -330,9 +398,9 @@ export default function Reserve({ initialItems = null }) {
       const myE   = toStr(form.endDate,   form.endTime);
 
 
-      const calcAvail = (modelName) => {
+      const calcAvail = (modelName, isSet) => {
         const units      = equipments.filter(e =>
-          (e.modelName || e.name) === modelName
+          (e.modelName || e.name) === modelName && (isSet ? !!e.isSet : !e.isSet)
         );
         const totalUnits = units.length;
         const usedQty = allRequests
@@ -349,10 +417,16 @@ export default function Reserve({ initialItems = null }) {
       };
 
       cartUnitItems.forEach(item => {
-        const avail  = calcAvail(item.modelName);
+        const avail  = calcAvail(item.modelName, false);
         const reqQty = cart[item.modelName] || 0;
         if (reqQty > avail) {
           errs.cart = `${item.modelName}: 해당 기간 대여 가능 수량은 ${avail}대입니다 (신청 ${reqQty}대)`;
+        }
+      });
+      cartSetItems.forEach(item => {
+        const avail = calcAvail(item.modelName, true);
+        if (avail <= 0) {
+          errs.cart = `${item.modelName} 세트: 해당 기간 대여 가능한 세트가 없습니다`;
         }
       });
     }
@@ -405,11 +479,19 @@ export default function Reserve({ initialItems = null }) {
     }
     setSubmitting(true);
     try {
-      const items = cartUnitItems.map(e => ({
-        modelName: e.modelName, equipName: e.modelName,
-        itemName: e.itemName, category: e.majorCategory,
-        quantity: cart[e.modelName],
-      }));
+      const items = [
+        ...cartUnitItems.map(e => ({
+          modelName: e.modelName, equipName: e.modelName,
+          itemName: e.itemName, category: e.majorCategory,
+          quantity: cart[e.modelName], isSet: false,
+        })),
+        ...cartSetItems.map(e => ({
+          modelName: e.modelName, equipName: e.modelName,
+          itemName: e.itemName, category: e.majorCategory,
+          quantity: 1, isSet: true,
+          setItems: e.setItems,
+        })),
+      ];
       await addItem("rentalRequests", {
         studentId:   profile.role === "professor" ? (profile.profId || profile.email) : (profile.studentId || ""),
         studentName: profile.name,
@@ -449,10 +531,10 @@ export default function Reserve({ initialItems = null }) {
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
           <img src="/mascot/reserv.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 전문가 예약 페이지야!</div>
-            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>원하는 장비를 직접 골라서 신청할 수 있어.<br/>장비/시설 대여 모두 여기서 할 수 있어 📦</div>
+          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 전문가 예약 페이지야!</div>
+            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>원하는 장비를 직접 골라서 신청할 수 있어.<br/>장비/시설 대여 모두 여기서 할 수 있어 📦</div>
           </div>
         </div>
       </div>
@@ -492,39 +574,59 @@ export default function Reserve({ initialItems = null }) {
               </div>
             </div>
           ))}
+          {cartSetItems.map(e => (
+            <div key={e.modelName} style={{ padding:"7px 0", borderBottom:`1px solid ${C.border}` }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{e.majorCategory}</div>
+                </div>
+                <button onClick={() => toggleSet(e.modelName)} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:600, cursor:"pointer" }}>취소</button>
+              </div>
+            </div>
+          ))}
           <div style={{ display:"flex", gap:10, marginTop:12 }}>
-            <Btn onClick={() => setCart({})} color={C.muted} outline full small>전체 취소</Btn>
+            <Btn onClick={() => { setCart({}); setCartSets({}); }} color={C.muted} outline full small>전체 취소</Btn>
             <Btn onClick={() => { setAgreed(false); setShowNotice(true); }} color={C.teal} full>신청서 작성 →</Btn>
           </div>
         </Card>
       )}
 
       {/* 1차: 대분류 카테고리 */}
-      <div style={{ display:"flex", gap:8, marginBottom:8, flexWrap:"wrap" }}>
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
         {allCats.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+          <button key={c} onClick={() => { setFilter(c); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
         ))}
       </div>
-
-      {/* 1.5차: 중분류 (대분류 선택 시에만 표시) */}
-      {minorList.length > 1 && (
-        <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"wrap" }}>
-          {minorList.map(m => (
-            <button key={m} onClick={() => setMinorFilter(m)} style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"4px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{m}</button>
-          ))}
-        </div>
-      )}
 
       {/* 2차: 검색 */}
       <input placeholder="🔍 검색" value={search} onChange={e => setSearch(e.target.value)}
         style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }} />
 
+      {/* 3차: 단품 / 세트 탭 */}
+      <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:16, border:`1px solid ${C.border}`, width:"fit-content" }}>
+        {["단품", "세트"].map(t => {
+          const cnt = t === "세트"
+            ? filteredSets.length
+            : filteredUnits.length;
+          return (
+            <button key={t} onClick={() => setTabView(t)} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>
+              {t} ({cnt})
+            </button>
+          );
+        })}
+      </div>
+
       {errors.cart && <div style={{ color:C.red, fontSize:13, marginBottom:10 }}>⚠️ {errors.cart}</div>}
 
       {/* ── 단품 목록 ── */}
-      <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+      {tabView === "단품" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           {filteredUnits.map(e => {
-            const rawUnits    = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName);
+            const rawUnits    = equipments.filter(eq => (eq.modelName || eq.name) === e.modelName && !eq.isSet);
             const statusAvail = rawUnits.filter(u => (u.status || "대여가능") === "대여가능").length;
             const pendingUsed = allRequests.filter(r => r.status === "승인대기").reduce((sum, r) => {
               const f = r.items?.find(i => (i.modelName || i.equipName) === e.modelName);
@@ -559,8 +661,8 @@ export default function Reserve({ initialItems = null }) {
                     </div>
                     {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
                     <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
-                      {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
-                      {eqLicNum > 0 && <span style={{ background:isLocked?C.redLight:C.blueLight, color:isLocked?C.red:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
+                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
+                      {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
                       <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}대</span>
                     </div>
                   </div>
@@ -569,30 +671,6 @@ export default function Reserve({ initialItems = null }) {
                 <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
                   <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.teal, height:"100%", borderRadius:4 }} />
                 </div>
-                {/* 키워드 배지 (제조사 푸시 스펙) */}
-                {(() => {
-                  const rawEq = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
-                  const kws = (rawEq?.keywords || "").split(",").map(s => s.trim()).filter(Boolean);
-                  return kws.length > 0 && (
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginBottom:6 }}>
-                      {kws.map((kw, i) => (
-                        <span key={i} style={{ background:C.tealLight, color:C.teal, borderRadius:5, padding:"2px 8px", fontSize:10, fontWeight:700 }}>⚡ {kw}</span>
-                      ))}
-                    </div>
-                  );
-                })()}
-                {/* 구성품 (bundledItems 또는 setItems 호환) */}
-                {(() => {
-                  const rawEq = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
-                  const bundle = rawEq?.bundledItems || rawEq?.setItems || "";
-                  const items = bundle.split(/[,\n]/).map(s => s.trim()).filter(Boolean);
-                  return items.length > 0 && (
-                    <div style={{ marginBottom:8, fontSize:11, color:C.muted }}>
-                      <span style={{ fontWeight:700, color:C.orange }}>📦 포함: </span>
-                      {items.join(" · ")}
-                    </div>
-                  );
-                })()}
                 {/* 장비가 궁금하다면? */}
                 <button onClick={() => setEquipDetail(e)}
                   style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
@@ -618,11 +696,95 @@ export default function Reserve({ initialItems = null }) {
               </Card>
             );
           })}
-          {filteredUnits.length === 0 && <Empty icon="🔍" text="장비가 없습니다" />}
+          {filteredUnits.length === 0 && <Empty icon="🔍" text="단품 장비가 없습니다" />}
         </div>
+      )}
 
       {/* ── 세트 목록 ── */}
-      
+      {tabView === "세트" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {filteredSets.map(e => {
+            const avail    = e.available;
+            const selected = !!cartSets[e.modelName];
+            const items    = (e.setItems || "").split("\n").filter(Boolean);
+            const expanded = expandedSet === e.modelName;
+            const myLicNum = licenseToNum(profile?.license);
+            const isProf   = profile?.role === "professor";
+            const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === e.modelName);
+            const eqLicNum = rawEquip?.licenseLevel || 0;
+            const isLocked = !isProf && myLicNum < eqLicNum;
+            const photos = e.displayPhotoUrl ? [e.displayPhotoUrl] : (e.photoUrls || []);
+            return (
+              <Card key={e.modelName} style={{ padding:"12px 14px", border:`1.5px solid ${isLocked?"#FCA5A5":selected?C.orange:C.border}`, opacity: isLocked ? 0.8 : 1, transition:"border 0.15s" }}>
+                <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                  {/* 썸네일 */}
+                  {photos.length > 0 ? (
+                    <div style={{ width:56, height:56, borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0, cursor:"zoom-in" }}
+                      onClick={() => setLightbox({ photos, idx:0 })}>
+                      <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                    </div>
+                  ) : (
+                    <div style={{ width:56, height:56, borderRadius:8, background:C.bg, border:`1px solid ${C.border}`, flexShrink:0 }} />
+                  )}
+                  {/* 정보 */}
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:6, marginBottom:2 }}>
+                      <span style={{ fontSize:14, fontWeight:700, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</span>
+                      <Badge label={isLocked?"잠김":avail>0?"대여가능":"대여불가"} />
+                    </div>
+                    {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
+                    <div style={{ display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                      <span style={{ background:C.orangeLight, color:C.orange, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
+                      {(e.subCategory||e.minorCategory) && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.subCategory||e.minorCategory}</span>}
+                      {eqLicNum > 0 && <span style={{ background:isLocked?"#FEF2F2":"#EEF2FF", color:isLocked?"#EF4444":"#3B6CF8", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{isLocked?"🔒":"🔵"} Lv.{eqLicNum}</span>}
+                      <span style={{ fontSize:10, color:C.muted }}>{avail}/{e.total}세트</span>
+                    </div>
+                  </div>
+                </div>
+                {/* 재고 바 */}
+                <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", margin:"8px 0 6px" }}>
+                  <div style={{ width:`${(avail/e.total)*100}%`, background:avail===0?C.red:C.orange, height:"100%", borderRadius:4 }} />
+                </div>
+                <button onClick={() => setEquipDetail(e)}
+                  style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:7, padding:"3px 10px", fontSize:11, color:C.muted, cursor:"pointer", marginBottom:6, display:"inline-flex", alignItems:"center", gap:4 }}>
+                  🔍 장비가 궁금하다면?
+                </button>
+                {/* 구성품 */}
+                {items.length > 0 && (
+                  <div style={{ marginBottom:8 }}>
+                    <button onClick={() => setExpandedSet(expanded ? null : e.modelName)} style={{ background:"none", border:"none", color:C.blue, fontSize:11, fontWeight:600, cursor:"pointer", padding:0 }}>
+                      📋 구성품 {items.length}개 {expanded?"▲":"▼"}
+                    </button>
+                    {expanded && (
+                      <div style={{ marginTop:6, display:"flex", flexWrap:"wrap", gap:4 }}>
+                        {items.map((item, i) => (
+                          <span key={i} style={{ background:C.orangeLight, color:"#92400E", borderRadius:5, padding:"1px 7px", fontSize:10 }}>{item.trim()}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {/* 선택 버튼 */}
+                {isLocked ? (
+                  <div style={{ fontSize:11, color:"#EF4444", fontWeight:600 }}>🔒 Lv.{eqLicNum} 이상 필요 (현재: {profile?.license || "없음"})</div>
+                ) : avail === 0 ? (
+                  <div style={{ fontSize:11, color:C.muted }}>재고 없음</div>
+                ) : selected ? (
+                  <div style={{ display:"flex", gap:8 }}>
+                    <div style={{ flex:1, background:C.orangeLight, borderRadius:8, padding:"7px 12px", textAlign:"center", border:`1px solid ${C.orange}40` }}>
+                      <span style={{ fontSize:12, fontWeight:700, color:C.orange }}>✅ 선택됨</span>
+                    </div>
+                    <button onClick={() => toggleSet(e.modelName)} style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"7px 12px", fontSize:11, color:C.muted, cursor:"pointer" }}>취소</button>
+                  </div>
+                ) : (
+                  <Btn onClick={() => toggleSet(e.modelName)} color={C.orange} full>📦 세트 선택</Btn>
+                )}
+              </Card>
+            );
+          })}
+          {filteredSets.length === 0 && <Empty icon="📦" text="세트 장비가 없습니다" />}
+        </div>
+      )}
 
       {/* 장비 상세 모달 */}
       {equipDetail && (
@@ -633,9 +795,9 @@ export default function Reserve({ initialItems = null }) {
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
               <div>
                 <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:4 }}>{equipDetail.modelName}</div>
-                {equipDetail.minorCategory && (
+                {(equipDetail.subCategory || equipDetail.minorCategory) && (
                   <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
-                    {equipDetail.minorCategory}
+                    {equipDetail.subCategory || equipDetail.minorCategory}
                   </span>
                 )}
               </div>
@@ -655,46 +817,20 @@ export default function Reserve({ initialItems = null }) {
             })()}
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {equipDetail.manufacturer && (
-                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
-                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>🏭 제조사</span>
-                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.manufacturer}</span>
-                </div>
+                <div style={{ fontSize:13, color:C.muted }}>🏭 제조사 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.manufacturer}</span></div>
               )}
               {equipDetail.mount && (
-                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
-                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>🔗 마운트</span>
-                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.mount}</span>
-                </div>
+                <div style={{ fontSize:13, color:C.muted }}>🔗 마운트 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.mount}</span></div>
               )}
               {equipDetail.itemName && (
-                <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
-                  <span style={{ color:C.muted, width:80, flexShrink:0 }}>📌 품명</span>
-                  <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.itemName}</span>
-                </div>
+                <div style={{ fontSize:13, color:C.muted }}>📌 품명 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.itemName}</span></div>
               )}
               {equipDetail.description && (
-                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
+                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px" }}>
                   📝 {equipDetail.description}
                 </div>
               )}
-              <div style={{ display:"flex", fontSize:13, alignItems:"baseline" }}>
-                <span style={{ color:C.muted, width:80, flexShrink:0 }}>📦 재고</span>
-                <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700 }}>{equipDetail.available}대 대여 가능</span>
-              </div>
-              {youtubeEmbedUrl(equipDetail.guideVideoUrl) && (
-                <div>
-                  <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:6 }}>🎬 사용 매뉴얼 영상</div>
-                  <div style={{ position:"relative", paddingBottom:"56.25%", height:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
-                    <iframe
-                      src={youtubeEmbedUrl(equipDetail.guideVideoUrl)}
-                      title="사용 매뉴얼"
-                      style={{ position:"absolute", top:0, left:0, width:"100%", height:"100%", border:"none" }}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-              )}
+              <div style={{ fontSize:13, color:C.muted }}>📦 재고 <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700, marginLeft:8 }}>{equipDetail.available}대 대여 가능</span></div>
             </div>
           </div>
         </div>
@@ -858,11 +994,8 @@ export default function Reserve({ initialItems = null }) {
               const key = `keeper${n}`;
               const k   = storageForm[key];
               // 참여인원 목록 (form.participants에서 파싱)
-              // 대여자(본인) + 참여인원 합치기
-              const applicant = profile ? [{ name: profile.name || "", studentId: profile.studentId || profile.profId || "" }] : [];
-              const participants = [...applicant, ...(participantList || [])].filter((p, i, arr) =>
-                p.name && arr.findIndex(x => x.studentId === p.studentId) === i
-              );
+              const participants = participantList || [];
+              // 이름 입력 후 참여인원에 없는지 체크
               const isValidKeeper = !k.name || participants.some(p => p.name === k.name);
               return (
                 <div key={n} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
@@ -924,7 +1057,7 @@ export default function Reserve({ initialItems = null }) {
             {storageForm.days.map((day, i) => (
               <div key={i} style={{ background:C.bg, borderRadius:10, padding:"12px 14px", marginBottom:10, border:`1px solid ${C.border}` }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
-                  <span style={{ background:day.day==="일"?C.redLight:day.day==="토"?C.blueLight:C.greenLight, color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
+                  <span style={{ background:day.day==="일"?"#FEF2F2":day.day==="토"?"#EFF6FF":"#F0FDF4", color:day.day==="일"?C.red:day.day==="토"?C.blue:C.green, borderRadius:8, padding:"3px 12px", fontWeight:800, fontSize:14 }}>{day.day}</span>
                   <span style={{ fontSize:12, color:C.muted }}>{day.date}</span>
                 </div>
                 {/* 1행: 보관자 + 보관장소 */}
@@ -1012,6 +1145,24 @@ export default function Reserve({ initialItems = null }) {
                   <div style={{ fontSize:11, color:C.muted }}>가능 {e.available}대 중</div>
                 </div>
                 <span style={{ fontSize:15, fontWeight:800, color:C.teal }}>{cart[e.modelName]}대</span>
+              </div>
+            ))}
+            {cartSetItems.map(e => (
+              <div key={e.modelName} style={{ padding:"8px 0", borderBottom:`1px solid ${C.border}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ background:C.orangeLight, color:C.orange, borderRadius:6, padding:"1px 7px", fontSize:10, fontWeight:700 }}>세트</span>
+                    <span style={{ fontSize:13, fontWeight:600, color:C.text }}>{e.modelName}</span>
+                  </div>
+                  <span style={{ fontSize:15, fontWeight:800, color:C.orange }}>1세트</span>
+                </div>
+                {e.setItems && (
+                  <div style={{ fontSize:11, color:C.muted, paddingLeft:4 }}>
+                    {e.setItems.split("\n").filter(Boolean).map((i,idx) => (
+                      <span key={idx}>{i.trim()}{idx < e.setItems.split("\n").filter(Boolean).length-1 ? " · " : ""}</span>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -1111,7 +1262,7 @@ export default function Reserve({ initialItems = null }) {
                 const disabled = p === "강의" && !isProf;
                 return (
                   <button key={p} onClick={() => { if(disabled) return; f("purpose",p); f("club",""); f("clubDirect",""); f("courseName",""); f("professorName",""); f("eventName",""); f("eventProfessor",""); f("purposeDetail",""); f("attachments",[]); }}
-                    style={{ background:form.purpose===p?C.navy:disabled?C.border:C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
+                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
                     {p}{disabled?" (교수님 전용)":""}
                   </button>
                 );
@@ -1228,6 +1379,9 @@ export default function Reserve({ initialItems = null }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
                   {TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
+                {form.startDate && getKoreanHolidayName(form.startDate) && (
+                  <div style={{ color:C.red, fontSize:10, fontWeight:600, marginTop:4 }}>🇰🇷 {getKoreanHolidayName(form.startDate)}</div>
+                )}
                 {errors.startDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.startDate}</div>}
               </div>
               <div>
@@ -1238,6 +1392,9 @@ export default function Reserve({ initialItems = null }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }}>
                   {TIME_OPTIONS.map(t=><option key={t} value={t}>{t}</option>)}
                 </select>
+                {form.endDate && getKoreanHolidayName(form.endDate) && (
+                  <div style={{ color:C.red, fontSize:10, fontWeight:600, marginTop:4 }}>🇰🇷 {getKoreanHolidayName(form.endDate)}</div>
+                )}
                 {errors.endDate && <div style={{ color:C.red, fontSize:11, marginTop:4 }}>⚠️ {errors.endDate}</div>}
               </div>
             </div>

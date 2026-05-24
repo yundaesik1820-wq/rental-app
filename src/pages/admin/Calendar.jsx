@@ -3,12 +3,13 @@ import Stats from "./Stats.jsx";
 import { C } from "../../theme";
 import { Card, PageTitle, Badge, Modal, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
+import { isKoreanHoliday, getKoreanHolidayName } from "../../utils/koreanHolidays";
 
 const MONTH_NAMES = ["","1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 const DAY_NAMES   = ["일","월","화","수","목","금","토"];
 
 const STATUS_META = {
-  "승인대기": { color: C.yellow,  bg: C.yellowLight, label: "승인대기" },
+  "승인대기": { color: C.yellow,  bg: "#FFFBEB", label: "승인대기" },
   "승인됨":   { color: C.blue,    bg: C.blueLight, label: "승인됨"   },
   "대여중":   { color: C.teal,    bg: C.tealLight, label: "대여중"   },
   "반납완료": { color: C.muted,   bg: "#F8FAFC",   label: "반납완료" },
@@ -84,10 +85,10 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/calander.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-              <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 캘린더 페이지야!</div>
-              <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 캘린더 페이지야!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>
                 대여 일정을 한눈에 확인할 수 있어.<br/>내 예약 현황도 여기서 볼 수 있어 📅
               </div>
             </div>
@@ -180,6 +181,8 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               const isToday = d === today.getDate() && month === today.getMonth()+1 && year === today.getFullYear();
               const isSel   = sel === d;
               const dow     = new Date(year, month-1, d).getDay();
+              const holidayName = getKoreanHolidayName(year, month, d);
+              const isHoliday   = !!holidayName;
 
               return (
                 <div key={d} onClick={() => setSel(isSel ? null : d)} style={{
@@ -189,7 +192,12 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
                   transition:"all 0.15s",
                   minHeight: isAdmin ? 56 : 44,
                 }}>
-                  <div style={{ fontSize:13, fontWeight:isSel||isToday?800:400, color:isSel?"#fff":isToday?C.blue:dow===0?C.red:dow===6?C.blue:C.text, marginBottom:3 }}>{d}</div>
+                  <div style={{ fontSize:13, fontWeight:isSel||isToday?800:400, color:isSel?"#fff":isToday?C.blue:(dow===0||isHoliday)?C.red:dow===6?C.blue:C.text, marginBottom:3 }}>{d}</div>
+                  {isHoliday && (
+                    <div style={{ fontSize:8, fontWeight:700, color:isSel?"rgba(255,255,255,0.85)":C.red, marginBottom:2, lineHeight:1.1, wordBreak:"keep-all", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {holidayName}
+                    </div>
+                  )}
 
                   {/* 관리자: 이벤트 도트 + 건수 */}
                   {isAdmin && events.length > 0 && (
