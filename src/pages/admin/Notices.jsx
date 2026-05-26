@@ -11,7 +11,7 @@ export default function Notices({ isAdmin = true }) {
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
-  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: true, popup: false });
+  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false });
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
 
@@ -22,7 +22,7 @@ export default function Notices({ isAdmin = true }) {
                         authorRole === "assistant" ? "조교" :
                         authorRole === "professor" ? "교수" : "관리자";
     await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
-    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: true, popup: false });
+    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false });
     setShowAdd(false);
   };
 
@@ -94,10 +94,10 @@ export default function Notices({ isAdmin = true }) {
         <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/mega.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-              <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 공지사항 페이지야!</div>
-              <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>장비대여실의 새로운 소식과 공지를<br/>확인할 수 있어.<br/>중요한 내용은 꼭 읽어봐 📢</div>
+            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
+              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
+              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 공지사항 페이지야!</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비대여실의 새로운 소식과 공지를<br/>확인할 수 있어.<br/>중요한 내용은 꼭 읽어봐 📢</div>
             </div>
           </div>
         </div>
