@@ -38,6 +38,14 @@ export default function Community() {
   const isSuper    = profile?.role === "admin"; // 모든 관리자 동일
   const isAssist   = false;
   const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
+  // 실명 모드 사용 권한: 슈퍼관리자 + 조교만
+  const canUseRealName = profile?.role === "admin" &&
+    (adminRole === "super" || adminRole === "assistant");
+  // 관리자 역할 라벨
+  const adminRoleLabel = adminRole === "teacher"   ? "교사"
+                       : adminRole === "assistant" ? "조교"
+                       : adminRole === "professor" ? "교수"
+                       : "관리자";
 
   // 새내기 여부
   const studentId  = profile?.studentId || "";
@@ -47,11 +55,12 @@ export default function Community() {
   const [selPost, setSelPost]   = useState(null); // 상세 모달
   const [showWrite, setShowWrite] = useState(false);
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
-    lectureName:"", professor:"", schedule:"" }); // 강의 전용 필드
+    lectureName:"", professor:"", schedule:"", useRealName:false }); // 강의 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
   const [editForm,    setEditForm]    = useState({ title:"", content:"" });
   const [commentText, setCommentText] = useState("");
+  const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
   const imgInputRef = useRef(null);
@@ -67,12 +76,28 @@ export default function Community() {
 
   // 카테고리 기반 이름 표시
   const displayName = (post) => {
+    // 관리자가 실명 모드로 작성한 글: 이름(역할)로 모두에게 표시
+    if (post.useRealName && post.adminRoleAtWrite) {
+      const lbl = post.adminRoleAtWrite === "teacher"   ? "교사"
+                : post.adminRoleAtWrite === "assistant" ? "조교"
+                : post.adminRoleAtWrite === "professor" ? "교수"
+                : "관리자";
+      return `${post.authorName || "관리자"}(${lbl})`;
+    }
     if (post.category === LECTURE_CAT) return "익명"; // 강의는 항상 완전 익명
     if (REAL_CATS.includes(post.category)) return post.authorName || ""; // 실명
     if (canSeeReal) return `${post.authorName || "익명"} (익명)`; // 관리자는 실명 보임
     return "익명";
   };
   const displayCommentName = (c, postCategory) => {
+    // 관리자가 실명 모드로 작성한 댓글
+    if (c.useRealName && c.adminRoleAtWrite) {
+      const lbl = c.adminRoleAtWrite === "teacher"   ? "교사"
+                : c.adminRoleAtWrite === "assistant" ? "조교"
+                : c.adminRoleAtWrite === "professor" ? "교수"
+                : "관리자";
+      return `${c.authorName || "관리자"}(${lbl})`;
+    }
     if (postCategory === LECTURE_CAT) return "익명"; // 강의 댓글 항상 익명
     if (REAL_CATS.includes(postCategory)) return c.authorName || ""; // 실명 게시판 댓글
     if (canSeeReal) return `${c.authorName || "익명"} (익명)`;
@@ -114,6 +139,8 @@ export default function Community() {
     }
     setSubmitting(true);
     const isLecture = isLecturePost;
+    // 강의 게시판은 완전 익명이므로 실명 모드 사용 안 함
+    const useRealNameFinal = canUseRealName && writeForm.useRealName && !isLecture;
     await addItem("communityPosts", {
       title:       isLecture ? writeForm.lectureName.trim() : writeForm.title.trim(),
       content:     isLecture ? "" : writeForm.content.trim(),
@@ -125,6 +152,9 @@ export default function Community() {
       lectureName: isLecture ? writeForm.lectureName.trim() : "",
       professor:   isLecture ? writeForm.professor.trim() : "",
       schedule:    isLecture ? writeForm.schedule.trim() : "",
+      // 관리자 실명 모드 플래그
+      useRealName:        useRealNameFinal,
+      adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
       views:      0,
       likes:      0,
       likedBy:    [],
@@ -132,7 +162,7 @@ export default function Community() {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"" });
+    setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -141,12 +171,18 @@ export default function Community() {
   const submitComment = async (postId) => {
     if (!commentText.trim()) return;
     setSubmitting(true);
+    // 강의 게시판 댓글은 완전 익명이므로 실명 모드 사용 안 함
+    const postCategory = selPost?.category;
+    const useRealNameFinal = canUseRealName && commentUseRealName && postCategory !== LECTURE_CAT;
     await addItem("communityComments", {
       postId,
       content:    commentText.trim(),
       authorId:   profile?.uid || "",
       authorName: profile?.name || "",
       rating:     commentRating || 0,
+      // 관리자 실명 모드 플래그
+      useRealName:        useRealNameFinal,
+      adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
       likes:      0,
       likedBy:    [],
       dislikes:   0,
@@ -155,6 +191,7 @@ export default function Community() {
     });
     setCommentText("");
     setCommentRating(0);
+    setCommentUseRealName(false);
     setSubmitting(false);
   };
 
@@ -520,9 +557,26 @@ export default function Community() {
             <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
               style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
+            {/* 관리자(슈퍼/조교) 실명 체크박스 — 익명 게시판 + 강의 아닐 때만 */}
+            {canUseRealName && !REAL_CATS.includes(selPost.category) && selPost.category !== LECTURE_CAT && (
+              <label style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"5px 8px", background:C.blueLight, borderRadius:6, cursor:"pointer", border:`1px solid ${C.blue}` }}>
+                <input
+                  type="checkbox"
+                  checked={commentUseRealName}
+                  onChange={e => setCommentUseRealName(e.target.checked)}
+                  style={{ width:13, height:13, cursor:"pointer" }}
+                />
+                <span style={{ fontSize:11, fontWeight:600, color:C.navy }}>
+                  🏛️ 관리자 실명으로 댓글
+                  {commentUseRealName && <span style={{ color:C.muted, fontWeight:400, marginLeft:4 }}>→ {profile?.name || "관리자"}({adminRoleLabel})</span>}
+                </span>
+              </label>
+            )}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span style={{ fontSize:11, color:C.muted }}>
-                {REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다"}
+                {commentUseRealName && canUseRealName && selPost.category !== LECTURE_CAT
+                  ? `🏛️ ${profile?.name || "관리자"}(${adminRoleLabel}) 실명으로 게시됩니다`
+                  : (REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다")}
               </span>
               <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()} small>등록</Btn>
             </div>
@@ -569,6 +623,23 @@ export default function Community() {
             <div style={{ fontSize:10, color:C.muted, marginTop:6 }}>
               {REAL_CATS.includes(writeForm.category) ? "✅ 실명으로 게시됩니다" : "🔒 익명으로 게시됩니다"}
             </div>
+            {/* 관리자(슈퍼/조교)만 - 익명 게시판에서 실명 모드 선택 가능 */}
+            {canUseRealName && !REAL_CATS.includes(writeForm.category) && writeForm.category !== LECTURE_CAT && (
+              <label style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, padding:"8px 10px", background:C.blueLight, borderRadius:8, cursor:"pointer", border:`1px solid ${C.blue}` }}>
+                <input
+                  type="checkbox"
+                  checked={writeForm.useRealName}
+                  onChange={e => setWriteForm(p => ({ ...p, useRealName: e.target.checked }))}
+                  style={{ width:15, height:15, cursor:"pointer" }}
+                />
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:C.navy }}>🏛️ 관리자 실명으로 게시</div>
+                  <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>
+                    {writeForm.useRealName ? `→ "${profile?.name || "관리자"}(${adminRoleLabel})"로 표시됩니다` : "체크하면 익명 대신 이름·역할이 공개돼요"}
+                  </div>
+                </div>
+              </label>
+            )}
           </div>
 
           {/* 강의 게시판 전용 폼 */}
