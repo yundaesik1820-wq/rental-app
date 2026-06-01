@@ -274,7 +274,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
 
 
-      {/* 모바일 하단 2줄 네비 */}
+      {/* 모바일 하단 2줄 네비 (에브리타임에선 숨김 - 몰입 모드) */}
+      {tab !== "community" && (
       <div className="mobile-nav" style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0,
@@ -318,6 +319,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           </div>
         ))}
       </div>
+      )}
 
     </div>
   );

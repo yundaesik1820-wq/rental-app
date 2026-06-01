@@ -29,7 +29,7 @@ async function uploadImage(file) {
 const currentYear = new Date().getFullYear();
 const newbiePrefix = String(currentYear).slice(2); // ex) 2026 → "26"
 
-export default function Community() {
+export default function Community({ onExit }) {
   const { profile } = useAuth();
 
   // 진입 인트로 - 세션당 한 번만 표시
@@ -304,10 +304,48 @@ export default function Community() {
   const isAnon = (category) => ANON_CATS.includes(category) || !REAL_CATS.includes(category);
 
   return (
-    <div>
+    <>
       {/* 🎬 진입 인트로 (세션당 1회) */}
       {showIntro && <EveryTimeIntro onComplete={() => setShowIntro(false)} />}
 
+      {/* 🎬 시네마 톤 풀스크린 컨테이너 */}
+      <div style={{
+        position:"fixed", inset:0, zIndex:90,
+        background:"#0a0a0a",
+        color:"#fafaf9",
+        overflowY:"auto",
+        WebkitOverflowScrolling:"touch",
+        paddingBottom:"env(safe-area-inset-bottom, 16px)",
+      }}>
+        {/* 상단 시네마 헤더 - "← 메인으로" + 타이틀 */}
+        <div style={{
+          position:"sticky", top:0, zIndex:50,
+          background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
+          backdropFilter:"blur(8px)",
+          padding:"14px 18px 18px",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          borderBottom:"1px solid rgba(220,38,38,0.2)",
+        }}>
+          <button onClick={() => onExit && onExit()}
+            style={{
+              background:"rgba(220,38,38,0.1)",
+              border:"1px solid rgba(220,38,38,0.3)",
+              color:"#fafaf9", fontSize:12, fontWeight:600,
+              padding:"7px 14px", borderRadius:8, cursor:"pointer",
+              display:"flex", alignItems:"center", gap:6,
+            }}>
+            <span style={{ color:"#dc2626" }}>←</span> 메인으로
+          </button>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ color:"#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
+            <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>에브리타임</span>
+          </div>
+          <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
+        </div>
+
+        {/* 본문 콘텐츠 */}
+        <div style={{ padding:"4px 14px 80px", maxWidth:1000, margin:"0 auto" }}>
+    <div>
 {/* 페이지 안내 배너 */}
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
@@ -738,5 +776,8 @@ export default function Community() {
         </Modal>
       )}
     </div>
+        </div> {/* /본문 콘텐츠 */}
+      </div> {/* /시네마 풀스크린 컨테이너 */}
+    </>
   );
 }
