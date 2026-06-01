@@ -567,11 +567,13 @@ export default function Community({ onExit }) {
         </div>
       )}
 
-      {/* 게시글 상세 모달 */}
+      {/* 게시글 상세 모달 - 시네마 톤 */}
       {selPost && (
-        <Modal onClose={() => setSelPost(null)} width={600}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-            <span style={{ background:catBg(selPost.category), color:catColor(selPost.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{selPost.category}</span>
+        <Modal onClose={() => setSelPost(null)} width={600} cinema>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
+            <span style={{ background:CINEMA.redBg, color:CINEMA.redBright, borderRadius:4, padding:"3px 9px", fontSize:10, fontWeight:700, letterSpacing:"0.05em" }}>
+              {selPost.category}
+            </span>
             <div style={{ display:"flex", gap:6 }}>
               {canEditDelete(selPost) && (
                 <>
@@ -583,9 +585,9 @@ export default function Community({ onExit }) {
             </div>
           </div>
           {selPost.category === LECTURE_CAT ? (
-            <div style={{ marginBottom:16 }}>
-              <div style={{ fontSize:19, fontWeight:800, color:C.navy, marginBottom:6 }}>{selPost.lectureName}</div>
-              <div style={{ display:"flex", gap:12, fontSize:13, color:C.muted, flexWrap:"wrap" }}>
+            <div style={{ marginBottom:18 }}>
+              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8 }}>{selPost.lectureName}</div>
+              <div style={{ display:"flex", gap:12, fontSize:12, color:CINEMA.muted, flexWrap:"wrap" }}>
                 <span>👨‍🏫 {selPost.professor}</span>
                 {selPost.schedule && <span>🕐 {selPost.schedule}</span>}
                 {(() => {
@@ -593,114 +595,155 @@ export default function Community({ onExit }) {
                   const rated = pcs.filter(c => c.rating > 0);
                   if (!rated.length) return null;
                   const avg = (rated.reduce((s,c)=>s+(c.rating||0),0)/rated.length).toFixed(1);
-                  return <span style={{ color:C.yellow, fontWeight:700 }}>⭐ {avg} ({rated.length}명)</span>;
+                  return <span style={{ color:CINEMA.gold, fontWeight:700 }}>★ {avg} ({rated.length}명)</span>;
                 })()}
                 <span>👁 {selPost.views||0}</span>
               </div>
             </div>
           ) : (
             <div>
-              <div style={{ fontSize:19, fontWeight:800, color:C.navy, marginBottom:6 }}>{selPost.title}</div>
-              <div style={{ display:"flex", gap:12, fontSize:12, color:C.muted, marginBottom:16 }}>
-                <span>{displayName(selPost)}</span>
+              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8, lineHeight:1.3 }}>{selPost.title}</div>
+              <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:18, fontFamily:"'Courier New', monospace" }}>
+                <span style={{ color: selPost.useRealName ? CINEMA.gold : CINEMA.muted }}>
+                  {selPost.useRealName ? "🏛️ " : ""}{displayName(selPost)}
+                </span>
+                <span>·</span>
                 <span>{formatDate(selPost.createdAt)}</span>
+                <span>·</span>
                 <span>👁 {selPost.views||0}</span>
               </div>
-              <div style={{ fontSize:14, color:C.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+              <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
             </div>
           )}
           {selPost.images?.length > 0 && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${C.border}` }}>
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${CINEMA.border}` }}>
               {selPost.images.map((url, i) => (
                 <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => window.open(url,"_blank")}
-                  style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}`, display:"block" }} />
+                  style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${CINEMA.border}`, display:"block" }} />
               ))}
             </div>
           )}
 
-          {/* 추천/비추천 */}
-          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:20 }}>
+          {/* 추천/비추천 - 시네마 톤 (하트) */}
+          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:24 }}>
             <button onClick={() => toggleLike("post", selPost)}
-              style={{ background:(selPost.likedBy||[]).includes(profile?.uid)?C.blueLight:C.bg, border:`1px solid ${(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer", fontWeight:600 }}>
-              👍 {selPost.likes||0}
+              style={{
+                background:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBg : CINEMA.surface,
+                border:`1px solid ${(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.red : CINEMA.border}`,
+                borderRadius:20, padding:"7px 22px", fontSize:13,
+                color:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.muted,
+                cursor:"pointer", fontWeight:700,
+              }}>
+              ♥ {selPost.likes||0}
             </button>
             <button onClick={() => toggleDislike("post", selPost)}
-              style={{ background:(selPost.dislikedBy||[]).includes(profile?.uid)?C.redLight:C.bg, border:`1px solid ${(selPost.dislikedBy||[]).includes(profile?.uid)?C.red:C.border}`, borderRadius:20, padding:"6px 20px", fontSize:13, color:(selPost.dislikedBy||[]).includes(profile?.uid)?C.red:C.muted, cursor:"pointer", fontWeight:600 }}>
+              style={{
+                background:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.surface : CINEMA.surface,
+                border:`1px solid ${(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.muted : CINEMA.border}`,
+                borderRadius:20, padding:"7px 22px", fontSize:13,
+                color:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
+                cursor:"pointer", fontWeight:600,
+              }}>
               👎 {selPost.dislikes||0}
             </button>
           </div>
 
-          {/* 댓글 */}
-          <div style={{ fontSize:14, fontWeight:700, color:C.navy, marginBottom:12 }}>
-            댓글 {postComments(selPost.id).length}
+          {/* 댓글 헤더 - 시네마 톤 */}
+          <div style={{
+            fontSize:11, fontWeight:700, color:CINEMA.red, marginBottom:14,
+            fontFamily:"'Courier New', monospace", letterSpacing:"0.25em",
+            paddingBottom:8, borderBottom:`1px solid ${CINEMA.border}`,
+          }}>
+            ── COMMENTS · {postComments(selPost.id).length} ──
           </div>
-          {postComments(selPost.id).map(c => (
-            <div key={c.id} style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:8 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                  <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{displayCommentName(c, selPost.category)}</span>
-                  <span style={{ fontSize:11, color:C.muted }}>{formatDate(c.createdAt)}</span>
+          {postComments(selPost.id).map(c => {
+            const isMemoComment = c.useRealName && (c.adminRoleAtWrite === "super" || c.adminRoleAtWrite === "assistant");
+            return (
+              <div key={c.id} style={{
+                background: isMemoComment ? CINEMA.surfaceAlt : "transparent",
+                border: isMemoComment ? `1px dashed ${CINEMA.gold}` : "none",
+                borderBottom: isMemoComment ? `1px dashed ${CINEMA.gold}` : `1px solid ${CINEMA.border}`,
+                borderRadius: isMemoComment ? 6 : 0,
+                padding:"12px 10px", marginBottom: isMemoComment ? 10 : 0,
+              }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <span style={{
+                      fontSize:11, fontWeight:700,
+                      color: isMemoComment ? CINEMA.gold : CINEMA.text,
+                      fontFamily: isMemoComment ? "'Courier New', monospace" : "inherit",
+                    }}>
+                      {isMemoComment ? "🏛️ " : ""}{displayCommentName(c, selPost.category)}
+                    </span>
+                    <span style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>{formatDate(c.createdAt)}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <button onClick={() => toggleLike("comment", c)}
+                      style={{ background:"none", border:"none", fontSize:11,
+                        color:(c.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.mutedDim,
+                        cursor:"pointer", fontWeight:600 }}>
+                      ♥ {c.likes||0}
+                    </button>
+                    <button onClick={() => toggleDislike("comment", c)}
+                      style={{ background:"none", border:"none", fontSize:11,
+                        color:(c.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
+                        cursor:"pointer", fontWeight:500 }}>
+                      👎 {c.dislikes||0}
+                    </button>
+                    {isSuper && (
+                      <button onClick={() => adminDeleteComment(c.id)}
+                        style={{ background:"none", border:"none", color:CINEMA.red, fontSize:10, cursor:"pointer", fontWeight:600 }}>
+                        삭제
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <button onClick={() => toggleLike("comment", c)}
-                    style={{ background:"none", border:"none", fontSize:11, color:(c.likedBy||[]).includes(profile?.uid)?C.blue:C.muted, cursor:"pointer", fontWeight:600 }}>
-                    👍 {c.likes||0}
-                  </button>
-                  <button onClick={() => toggleDislike("comment", c)}
-                    style={{ background:"none", border:"none", fontSize:11, color:(c.dislikedBy||[]).includes(profile?.uid)?C.red:C.muted, cursor:"pointer", fontWeight:600 }}>
-                    👎 {c.dislikes||0}
-                  </button>
-                  {isSuper && (
-                    <button onClick={() => adminDeleteComment(c.id)}
-                      style={{ background:"none", border:"none", color:C.red, fontSize:11, cursor:"pointer" }}>삭제</button>
-                  )}
-                </div>
+                {selPost.category === LECTURE_CAT && c.rating > 0 && (
+                  <div style={{ fontSize:13, color:CINEMA.gold, marginBottom:5 }}>
+                    {"★".repeat(c.rating)}{"☆".repeat(5-c.rating)} <span style={{ fontSize:10, color:CINEMA.mutedDim, marginLeft:4 }}>({c.rating}/5)</span>
+                  </div>
+                )}
+                <div style={{ fontSize:13, color:CINEMA.text, lineHeight:1.6, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
               </div>
-              {selPost.category === LECTURE_CAT && c.rating > 0 && (
-                <div style={{ fontSize:13, color:C.yellow, marginBottom:4 }}>
-                  {"⭐".repeat(c.rating)} <span style={{ fontSize:11, color:C.muted }}>({c.rating}/5)</span>
-                </div>
-              )}
-              <div style={{ fontSize:13, color:C.text, lineHeight:1.6, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
-            </div>
-          ))}
+            );
+          })}
 
-          {/* 댓글 작성 */}
+          {/* 댓글 작성 - 시네마 톤 자막 박스 */}
           {selPost.category === LECTURE_CAT && (
-            <div style={{ marginTop:12, marginBottom:6 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:6 }}>별점</div>
+            <div style={{ marginTop:16, marginBottom:6 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:CINEMA.muted, marginBottom:6, fontFamily:"'Courier New', monospace", letterSpacing:"0.2em" }}>RATING</div>
               <div style={{ display:"flex", gap:4 }}>
                 {[1,2,3,4,5].map(n => (
                   <button key={n} onClick={() => setCommentRating(commentRating===n?0:n)}
-                    style={{ background:"none", border:"none", fontSize:24, cursor:"pointer", opacity:n<=commentRating?1:0.3 }}>
-                    ⭐
+                    style={{ background:"none", border:"none", fontSize:24, cursor:"pointer", color: n<=commentRating ? CINEMA.gold : CINEMA.border }}>
+                    ★
                   </button>
                 ))}
-                {commentRating > 0 && <span style={{ fontSize:12, color:C.muted, alignSelf:"center" }}>{commentRating}점</span>}
+                {commentRating > 0 && <span style={{ fontSize:12, color:CINEMA.muted, alignSelf:"center", marginLeft:4 }}>{commentRating}/5</span>}
               </div>
             </div>
           )}
-          <div style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, padding:"10px 14px", marginTop:8 }}>
+          <div style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.borderRed}`, borderRadius:10, padding:"10px 14px", marginTop:8 }}>
             <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
               onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
-              style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
+              style={{ width:"100%", background:"none", border:"none", color:CINEMA.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
             {/* 관리자(슈퍼/조교) 실명 체크박스 — 익명 게시판 + 강의 아닐 때만 */}
             {canUseRealName && !REAL_CATS.includes(selPost.category) && selPost.category !== LECTURE_CAT && (
-              <label style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"5px 8px", background:C.blueLight, borderRadius:6, cursor:"pointer", border:`1px solid ${C.blue}` }}>
+              <label style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"5px 8px", background:CINEMA.surfaceAlt, borderRadius:6, cursor:"pointer", border:`1px solid ${CINEMA.gold}` }}>
                 <input
                   type="checkbox"
                   checked={commentUseRealName}
                   onChange={e => setCommentUseRealName(e.target.checked)}
                   style={{ width:13, height:13, cursor:"pointer" }}
                 />
-                <span style={{ fontSize:11, fontWeight:600, color:C.navy }}>
+                <span style={{ fontSize:11, fontWeight:600, color:CINEMA.gold }}>
                   🏛️ 관리자 실명으로 댓글
-                  {commentUseRealName && <span style={{ color:C.muted, fontWeight:400, marginLeft:4 }}>→ {profile?.name || "관리자"}({adminRoleLabel})</span>}
+                  {commentUseRealName && <span style={{ color:CINEMA.muted, fontWeight:400, marginLeft:4 }}>→ {profile?.name || "관리자"}({adminRoleLabel})</span>}
                 </span>
               </label>
             )}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:11, color:C.muted }}>
+              <span style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>
                 {commentUseRealName && canUseRealName && selPost.category !== LECTURE_CAT
                   ? `🏛️ ${profile?.name || "관리자"}(${adminRoleLabel}) 실명으로 게시됩니다`
                   : (REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다")}
@@ -713,8 +756,11 @@ export default function Community({ onExit }) {
 
       {/* 수정 모달 */}
       {showEdit && selPost && (
-        <Modal onClose={() => setShowEdit(false)} width={540}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:16 }}>✏️ 게시글 수정</div>
+        <Modal onClose={() => setShowEdit(false)} width={540} cinema>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+            <span style={{ color:CINEMA.gold, fontSize:10, fontWeight:700, letterSpacing:"0.3em", fontFamily:"'Courier New', monospace" }}>✎ EDIT</span>
+            <span style={{ fontSize:18, fontWeight:800, color:CINEMA.text, letterSpacing:"0.05em" }}>글 수정</span>
+          </div>
           <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
           <div style={{ marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
@@ -730,29 +776,40 @@ export default function Community({ onExit }) {
 
       {/* 글쓰기 모달 */}
       {showWrite && (
-        <Modal onClose={() => setShowWrite(false)} width={540}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>✏️ 글쓰기</div>
+        <Modal onClose={() => setShowWrite(false)} width={540} cinema>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18 }}>
+            <span style={{ color:CINEMA.red, fontSize:10, fontWeight:700, letterSpacing:"0.3em", fontFamily:"'Courier New', monospace" }}>● REC</span>
+            <span style={{ fontSize:18, fontWeight:800, color:CINEMA.text, letterSpacing:"0.05em" }}>새 글 작성</span>
+          </div>
 
           {/* 카테고리 선택 */}
-          <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>카테고리</div>
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:10, fontWeight:700, color:CINEMA.muted, marginBottom:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.25em" }}>CATEGORY</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
               {CATEGORIES.filter(c => c !== "전체").map(c => {
                 const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
+                const active = writeForm.category === c;
                 return (
                   <button key={c} onClick={() => !isLocked && setWriteForm(p=>({...p, category:c}))}
-                    style={{ padding:"5px 12px", borderRadius:12, border:`1px solid ${writeForm.category===c?catColor(c):C.border}`, background:writeForm.category===c?catBg(c):C.bg, color:writeForm.category===c?catColor(c):isLocked?C.border:C.muted, fontSize:12, fontWeight:600, cursor:isLocked?"not-allowed":"pointer" }}>
+                    style={{
+                      padding:"6px 13px", borderRadius:14,
+                      border:`1px solid ${active ? CINEMA.red : CINEMA.border}`,
+                      background: active ? CINEMA.red : CINEMA.surface,
+                      color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
+                      fontSize:11, fontWeight: active ? 700 : 500,
+                      cursor: isLocked ? "not-allowed" : "pointer",
+                    }}>
                     {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
                   </button>
                 );
               })}
             </div>
-            <div style={{ fontSize:10, color:C.muted, marginTop:6 }}>
+            <div style={{ fontSize:10, color:CINEMA.mutedDim, marginTop:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>
               {REAL_CATS.includes(writeForm.category) ? "✅ 실명으로 게시됩니다" : "🔒 익명으로 게시됩니다"}
             </div>
             {/* 관리자(슈퍼/조교)만 - 익명 게시판에서 실명 모드 선택 가능 */}
             {canUseRealName && !REAL_CATS.includes(writeForm.category) && writeForm.category !== LECTURE_CAT && (
-              <label style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, padding:"8px 10px", background:C.blueLight, borderRadius:8, cursor:"pointer", border:`1px solid ${C.blue}` }}>
+              <label style={{ display:"flex", alignItems:"center", gap:8, marginTop:10, padding:"8px 10px", background:CINEMA.surfaceAlt, borderRadius:8, cursor:"pointer", border:`1px dashed ${CINEMA.gold}` }}>
                 <input
                   type="checkbox"
                   checked={writeForm.useRealName}
@@ -760,8 +817,8 @@ export default function Community({ onExit }) {
                   style={{ width:15, height:15, cursor:"pointer" }}
                 />
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:C.navy }}>🏛️ 관리자 실명으로 게시</div>
-                  <div style={{ fontSize:10, color:C.muted, marginTop:1 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:CINEMA.gold }}>🏛️ 관리자 실명으로 게시</div>
+                  <div style={{ fontSize:10, color:CINEMA.muted, marginTop:1 }}>
                     {writeForm.useRealName ? `→ "${profile?.name || "관리자"}(${adminRoleLabel})"로 표시됩니다` : "체크하면 익명 대신 이름·역할이 공개돼요"}
                   </div>
                 </div>
