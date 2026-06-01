@@ -254,25 +254,15 @@ export default function Community({ onExit }) {
     }
   };
 
-  // 조회수 증가 (5분 쿨다운)
+  // 조회수 증가 (쿨다운 없음 - 클릭할 때마다 +1)
   const openPost = async (post) => {
     // 새내기 게시판은 신입생만 열람 가능
     if (post.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
       alert("🌱 새내기 게시판은 신입생만 열람할 수 있어요!");
       return;
     }
-    // 5분 쿨다운 체크 (localStorage)
-    const viewKey = `viewed_${profile?.uid}_${post.id}`;
-    const lastViewed = parseInt(localStorage.getItem(viewKey) || "0");
-    const now = Date.now();
-    const COOLDOWN = 5 * 60 * 1000; // 5분
-    if (now - lastViewed > COOLDOWN) {
-      localStorage.setItem(viewKey, String(now));
-      await updateItem("communityPosts", post.id, { views: (post.views || 0) + 1 });
-      setSelPost({ ...post, views: (post.views || 0) + 1 });
-    } else {
-      setSelPost(post);
-    }
+    await updateItem("communityPosts", post.id, { views: (post.views || 0) + 1 });
+    setSelPost({ ...post, views: (post.views || 0) + 1 });
     setCommentText("");
   };
 
