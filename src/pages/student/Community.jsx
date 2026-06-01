@@ -76,6 +76,7 @@ export default function Community({ onExit }) {
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
+  const [selImage, setSelImage]   = useState(null); // 이미지 라이트박스
   const imgInputRef = useRef(null);
   const [search, setSearch]           = useState("");
   const [page, setPage]               = useState(1);
@@ -618,19 +619,19 @@ export default function Community({ onExit }) {
           {selPost.images?.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${CINEMA.border}` }}>
               {selPost.images.map((url, i) => (
-                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => window.open(url,"_blank")}
+                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => setSelImage(url)}
                   style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${CINEMA.border}`, display:"block" }} />
               ))}
             </div>
           )}
 
           {/* 추천/비추천 - 시네마 톤 (하트) */}
-          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:24 }}>
+          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
             <button onClick={() => toggleLike("post", selPost)}
               style={{
                 background:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBg : CINEMA.surface,
                 border:`1px solid ${(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.red : CINEMA.border}`,
-                borderRadius:20, padding:"7px 22px", fontSize:13,
+                borderRadius:20, padding:"6px 20px", fontSize:13,
                 color:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.muted,
                 cursor:"pointer", fontWeight:700,
               }}>
@@ -640,7 +641,7 @@ export default function Community({ onExit }) {
               style={{
                 background:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.surface : CINEMA.surface,
                 border:`1px solid ${(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.muted : CINEMA.border}`,
-                borderRadius:20, padding:"7px 22px", fontSize:13,
+                borderRadius:20, padding:"6px 20px", fontSize:13,
                 color:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
                 cursor:"pointer", fontWeight:600,
               }}>
@@ -650,9 +651,9 @@ export default function Community({ onExit }) {
 
           {/* 댓글 헤더 - 시네마 톤 */}
           <div style={{
-            fontSize:11, fontWeight:700, color:CINEMA.red, marginBottom:14,
+            fontSize:10, fontWeight:700, color:CINEMA.red, marginBottom:10,
             fontFamily:"'Courier New', monospace", letterSpacing:"0.25em",
-            paddingBottom:8, borderBottom:`1px solid ${CINEMA.border}`,
+            paddingBottom:6, borderBottom:`1px solid ${CINEMA.border}`,
           }}>
             ── COMMENTS · {postComments(selPost.id).length} ──
           </div>
@@ -664,9 +665,10 @@ export default function Community({ onExit }) {
                 border: isMemoComment ? `1px dashed ${CINEMA.gold}` : "none",
                 borderBottom: isMemoComment ? `1px dashed ${CINEMA.gold}` : `1px solid ${CINEMA.border}`,
                 borderRadius: isMemoComment ? 6 : 0,
-                padding:"12px 10px", marginBottom: isMemoComment ? 10 : 0,
+                padding: isMemoComment ? "9px 10px" : "8px 4px",
+                marginBottom: isMemoComment ? 8 : 0,
               }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
                   <div style={{ display:"flex", gap:8, alignItems:"center" }}>
                     <span style={{
                       fontSize:11, fontWeight:700,
@@ -681,29 +683,29 @@ export default function Community({ onExit }) {
                     <button onClick={() => toggleLike("comment", c)}
                       style={{ background:"none", border:"none", fontSize:11,
                         color:(c.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.mutedDim,
-                        cursor:"pointer", fontWeight:600 }}>
+                        cursor:"pointer", fontWeight:600, padding:0 }}>
                       ♥ {c.likes||0}
                     </button>
                     <button onClick={() => toggleDislike("comment", c)}
                       style={{ background:"none", border:"none", fontSize:11,
                         color:(c.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
-                        cursor:"pointer", fontWeight:500 }}>
+                        cursor:"pointer", fontWeight:500, padding:0 }}>
                       👎 {c.dislikes||0}
                     </button>
                     {isSuper && (
                       <button onClick={() => adminDeleteComment(c.id)}
-                        style={{ background:"none", border:"none", color:CINEMA.red, fontSize:10, cursor:"pointer", fontWeight:600 }}>
+                        style={{ background:"none", border:"none", color:CINEMA.red, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
                         삭제
                       </button>
                     )}
                   </div>
                 </div>
                 {selPost.category === LECTURE_CAT && c.rating > 0 && (
-                  <div style={{ fontSize:13, color:CINEMA.gold, marginBottom:5 }}>
+                  <div style={{ fontSize:12, color:CINEMA.gold, marginBottom:3 }}>
                     {"★".repeat(c.rating)}{"☆".repeat(5-c.rating)} <span style={{ fontSize:10, color:CINEMA.mutedDim, marginLeft:4 }}>({c.rating}/5)</span>
                   </div>
                 )}
-                <div style={{ fontSize:13, color:CINEMA.text, lineHeight:1.6, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
+                <div style={{ fontSize:13, color:CINEMA.text, lineHeight:1.55, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
               </div>
             );
           })}
@@ -907,6 +909,45 @@ export default function Community({ onExit }) {
       )}
     </div>
         </div> {/* /본문 콘텐츠 */}
+
+        {/* 🖼️ 이미지 라이트박스 — 사진 클릭 시 풀스크린 뷰어 */}
+        {selImage && (
+          <div onClick={() => setSelImage(null)}
+            style={{
+              position:"fixed", inset:0, zIndex:9999,
+              background:"rgba(0,0,0,0.95)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              padding:20, cursor:"zoom-out",
+            }}>
+            {/* 닫기 버튼 */}
+            <button onClick={(e) => { e.stopPropagation(); setSelImage(null); }}
+              aria-label="닫기"
+              style={{
+                position:"absolute", top:"calc(20px + env(safe-area-inset-top, 0px))", right:20,
+                background:"rgba(255,255,255,0.1)", border:"1px solid rgba(255,255,255,0.3)",
+                color:"#fff", fontSize:24, fontWeight:300,
+                width:42, height:42, borderRadius:"50%",
+                cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+                lineHeight:1, padding:0,
+              }}>✕</button>
+            {/* 이미지 */}
+            <img src={selImage} alt="확대 이미지"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                maxWidth:"100%", maxHeight:"90vh", objectFit:"contain",
+                borderRadius:4, cursor:"default",
+              }} />
+            {/* 안내 텍스트 */}
+            <div style={{
+              position:"absolute", bottom:"calc(20px + env(safe-area-inset-bottom, 0px))",
+              left:0, right:0, textAlign:"center",
+              color:"#a8a29e", fontSize:11,
+              fontFamily:"'Courier New', monospace", letterSpacing:"0.15em",
+            }}>
+              TAP TO CLOSE
+            </div>
+          </div>
+        )}
 
         {/* 🎬 글쓰기 FAB (시네마 빨강) */}
         <button

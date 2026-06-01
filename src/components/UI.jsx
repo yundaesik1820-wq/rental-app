@@ -76,8 +76,8 @@ export function Empty({ icon, text }) {
 
 export function Modal({ children, onClose, width = 420, cinema = false }) {
   return (
-    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: cinema ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)", padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: cinema ? "#0a0a0a" : C.surface, border: cinema ? "1px solid #2a2a2a" : "none", borderRadius: cinema ? 12 : 20, padding: 24, width: "100%", maxWidth: width, boxShadow: cinema ? "0 20px 60px rgba(220,38,38,0.2)" : "0 20px 60px rgba(0,0,0,0.25)", maxHeight: "90vh", overflowY: "auto", color: cinema ? "#fafaf9" : "inherit" }}>
+    <div onClick={onClose} style={{ position: "fixed", inset: 0, background: cinema ? "rgba(0,0,0,0.85)" : "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000, backdropFilter: "blur(4px)", padding: cinema ? 12 : 20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: cinema ? "#0a0a0a" : C.surface, border: cinema ? "1px solid #2a2a2a" : "none", borderRadius: cinema ? 12 : 20, padding: cinema ? "18px 18px" : 28, width: "100%", maxWidth: width, boxShadow: cinema ? "0 20px 60px rgba(220,38,38,0.2)" : "0 20px 60px rgba(0,0,0,0.25)", maxHeight: cinema ? "94vh" : "90vh", overflowY: "auto", color: cinema ? "#fafaf9" : "inherit" }}>
         {children}
       </div>
     </div>
