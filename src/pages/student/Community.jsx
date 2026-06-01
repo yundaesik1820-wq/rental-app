@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -6,6 +6,7 @@ import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
+import EveryTimeIntro from "../../components/EveryTimeIntro";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "장터", "새내기"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기"]; // 익명
@@ -30,6 +31,18 @@ const newbiePrefix = String(currentYear).slice(2); // ex) 2026 → "26"
 
 export default function Community() {
   const { profile } = useAuth();
+
+  // 진입 인트로 - 세션당 한 번만 표시
+  const INTRO_KEY = "everytime_intro_shown_session";
+  const [showIntro, setShowIntro] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem(INTRO_KEY) !== "1";
+  });
+  useEffect(() => {
+    if (!showIntro && typeof window !== "undefined") {
+      sessionStorage.setItem(INTRO_KEY, "1");
+    }
+  }, [showIntro]);
 
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
@@ -292,6 +305,9 @@ export default function Community() {
 
   return (
     <div>
+      {/* 🎬 진입 인트로 (세션당 1회) */}
+      {showIntro && <EveryTimeIntro onComplete={() => setShowIntro(false)} />}
+
 {/* 페이지 안내 배너 */}
       <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
         <div style={{ display:"flex", alignItems:"center", gap:12 }}>
