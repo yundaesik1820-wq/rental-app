@@ -54,11 +54,10 @@ export default function Community({ onExit }) {
   // 실명 모드 사용 권한: 슈퍼관리자 + 조교만
   const canUseRealName = profile?.role === "admin" &&
     (adminRole === "super" || adminRole === "assistant");
-  // 관리자 역할 라벨
+  // 관리자 역할 라벨 (에브리타임에서는 super도 조교로 표시 - 학생 친화적)
   const adminRoleLabel = adminRole === "teacher"   ? "교사"
-                       : adminRole === "assistant" ? "조교"
                        : adminRole === "professor" ? "교수"
-                       : "관리자";
+                       : "조교";  // super, assistant 둘 다 조교
 
   // 새내기 여부
   const studentId  = profile?.studentId || "";
@@ -111,9 +110,8 @@ export default function Community({ onExit }) {
     // 관리자가 실명 모드로 작성한 글: 이름(역할)로 모두에게 표시
     if (post.useRealName && post.adminRoleAtWrite) {
       const lbl = post.adminRoleAtWrite === "teacher"   ? "교사"
-                : post.adminRoleAtWrite === "assistant" ? "조교"
                 : post.adminRoleAtWrite === "professor" ? "교수"
-                : "관리자";
+                : "조교";  // super, assistant 둘 다 조교
       return `${post.authorName || "관리자"}(${lbl})`;
     }
     if (post.category === LECTURE_CAT) return "익명"; // 강의는 항상 완전 익명
@@ -125,9 +123,8 @@ export default function Community({ onExit }) {
     // 관리자가 실명 모드로 작성한 댓글
     if (c.useRealName && c.adminRoleAtWrite) {
       const lbl = c.adminRoleAtWrite === "teacher"   ? "교사"
-                : c.adminRoleAtWrite === "assistant" ? "조교"
                 : c.adminRoleAtWrite === "professor" ? "교수"
-                : "관리자";
+                : "조교";  // super, assistant 둘 다 조교
       return `${c.authorName || "관리자"}(${lbl})`;
     }
     if (postCategory === LECTURE_CAT) return "익명"; // 강의 댓글 항상 익명
