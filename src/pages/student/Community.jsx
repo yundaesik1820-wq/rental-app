@@ -81,6 +81,24 @@ export default function Community({ onExit }) {
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
 
+  // 🎬 시네마 톤 컬러 팔레트
+  const CINEMA = {
+    bg:        "#0a0a0a",
+    surface:   "#1a1a1a",
+    surfaceAlt:"#16130d",  // 메모지 골드 배경
+    border:    "#2a2a2a",
+    borderRed: "rgba(220,38,38,0.3)",
+    text:      "#fafaf9",
+    muted:     "#a8a29e",
+    mutedDim:  "#71706b",
+    red:       "#dc2626",
+    redBright: "#ef4444",
+    redBg:     "rgba(220,38,38,0.15)",
+    gold:      "#fbbf24",
+    goldBg:    "rgba(251,191,36,0.15)",
+    goldText:  "#92400e",
+  };
+
   const formatDate = (ts) => {
     if (!ts?.seconds) return "";
     const d = new Date(ts.seconds * 1000);
@@ -346,48 +364,43 @@ export default function Community({ onExit }) {
         {/* 본문 콘텐츠 */}
         <div style={{ padding:"4px 14px 80px", maxWidth:1000, margin:"0 auto" }}>
     <div>
-{/* 페이지 안내 배너 */}
-      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/community.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 에브리타임 페이지야!</div>
-            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>익명으로 자유롭게 소통할 수 있어.
-질문, 정보, 저격까지 다양한 글을 올릴 수 있어 💬</div>
-          </div>
-        </div>
-      </div>
+{/* 페이지 안내 배너 제거됨 - 시네마 헤더가 대체 */}
 
       {/* 공지 팝업 제거됨 */}
 
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-        <PageTitle>에브리타임</PageTitle>
-        <Btn onClick={() => setShowWrite(true)} color={C.navy}>✏️ 글쓰기</Btn>
-      </div>
+      {/* PageTitle 제거됨 (헤더의 "에브리타임"이 대체) - 글쓰기는 우하단 FAB으로 이동 */}
 
-      {/* 카테고리 탭 - 1줄 스크롤 */}
-      <div style={{ display:"flex", gap:4, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch" }}>
+      {/* 카테고리 탭 - 시네마 톤 pill */}
+      <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch", marginTop:14 }}>
         {CATEGORIES.map(c => {
           const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
+          const active = cat === c;
           return (
             <button key={c} onClick={() => { setCat(c); setPage(1); }}
-              style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${cat===c?C.navy:C.border}`,
-                background:cat===c?C.navy:C.bg, color:cat===c?"#fff":isLocked?C.border:C.muted,
-                fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
-                display:"flex", alignItems:"center", gap:3 }}>
+              style={{ padding:"6px 14px", borderRadius:14,
+                border:`1px solid ${active ? CINEMA.red : CINEMA.border}`,
+                background: active ? CINEMA.red : CINEMA.surface,
+                color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
+                fontSize:11, fontWeight: active ? 700 : 500, cursor:"pointer",
+                whiteSpace:"nowrap", flexShrink:0,
+                display:"flex", alignItems:"center", gap:3,
+                transition:"all 0.15s",
+              }}>
               {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
             </button>
           );
         })}
       </div>
-      <div style={{ fontSize:10, color:C.muted, marginBottom:10 }}>
+      <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
         익명: 자유·질문·강의·새내기 &nbsp;|&nbsp; 실명: 정보·취업·장터
       </div>
 
-      {/* 검색 */}
+      {/* 검색 - 시네마 톤 */}
       <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-        style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:16, boxSizing:"border-box" }} />
+        style={{ display:"block", width:"100%", background:CINEMA.surface,
+          border:`1px solid ${CINEMA.border}`, borderRadius:10, color:CINEMA.text,
+          padding:"10px 16px", fontSize:13, fontFamily:"inherit", outline:"none",
+          marginBottom:16, boxSizing:"border-box" }} />
 
       {/* 인기 게시글 TOP3 */}
       {(() => {
@@ -399,24 +412,23 @@ export default function Community({ onExit }) {
           ).slice(0, 3);
         if (top3.length === 0) return null;
         return (
-          <div style={{ background:C.yellowLight, borderRadius:14, padding:"14px 16px", marginBottom:16, border:`1px solid ${C.yellow}40` }}>
-            <div style={{ fontSize:13, fontWeight:700, color:"#92400E", marginBottom:10 }}>
-              🔥 인기 게시글 TOP 3
+          <div style={{ background:CINEMA.surfaceAlt, borderRadius:10, padding:"12px 14px", marginBottom:16, border:`1px dashed ${CINEMA.gold}` }}>
+            <div style={{ fontSize:11, fontWeight:700, color:CINEMA.gold, marginBottom:10, letterSpacing:"0.2em", fontFamily:"'Courier New', monospace" }}>
+              ★ BOX OFFICE · TOP 3
             </div>
             {top3.map((p, i) => (
               <div key={p.id} onClick={() => openPost(p)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"7px 0", borderBottom: i<2?`1px solid ${C.yellow}30`:"none", cursor:"pointer" }}>
-                <span style={{ fontSize:15, fontWeight:900, color:["#F59E0B","#9CA3AF","#CD7C3A"][i], minWidth:20 }}>
-                  {["1","2","3"][i]}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom: i<2?`1px solid rgba(251,191,36,0.15)`:"none", cursor:"pointer" }}>
+                <span style={{ fontSize:15, fontWeight:900, color:["#fbbf24","#a8a29e","#cd7c3a"][i], minWidth:20, fontFamily:"'Courier New', monospace" }}>
+                  {["01","02","03"][i]}
                 </span>
-                <span style={{ fontSize:12, background:C.yellowLight, border:`1px solid ${C.yellow}60`, borderRadius:5, padding:"1px 6px", color:"#92400E", flexShrink:0 }}>
+                <span style={{ fontSize:10, background:CINEMA.goldBg, border:`1px solid ${CINEMA.gold}60`, borderRadius:4, padding:"1px 6px", color:CINEMA.gold, flexShrink:0, fontWeight:600 }}>
                   {p.category}
                 </span>
-                <span style={{ fontSize:13, fontWeight:600, color:C.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-                <div style={{ display:"flex", gap:8, fontSize:11, color:C.muted, flexShrink:0 }}>
+                <span style={{ fontSize:12, fontWeight:600, color:CINEMA.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                <div style={{ display:"flex", gap:8, fontSize:10, color:CINEMA.muted, flexShrink:0 }}>
                   <span>👁 {p.views||0}</span>
-                  <span>👍 {p.likes||0}</span>
-                  {(p.dislikes||0) > 0 && <span>👎 {p.dislikes||0}</span>}
+                  <span style={{ color: CINEMA.redBright }}>♥ {p.likes||0}</span>
                   <span>💬 {postComments(p.id).length}</span>
                 </div>
               </div>
@@ -425,71 +437,132 @@ export default function Community({ onExit }) {
         );
       })()}
 
-      {/* 게시글 목록 */}
-      {filtered.length === 0 && <Empty icon="📝" text="게시글이 없습니다" />}
+      {/* 게시글 목록 - 시네마 톤 */}
+      {filtered.length === 0 && (
+        <div style={{ textAlign:"center", padding:"60px 20px", color:CINEMA.mutedDim }}>
+          <div style={{ fontSize:48, opacity:0.3, marginBottom:12 }}>📝</div>
+          <div style={{ fontSize:13, fontFamily:"'Courier New', monospace", letterSpacing:"0.15em" }}>NO POSTS YET</div>
+        </div>
+      )}
       {filtered.map(p => {
         const pComments = postComments(p.id);
         const isLecture = p.category === LECTURE_CAT;
         const avgRating = isLecture && pComments.length > 0
           ? (pComments.reduce((s,c) => s+(c.rating||0), 0) / pComments.length).toFixed(1)
           : null;
-        return (
-          <Card key={p.id} onClick={() => openPost(p)} style={{ marginBottom:10, cursor:"pointer" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:6 }}>
-              <div style={{ display:"flex", gap:6, alignItems:"center", flex:1, minWidth:0 }}>
-                <span style={{ background:catBg(p.category), color:catColor(p.category), borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700, flexShrink:0 }}>{p.category}</span>
-                <span style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {isLecture ? p.lectureName : p.title}
+        // 관리자 실명 모드 글은 메모지(C) 스타일로 강조
+        const isMemo = p.useRealName && (p.adminRoleAtWrite === "super" || p.adminRoleAtWrite === "assistant");
+
+        if (isMemo) {
+          // ===== C 스타일: 골드 메모지 =====
+          return (
+            <div key={p.id} onClick={() => openPost(p)}
+              style={{
+                background:CINEMA.surfaceAlt, border:`1px dashed ${CINEMA.gold}`,
+                borderRadius:6, padding:"13px 14px", marginBottom:10, cursor:"pointer",
+              }}>
+              <div style={{
+                fontFamily:"'Courier New', monospace", fontSize:9, color:CINEMA.gold,
+                letterSpacing:"0.25em", marginBottom:8, fontWeight:700,
+              }}>
+                ★ MEMO PINNED · {p.category}
+              </div>
+              <div style={{ fontSize:14, fontWeight:700, color:CINEMA.text, marginBottom:6, lineHeight:1.35 }}>
+                {isLecture ? p.lectureName : p.title}
+              </div>
+              {isLecture && (
+                <div style={{ fontSize:11, color:CINEMA.muted, marginBottom:6 }}>
+                  👨‍🏫 {p.professor}
+                  {avgRating && <span style={{ marginLeft:10, color:CINEMA.gold, fontWeight:700 }}>★ {avgRating}</span>}
+                </div>
+              )}
+              {!isLecture && p.content && (
+                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+              )}
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:CINEMA.muted, display:"flex", gap:8, alignItems:"center" }}>
+                <span style={{ color:CINEMA.gold }}>🏛️ {displayName(p)}</span>
+                <span>·</span>
+                <span>{formatDate(p.createdAt)}</span>
+                <span style={{ marginLeft:"auto", display:"flex", gap:10, alignItems:"center" }}>
+                  <span>👁 {p.views||0}</span>
+                  <span style={{ color:CINEMA.redBright }}>♥ {p.likes||0}</span>
+                  <span>💬 {pComments.length}</span>
+                  {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
                 </span>
               </div>
-              <span style={{ fontSize:11, color:C.muted, flexShrink:0, marginLeft:8 }}>{formatDate(p.createdAt)}</span>
+            </div>
+          );
+        }
+
+        // ===== A 스타일: 일반 글 카드 =====
+        return (
+          <div key={p.id} onClick={() => openPost(p)}
+            style={{
+              background:CINEMA.surface, borderLeft:`3px solid ${CINEMA.red}`,
+              borderRadius:6, padding:"11px 12px", marginBottom:9, cursor:"pointer",
+              border:`1px solid ${CINEMA.border}`, borderLeftWidth:3, borderLeftColor:CINEMA.red,
+            }}>
+            <div style={{ display:"flex", gap:6, marginBottom:6, alignItems:"center" }}>
+              <span style={{ background:CINEMA.redBg, color:CINEMA.redBright, fontSize:9, padding:"2px 7px", borderRadius:3, fontWeight:700, letterSpacing:"0.05em", flexShrink:0 }}>
+                {p.category}
+              </span>
+              <span style={{ fontSize:9, color:CINEMA.mutedDim, marginLeft:"auto", flexShrink:0 }}>
+                {formatDate(p.createdAt)}
+              </span>
+            </div>
+            <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:6, lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {isLecture ? p.lectureName : p.title}
             </div>
             {isLecture ? (
-              <div style={{ fontSize:12, color:C.muted, marginBottom:6 }}>
-                <span>👨‍🏫 {p.professor}</span>
+              <div style={{ fontSize:11, color:CINEMA.muted, marginBottom:6 }}>
+                👨‍🏫 {p.professor}
                 {p.schedule && <span style={{ marginLeft:10 }}>🕐 {p.schedule}</span>}
-                {avgRating && <span style={{ marginLeft:10, color:C.yellow, fontWeight:700 }}>⭐ {avgRating}</span>}
+                {avgRating && <span style={{ marginLeft:10, color:CINEMA.gold, fontWeight:700 }}>★ {avgRating}</span>}
               </div>
             ) : (
-              <div style={{ fontSize:13, color:C.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+              p.content && (
+                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:7, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+              )
             )}
-            <div style={{ display:"flex", gap:14, fontSize:12, color:C.muted }}>
-              <span>👁 {p.views||0}</span>
-              {!isLecture && <span>👍 {p.likes||0}</span>}
-              <span>💬 {pComments.length}{isLecture && avgRating ? ` · ⭐${avgRating}` : ""}</span>
-              <span style={{ marginLeft:"auto" }}>{displayName(p)}</span>
-              {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
+            <div style={{ fontSize:10, color:CINEMA.muted, display:"flex", gap:10, alignItems:"center" }}>
+              <span>{displayName(p)}</span>
+              <span style={{ marginLeft:"auto", display:"flex", gap:10, alignItems:"center" }}>
+                <span>👁 {p.views||0}</span>
+                {!isLecture && <span style={{ color:CINEMA.redBright }}>♥ {p.likes||0}</span>}
+                <span>💬 {pComments.length}</span>
+                {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
+              </span>
             </div>
-          </Card>
+          </div>
         );
       })}
 
-      {/* 페이지네이션 */}
+      {/* 페이지네이션 - 시네마 톤 */}
       {totalPages > 1 && (
         <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:6, marginTop:16, flexWrap:"wrap" }}>
           <button onClick={() => setPage(1)} disabled={page===1}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", fontSize:12, color:page===1?C.border:C.muted, cursor:page===1?"not-allowed":"pointer" }}>«</button>
+            style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:6, padding:"6px 10px", fontSize:12, color:page===1?CINEMA.mutedDim:CINEMA.muted, cursor:page===1?"not-allowed":"pointer" }}>«</button>
           <button onClick={() => setPage(p=>Math.max(1,p-1))} disabled={page===1}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, color:page===1?C.border:C.muted, cursor:page===1?"not-allowed":"pointer" }}>‹</button>
+            style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:6, padding:"6px 12px", fontSize:12, color:page===1?CINEMA.mutedDim:CINEMA.muted, cursor:page===1?"not-allowed":"pointer" }}>‹</button>
           {Array.from({length:totalPages},(_,i)=>i+1)
             .filter(n => n===1 || n===totalPages || Math.abs(n-page)<=1)
             .reduce((acc,n,i,arr) => { if(i>0 && n-arr[i-1]>1) acc.push("..."); acc.push(n); return acc; },[])
             .map((n,i) => n==="..." ? (
-              <span key={`d${i}`} style={{ color:C.muted, fontSize:12 }}>…</span>
+              <span key={`d${i}`} style={{ color:CINEMA.muted, fontSize:12 }}>…</span>
             ) : (
               <button key={n} onClick={() => setPage(n)}
-                style={{ background:page===n?C.navy:"none", border:`1px solid ${page===n?C.navy:C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:page===n?700:400, color:page===n?"#fff":C.muted, cursor:"pointer" }}>
+                style={{ background:page===n?CINEMA.red:CINEMA.surface, border:`1px solid ${page===n?CINEMA.red:CINEMA.border}`, borderRadius:6, padding:"6px 12px", fontSize:12, fontWeight:page===n?700:400, color:page===n?"#fff":CINEMA.muted, cursor:"pointer" }}>
                 {n}
               </button>
             ))}
           <button onClick={() => setPage(p=>Math.min(totalPages,p+1))} disabled={page===totalPages}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 12px", fontSize:12, color:page===totalPages?C.border:C.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>›</button>
+            style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:6, padding:"6px 12px", fontSize:12, color:page===totalPages?CINEMA.mutedDim:CINEMA.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>›</button>
           <button onClick={() => setPage(totalPages)} disabled={page===totalPages}
-            style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:8, padding:"6px 10px", fontSize:12, color:page===totalPages?C.border:C.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>»</button>
+            style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:6, padding:"6px 10px", fontSize:12, color:page===totalPages?CINEMA.mutedDim:CINEMA.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>»</button>
         </div>
       )}
       {allFiltered.length > 0 && (
-        <div style={{ fontSize:11, color:C.muted, textAlign:"center", marginTop:6 }}>
+        <div style={{ fontSize:10, color:CINEMA.mutedDim, textAlign:"center", marginTop:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>
           {(page-1)*PAGE_SIZE+1}~{Math.min(page*PAGE_SIZE, allFiltered.length)} / 전체 {allFiltered.length}개
         </div>
       )}
@@ -777,6 +850,27 @@ export default function Community({ onExit }) {
       )}
     </div>
         </div> {/* /본문 콘텐츠 */}
+
+        {/* 🎬 글쓰기 FAB (시네마 빨강) */}
+        <button
+          onClick={() => setShowWrite(true)}
+          aria-label="글쓰기"
+          style={{
+            position:"fixed", bottom:"calc(20px + env(safe-area-inset-bottom, 0px))", right:18,
+            width:60, height:60, borderRadius:18,
+            background:CINEMA.red, border:"none",
+            color:"#fff", fontSize:26, fontWeight:900,
+            boxShadow:"0 6px 20px rgba(220,38,38,0.5), 0 0 0 1px rgba(255,255,255,0.05)",
+            cursor:"pointer", zIndex:95,
+            display:"flex", alignItems:"center", justifyContent:"center",
+            transition:"transform 0.15s",
+          }}
+          onMouseDown={e => e.currentTarget.style.transform = "scale(0.95)"}
+          onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+        >
+          ✏
+        </button>
       </div> {/* /시네마 풀스크린 컨테이너 */}
     </>
   );
