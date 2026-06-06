@@ -548,9 +548,13 @@ export default function Community({ onExit }) {
           padding:"10px 16px", fontSize:13, fontFamily:"inherit", outline:"none",
           marginBottom:16, boxSizing:"border-box" }} />
 
-      {/* 인기 게시글 TOP3 */}
-      {(() => {
-        const base = cat === "전체" ? posts : posts.filter(p => p.category === cat);
+      {/* 인기 게시글 TOP3 - 커뮤니티 룸에서만 표시 */}
+      {selectedRoom === "community" && (() => {
+        // 커뮤니티 룸의 카테고리에 해당하는 글만 대상
+        const roomCats = currentRoom?.categories || [];
+        const base = cat === "전체"
+          ? posts.filter(p => roomCats.includes(p.category))
+          : posts.filter(p => p.category === cat);
         const top3 = [...base]
           .sort((a,b) =>
             ((b.views||0)*1 + (b.likes||0)*3 + postComments(b.id).length*2) -
