@@ -8,6 +8,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 import EveryTimeIntro from "../../components/EveryTimeIntro";
 import CinemaSlate from "../../components/CinemaSlate";
+import ExposureLive from "../../components/ExposureLive";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -432,6 +433,7 @@ export default function Community({ onExit }) {
             <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
             <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
               {selectedTool === "slate" ? "SLATE"
+                : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
                 : currentRoom ? currentRoom.title
                 : "ZZOTKYO"}
             </span>
@@ -546,8 +548,26 @@ export default function Community({ onExit }) {
             {/* 스크립터 - 곧 공개 */}
             <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" comingSoon />
 
-            {/* 노출 계산기 */}
-            <ToolCard icon="📷" label="EXPOSURE" title="노출 계산기" desc="셔터·조리개·ISO" comingSoon />
+            {/* 🎥 LIVE 노출 도우미 - 사용 가능 */}
+            <div onClick={() => setSelectedTool("live-exposure")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>🎥</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>LIVE EXPOSURE</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>라이브 노출</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>폴스컬러 · 제브라</div>
+            </div>
+
+            {/* 노출 계산기 (이론) - 곧 공개 */}
+            <ToolCard icon="📷" label="EXPOSURE CALC" title="노출 계산기" desc="180° 셔터 · 등가환산" comingSoon />
 
             {/* DOF 계산기 */}
             <ToolCard icon="📐" label="DOF" title="피사계 심도" desc="DOF 계산" comingSoon />
@@ -584,6 +604,11 @@ export default function Community({ onExit }) {
         <div style={{ marginTop:8 }}>
           <CinemaSlate onBack={() => setSelectedTool(null)} />
         </div>
+      )}
+
+      {/* 🎥 LIVE 노출 도우미 표시 */}
+      {selectedRoom === "tools" && selectedTool === "live-exposure" && (
+        <ExposureLive onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
