@@ -8,11 +8,75 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 import EveryTimeIntro from "../../components/EveryTimeIntro";
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "장터", "새내기"];
-const ANON_CATS   = ["자유", "질문", "강의", "새내기"]; // 익명
-const REAL_CATS   = ["정보", "취업", "장터"]; // 실명
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
+const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
+const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
+
+// 🎬 ROOMS 정의 - ZZOTKYO 진입 분기
+const ROOMS = [
+  {
+    id:"community",
+    number:"01",
+    icon:"💬",
+    subtitle:"BEHIND THE SCENES",
+    title:"커뮤니티",
+    desc:"익명으로 나누는 영상계열 이야기",
+    color:"#dc2626",
+    colorBg:"rgba(220,38,38,0.15)",
+    borderStyle:"solid",
+    categories:["자유", "질문", "새내기"],
+  },
+  {
+    id:"knowledge",
+    number:"02",
+    icon:"📚",
+    subtitle:"KNOWLEDGE",
+    title:"정보 공유",
+    desc:"강의·정보·취업·공모전",
+    color:"#06b6d4",
+    colorBg:"rgba(6,182,212,0.15)",
+    borderStyle:"solid",
+    categories:["강의", "정보", "취업", "공모전"],
+  },
+  {
+    id:"marketplace",
+    number:"03",
+    icon:"🛒",
+    subtitle:"MARKETPLACE",
+    title:"중고 장터",
+    desc:"학생들 간 거래 게시판",
+    color:"#10b981",
+    colorBg:"rgba(16,185,129,0.15)",
+    borderStyle:"solid",
+    categories:["팝니다", "삽니다"],
+  },
+  {
+    id:"tools",
+    number:"04",
+    icon:"🎬",
+    subtitle:"FILM TOOLS",
+    title:"필름 도구",
+    desc:"촬영 현장 실용 도구",
+    color:"#fbbf24",
+    colorBg:"rgba(251,191,36,0.15)",
+    borderStyle:"dashed",
+    categories:[], // 도구는 카테고리 X
+  },
+  {
+    id:"boxoffice",
+    number:"05",
+    icon:"🎥",
+    subtitle:"STUDENT BOXOFFICE",
+    title:"스튜던트 박스오피스",
+    desc:"협업 모집 · 작품 공유",
+    color:"#a855f7",
+    colorBg:"rgba(168,85,247,0.15)",
+    borderStyle:"solid",
+    categories:["협업모집", "작품공유"],
+  },
+];
 
 async function uploadImage(file) {
   return new Promise((resolve, reject) => {
@@ -43,6 +107,10 @@ export default function Community({ onExit }) {
       sessionStorage.setItem(INTRO_KEY, "1");
     }
   }, [showIntro]);
+
+  // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
+  const [selectedRoom, setSelectedRoom] = useState(null);
+  const currentRoom = ROOMS.find(r => r.id === selectedRoom);
 
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
@@ -134,11 +202,16 @@ export default function Community({ onExit }) {
   };
 
   // 필터링
+  // 룸별 카테고리 필터링: 현재 룸이 허용하는 카테고리만 표시
+  const roomCategories = currentRoom?.categories || [];
   const allFiltered = posts
     .filter(p => {
+      // 룸의 허용 카테고리에 속하지 않으면 제외
+      if (currentRoom && roomCategories.length > 0 && !roomCategories.includes(p.category)) return false;
+      // 카테고리 탭 필터
       if (cat !== "전체" && p.category !== cat) return false;
-      // 전체 탭에서는 강의 게시판 글 제외
-      if (cat === "전체" && p.category === LECTURE_CAT) return false;
+      // 전체 탭에서는 강의 게시판 글 제외 (정보 룸에서는 강의 보이게)
+      if (cat === "전체" && p.category === LECTURE_CAT && currentRoom?.id !== "knowledge") return false;
       if (search && !p.title.includes(search) && !(p.content||"").includes(search) &&
           !(p.lectureName||"").includes(search) && !(p.professor||"").includes(search)) return false;
       return true;
@@ -323,28 +396,31 @@ export default function Community({ onExit }) {
         WebkitOverflowScrolling:"touch",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
-        {/* 상단 시네마 헤더 - "← 메인으로" + 타이틀 */}
+        {/* 상단 시네마 헤더 - 룸별 동적 */}
         <div style={{
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
           padding:"14px 18px 18px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
-          borderBottom:"1px solid rgba(220,38,38,0.2)",
+          borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
-          <button onClick={() => onExit && onExit()}
+          <button onClick={() => currentRoom ? setSelectedRoom(null) : (onExit && onExit())}
             style={{
-              background:"rgba(220,38,38,0.1)",
-              border:"1px solid rgba(220,38,38,0.3)",
+              background:`${currentRoom ? currentRoom.color : "#dc2626"}1A`,
+              border:`1px solid ${currentRoom ? currentRoom.color : "#dc2626"}4D`,
               color:"#fafaf9", fontSize:12, fontWeight:600,
               padding:"7px 14px", borderRadius:8, cursor:"pointer",
               display:"flex", alignItems:"center", gap:6,
             }}>
-            <span style={{ color:"#dc2626" }}>←</span> 메인으로
+            <span style={{ color: currentRoom ? currentRoom.color : "#dc2626" }}>←</span>
+            {currentRoom ? "ROOMS" : "메인으로"}
           </button>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ color:"#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
-            <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>에브리타임</span>
+            <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
+            <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
+              {currentRoom ? currentRoom.title : "ZZOTKYO"}
+            </span>
           </div>
           <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
         </div>
@@ -358,16 +434,95 @@ export default function Community({ onExit }) {
 
       {/* PageTitle 제거됨 (헤더의 "에브리타임"이 대체) - 글쓰기는 우하단 FAB으로 이동 */}
 
-      {/* 카테고리 탭 - 시네마 톤 pill */}
+      {/* 🎬 룸 분기 화면 (selectedRoom === null) */}
+      {!selectedRoom && (
+        <div style={{ marginTop:20 }}>
+          {/* CHOOSE YOUR ROOM 안내 */}
+          <div style={{ textAlign:"center", marginBottom:18, padding:"0 8px" }}>
+            <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:"#dc2626", letterSpacing:"0.35em", fontWeight:700, marginBottom:5 }}>
+              CHOOSE YOUR ROOM
+            </div>
+            <div style={{ fontSize:13, color:"#a8a29e" }}>어디로 가시겠습니까?</div>
+          </div>
+
+          {/* 5개 룸 박스 */}
+          <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
+            {ROOMS.map(room => {
+              const isDashed = room.borderStyle === "dashed";
+              return (
+                <div key={room.id} onClick={() => { setSelectedRoom(room.id); setCat("전체"); setPage(1); setSearch(""); }}
+                  style={{
+                    background: isDashed ? "#16130d" : "#1a1a1a",
+                    border: isDashed ? `1px dashed ${room.color}` : `1px solid #2a2a2a`,
+                    borderLeft: isDashed ? `1px dashed ${room.color}` : `4px solid ${room.color}`,
+                    borderRadius:6, padding:"13px 14px", cursor:"pointer", position:"relative",
+                    transition:"transform 0.15s",
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                >
+                  <div style={{ position:"absolute", top:8, right:10, fontFamily:"'Courier New', monospace", fontSize:8, color:"#71706b", letterSpacing:"0.2em" }}>
+                    ROOM {room.number}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                    <div style={{ fontSize:32, lineHeight:1 }}>{room.icon}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:room.color, letterSpacing:"0.25em", fontWeight:700, marginBottom:3 }}>
+                        {room.subtitle}
+                      </div>
+                      <div style={{ fontSize:16, fontWeight:900, color:"#fafaf9", marginBottom:4 }}>{room.title}</div>
+                      {room.id === "tools" ? (
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {["슬레이터","스크립터","계산기","자료"].map(t => (
+                            <span key={t} style={{ background:room.colorBg, color:room.color, fontSize:9, padding:"1px 6px", borderRadius:3, fontWeight:700 }}>{t}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {room.categories.map(c => (
+                            <span key={c} style={{ background:room.colorBg, color:room.color, fontSize:9, padding:"1px 6px", borderRadius:3, fontWeight:700 }}>{c}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 푸터 */}
+          <div style={{ padding:"18px 8px 30px", textAlign:"center", fontFamily:"'Courier New', monospace", fontSize:9, color:"#71706b", letterSpacing:"0.2em" }}>
+            A ZZOTKYO PRESENTATION · {new Date().getFullYear()}
+          </div>
+        </div>
+      )}
+
+      {/* 🛠️ 필름 도구 룸 - 임시 placeholder */}
+      {selectedRoom === "tools" && (
+        <div style={{ textAlign:"center", padding:"80px 20px", color:"#a8a29e" }}>
+          <div style={{ fontSize:60, opacity:0.4, marginBottom:18 }}>🎬</div>
+          <div style={{ fontFamily:"'Courier New', monospace", fontSize:12, color:"#fbbf24", letterSpacing:"0.3em", marginBottom:8, fontWeight:700 }}>COMING SOON</div>
+          <div style={{ fontSize:14, color:"#fafaf9", marginBottom:8 }}>필름 도구 룸</div>
+          <div style={{ fontSize:12, color:"#71706b" }}>슬레이터 · 스크립터 · 계산기 · 자료 큐레이션</div>
+        </div>
+      )}
+
+      {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
+      {selectedRoom && selectedRoom !== "tools" && (
+        <>
+
+      {/* 카테고리 탭 - 룸별 카테고리만 (시네마 톤 pill) */}
       <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch", marginTop:14 }}>
-        {CATEGORIES.map(c => {
+        {["전체", ...(currentRoom?.categories || [])].map(c => {
           const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
           const active = cat === c;
+          const roomColor = currentRoom?.color || CINEMA.red;
           return (
             <button key={c} onClick={() => { setCat(c); setPage(1); }}
               style={{ padding:"6px 14px", borderRadius:14,
-                border:`1px solid ${active ? CINEMA.red : CINEMA.border}`,
-                background: active ? CINEMA.red : CINEMA.surface,
+                border:`1px solid ${active ? roomColor : CINEMA.border}`,
+                background: active ? roomColor : CINEMA.surface,
                 color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
                 fontSize:11, fontWeight: active ? 700 : 500, cursor:"pointer",
                 whiteSpace:"nowrap", flexShrink:0,
@@ -380,7 +535,10 @@ export default function Community({ onExit }) {
         })}
       </div>
       <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
-        익명: 자유·질문·강의·새내기 &nbsp;|&nbsp; 실명: 정보·취업·장터
+        {currentRoom?.id === "community" && "🔒 익명 게시판"}
+        {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
+        {currentRoom?.id === "marketplace" && "✅ 실명으로 게시"}
+        {currentRoom?.id === "boxoffice" && "🔒 익명으로 게시"}
       </div>
 
       {/* 검색 - 시네마 톤 */}
@@ -554,6 +712,8 @@ export default function Community({ onExit }) {
           {(page-1)*PAGE_SIZE+1}~{Math.min(page*PAGE_SIZE, allFiltered.length)} / 전체 {allFiltered.length}개
         </div>
       )}
+        </>
+      )} {/* /게시판 룸 조건부 끝 */}
 
       {/* 게시글 상세 모달 - 시네마 톤 */}
       {selPost && (
@@ -775,15 +935,16 @@ export default function Community({ onExit }) {
           <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:10, fontWeight:700, color:CINEMA.muted, marginBottom:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.25em" }}>CATEGORY</div>
             <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-              {CATEGORIES.filter(c => c !== "전체").map(c => {
+              {(currentRoom?.categories || []).map(c => {
                 const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
                 const active = writeForm.category === c;
+                const roomColor = currentRoom?.color || CINEMA.red;
                 return (
                   <button key={c} onClick={() => !isLocked && setWriteForm(p=>({...p, category:c}))}
                     style={{
                       padding:"6px 13px", borderRadius:14,
-                      border:`1px solid ${active ? CINEMA.red : CINEMA.border}`,
-                      background: active ? CINEMA.red : CINEMA.surface,
+                      border:`1px solid ${active ? roomColor : CINEMA.border}`,
+                      background: active ? roomColor : CINEMA.surface,
                       color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
                       fontSize:11, fontWeight: active ? 700 : 500,
                       cursor: isLocked ? "not-allowed" : "pointer",
@@ -936,16 +1097,21 @@ export default function Community({ onExit }) {
           </div>
         )}
 
-        {/* 🎬 글쓰기 FAB (시네마 빨강) */}
+        {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 */}
+        {selectedRoom && selectedRoom !== "tools" && (
         <button
-          onClick={() => setShowWrite(true)}
+          onClick={() => {
+            const defaultCat = currentRoom?.categories?.[0] || "자유";
+            setWriteForm(p => ({ ...p, category: defaultCat }));
+            setShowWrite(true);
+          }}
           aria-label="글쓰기"
           style={{
             position:"fixed", bottom:"calc(20px + env(safe-area-inset-bottom, 0px))", right:18,
             width:60, height:60, borderRadius:18,
-            background:CINEMA.red, border:"none",
+            background: currentRoom?.color || CINEMA.red, border:"none",
             color:"#fff", fontSize:26, fontWeight:900,
-            boxShadow:"0 6px 20px rgba(220,38,38,0.5), 0 0 0 1px rgba(255,255,255,0.05)",
+            boxShadow:`0 6px 20px ${currentRoom?.color || CINEMA.red}80, 0 0 0 1px rgba(255,255,255,0.05)`,
             cursor:"pointer", zIndex:95,
             display:"flex", alignItems:"center", justifyContent:"center",
             transition:"transform 0.15s",
@@ -956,6 +1122,7 @@ export default function Community({ onExit }) {
         >
           ✏
         </button>
+        )} {/* /FAB 조건부 끝 */}
       </div> {/* /시네마 풀스크린 컨테이너 */}
     </>
   );
