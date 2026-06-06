@@ -69,6 +69,29 @@ export default function CinemaSlate({ onBack }) {
     };
   }, []);
 
+  // 📐 슬레이터 진입 시 viewport zoom 잠금, 나갈 때 복원 + 강제 reflow
+  // (회전 transform + 큰 글자로 인한 iOS Safari zoom 잔존 방지)
+  useEffect(() => {
+    const viewport = document.querySelector('meta[name="viewport"]');
+    if (!viewport) return;
+    const original = viewport.getAttribute("content") || "width=device-width, initial-scale=1.0";
+    viewport.setAttribute(
+      "content",
+      "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    );
+    return () => {
+      // 원래 viewport로 복원
+      viewport.setAttribute("content", original);
+      // 강제 reflow로 zoom 상태 즉시 정상화
+      requestAnimationFrame(() => {
+        document.body.style.transform = "translateZ(0)";
+        requestAnimationFrame(() => {
+          document.body.style.transform = "";
+        });
+      });
+    };
+  }, []);
+
   // ─── 실시간 타임코드 (24fps) + 날짜 ────────
   const [now, setNow] = useState(new Date());
   useEffect(() => {
