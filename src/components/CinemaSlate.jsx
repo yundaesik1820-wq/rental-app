@@ -42,13 +42,24 @@ export default function CinemaSlate({ onBack }) {
   const [inverted, setInverted] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
   const [clapping, setClapping]   = useState(0);
+  // 📱 세로 고정 해제 안내 (한 번만)
+  const [showOrientHint, setShowOrientHint] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("slate_orient_hint_seen") !== "1";
+  });
+  const dismissHint = () => {
+    setShowOrientHint(false);
+    localStorage.setItem("slate_orient_hint_seen", "1");
+  };
 
-  // ─── 가로/세로 감지 ────────────────────────
-  const [portrait, setPortrait] = useState(
-    typeof window !== "undefined" ? window.innerWidth < window.innerHeight : false
-  );
+  // ─── 가로/세로 감지 + 정확한 viewport 픽셀 ─
+  const [dim, setDim] = useState(() => ({
+    w: typeof window !== "undefined" ? window.innerWidth : 800,
+    h: typeof window !== "undefined" ? window.innerHeight : 600,
+  }));
+  const portrait = dim.w < dim.h;
   useEffect(() => {
-    const handler = () => setPortrait(window.innerWidth < window.innerHeight);
+    const handler = () => setDim({ w: window.innerWidth, h: window.innerHeight });
     handler();
     window.addEventListener("resize", handler);
     window.addEventListener("orientationchange", handler);
@@ -85,8 +96,23 @@ export default function CinemaSlate({ onBack }) {
   useEffect(() => { localStorage.setItem(LS.intext, intExt); }, [intExt]);
   useEffect(() => { localStorage.setItem(LS.daynight, dayNight); }, [dayNight]);
 
-  // ─── CLAP! 사운드 — 훨씬 크게 ───────────
+  // ─── CLAP! 사운드 ──────────────────────────
+  // 🎵 MP3 우선 재생, 실패 시 합성 사운드 fallback
   const playClapSound = () => {
+    try {
+      const audio = new Audio("/sounds/clap.mp3");
+      audio.volume = 1.0;
+      audio.play().catch(err => {
+        console.warn("clap.mp3 재생 실패, 합성 사운드로 대체:", err);
+        playSynthClap();
+      });
+    } catch (e) {
+      playSynthClap();
+    }
+  };
+
+  // 합성 사운드 (fallback용)
+  const playSynthClap = () => {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
@@ -94,44 +120,28 @@ export default function CinemaSlate({ onBack }) {
       if (ctx.state === "suspended") ctx.resume();
 
       const t0 = ctx.currentTime;
-
-      // 1) 강한 노이즈 burst
       const dur = 0.22;
       const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
       const data = buf.getChannelData(0);
       for (let i = 0; i < buf.length; i++) {
         const t = i / buf.length;
-        const env = t < 0.015
-          ? t * 67                          // 매우 짧은 attack
-          : Math.exp(-(t - 0.015) * 20);    // 빠른 decay + tail
+        const env = t < 0.015 ? t * 67 : Math.exp(-(t - 0.015) * 20);
         data[i] = (Math.random() * 2 - 1) * env;
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-
       const hpf = ctx.createBiquadFilter();
-      hpf.type = "highpass";
-      hpf.frequency.value = 1000;
-
+      hpf.type = "highpass"; hpf.frequency.value = 1000;
       const bpf = ctx.createBiquadFilter();
-      bpf.type = "peaking";
-      bpf.frequency.value = 3500;
-      bpf.gain.value = 8;
-      bpf.Q.value = 1.2;
-
+      bpf.type = "peaking"; bpf.frequency.value = 3500; bpf.gain.value = 8; bpf.Q.value = 1.2;
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -6;
-      comp.ratio.value = 14;
-      comp.attack.value = 0.001;
-      comp.release.value = 0.08;
-
+      comp.threshold.value = -6; comp.ratio.value = 14;
+      comp.attack.value = 0.001; comp.release.value = 0.08;
       const masterGain = ctx.createGain();
-      masterGain.gain.value = 2.6; // 1.4 → 2.6 두 배 가까이
-
+      masterGain.gain.value = 2.6;
       src.connect(hpf).connect(bpf).connect(comp).connect(masterGain).connect(ctx.destination);
       src.start();
 
-      // 2) 저음 "thunk" (sub-bass)
       const sub = ctx.createOscillator();
       sub.type = "sine";
       sub.frequency.setValueAtTime(150, t0);
@@ -140,20 +150,7 @@ export default function CinemaSlate({ onBack }) {
       subGain.gain.setValueAtTime(1.6, t0);
       subGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
       sub.connect(subGain).connect(ctx.destination);
-      sub.start(t0);
-      sub.stop(t0 + 0.15);
-
-      // 3) 추가 mid "crack" - 짧은 톡
-      const mid = ctx.createOscillator();
-      mid.type = "triangle";
-      mid.frequency.setValueAtTime(900, t0);
-      mid.frequency.exponentialRampToValueAtTime(200, t0 + 0.04);
-      const midGain = ctx.createGain();
-      midGain.gain.setValueAtTime(0.9, t0);
-      midGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
-      mid.connect(midGain).connect(ctx.destination);
-      mid.start(t0);
-      mid.stop(t0 + 0.08);
+      sub.start(t0); sub.stop(t0 + 0.15);
 
       setTimeout(() => { try { ctx.close(); } catch(e) {} }, 600);
     } catch (e) {
@@ -162,11 +159,16 @@ export default function CinemaSlate({ onBack }) {
   };
 
   const handleClap = () => {
-    playClapSound();
-    if (navigator.vibrate) navigator.vibrate([180, 30, 80]);
+    // 즉시: 빛 번쩍임 + 진동 + 슬레이트 애니메이션 시작
     setShowFlash(true);
+    if (navigator.vibrate) navigator.vibrate([180, 30, 80]);
     setClapping(c => c + 1);
     setTimeout(() => setShowFlash(false), 220);
+
+    // 슬레이트가 닫히는 순간에 소리 재생 (애니메이션 SNAP 시점)
+    setTimeout(() => {
+      playClapSound();
+    }, 480);
   };
 
   const handleReset = () => {
@@ -195,7 +197,7 @@ export default function CinemaSlate({ onBack }) {
       width:"100%", height:"100%",
       background: C.bg, color: C.text,
       display:"flex", flexDirection:"column",
-      padding:"10px 14px 12px",
+      padding:"6px 10px 8px",
       boxSizing:"border-box",
       transition:"background 0.3s, color 0.3s",
       position:"relative",
@@ -210,11 +212,12 @@ export default function CinemaSlate({ onBack }) {
         }
         @keyframes clapperSnap {
           0%   { transform: rotate(0deg); }
-          15%  { transform: rotate(-32deg); }
-          45%  { transform: rotate(-34deg); }
-          80%  { transform: rotate(2.5deg); }
-          88%  { transform: rotate(-1.2deg); }
-          95%  { transform: rotate(0.5deg); }
+          10%  { transform: rotate(-6deg); }
+          35%  { transform: rotate(-28deg); }
+          55%  { transform: rotate(-30deg); }
+          72%  { transform: rotate(2.8deg); }
+          84%  { transform: rotate(-1.2deg); }
+          93%  { transform: rotate(0.4deg); }
           100% { transform: rotate(0deg); }
         }
       `}</style>
@@ -269,42 +272,42 @@ export default function CinemaSlate({ onBack }) {
         flex:1,
         background: inverted ? "#ede6cf" : "linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)",
         border:`2px solid ${C.border}`,
-        borderRadius:6, padding:"10px 12px 12px",
+        borderRadius:6, padding:"6px 10px 8px",
         display:"flex", flexDirection:"column",
         boxShadow: inverted ? "0 6px 24px rgba(0,0,0,0.15)" : "0 6px 24px rgba(0,0,0,0.6)",
         position:"relative",
         minHeight:0,
       }}>
         {/* 클래퍼 */}
-        <div style={{ position:"relative", marginBottom:8, flexShrink:0 }}>
+        <div style={{ position:"relative", marginBottom:6, flexShrink:0 }}>
           <div key={clapping} style={{
-            height:28,
-            backgroundImage:"repeating-linear-gradient(118deg, #f5f1e8 0 28px, #1a1a1a 28px 56px)",
+            height:22,
+            backgroundImage:"repeating-linear-gradient(118deg, #f5f1e8 0 24px, #1a1a1a 24px 48px)",
             border:`2px solid ${C.border}`,
             borderRadius:3,
             transformOrigin:"bottom left",
-            animation: clapping > 0 ? "clapperSnap 0.6s cubic-bezier(0.45, 0, 0.15, 1)" : "none",
+            animation: clapping > 0 ? "clapperSnap 0.7s cubic-bezier(0.45, 0, 0.15, 1)" : "none",
             boxShadow:"0 3px 12px rgba(0,0,0,0.5)",
             position:"relative",
           }}>
             <div style={{
-              position:"absolute", bottom:-4, left:8,
-              width:10, height:10, borderRadius:"50%",
+              position:"absolute", bottom:-3, left:6,
+              width:8, height:8, borderRadius:"50%",
               background:"#2a2a2a", border:"2px solid #4a4a4a",
             }} />
           </div>
         </div>
 
-        {/* 본체 그리드: 좌측(날짜+타임코드+정보) + 우측(SCENE/CUT/TAKE + 토글 + CLAP) */}
+        {/* 본체 그리드: 좌측(날짜+타임코드+정보+메모) + 우측(SCENE/CUT/TAKE + 토글 + CLAP) */}
         <div style={{
           flex:1,
           display:"grid",
           gridTemplateColumns:"1.3fr 1fr",
-          gap:10,
+          gap:8,
           minHeight:0,
         }}>
           {/* ── 좌측 ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap:7, minHeight:0 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:5, minHeight:0 }}>
             {/* 날짜 박스 */}
             <div style={{
               background: C.blackBg,
@@ -364,7 +367,7 @@ export default function CinemaSlate({ onBack }) {
           </div>
 
           {/* ── 우측: SCENE/CUT/TAKE (크고 강조) + 토글 + CLAP ── */}
-          <div style={{ display:"flex", flexDirection:"column", gap:7, minHeight:0 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:5, minHeight:0 }}>
             {/* SCENE / CUT / TAKE (가장 큼, 텍스트 입력) */}
             <div style={{
               flex:1,
@@ -422,16 +425,59 @@ export default function CinemaSlate({ onBack }) {
     }}>
       {portrait ? (
         <div style={{
-          position:"absolute", top:0, left:"100vw",
-          width:"100vh", height:"100vw",
+          position:"absolute", top:0, left:`${dim.w}px`,
+          width:`${dim.h}px`, height:`${dim.w}px`,
           transformOrigin:"top left",
           transform:"rotate(90deg)",
         }}>
           {SlateContent}
         </div>
       ) : (
-        <div style={{ width:"100vw", height:"100vh" }}>
+        <div style={{ position:"absolute", inset:0 }}>
           {SlateContent}
+        </div>
+      )}
+
+      {/* 📱 세로 고정 해제 안내 모달 (회전과 무관하게 항상 정방향) */}
+      {showOrientHint && (
+        <div style={{
+          position:"fixed", inset:0, zIndex:9999,
+          background:"rgba(0,0,0,0.92)",
+          display:"flex", alignItems:"center", justifyContent:"center",
+          padding:24,
+        }}>
+          <div style={{
+            background:"#1a1a1a",
+            border:"1px solid #2a2a2a",
+            borderRadius:14, padding:"30px 24px 24px",
+            maxWidth:340, width:"100%", textAlign:"center",
+            boxShadow:"0 10px 40px rgba(0,0,0,0.6)",
+          }}>
+            <div style={{ fontSize:48, marginBottom:14, lineHeight:1 }}>📱 ↻</div>
+            <div style={{ fontFamily:FONT_MONO, fontSize:10, color:"#fbbf24", letterSpacing:"0.3em", marginBottom:8, fontWeight:700 }}>
+              LANDSCAPE MODE
+            </div>
+            <div style={{ fontFamily:FONT_GOTHIC, fontSize:17, fontWeight:800, color:"#fafaf9", marginBottom:10 }}>
+              가로 모드로 보세요
+            </div>
+            <div style={{ fontFamily:FONT_GOTHIC, fontSize:13, color:"#a8a29e", lineHeight:1.7, marginBottom:20 }}>
+              슬레이터는 가로 화면 전용입니다.<br/>
+              화면이 잘리거나 회전이 안 된다면<br/>
+              핸드폰의 <strong style={{ color:"#fbbf24" }}>세로 고정을 해제</strong>해주세요.
+            </div>
+            <button onClick={dismissHint}
+              style={{
+                background:"#dc2626", color:"#fff",
+                border:"none", borderRadius:10,
+                padding:"11px 28px",
+                fontSize:14, fontWeight:700,
+                cursor:"pointer",
+                fontFamily:FONT_GOTHIC,
+                boxShadow:"0 4px 12px rgba(220,38,38,0.4)",
+              }}>
+              확인했어요
+            </button>
+          </div>
         </div>
       )}
     </div>
