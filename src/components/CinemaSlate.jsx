@@ -1,32 +1,28 @@
 import { useState, useEffect, useRef } from "react";
 
 /**
- * 🎬 전자식 시네마 슬레이터 (Electronic Cinema Slate)
+ * 🎬 전자식 시네마 슬레이터 v3 (가로 모드)
  *
- * 기능:
- * - 실시간 타임코드 (24fps, HH:MM:SS:FF)
- * - 씬 / 테이크 / 롤 카운터 (+/-)
- * - INT/EXT, DAY/NIGHT 토글
- * - PROD/DIR/CAMERA/SOUND 입력
- * - CLAP! 버튼 (사운드 + 진동 + 화면 플래시)
- * - 컬러 반전 모드
- * - 사운드 ON/OFF
- * - 리셋 기능
- * - 모든 설정 localStorage에 자동 저장
+ * 주요 변경:
+ * - 좌측: DATE 박스 추가 (타임코드와 같은 사이즈), 정보 박스는 컴팩트 + 큰 글자
+ * - 우측: SCENE/CUT/TAKE 큰 입력 박스 (텍스트 입력, 알파벳 가능)
+ * - CLAP 버튼 작게 / 사운드 훨씬 크게
+ * - 글꼴: 한국어 고딕(Pretendard/Noto Sans), 라벨만 모노
  */
+const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', -apple-system, 'Segoe UI', sans-serif";
+const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+
 export default function CinemaSlate({ onBack }) {
   // ─── localStorage 키 ──────────────────────
   const LS = {
     prod:     "slate_prod",
     dir:      "slate_dir",
     camera:   "slate_camera",
-    sound:    "slate_sound",
     scene:    "slate_scene",
+    cut:      "slate_cut",
     take:     "slate_take",
-    roll:     "slate_roll",
     intext:   "slate_intext",
     daynight: "slate_daynight",
-    soundOn:  "slate_soundOn",
   };
   const getLS = (key, def) => {
     if (typeof window === "undefined") return def;
@@ -34,23 +30,35 @@ export default function CinemaSlate({ onBack }) {
     return v === null ? def : v;
   };
 
-  // ─── 상태 ─────────────────────────────────
+  // ─── 상태 (SCENE/CUT/TAKE는 문자열로 — 알파벳 가능) ───
   const [prod,     setProd]     = useState(getLS(LS.prod, ""));
   const [dir,      setDir]      = useState(getLS(LS.dir, ""));
   const [camera,   setCamera]   = useState(getLS(LS.camera, ""));
-  const [sound,    setSound]    = useState(getLS(LS.sound, ""));
-  const [scene,    setScene]    = useState(parseInt(getLS(LS.scene, "1"), 10));
-  const [take,     setTake]     = useState(parseInt(getLS(LS.take, "1"), 10));
-  const [roll,     setRoll]     = useState(parseInt(getLS(LS.roll, "1"), 10));
+  const [scene,    setScene]    = useState(getLS(LS.scene, "1"));
+  const [cut,      setCut]      = useState(getLS(LS.cut, "1"));
+  const [take,     setTake]     = useState(getLS(LS.take, "1"));
   const [intExt,   setIntExt]   = useState(getLS(LS.intext, "INT"));
   const [dayNight, setDayNight] = useState(getLS(LS.daynight, "DAY"));
-  const [soundOn,  setSoundOn]  = useState(getLS(LS.soundOn, "true") === "true");
   const [inverted, setInverted] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
-  const [clapping, setClapping]   = useState(false);
-  const [showInfo, setShowInfo]   = useState(false); // 정보 입력 패널
+  const [clapping, setClapping]   = useState(0);
 
-  // ─── 실시간 타임코드 (24fps) ────────────────
+  // ─── 가로/세로 감지 ────────────────────────
+  const [portrait, setPortrait] = useState(
+    typeof window !== "undefined" ? window.innerWidth < window.innerHeight : false
+  );
+  useEffect(() => {
+    const handler = () => setPortrait(window.innerWidth < window.innerHeight);
+    handler();
+    window.addEventListener("resize", handler);
+    window.addEventListener("orientationchange", handler);
+    return () => {
+      window.removeEventListener("resize", handler);
+      window.removeEventListener("orientationchange", handler);
+    };
+  }, []);
+
+  // ─── 실시간 타임코드 (24fps) + 날짜 ────────
   const [now, setNow] = useState(new Date());
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), Math.round(1000/24));
@@ -62,48 +70,92 @@ export default function CinemaSlate({ onBack }) {
     const s = String(now.getSeconds()).padStart(2, "0");
     const ms = now.getMilliseconds();
     const ff = String(Math.floor(ms / (1000/24))).padStart(2, "0");
-    return { h, m, s, ff, str: `${h}:${m}:${s}:${ff}` };
+    return `${h}:${m}:${s}:${ff}`;
   })();
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")}`;
+  const dayName = ["일","월","화","수","목","금","토"][now.getDay()];
 
   // ─── localStorage 자동 저장 ───────────────
   useEffect(() => { localStorage.setItem(LS.prod, prod); }, [prod]);
   useEffect(() => { localStorage.setItem(LS.dir, dir); }, [dir]);
   useEffect(() => { localStorage.setItem(LS.camera, camera); }, [camera]);
-  useEffect(() => { localStorage.setItem(LS.sound, sound); }, [sound]);
-  useEffect(() => { localStorage.setItem(LS.scene, String(scene)); }, [scene]);
-  useEffect(() => { localStorage.setItem(LS.take, String(take)); }, [take]);
-  useEffect(() => { localStorage.setItem(LS.roll, String(roll)); }, [roll]);
+  useEffect(() => { localStorage.setItem(LS.scene, scene); }, [scene]);
+  useEffect(() => { localStorage.setItem(LS.cut, cut); }, [cut]);
+  useEffect(() => { localStorage.setItem(LS.take, take); }, [take]);
   useEffect(() => { localStorage.setItem(LS.intext, intExt); }, [intExt]);
   useEffect(() => { localStorage.setItem(LS.daynight, dayNight); }, [dayNight]);
-  useEffect(() => { localStorage.setItem(LS.soundOn, String(soundOn)); }, [soundOn]);
 
-  // ─── CLAP! 사운드 (Web Audio로 합성) ──────
+  // ─── CLAP! 사운드 — 훨씬 크게 ───────────
   const playClapSound = () => {
-    if (!soundOn) return;
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return;
       const ctx = new Ctx();
-      // 짧은 노이즈 + 빠른 감쇠 = 클랩 비슷한 효과
-      const dur = 0.09;
+      if (ctx.state === "suspended") ctx.resume();
+
+      const t0 = ctx.currentTime;
+
+      // 1) 강한 노이즈 burst
+      const dur = 0.22;
       const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
       const data = buf.getChannelData(0);
       for (let i = 0; i < buf.length; i++) {
-        // 백색 노이즈에 envelope 적용
-        const env = Math.exp(-i / (buf.length * 0.12));
+        const t = i / buf.length;
+        const env = t < 0.015
+          ? t * 67                          // 매우 짧은 attack
+          : Math.exp(-(t - 0.015) * 20);    // 빠른 decay + tail
         data[i] = (Math.random() * 2 - 1) * env;
       }
       const src = ctx.createBufferSource();
       src.buffer = buf;
-      const gain = ctx.createGain();
-      gain.gain.value = 0.7;
-      // 약간의 하이패스 효과로 더 날카로운 소리
-      const filter = ctx.createBiquadFilter();
-      filter.type = "highpass";
-      filter.frequency.value = 800;
-      src.connect(filter).connect(gain).connect(ctx.destination);
+
+      const hpf = ctx.createBiquadFilter();
+      hpf.type = "highpass";
+      hpf.frequency.value = 1000;
+
+      const bpf = ctx.createBiquadFilter();
+      bpf.type = "peaking";
+      bpf.frequency.value = 3500;
+      bpf.gain.value = 8;
+      bpf.Q.value = 1.2;
+
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -6;
+      comp.ratio.value = 14;
+      comp.attack.value = 0.001;
+      comp.release.value = 0.08;
+
+      const masterGain = ctx.createGain();
+      masterGain.gain.value = 2.6; // 1.4 → 2.6 두 배 가까이
+
+      src.connect(hpf).connect(bpf).connect(comp).connect(masterGain).connect(ctx.destination);
       src.start();
-      setTimeout(() => { try { ctx.close(); } catch(e) {} }, 500);
+
+      // 2) 저음 "thunk" (sub-bass)
+      const sub = ctx.createOscillator();
+      sub.type = "sine";
+      sub.frequency.setValueAtTime(150, t0);
+      sub.frequency.exponentialRampToValueAtTime(35, t0 + 0.08);
+      const subGain = ctx.createGain();
+      subGain.gain.setValueAtTime(1.6, t0);
+      subGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.12);
+      sub.connect(subGain).connect(ctx.destination);
+      sub.start(t0);
+      sub.stop(t0 + 0.15);
+
+      // 3) 추가 mid "crack" - 짧은 톡
+      const mid = ctx.createOscillator();
+      mid.type = "triangle";
+      mid.frequency.setValueAtTime(900, t0);
+      mid.frequency.exponentialRampToValueAtTime(200, t0 + 0.04);
+      const midGain = ctx.createGain();
+      midGain.gain.setValueAtTime(0.9, t0);
+      midGain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.06);
+      mid.connect(midGain).connect(ctx.destination);
+      mid.start(t0);
+      mid.stop(t0 + 0.08);
+
+      setTimeout(() => { try { ctx.close(); } catch(e) {} }, 600);
     } catch (e) {
       console.warn("Audio error:", e);
     }
@@ -111,40 +163,44 @@ export default function CinemaSlate({ onBack }) {
 
   const handleClap = () => {
     playClapSound();
-    if (navigator.vibrate) navigator.vibrate([80, 30, 60]);
+    if (navigator.vibrate) navigator.vibrate([180, 30, 80]);
     setShowFlash(true);
-    setClapping(true);
+    setClapping(c => c + 1);
     setTimeout(() => setShowFlash(false), 220);
-    setTimeout(() => setClapping(false), 600);
   };
 
   const handleReset = () => {
-    if (!window.confirm("씬·테이크·롤을 1로 초기화할까요? (PROD/DIR 등 정보는 유지)")) return;
-    setScene(1);
-    setTake(1);
-    setRoll(1);
+    if (!window.confirm("씬·컷·테이크를 1로 초기화할까요? (정보는 유지)")) return;
+    setScene("1");
+    setCut("1");
+    setTake("1");
   };
 
   // ─── 컬러 팔레트 (반전 대응) ───────────────
   const C = inverted ? {
     bg:"#fafaf9", surface:"#ede6cf", text:"#0a0a0a", muted:"#5a5346",
-    border:"#bbb5a3", red:"#b91c1c", redGlow:"rgba(185,28,28,0.4)",
+    border:"#bbb5a3", red:"#b91c1c", redGlow:"rgba(185,28,28,0.35)",
     chalk:"#0a0a0a", chalkLabel:"#71706b",
+    blackBg:"#fafaf9",
   } : {
     bg:"#0a0a0a", surface:"#0d0d0d", text:"#fafaf9", muted:"#a8a29e",
-    border:"#2a2a2a", red:"#dc2626", redGlow:"rgba(220,38,38,0.6)",
+    border:"#2a2a2a", red:"#dc2626", redGlow:"rgba(220,38,38,0.7)",
     chalk:"#ede6cf", chalkLabel:"#8a8275",
+    blackBg:"#000",
   };
 
-  return (
+  // ─── 슬레이트 콘텐츠 ──────────────────────
+  const SlateContent = (
     <div style={{
-      background: C.bg,
-      color: C.text,
-      borderRadius: 12,
-      padding: 12,
-      transition: "background 0.3s, color 0.3s",
-      position: "relative",
-      overflow: "hidden",
+      width:"100%", height:"100%",
+      background: C.bg, color: C.text,
+      display:"flex", flexDirection:"column",
+      padding:"10px 14px 12px",
+      boxSizing:"border-box",
+      transition:"background 0.3s, color 0.3s",
+      position:"relative",
+      overflow:"hidden",
+      fontFamily: FONT_GOTHIC,
     }}>
       <style>{`
         @keyframes flashWhite {
@@ -152,26 +208,29 @@ export default function CinemaSlate({ onBack }) {
           30%  { opacity: 1; }
           100% { opacity: 0; }
         }
-        @keyframes clapShake {
-          0%, 100% { transform: rotate(0deg); }
-          25%      { transform: rotate(-1deg); }
-          75%      { transform: rotate(1deg); }
+        @keyframes clapperSnap {
+          0%   { transform: rotate(0deg); }
+          15%  { transform: rotate(-32deg); }
+          45%  { transform: rotate(-34deg); }
+          80%  { transform: rotate(2.5deg); }
+          88%  { transform: rotate(-1.2deg); }
+          95%  { transform: rotate(0.5deg); }
+          100% { transform: rotate(0deg); }
         }
       `}</style>
 
-      {/* 플래시 효과 */}
       {showFlash && (
         <div style={{
-          position:"fixed", inset:0, zIndex:9999,
+          position:"absolute", inset:0, zIndex:1000,
           background:"#fff", pointerEvents:"none",
           animation:"flashWhite 0.22s ease-out",
         }} />
       )}
 
-      {/* ── 상단 도구바 (← 도구로 / 토글들) ── */}
+      {/* ─── 상단 도구바 ─── */}
       <div style={{
         display:"flex", justifyContent:"space-between", alignItems:"center",
-        marginBottom:14, gap:8,
+        marginBottom:8, flexShrink:0,
       }}>
         <button onClick={onBack}
           style={{
@@ -180,212 +239,270 @@ export default function CinemaSlate({ onBack }) {
             color: C.text, fontSize:11, fontWeight:600,
             padding:"6px 12px", borderRadius:8, cursor:"pointer",
             display:"flex", alignItems:"center", gap:5,
+            fontFamily: FONT_GOTHIC,
           }}>
           <span style={{ color:"#fbbf24" }}>←</span> 도구
         </button>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ color:"#fbbf24", fontSize:10, fontWeight:700, letterSpacing:"0.2em", fontFamily:"'Courier New', monospace" }}>
-            🎬 SLATE
-          </span>
+        <span style={{ color:"#fbbf24", fontSize:10, fontWeight:700, letterSpacing:"0.2em", fontFamily:FONT_MONO }}>
+          🎬 SLATE
+        </span>
+        <div style={{ display:"flex", gap:5 }}>
+          <button onClick={() => setInverted(v => !v)}
+            style={{
+              background: C.surface, border:`1px solid ${C.border}`,
+              color: C.muted, fontSize:12,
+              padding:"5px 9px", borderRadius:7, cursor:"pointer",
+            }}
+            title={inverted ? "어둡게" : "밝게"}>🌓</button>
+          <button onClick={handleReset}
+            style={{
+              background: C.surface, border:`1px solid ${C.border}`,
+              color: C.muted, fontSize:12,
+              padding:"5px 9px", borderRadius:7, cursor:"pointer",
+            }}
+            title="리셋">↻</button>
         </div>
-        <button onClick={() => setShowInfo(s => !s)}
-          style={{
-            background: showInfo ? C.red : C.surface,
-            border:`1px solid ${showInfo ? C.red : C.border}`,
-            color: showInfo ? "#fff" : C.muted,
-            fontSize:10, fontWeight:600,
-            padding:"6px 10px", borderRadius:8, cursor:"pointer",
-            fontFamily:"'Courier New', monospace", letterSpacing:"0.1em",
-          }}>
-          INFO
-        </button>
       </div>
 
-      {/* ── 정보 입력 패널 (토글) ── */}
-      {showInfo && (
-        <div style={{
-          background: C.surface,
-          border:`1px solid ${C.border}`,
-          borderRadius:6, padding:"10px 12px", marginBottom:12,
-        }}>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-            <SlateInput label="PROD." value={prod} onChange={setProd} C={C} />
-            <SlateInput label="DIR." value={dir} onChange={setDir} C={C} />
-            <SlateInput label="CAMERA" value={camera} onChange={setCamera} C={C} />
-            <SlateInput label="SOUND" value={sound} onChange={setSound} C={C} />
-          </div>
-        </div>
-      )}
-
-      {/* ── 클래퍼 (사선 줄무늬, 장식용) ── */}
+      {/* ─── 슬레이트 본체 ─── */}
       <div style={{
-        height:34,
-        backgroundImage:"repeating-linear-gradient(118deg, #f5f1e8 0 28px, #1a1a1a 28px 56px)",
-        border:`2px solid ${C.border}`,
-        borderRadius:4, marginBottom:2,
-        animation: clapping ? "clapShake 0.18s ease-out" : "none",
-      }} />
-
-      {/* ── 슬레이트 본체 ── */}
-      <div style={{
+        flex:1,
         background: inverted ? "#ede6cf" : "linear-gradient(180deg, #0a0a0a 0%, #1a1a1a 100%)",
         border:`2px solid ${C.border}`,
-        borderRadius:4, padding:"14px 14px 16px",
+        borderRadius:6, padding:"10px 12px 12px",
+        display:"flex", flexDirection:"column",
+        boxShadow: inverted ? "0 6px 24px rgba(0,0,0,0.15)" : "0 6px 24px rgba(0,0,0,0.6)",
+        position:"relative",
+        minHeight:0,
       }}>
-        {/* 헤더 라인: PROD / DIR */}
-        {!showInfo && (
-          <div style={{ display:"flex", gap:14, marginBottom:12, paddingBottom:10, borderBottom:`1px solid ${C.border}` }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:C.chalkLabel, letterSpacing:"0.15em", marginBottom:1 }}>PROD</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:13, fontWeight:700, color:C.chalk, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textShadow: inverted ? "none" : "0 0 2px rgba(255,255,255,0.25)" }}>
-                {prod || <span style={{ color:C.chalkLabel, fontStyle:"italic" }}>—</span>}
-              </div>
-            </div>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:C.chalkLabel, letterSpacing:"0.15em", marginBottom:1 }}>DIR</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:13, fontWeight:700, color:C.chalk, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textShadow: inverted ? "none" : "0 0 2px rgba(255,255,255,0.25)" }}>
-                {dir || <span style={{ color:C.chalkLabel, fontStyle:"italic" }}>—</span>}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 메인 타임코드 (큰 글씨) */}
-        <div style={{
-          background: inverted ? "#fafaf9" : "#000",
-          border:`1px solid ${C.border}`,
-          borderRadius:6, padding:"14px 8px", marginBottom:14, textAlign:"center",
-        }}>
-          <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:C.chalkLabel, letterSpacing:"0.3em", marginBottom:4, fontWeight:700 }}>
-            TIMECODE · 24 FPS
-          </div>
-          <div style={{
-            fontFamily:"'Courier New', monospace",
-            fontSize:36, fontWeight:900, color:C.red,
-            letterSpacing:"0.05em", lineHeight:1,
-            textShadow: `0 0 18px ${C.redGlow}, 0 0 6px ${C.redGlow}`,
+        {/* 클래퍼 */}
+        <div style={{ position:"relative", marginBottom:8, flexShrink:0 }}>
+          <div key={clapping} style={{
+            height:28,
+            backgroundImage:"repeating-linear-gradient(118deg, #f5f1e8 0 28px, #1a1a1a 28px 56px)",
+            border:`2px solid ${C.border}`,
+            borderRadius:3,
+            transformOrigin:"bottom left",
+            animation: clapping > 0 ? "clapperSnap 0.6s cubic-bezier(0.45, 0, 0.15, 1)" : "none",
+            boxShadow:"0 3px 12px rgba(0,0,0,0.5)",
+            position:"relative",
           }}>
-            {tc.str}
+            <div style={{
+              position:"absolute", bottom:-4, left:8,
+              width:10, height:10, borderRadius:"50%",
+              background:"#2a2a2a", border:"2px solid #4a4a4a",
+            }} />
           </div>
         </div>
 
-        {/* SCENE / TAKE / ROLL 카운터 */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
-          <Counter label="SCENE" value={scene} setValue={setScene} C={C} />
-          <Counter label="TAKE" value={take} setValue={setTake} C={C} />
-          <Counter label="ROLL" value={roll} setValue={setRoll} C={C} padDigits={3} />
+        {/* 본체 그리드: 좌측(날짜+타임코드+정보) + 우측(SCENE/CUT/TAKE + 토글 + CLAP) */}
+        <div style={{
+          flex:1,
+          display:"grid",
+          gridTemplateColumns:"1.3fr 1fr",
+          gap:10,
+          minHeight:0,
+        }}>
+          {/* ── 좌측 ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:7, minHeight:0 }}>
+            {/* 날짜 박스 */}
+            <div style={{
+              background: C.blackBg,
+              border:`1px solid ${C.border}`,
+              borderRadius:5, padding:"7px 8px", textAlign:"center",
+              flexShrink:0,
+            }}>
+              <div style={{ fontFamily:FONT_MONO, fontSize:8, color:C.chalkLabel, letterSpacing:"0.3em", marginBottom:1, fontWeight:700 }}>
+                DATE
+              </div>
+              <div style={{
+                fontFamily:FONT_MONO,
+                fontSize:22, fontWeight:900, color: inverted ? "#0a0a0a" : "#fbbf24",
+                letterSpacing:"0.04em", lineHeight:1,
+                textShadow: inverted ? "none" : "0 0 14px rgba(251,191,36,0.5)",
+              }}>
+                {dateStr}
+                <span style={{ fontSize:13, marginLeft:6, opacity:0.7 }}>({dayName})</span>
+              </div>
+            </div>
+
+            {/* 타임코드 */}
+            <div style={{
+              background: C.blackBg,
+              border:`1px solid ${C.border}`,
+              borderRadius:5, padding:"7px 8px", textAlign:"center",
+              flexShrink:0,
+            }}>
+              <div style={{ fontFamily:FONT_MONO, fontSize:8, color:C.chalkLabel, letterSpacing:"0.3em", marginBottom:1, fontWeight:700 }}>
+                TIMECODE · 24 FPS
+              </div>
+              <div style={{
+                fontFamily:FONT_MONO,
+                fontSize:26, fontWeight:900, color:C.red,
+                letterSpacing:"0.04em", lineHeight:1,
+                textShadow: `0 0 18px ${C.redGlow}, 0 0 6px ${C.redGlow}`,
+              }}>
+                {tc}
+              </div>
+            </div>
+
+            {/* PROD / DIR / CAM (컴팩트 + 큰 글자 + 고딕) */}
+            <div style={{
+              background: inverted ? "#fafaf9" : "rgba(0,0,0,0.4)",
+              border:`1px solid ${C.border}`,
+              borderRadius:5, padding:"6px 10px",
+              display:"flex", flexDirection:"column", gap:3,
+              flexShrink:0,
+            }}>
+              <InfoRow label="PROD" value={prod} onChange={setProd} C={C} inverted={inverted} />
+              <InfoRow label="DIR"  value={dir}  onChange={setDir}  C={C} inverted={inverted} />
+              <InfoRow label="CAM"  value={camera} onChange={setCamera} C={C} inverted={inverted} />
+            </div>
+
+            {/* 🖊️ 손글씨 메모 박스 */}
+            <HandwritingCanvas C={C} inverted={inverted} />
+          </div>
+
+          {/* ── 우측: SCENE/CUT/TAKE (크고 강조) + 토글 + CLAP ── */}
+          <div style={{ display:"flex", flexDirection:"column", gap:7, minHeight:0 }}>
+            {/* SCENE / CUT / TAKE (가장 큼, 텍스트 입력) */}
+            <div style={{
+              flex:1,
+              display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6,
+              minHeight:0,
+            }}>
+              <BigInput label="SCENE" value={scene} onChange={setScene} C={C} />
+              <BigInput label="CUT"   value={cut}   onChange={setCut}   C={C} />
+              <BigInput label="TAKE"  value={take}  onChange={setTake}  C={C} />
+            </div>
+
+            {/* INT/EXT, DAY/NIGHT */}
+            <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+              <div style={{ flex:1, display:"flex", gap:3 }}>
+                <ToggleBtn active={intExt==="INT"} onClick={() => setIntExt("INT")} color={C.red} C={C}>INT</ToggleBtn>
+                <ToggleBtn active={intExt==="EXT"} onClick={() => setIntExt("EXT")} color={C.red} C={C}>EXT</ToggleBtn>
+              </div>
+              <div style={{ flex:1, display:"flex", gap:3 }}>
+                <ToggleBtn active={dayNight==="DAY"} onClick={() => setDayNight("DAY")} color={C.red} C={C}>DAY</ToggleBtn>
+                <ToggleBtn active={dayNight==="NIGHT"} onClick={() => setDayNight("NIGHT")} color={C.red} C={C}>NIGHT</ToggleBtn>
+              </div>
+            </div>
+
+            {/* CLAP! 버튼 (작게) */}
+            <button onClick={handleClap}
+              style={{
+                flexShrink:0, height:42,
+                background:"linear-gradient(180deg, #dc2626 0%, #991b1b 100%)",
+                color:"#fff", border:"none",
+                borderRadius:8,
+                fontFamily:FONT_MONO,
+                fontSize:18, fontWeight:900, letterSpacing:"0.35em",
+                boxShadow:"0 4px 14px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.15)",
+                cursor:"pointer",
+                transition:"transform 0.1s",
+              }}
+              onMouseDown={e => e.currentTarget.style.transform = "scale(0.97)"}
+              onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+            >
+              🎬 CLAP!
+            </button>
+          </div>
         </div>
+      </div>
+    </div>
+  );
 
-        {/* INT/EXT, DAY/NIGHT 토글 */}
-        <div style={{ display:"flex", gap:5, fontFamily:"'Courier New', monospace" }}>
-          <ToggleBtn active={intExt==="INT"}   onClick={() => setIntExt("INT")}   color={C.red} C={C}>INT</ToggleBtn>
-          <ToggleBtn active={intExt==="EXT"}   onClick={() => setIntExt("EXT")}   color={C.red} C={C}>EXT</ToggleBtn>
-          <span style={{ width:8 }} />
-          <ToggleBtn active={dayNight==="DAY"}   onClick={() => setDayNight("DAY")}   color={C.red} C={C}>DAY</ToggleBtn>
-          <ToggleBtn active={dayNight==="NIGHT"} onClick={() => setDayNight("NIGHT")} color={C.red} C={C}>NIGHT</ToggleBtn>
+  // ─── 풀스크린 + 자동 가로 ─────────────────
+  return (
+    <div style={{
+      position:"fixed", inset:0, zIndex:9000,
+      background:"#000",
+      overflow:"hidden",
+    }}>
+      {portrait ? (
+        <div style={{
+          position:"absolute", top:0, left:"100vw",
+          width:"100vh", height:"100vw",
+          transformOrigin:"top left",
+          transform:"rotate(90deg)",
+        }}>
+          {SlateContent}
         </div>
-      </div>
-
-      {/* ── 큰 CLAP! 버튼 ── */}
-      <button onClick={handleClap}
-        style={{
-          width:"100%", marginTop:14,
-          background:"linear-gradient(180deg, #dc2626 0%, #991b1b 100%)",
-          color:"#fff", border:"none",
-          padding:"18px", borderRadius:10,
-          fontFamily:"'Courier New', monospace",
-          fontSize:22, fontWeight:900, letterSpacing:"0.4em",
-          boxShadow:"0 4px 18px rgba(220,38,38,0.45), inset 0 1px 0 rgba(255,255,255,0.1)",
-          cursor:"pointer",
-          transition:"transform 0.1s",
-        }}
-        onMouseDown={e => e.currentTarget.style.transform = "scale(0.98)"}
-        onMouseUp={e => e.currentTarget.style.transform = "scale(1)"}
-        onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-      >
-        🎬 CLAP!
-      </button>
-
-      {/* ── 하단 설정 ── */}
-      <div style={{ display:"flex", gap:6, marginTop:10 }}>
-        <SettingBtn onClick={() => setInverted(v => !v)} active={inverted} C={C}>
-          🌓 {inverted ? "어둡게" : "밝게"}
-        </SettingBtn>
-        <SettingBtn onClick={() => setSoundOn(v => !v)} active={soundOn} C={C}>
-          {soundOn ? "🔊 사운드 ON" : "🔇 사운드 OFF"}
-        </SettingBtn>
-        <SettingBtn onClick={handleReset} C={C}>
-          ↻ 리셋
-        </SettingBtn>
-      </div>
-
-      {/* 도움말 */}
-      <div style={{
-        marginTop:14, padding:"8px 12px",
-        background: C.surface, borderRadius:6,
-        border:`1px solid ${C.border}`,
-        fontSize:10, color:C.muted, lineHeight:1.6,
-        fontFamily:"'Courier New', monospace", letterSpacing:"0.05em",
-      }}>
-        <div style={{ color:C.red, fontWeight:700, letterSpacing:"0.2em", marginBottom:3 }}>HOW TO USE</div>
-        촬영 전: SCENE/TAKE 입력 · 카메라 ROLL 후 화면을 비추고 CLAP!<br/>
-        모든 설정은 자동 저장 됩니다 · INFO 버튼으로 정보 입력
-      </div>
+      ) : (
+        <div style={{ width:"100vw", height:"100vh" }}>
+          {SlateContent}
+        </div>
+      )}
     </div>
   );
 }
 
-/** 입력 필드 */
-function SlateInput({ label, value, onChange, C }) {
+/** PROD/DIR/CAM 입력 한 줄 (컴팩트, 큰 글자, 고딕체) */
+function InfoRow({ label, value, onChange, C, inverted }) {
   return (
-    <div>
-      <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:C.chalkLabel, letterSpacing:"0.2em", marginBottom:3, fontWeight:700 }}>{label}</div>
+    <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+      <div style={{
+        fontFamily:FONT_MONO, fontSize:9,
+        color: C.chalkLabel, letterSpacing:"0.2em", fontWeight:700,
+        minWidth:38, flexShrink:0,
+      }}>{label}</div>
       <input
         value={value}
         onChange={e => onChange(e.target.value)}
         placeholder="—"
         style={{
-          width:"100%", boxSizing:"border-box",
-          background:"transparent", border:`1px solid ${C.border}`,
-          borderRadius:4, padding:"5px 8px",
-          color: C.chalk, fontFamily:"'Courier New', monospace",
-          fontSize:13, fontWeight:700, outline:"none",
+          flex:1, minWidth:0,
+          background:"transparent", border:"none",
+          color: C.chalk,
+          fontFamily: FONT_GOTHIC,
+          fontSize:18, fontWeight:800, outline:"none",
+          padding:"2px 0",
+          textShadow: inverted ? "none" : "0 0 2px rgba(255,255,255,0.2)",
         }}
       />
     </div>
   );
 }
 
-/** 숫자 카운터 (+/-) */
-function Counter({ label, value, setValue, C, padDigits = 2 }) {
+/** SCENE/CUT/TAKE 큰 입력 박스 (텍스트 입력 가능) */
+function BigInput({ label, value, onChange, C }) {
   return (
-    <div style={{ background: C.surface, border:`1px solid ${C.border}`, borderRadius:6, padding:"8px 4px", textAlign:"center" }}>
-      <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:C.chalkLabel, letterSpacing:"0.15em", fontWeight:700 }}>
-        {label}
-      </div>
+    <div style={{
+      background: C.surface, border:`1px solid ${C.border}`,
+      borderRadius:6, padding:"10px 4px",
+      textAlign:"center",
+      display:"flex", flexDirection:"column",
+      justifyContent:"center", alignItems:"stretch",
+      minWidth:0,
+    }}>
       <div style={{
-        fontFamily:"'Courier New', monospace",
-        fontSize:24, fontWeight:900, color:C.chalk,
-        lineHeight:1.1, padding:"4px 0",
-        textShadow: C.chalk === "#ede6cf" ? "0 0 2px rgba(255,255,255,0.25)" : "none",
-      }}>
-        {String(value).padStart(padDigits, "0")}
-      </div>
-      <div style={{ display:"flex", gap:3, justifyContent:"center" }}>
-        <button onClick={() => setValue(v => Math.max(1, v - 1))}
-          style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.muted, fontSize:14, fontWeight:700, padding:"2px 9px", borderRadius:3, cursor:"pointer", lineHeight:1 }}>
-          −
-        </button>
-        <button onClick={() => setValue(v => v + 1)}
-          style={{ background:C.bg, border:`1px solid ${C.border}`, color:C.muted, fontSize:14, fontWeight:700, padding:"2px 9px", borderRadius:3, cursor:"pointer", lineHeight:1 }}>
-          +
-        </button>
-      </div>
+        fontFamily:FONT_MONO, fontSize:10,
+        color:C.chalkLabel, letterSpacing:"0.25em", fontWeight:700,
+        marginBottom:8,
+      }}>{label}</div>
+      <input
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onFocus={e => e.target.select()}
+        maxLength={5}
+        style={{
+          width:"100%", boxSizing:"border-box",
+          background:"transparent", border:"none",
+          color: C.chalk,
+          fontFamily: FONT_GOTHIC,
+          fontSize:44, fontWeight:900,
+          textAlign:"center",
+          outline:"none", padding:"0 2px",
+          textShadow: C.chalk === "#ede6cf" ? "0 0 4px rgba(255,255,255,0.3), 0 0 1px rgba(255,255,255,0.5)" : "none",
+          lineHeight:1.1,
+        }}
+      />
     </div>
   );
 }
 
-/** 토글 버튼 (INT/EXT, DAY/NIGHT) */
+/** INT/EXT, DAY/NIGHT 토글 */
 function ToggleBtn({ active, onClick, children, color, C }) {
   return (
     <button onClick={onClick}
@@ -393,26 +510,152 @@ function ToggleBtn({ active, onClick, children, color, C }) {
         flex:1, background: active ? color : "transparent",
         color: active ? "#fff" : C.muted,
         border:`1px solid ${active ? color : C.border}`,
-        padding:"7px 4px", fontSize:10, fontWeight:700, letterSpacing:"0.15em",
-        borderRadius:5, cursor:"pointer", fontFamily:"'Courier New', monospace",
+        padding:"6px 4px", fontSize:10, fontWeight:700, letterSpacing:"0.15em",
+        borderRadius:5, cursor:"pointer", fontFamily:FONT_MONO,
       }}>
       {children}
     </button>
   );
 }
 
-/** 하단 설정 버튼 */
-function SettingBtn({ onClick, active, children, C }) {
+/** 🖊️ 손글씨 캔버스 - 터치/마우스로 자유롭게 쓰기 */
+function HandwritingCanvas({ C, inverted }) {
+  const canvasRef = useRef(null);
+  const isDrawing = useRef(false);
+  const lastPos = useRef({ x: 0, y: 0 });
+  const LS_KEY = "slate_memo_v2";
+
+  // 캔버스 설정 + 저장된 메모 복원
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const setupCanvas = () => {
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      // 기존 메모 백업
+      let oldData = null;
+      if (canvas.width > 0) {
+        try { oldData = canvas.toDataURL(); } catch(e) {}
+      }
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
+
+      // 우선 저장된 데이터 또는 백업 데이터 복원
+      const saved = oldData || localStorage.getItem(LS_KEY);
+      if (saved) {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        };
+        img.src = saved;
+      }
+    };
+
+    setupCanvas();
+    const obs = new ResizeObserver(() => setupCanvas());
+    obs.observe(canvas);
+    return () => obs.disconnect();
+  }, []);
+
+  const getPos = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const touch = e.touches?.[0];
+    return {
+      x: (touch?.clientX ?? e.clientX) - rect.left,
+      y: (touch?.clientY ?? e.clientY) - rect.top,
+    };
+  };
+
+  const startDraw = (e) => {
+    e.preventDefault();
+    isDrawing.current = true;
+    lastPos.current = getPos(e);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing.current) return;
+    e.preventDefault();
+    const ctx = canvasRef.current.getContext("2d");
+    const pos = getPos(e);
+    ctx.strokeStyle = inverted ? "#0a0a0a" : "#ede6cf";
+    ctx.lineWidth = 2.8;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowBlur = inverted ? 0 : 3;
+    ctx.shadowColor = inverted ? "transparent" : "rgba(255,255,255,0.4)";
+    ctx.beginPath();
+    ctx.moveTo(lastPos.current.x, lastPos.current.y);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+    lastPos.current = pos;
+  };
+
+  const endDraw = () => {
+    if (isDrawing.current) {
+      isDrawing.current = false;
+      try {
+        localStorage.setItem(LS_KEY, canvasRef.current.toDataURL());
+      } catch(e) { /* quota exceeded 등 무시 */ }
+    }
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    localStorage.removeItem(LS_KEY);
+  };
+
   return (
-    <button onClick={onClick}
-      style={{
-        flex:1, background: C.surface,
-        border:`1px solid ${active ? "#fbbf24" : C.border}`,
-        color: active ? "#fbbf24" : C.muted,
-        fontSize:10, padding:"7px 4px", borderRadius:6, cursor:"pointer",
-        fontFamily:"'Courier New', monospace", letterSpacing:"0.1em",
+    <div style={{
+      position:"relative",
+      background: inverted ? "#fafaf9" : "rgba(0,0,0,0.4)",
+      border:`1px solid ${C.border}`,
+      borderRadius:5,
+      flex:1, minHeight:60,
+      overflow:"hidden",
+    }}>
+      {/* 라벨 */}
+      <div style={{
+        position:"absolute", top:4, left:8,
+        fontFamily:FONT_MONO, fontSize:8,
+        color: C.chalkLabel, letterSpacing:"0.2em", fontWeight:700,
+        pointerEvents:"none", zIndex:1,
       }}>
-      {children}
-    </button>
+        MEMO
+      </div>
+      {/* 지우기 버튼 */}
+      <button onClick={clearCanvas}
+        style={{
+          position:"absolute", top:2, right:4,
+          background:"transparent", border:"none",
+          color: C.muted, fontSize:12, cursor:"pointer",
+          padding:"2px 6px", lineHeight:1,
+          zIndex:2,
+        }}
+        title="지우기">
+        ✕
+      </button>
+      {/* 캔버스 */}
+      <canvas ref={canvasRef}
+        onMouseDown={startDraw}
+        onMouseMove={draw}
+        onMouseUp={endDraw}
+        onMouseLeave={endDraw}
+        onTouchStart={startDraw}
+        onTouchMove={draw}
+        onTouchEnd={endDraw}
+        style={{
+          width:"100%", height:"100%",
+          display:"block",
+          touchAction:"none",
+          cursor:"crosshair",
+        }} />
+    </div>
   );
 }
