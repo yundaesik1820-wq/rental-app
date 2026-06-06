@@ -7,6 +7,7 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useF
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
 import EveryTimeIntro from "../../components/EveryTimeIntro";
+import CinemaSlate from "../../components/CinemaSlate";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -111,6 +112,8 @@ export default function Community({ onExit }) {
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
   const [selectedRoom, setSelectedRoom] = useState(null);
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
+  // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
+  const [selectedTool, setSelectedTool] = useState(null);
 
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
@@ -405,7 +408,16 @@ export default function Community({ onExit }) {
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
-          <button onClick={() => currentRoom ? setSelectedRoom(null) : (onExit && onExit())}
+          <button onClick={() => {
+            if (selectedTool) {
+              setSelectedTool(null);
+            } else if (currentRoom) {
+              setSelectedRoom(null);
+              setSelectedTool(null);
+            } else {
+              onExit && onExit();
+            }
+          }}
             style={{
               background:`${currentRoom ? currentRoom.color : "#dc2626"}1A`,
               border:`1px solid ${currentRoom ? currentRoom.color : "#dc2626"}4D`,
@@ -414,12 +426,14 @@ export default function Community({ onExit }) {
               display:"flex", alignItems:"center", gap:6,
             }}>
             <span style={{ color: currentRoom ? currentRoom.color : "#dc2626" }}>←</span>
-            {currentRoom ? "ROOMS" : "메인으로"}
+            {selectedTool ? "도구" : (currentRoom ? "ROOMS" : "메인으로")}
           </button>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
             <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
-              {currentRoom ? currentRoom.title : "ZZOTKYO"}
+              {selectedTool === "slate" ? "SLATE"
+                : currentRoom ? currentRoom.title
+                : "ZZOTKYO"}
             </span>
           </div>
           <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
@@ -498,13 +512,77 @@ export default function Community({ onExit }) {
         </div>
       )}
 
-      {/* 🛠️ 필름 도구 룸 - 임시 placeholder */}
-      {selectedRoom === "tools" && (
-        <div style={{ textAlign:"center", padding:"80px 20px", color:"#a8a29e" }}>
-          <div style={{ fontSize:60, opacity:0.4, marginBottom:18 }}>🎬</div>
-          <div style={{ fontFamily:"'Courier New', monospace", fontSize:12, color:"#fbbf24", letterSpacing:"0.3em", marginBottom:8, fontWeight:700 }}>COMING SOON</div>
-          <div style={{ fontSize:14, color:"#fafaf9", marginBottom:8 }}>필름 도구 룸</div>
-          <div style={{ fontSize:12, color:"#71706b" }}>슬레이터 · 스크립터 · 계산기 · 자료 큐레이션</div>
+      {/* 🛠️ 필름 도구 룸 */}
+      {selectedRoom === "tools" && !selectedTool && (
+        <div style={{ marginTop:18 }}>
+          {/* 안내 */}
+          <div style={{ textAlign:"center", marginBottom:18, padding:"0 8px" }}>
+            <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:"#fbbf24", letterSpacing:"0.35em", fontWeight:700, marginBottom:5 }}>
+              FILM TOOLS
+            </div>
+            <div style={{ fontSize:13, color:"#a8a29e" }}>촬영 현장에서 쓰는 실용 도구들</div>
+          </div>
+
+          {/* 도구 카드 그리드 */}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
+            {/* 슬레이터 - 사용 가능 */}
+            <div onClick={() => setSelectedTool("slate")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>🎬</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SLATE</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>전자식 슬레이터</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>타임코드 · CLAP</div>
+            </div>
+
+            {/* 스크립터 - 곧 공개 */}
+            <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" comingSoon />
+
+            {/* 노출 계산기 */}
+            <ToolCard icon="📷" label="EXPOSURE" title="노출 계산기" desc="셔터·조리개·ISO" comingSoon />
+
+            {/* DOF 계산기 */}
+            <ToolCard icon="📐" label="DOF" title="피사계 심도" desc="DOF 계산" comingSoon />
+
+            {/* 색온도 계산기 */}
+            <ToolCard icon="🌡️" label="COLOR TEMP" title="색온도 계산기" desc="화이트밸런스" comingSoon />
+
+            {/* 렌즈 화각 */}
+            <ToolCard icon="🔭" label="FOV" title="렌즈 화각" desc="초점거리·화각" comingSoon />
+
+            {/* 자료 큐레이션 */}
+            <div style={{
+              gridColumn:"span 2",
+              background:"#1a1a1a", border:"1px solid #2a2a2a",
+              borderRadius:6, padding:"14px 14px", cursor:"not-allowed",
+              opacity:0.5,
+            }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <div style={{ fontSize:28 }}>📚</div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>RESOURCES</div>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>자료 큐레이션</div>
+                  <div style={{ fontSize:9, color:"#a8a29e", marginTop:2 }}>무료 음원·LUT·폰트·템플릿</div>
+                </div>
+                <div style={{ fontSize:9, color:"#71706b", fontFamily:"'Courier New', monospace", letterSpacing:"0.15em" }}>SOON</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🎬 슬레이터 본체 표시 */}
+      {selectedRoom === "tools" && selectedTool === "slate" && (
+        <div style={{ marginTop:8 }}>
+          <CinemaSlate onBack={() => setSelectedTool(null)} />
         </div>
       )}
 
@@ -1129,5 +1207,30 @@ export default function Community({ onExit }) {
         )} {/* /FAB 조건부 끝 */}
       </div> {/* /시네마 풀스크린 컨테이너 */}
     </>
+  );
+}
+
+/** 🛠️ 도구 카드 (필름 도구 룸) */
+function ToolCard({ icon, label, title, desc, comingSoon }) {
+  return (
+    <div style={{
+      background:"#1a1a1a", border:`1px ${comingSoon ? "solid" : "dashed"} ${comingSoon ? "#2a2a2a" : "#fbbf24"}`,
+      borderRadius:6, padding:"16px 12px",
+      cursor: comingSoon ? "not-allowed" : "pointer",
+      textAlign:"center", minHeight:130, opacity: comingSoon ? 0.5 : 1,
+      display:"flex", flexDirection:"column", justifyContent:"center",
+      position:"relative",
+    }}>
+      {comingSoon && (
+        <div style={{
+          position:"absolute", top:6, right:8,
+          fontSize:8, color:"#71706b", fontFamily:"'Courier New', monospace", letterSpacing:"0.15em",
+        }}>SOON</div>
+      )}
+      <div style={{ fontSize:40, marginBottom:6 }}>{icon}</div>
+      <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>{label}</div>
+      <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>{title}</div>
+      <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>{desc}</div>
+    </div>
   );
 }
