@@ -126,15 +126,16 @@ export default function ExposureLive({ onBack }) {
     };
   }, [facingMode]);
 
-  // 🎨 매 프레임 처리 루프
+  // 🎨 매 프레임 처리 루프 (UI 반응성을 위해 30fps로 제한)
   useEffect(() => {
     const canvas = canvasRef.current;
     const video  = videoRef.current;
     if (!canvas || !video) return;
 
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    let frameCount = 0;
+    let lastProcessTs = 0;
     let lastHistUpdate = 0;
+    const FRAME_INTERVAL = 33; // ~30fps (1000/30)
 
     function processFrame(ts) {
       if (video.videoWidth === 0 || video.readyState < 2) {
@@ -142,9 +143,16 @@ export default function ExposureLive({ onBack }) {
         return;
       }
 
-      // 다운스케일 (480px 너비 기준)
+      // 처리 빈도 제한 (UI thread 여유)
+      if (ts - lastProcessTs < FRAME_INTERVAL) {
+        rafRef.current = requestAnimationFrame(processFrame);
+        return;
+      }
+      lastProcessTs = ts;
+
+      // 다운스케일 (모바일 성능)
       const aspect = video.videoWidth / video.videoHeight;
-      const W = 480;
+      const W = 400;
       const H = Math.round(W / aspect);
       if (canvas.width !== W || canvas.height !== H) {
         canvas.width = W;
@@ -197,14 +205,13 @@ export default function ExposureLive({ onBack }) {
 
         ctx.putImageData(imageData, 0, 0);
 
-        // 히스토그램 업데이트 (4프레임마다)
-        if (hist && ts - lastHistUpdate > 100) {
+        // 히스토그램 업데이트 (200ms마다만, setState 비용 절약)
+        if (hist && ts - lastHistUpdate > 200) {
           setHistogram(hist);
           lastHistUpdate = ts;
         }
       }
 
-      frameCount++;
       rafRef.current = requestAnimationFrame(processFrame);
     }
 
@@ -249,13 +256,18 @@ export default function ExposureLive({ onBack }) {
   const ModeBtn = ({ value, icon, label }) => (
     <button onClick={() => setMode(value)}
       style={{
-        flex: 1, padding: "8px 4px",
+        flex: 1, padding: "12px 4px",
+        minHeight: 46,
         background: mode === value ? "#fbbf24" : "#1a1a1a",
         border: `1px solid ${mode === value ? "#fbbf24" : "#2a2a2a"}`,
         color: mode === value ? "#0a0a0a" : "#a8a29e",
         fontSize: 11, fontWeight: mode === value ? 800 : 700,
-        borderRadius: 5, cursor: "pointer",
-        fontFamily: FONT_MONO, letterSpacing: "0.1em",
+        borderRadius: 6, cursor: "pointer",
+        fontFamily: FONT_MONO, letterSpacing: "0.08em",
+        whiteSpace: "nowrap", overflow: "hidden",
+        WebkitTapHighlightColor: "rgba(251,191,36,0.3)",
+        touchAction: "manipulation",
+        userSelect: "none",
       }}>
       {icon} {label}
     </button>
@@ -264,13 +276,18 @@ export default function ExposureLive({ onBack }) {
   const OptionBtn = ({ active, onClick, children }) => (
     <button onClick={onClick}
       style={{
-        flex: 1, padding: "6px 4px",
+        flex: 1, padding: "10px 4px",
+        minHeight: 38,
         background: "#1a1a1a",
         border: `1px solid ${active ? "#fbbf24" : "#2a2a2a"}`,
         color: active ? "#fbbf24" : "#a8a29e",
         fontSize: 10, fontWeight: 700,
-        borderRadius: 5, cursor: "pointer",
-        fontFamily: FONT_MONO, letterSpacing: "0.1em",
+        borderRadius: 6, cursor: "pointer",
+        fontFamily: FONT_MONO, letterSpacing: "0.08em",
+        whiteSpace: "nowrap",
+        WebkitTapHighlightColor: "rgba(251,191,36,0.3)",
+        touchAction: "manipulation",
+        userSelect: "none",
       }}>
       {children}
     </button>
@@ -482,7 +499,7 @@ export default function ExposureLive({ onBack }) {
         </div>
         <div style={{ display: "flex", gap: 5, marginBottom: 8 }}>
           <ModeBtn value="off"        icon=""   label="OFF" />
-          <ModeBtn value="falsecolor" icon="🌈" label="FALSE COLOR" />
+          <ModeBtn value="falsecolor" icon="🌈" label="FALSE" />
           <ModeBtn value="zebra"      icon="🦓" label="ZEBRA" />
         </div>
 
