@@ -11,6 +11,7 @@ import CinemaSlate from "../../components/CinemaSlate";
 import ExposureLive from "../../components/ExposureLive";
 import ExposureCalc from "../../components/ExposureCalc";
 import DofCalc from "../../components/DofCalc";
+import ARDistance from "../../components/ARDistance";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -438,6 +439,7 @@ export default function Community({ onExit }) {
                 : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
                 : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
                 : selectedTool === "dof" ? "DOF"
+                : selectedTool === "ar-distance" ? "AR DISTANCE"
                 : currentRoom ? currentRoom.title
                 : "ZZOTKYO"}
             </span>
@@ -552,6 +554,24 @@ export default function Community({ onExit }) {
             {/* 스크립터 - 곧 공개 */}
             <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" comingSoon />
 
+            {/* 📏 AR 거리 측정 - 사용 가능 */}
+            <div onClick={() => setSelectedTool("ar-distance")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>📏</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>AR DISTANCE</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>거리 측정</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>화면 두 점 → 실제 길이</div>
+            </div>
+
             {/* 🎥 LIVE 노출 도우미 - 사용 가능 */}
             <div onClick={() => setSelectedTool("live-exposure")}
               style={{
@@ -653,6 +673,11 @@ export default function Community({ onExit }) {
       {/* 📐 DOF 계산기 */}
       {selectedRoom === "tools" && selectedTool === "dof" && (
         <DofCalc onBack={() => setSelectedTool(null)} />
+      )}
+
+      {/* 📏 AR 거리 측정 */}
+      {selectedRoom === "tools" && selectedTool === "ar-distance" && (
+        <ARDistance onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
