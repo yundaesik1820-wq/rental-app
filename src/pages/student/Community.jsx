@@ -9,6 +9,7 @@ import { serverTimestamp } from "firebase/firestore";
 import EveryTimeIntro from "../../components/EveryTimeIntro";
 import CinemaSlate from "../../components/CinemaSlate";
 import ExposureLive from "../../components/ExposureLive";
+import ExposureCalc from "../../components/ExposureCalc";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -434,6 +435,7 @@ export default function Community({ onExit }) {
             <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
               {selectedTool === "slate" ? "SLATE"
                 : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
+                : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
                 : currentRoom ? currentRoom.title
                 : "ZZOTKYO"}
             </span>
@@ -566,8 +568,23 @@ export default function Community({ onExit }) {
               <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>폴스컬러 · 제브라</div>
             </div>
 
-            {/* 노출 계산기 (이론) - 곧 공개 */}
-            <ToolCard icon="📷" label="EXPOSURE CALC" title="노출 계산기" desc="180° 셔터 · 등가환산" comingSoon />
+            {/* 📷 노출 계산기 (이론) - 사용 가능 */}
+            <div onClick={() => setSelectedTool("exposure-calc")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>📷</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>EXPOSURE CALC</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>노출 계산기</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>180° 셔터 · 등가환산</div>
+            </div>
 
             {/* DOF 계산기 */}
             <ToolCard icon="📐" label="DOF" title="피사계 심도" desc="DOF 계산" comingSoon />
@@ -609,6 +626,11 @@ export default function Community({ onExit }) {
       {/* 🎥 LIVE 노출 도우미 표시 */}
       {selectedRoom === "tools" && selectedTool === "live-exposure" && (
         <ExposureLive onBack={() => setSelectedTool(null)} />
+      )}
+
+      {/* 📷 노출 계산기 (이론) */}
+      {selectedRoom === "tools" && selectedTool === "exposure-calc" && (
+        <ExposureCalc onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
