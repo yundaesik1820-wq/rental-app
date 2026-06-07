@@ -1345,7 +1345,8 @@ export default function Community({ onExit }) {
             </div>
           )}
 
-          {/* 추천/비추천 - 시네마 톤 (하트) */}
+          {/* 추천/비추천 - 작품공유·협업모집 제외 */}
+          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && (
           <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
             <button onClick={() => toggleLike("post", selPost)}
               style={{
@@ -1368,7 +1369,10 @@ export default function Community({ onExit }) {
               👎 {selPost.dislikes||0}
             </button>
           </div>
+          )}
 
+          {/* 댓글 영역 - 작품공유 제외 */}
+          {selPost.category !== "작품공유" && (<>
           {/* 댓글 헤더 - 시네마 톤 */}
           <div style={{
             fontSize:10, fontWeight:700, color:CINEMA.red, marginBottom:10,
@@ -1473,6 +1477,7 @@ export default function Community({ onExit }) {
               <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()} small>등록</Btn>
             </div>
           </div>
+          </>)}
         </Modal>
       )}
 
