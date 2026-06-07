@@ -22,6 +22,9 @@ const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", 
 const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
+// 크루 메이커스 모집 포지션 (드롭다운)
+const CREW_POSITIONS = ["제작/기획", "연출/작가", "촬영", "조명", "동시녹음/음향", "미술/소품/세트", "분장/의상", "편집/D.I", "음악/사운드 후반", "배우/출연", "운송", "기타(직접 입력)"];
+const CREW_ETC = "기타(직접 입력)";
 
 // 🎬 ROOMS 정의 - ZZOTKYO 진입 분기
 const ROOMS = [
@@ -121,6 +124,15 @@ function getYouTubeId(url) {
   return m ? m[1] : null;
 }
 
+// 모집 마감일 → 남은 일수 (양수: 남음, 0: 당일, 음수: 마감)
+function getDday(deadline) {
+  if (!deadline) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const end = new Date(deadline); end.setHours(0,0,0,0);
+  if (isNaN(end.getTime())) return null;
+  return Math.round((end - today) / 86400000);
+}
+
 export default function Community({ onExit }) {
   const { profile } = useAuth();
 
@@ -176,10 +188,11 @@ export default function Community({ onExit }) {
   const [showWrite, setShowWrite] = useState(false);
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
-    ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" }); // 강의/작품공유 전용 필드 + 관리자 실명모드
+    ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
+    positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
@@ -270,12 +283,16 @@ export default function Community({ onExit }) {
   const submitPost = async () => {
     const isLecturePost = writeForm.category === LECTURE_CAT;
     const isWorkPost = writeForm.category === "작품공유";
+    const isCrewPost = writeForm.category === "협업모집";
     // 카테고리별 유효성 검사
     if (isLecturePost) {
       if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
     } else if (isWorkPost) {
       if (!writeForm.title.trim()) return;
       if (!getYouTubeId(writeForm.ytUrl)) { alert("올바른 유튜브 링크를 입력해주세요."); return; }
+    } else if (isCrewPost) {
+      if (!writeForm.title.trim()) return;
+      if (writeForm.positions.length === 0) { alert("모집 포지션을 1개 이상 추가해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
       if (writeForm.category === "장터" && writeForm.images.length === 0) return;
@@ -306,6 +323,14 @@ export default function Community({ onExit }) {
       runtime:     isWorkPost ? writeForm.runtime.trim() : "",
       prodDate:    isWorkPost ? writeForm.prodDate.trim() : "",
       credits:     isWorkPost ? writeForm.credits.trim() : "",
+      // 크루 메이커스 전용 필드
+      positions:   isCrewPost ? writeForm.positions : [],
+      crewLogline: isCrewPost ? writeForm.crewLogline.trim() : "",
+      crewSchedule:isCrewPost ? writeForm.crewSchedule.trim() : "",
+      crewPlace:   isCrewPost ? writeForm.crewPlace.trim() : "",
+      crewPay:     isCrewPost ? writeForm.crewPay.trim() : "",
+      crewGenre:   isCrewPost ? writeForm.crewGenre.trim() : "",
+      deadline:    isCrewPost ? writeForm.deadline : "",
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
       adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
@@ -317,7 +342,8 @@ export default function Community({ onExit }) {
       createdAt:  serverTimestamp(),
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
-      ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
+      ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
+      positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -330,6 +356,21 @@ export default function Community({ onExit }) {
       return;
     }
     setWriteForm(p => ({ ...p, genres:[...p.genres, g], genreInput:"" }));
+  };
+
+  // 크루 모집 포지션 — 드롭다운 선택 / 기타 직접 입력
+  const pickPosition = (val) => {
+    if (!val) return;
+    if (val === CREW_ETC) { setWriteForm(p => ({ ...p, positionSelect: val })); return; }
+    setWriteForm(p => (p.positions.includes(val) || p.positions.length >= 8) ? { ...p, positionSelect:"" } : { ...p, positions:[...p.positions, val], positionSelect:"" });
+  };
+  const addPositionCustom = () => {
+    const v = writeForm.positionInput.trim();
+    if (!v || writeForm.positions.includes(v) || writeForm.positions.length >= 8) {
+      setWriteForm(p => ({ ...p, positionInput:"", positionSelect:"" }));
+      return;
+    }
+    setWriteForm(p => ({ ...p, positions:[...p.positions, v], positionInput:"", positionSelect:"" }));
   };
 
   // 댓글 작성
@@ -419,6 +460,7 @@ export default function Community({ onExit }) {
   // 본인 글 수정 (실명 게시판)
   const updateMyPost = async () => {
     const isWork = selPost?.category === "작품공유";
+    const isCrew = selPost?.category === "협업모집";
     if (isWork) {
       if (!editForm.title.trim() || !getYouTubeId(editForm.ytUrl)) { alert("작품 제목과 올바른 유튜브 링크가 필요해요."); return; }
       const patch = {
@@ -436,6 +478,25 @@ export default function Community({ onExit }) {
       setShowEdit(false);
       return;
     }
+    if (isCrew) {
+      if (!editForm.title.trim()) return;
+      if (editForm.positions.length === 0) { alert("모집 포지션을 1개 이상 추가해주세요."); return; }
+      const patch = {
+        title:       editForm.title.trim(),
+        content:     editForm.content.trim(),
+        positions:   editForm.positions,
+        crewLogline: editForm.crewLogline.trim(),
+        crewSchedule:editForm.crewSchedule.trim(),
+        crewPlace:   editForm.crewPlace.trim(),
+        crewPay:     editForm.crewPay.trim(),
+        crewGenre:   editForm.crewGenre.trim(),
+        deadline:    editForm.deadline,
+      };
+      await updateItem("communityPosts", selPost.id, patch);
+      setSelPost({ ...selPost, ...patch });
+      setShowEdit(false);
+      return;
+    }
     if (!editForm.title.trim() || !editForm.content.trim()) return;
     await updateItem("communityPosts", selPost.id, {
       title:   editForm.title.trim(),
@@ -443,6 +504,21 @@ export default function Community({ onExit }) {
     });
     setSelPost({ ...selPost, title: editForm.title.trim(), content: editForm.content.trim() });
     setShowEdit(false);
+  };
+
+  // 수정 모달 크루 포지션 — 드롭다운 선택 / 기타 직접 입력
+  const pickPositionEdit = (val) => {
+    if (!val) return;
+    if (val === CREW_ETC) { setEditForm(p => ({ ...p, positionSelect: val })); return; }
+    setEditForm(p => (p.positions.includes(val) || p.positions.length >= 8) ? { ...p, positionSelect:"" } : { ...p, positions:[...p.positions, val], positionSelect:"" });
+  };
+  const addPositionCustomEdit = () => {
+    const v = editForm.positionInput.trim();
+    if (!v || editForm.positions.includes(v) || editForm.positions.length >= 8) {
+      setEditForm(p => ({ ...p, positionInput:"", positionSelect:"" }));
+      return;
+    }
+    setEditForm(p => ({ ...p, positions:[...p.positions, v], positionInput:"", positionSelect:"" }));
   };
 
   // 수정 모달 장르 태그 추가
@@ -456,7 +532,7 @@ export default function Community({ onExit }) {
   };
 
   const canEditDelete = (post) =>
-    (REAL_CATS.includes(post?.category) || post?.category === "작품공유") && post?.authorId === profile?.uid;
+    (REAL_CATS.includes(post?.category) || post?.category === "작품공유" || post?.category === "협업모집") && post?.authorId === profile?.uid;
   const adminDeleteComment = async (commentId) => {
     if (!window.confirm("이 댓글을 삭제하시겠습니까?")) return;
     await deleteItem("communityComments", commentId);
@@ -913,6 +989,39 @@ export default function Community({ onExit }) {
           );
         }
 
+        // ===== 협업모집: 크루 공고 카드 =====
+        if (p.category === "협업모집") {
+          const dday = getDday(p.deadline);
+          const closed = dday !== null && dday < 0;
+          return (
+            <div key={p.id} onClick={() => openPost(p)}
+              style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderLeft:"3px solid #f97316", borderRadius:6, padding:"11px 12px", marginBottom:9, cursor:"pointer", opacity: closed ? 0.7 : 1 }}>
+              <div style={{ display:"flex", gap:6, marginBottom:6, alignItems:"center" }}>
+                {p.deadline && <span style={{ background: closed ? "#444" : "#f97316", color: closed ? "#fff" : "#0a0a0a", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:3, fontFamily:"'Courier New', monospace" }}>{closed ? "마감" : dday===0 ? "D-DAY" : `D-${dday}`}</span>}
+                <span style={{ background: closed ? "rgba(255,255,255,0.08)" : "rgba(249,115,22,0.15)", color: closed ? CINEMA.muted : "#f97316", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:3 }}>{closed ? "모집완료" : "모집중"}</span>
+                <span style={{ fontSize:9, color:CINEMA.mutedDim, marginLeft:"auto" }}>{formatDate(p.createdAt)}</span>
+              </div>
+              <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:6, lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+              {(p.positions||[]).length > 0 && (
+                <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:6, alignItems:"center" }}>
+                  {(p.positions||[]).slice(0,3).map(v => (
+                    <span key={v} style={{ background:"rgba(249,115,22,0.12)", color:"#f97316", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:3 }}>{v}</span>
+                  ))}
+                  {(p.positions||[]).length > 3 && <span style={{ fontSize:9, color:CINEMA.muted }}>+{(p.positions||[]).length-3}</span>}
+                </div>
+              )}
+              <div style={{ fontSize:10, color:CINEMA.muted, display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+                {p.crewSchedule && <span>📅 {p.crewSchedule}</span>}
+                {p.crewPlace && <span>📍 {p.crewPlace}</span>}
+                <span style={{ marginLeft:"auto", display:"flex", gap:8, flexShrink:0 }}>
+                  <span>👁 {p.views||0}</span>
+                  <span>💬 {pComments.length}</span>
+                </span>
+              </div>
+            </div>
+          );
+        }
+
         // ===== A 스타일: 일반 글 카드 =====
         return (
           <div key={p.id} onClick={() => openPost(p)}
@@ -1001,9 +1110,14 @@ export default function Community({ onExit }) {
               {canEditDelete(selPost) && (
                 <>
                   <Btn onClick={() => {
-                    setEditForm(selPost.category === "작품공유"
-                      ? { title:selPost.title||"", content:selPost.content||"", ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], genreInput:"", runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
-                      : { title:selPost.title, content:selPost.content, ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
+                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" };
+                    setEditForm(
+                      selPost.category === "작품공유"
+                        ? { ...base, ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
+                      : selPost.category === "협업모집"
+                        ? { ...base, positions:selPost.positions||[], crewLogline:selPost.crewLogline||"", crewSchedule:selPost.crewSchedule||"", crewPlace:selPost.crewPlace||"", crewPay:selPost.crewPay||"", crewGenre:selPost.crewGenre||"", deadline:selPost.deadline||"" }
+                        : base
+                    );
                     setShowEdit(true);
                   }} color={C.green} small>수정</Btn>
                   <Btn onClick={() => deleteMyPost(selPost.id)} color={C.red} small outline>삭제</Btn>
@@ -1064,7 +1178,71 @@ export default function Community({ onExit }) {
               {selPost.credits && <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:14, paddingBottom:14, borderBottom:`1px solid ${CINEMA.border}` }}>🎬 {selPost.credits}</div>}
               {selPost.content && <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
             </div>
-          ) : (
+          ) : selPost.category === "협업모집" ? (() => {
+            const dday = getDday(selPost.deadline);
+            const closed = dday !== null && dday < 0;
+            return (
+              <div>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
+                  {selPost.deadline && (
+                    <span style={{ background: closed ? "#444" : "#f97316", color: closed ? "#fff" : "#0a0a0a", fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:5, fontFamily:"'Courier New', monospace" }}>
+                      {closed ? "마감" : dday === 0 ? "D-DAY" : `D-${dday}`}
+                    </span>
+                  )}
+                  <span style={{ background: closed ? "rgba(255,255,255,0.08)" : "rgba(249,115,22,0.15)", color: closed ? CINEMA.muted : "#f97316", fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:5 }}>
+                    {closed ? "모집완료" : "모집중"}
+                  </span>
+                </div>
+                <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:6, lineHeight:1.3 }}>{selPost.title}</div>
+                {selPost.crewLogline && <div style={{ fontSize:13, color:CINEMA.muted, marginBottom:10, fontStyle:"italic" }}>"{selPost.crewLogline}"</div>}
+                <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:16, fontFamily:"'Courier New', monospace" }}>
+                  <span>{displayName(selPost)}</span><span>·</span><span>{formatDate(selPost.createdAt)}</span><span>·</span><span>👁 {selPost.views||0}</span>
+                </div>
+                {(selPost.positions||[]).length > 0 && (
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>RECRUITING POSITIONS</div>
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                      {(selPost.positions||[]).map(v => (
+                        <span key={v} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:500, padding:"5px 11px", borderRadius:14 }}>{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {(selPost.crewSchedule || selPost.crewPlace || selPost.crewPay || selPost.crewGenre) && (
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
+                    {selPost.crewSchedule && (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>📅 촬영 일정</div>
+                        <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewSchedule}</div>
+                      </div>
+                    )}
+                    {selPost.crewPlace && (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>📍 촬영 장소</div>
+                        <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewPlace}</div>
+                      </div>
+                    )}
+                    {selPost.crewPay && (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>💰 보수</div>
+                        <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewPay}</div>
+                      </div>
+                    )}
+                    {selPost.crewGenre && (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>🎬 장르</div>
+                        <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewGenre}</div>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {selPost.content && <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom:16, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
+                <div style={{ background:"rgba(249,115,22,0.1)", borderRadius:8, padding:"10px 12px", fontSize:12, color:"#f97316", marginBottom:4, textAlign:"center", fontWeight:600 }}>
+                  {closed ? "🚫 모집이 마감되었어요" : "💬 지원은 아래 댓글로 남겨주세요"}
+                </div>
+              </div>
+            );
+          })() : (
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8, lineHeight:1.3 }}>{selPost.title}</div>
               <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:18, fontFamily:"'Courier New', monospace" }}>
@@ -1272,6 +1450,72 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
               </div>
             </div>
+          ) : selPost.category === "협업모집" ? (
+            <div>
+              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「완벽한 사과문」 크루 모집" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="한 줄 소개" placeholder="작품을 한 문장으로 (로그라인)" value={editForm.crewLogline} onChange={e => setEditForm(p=>({...p,crewLogline:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 포지션 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
+                <select value={editForm.positionSelect} onChange={e => pickPositionEdit(e.target.value)}
+                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: editForm.positionSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
+                  <option value="">＋ 포지션 선택...</option>
+                  {CREW_POSITIONS.map(pos => (
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && editForm.positions.includes(pos)}>{pos}</option>
+                  ))}
+                </select>
+                {editForm.positionSelect === CREW_ETC && (
+                  <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                    <input value={editForm.positionInput} placeholder="포지션 직접 입력 (예: 스틸 촬영)" autoFocus
+                      onChange={e => setEditForm(p=>({...p,positionInput:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionCustomEdit(); } }}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <button type="button" onClick={addPositionCustomEdit}
+                      style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                  </div>
+                )}
+                {editForm.positions.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
+                    {editForm.positions.map(v => (
+                      <span key={v} onClick={() => setEditForm(p=>({...p, positions:p.positions.filter(x=>x!==v)}))}
+                        style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {v} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="촬영 일정" placeholder="예: 2026.04.12~14" value={editForm.crewSchedule} onChange={e => setEditForm(p=>({...p,crewSchedule:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="촬영 장소" placeholder="예: 서울·학교" value={editForm.crewPlace} onChange={e => setEditForm(p=>({...p,crewPlace:e.target.value}))} />
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="보수" placeholder="예: 식비·크레딧" value={editForm.crewPay} onChange={e => setEditForm(p=>({...p,crewPay:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="장르" placeholder="예: 드라마" value={editForm.crewGenre} onChange={e => setEditForm(p=>({...p,crewGenre:e.target.value}))} />
+                </div>
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 마감일</div>
+                <input type="date" value={editForm.deadline} onChange={e => setEditForm(p=>({...p,deadline:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                {editForm.deadline && getDday(editForm.deadline) !== null && (
+                  <div style={{ fontSize:11, color: getDday(editForm.deadline) < 0 ? C.red : C.muted, marginTop:5 }}>
+                    {getDday(editForm.deadline) < 0 ? "이미 지난 날짜예요 (모집완료로 표시됩니다)" : getDday(editForm.deadline) === 0 ? "오늘 마감 (D-DAY)" : `마감까지 D-${getDday(editForm.deadline)}`}
+                  </div>
+                )}
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상세 내용 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea placeholder="작품 설명, 준비 상황, 지원 시 참고사항 등" value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
+              </div>
+            </div>
           ) : (
             <>
               <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
@@ -1286,6 +1530,8 @@ export default function Community({ onExit }) {
             <Btn onClick={() => setShowEdit(false)} color={C.muted} outline full>취소</Btn>
             <Btn onClick={updateMyPost} color={C.navy} full disabled={selPost.category === "작품공유"
               ? !editForm.title.trim() || !getYouTubeId(editForm.ytUrl)
+              : selPost.category === "협업모집"
+              ? !editForm.title.trim() || editForm.positions.length === 0
               : !editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
@@ -1399,6 +1645,80 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
               </div>
             </div>
+          ) : writeForm.category === "협업모집" ? (
+            <div>
+              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「완벽한 사과문」 크루 모집" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="한 줄 소개" placeholder="작품을 한 문장으로 (로그라인)" value={writeForm.crewLogline} onChange={e => setWriteForm(p=>({...p,crewLogline:e.target.value}))} />
+              {/* 모집 포지션 (직접 입력) */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 포지션 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
+                <select value={writeForm.positionSelect} onChange={e => pickPosition(e.target.value)}
+                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: writeForm.positionSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
+                  <option value="">＋ 포지션 선택...</option>
+                  {CREW_POSITIONS.map(pos => (
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && writeForm.positions.includes(pos)}>{pos}</option>
+                  ))}
+                </select>
+                {writeForm.positionSelect === CREW_ETC && (
+                  <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                    <input value={writeForm.positionInput} placeholder="포지션 직접 입력 (예: 스틸 촬영)" autoFocus
+                      onChange={e => setWriteForm(p=>({...p,positionInput:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionCustom(); } }}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <button type="button" onClick={addPositionCustom}
+                      style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                  </div>
+                )}
+                {writeForm.positions.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
+                    {writeForm.positions.map(v => (
+                      <span key={v} onClick={() => setWriteForm(p=>({...p, positions:p.positions.filter(x=>x!==v)}))}
+                        style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {v} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* 일정 + 장소 */}
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="촬영 일정" placeholder="예: 2026.04.12~14" value={writeForm.crewSchedule} onChange={e => setWriteForm(p=>({...p,crewSchedule:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="촬영 장소" placeholder="예: 서울·학교" value={writeForm.crewPlace} onChange={e => setWriteForm(p=>({...p,crewPlace:e.target.value}))} />
+                </div>
+              </div>
+              {/* 보수 + 장르 */}
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="보수" placeholder="예: 식비·크레딧" value={writeForm.crewPay} onChange={e => setWriteForm(p=>({...p,crewPay:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="장르" placeholder="예: 드라마" value={writeForm.crewGenre} onChange={e => setWriteForm(p=>({...p,crewGenre:e.target.value}))} />
+                </div>
+              </div>
+              {/* 모집 마감일 */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 마감일</div>
+                <input type="date" value={writeForm.deadline} onChange={e => setWriteForm(p=>({...p,deadline:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                {writeForm.deadline && getDday(writeForm.deadline) !== null && (
+                  <div style={{ fontSize:11, color: getDday(writeForm.deadline) < 0 ? C.red : C.muted, marginTop:5 }}>
+                    {getDday(writeForm.deadline) < 0 ? "이미 지난 날짜예요 (모집완료로 표시됩니다)" : getDday(writeForm.deadline) === 0 ? "오늘 마감 (D-DAY)" : `마감까지 D-${getDday(writeForm.deadline)}`}
+                  </div>
+                )}
+              </div>
+              {/* 상세 내용 */}
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상세 내용 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea placeholder="작품 설명, 준비 상황, 지원 시 참고사항 등" value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
+              </div>
+              <div style={{ background:"rgba(249,115,22,0.1)", borderRadius:8, padding:"9px 12px", fontSize:12, color:"#c2410c" }}>
+                💬 지원은 이 글의 댓글로 받아요. 지원자는 댓글을 남기면 됩니다.
+              </div>
+            </div>
           ) : (
             <div>
               <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
@@ -1409,8 +1729,8 @@ export default function Community({ onExit }) {
               </div>
             </div>
           )}
-          {/* 이미지 첨부 - 강의·작품공유 게시판 제외 */}
-          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && <div style={{ marginBottom:14 }}>
+          {/* 이미지 첨부 - 강의·작품공유·협업모집 게시판 제외 */}
+          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
               이미지 첨부{" "}
               <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
@@ -1457,6 +1777,8 @@ export default function Community({ onExit }) {
               ? "⚠️ 익명으로 게시되며, 학생들이 댓글로 후기를 남길 수 있어요."
               : writeForm.category === "작품공유"
               ? "🎬 게시 후에도 작품 정보를 수정할 수 있어요."
+              : writeForm.category === "협업모집"
+              ? "🤝 게시 후에도 모집 내용을 수정할 수 있어요. 지원은 댓글로 받아요."
               : REAL_CATS.includes(writeForm.category)
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
@@ -1468,6 +1790,8 @@ export default function Community({ onExit }) {
                 ? !writeForm.lectureName.trim() || !writeForm.professor.trim()
                 : writeForm.category === "작품공유"
                 ? !writeForm.title.trim() || !getYouTubeId(writeForm.ytUrl)
+                : writeForm.category === "협업모집"
+                ? !writeForm.title.trim() || writeForm.positions.length === 0
                 : !writeForm.title.trim() || !writeForm.content.trim() ||
                   (writeForm.category === "장터" && writeForm.images.length === 0))
             }>
