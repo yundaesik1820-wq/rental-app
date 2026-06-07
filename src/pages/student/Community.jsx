@@ -1493,7 +1493,7 @@ function FullscreenPlayer({ videoId, onClose }) {
           style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:"none" }}
         />
         <button onClick={onClose} aria-label="닫기"
-          style={{ position:"absolute", top:14, right:14, width:42, height:42, borderRadius:21, background:"rgba(0,0,0,0.55)", color:"#fff", border:"1px solid rgba(255,255,255,0.25)", fontSize:19, cursor:"pointer", zIndex:2, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+          style={{ position:"absolute", top:14, left:"50%", transform:"translateX(-50%)", width:42, height:42, borderRadius:21, background:"rgba(0,0,0,0.55)", color:"#fff", border:"1px solid rgba(255,255,255,0.25)", fontSize:19, cursor:"pointer", zIndex:2, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
       </div>
     </div>
   );
