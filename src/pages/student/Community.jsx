@@ -179,7 +179,7 @@ export default function Community({ onExit }) {
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" }); // 강의/작품공유 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
@@ -418,6 +418,24 @@ export default function Community({ onExit }) {
 
   // 본인 글 수정 (실명 게시판)
   const updateMyPost = async () => {
+    const isWork = selPost?.category === "작품공유";
+    if (isWork) {
+      if (!editForm.title.trim() || !getYouTubeId(editForm.ytUrl)) { alert("작품 제목과 올바른 유튜브 링크가 필요해요."); return; }
+      const patch = {
+        title:    editForm.title.trim(),
+        content:  editForm.content.trim(),
+        ytUrl:    editForm.ytUrl.trim(),
+        oneLiner: editForm.oneLiner.trim(),
+        genres:   editForm.genres,
+        runtime:  editForm.runtime.trim(),
+        prodDate: editForm.prodDate.trim(),
+        credits:  editForm.credits.trim(),
+      };
+      await updateItem("communityPosts", selPost.id, patch);
+      setSelPost({ ...selPost, ...patch });
+      setShowEdit(false);
+      return;
+    }
     if (!editForm.title.trim() || !editForm.content.trim()) return;
     await updateItem("communityPosts", selPost.id, {
       title:   editForm.title.trim(),
@@ -427,8 +445,18 @@ export default function Community({ onExit }) {
     setShowEdit(false);
   };
 
+  // 수정 모달 장르 태그 추가
+  const addGenreEdit = () => {
+    const g = editForm.genreInput.trim();
+    if (!g || editForm.genres.includes(g) || editForm.genres.length >= 5) {
+      setEditForm(p => ({ ...p, genreInput:"" }));
+      return;
+    }
+    setEditForm(p => ({ ...p, genres:[...p.genres, g], genreInput:"" }));
+  };
+
   const canEditDelete = (post) =>
-    REAL_CATS.includes(post?.category) && post?.authorId === profile?.uid;
+    (REAL_CATS.includes(post?.category) || post?.category === "작품공유") && post?.authorId === profile?.uid;
   const adminDeleteComment = async (commentId) => {
     if (!window.confirm("이 댓글을 삭제하시겠습니까?")) return;
     await deleteItem("communityComments", commentId);
@@ -972,7 +1000,12 @@ export default function Community({ onExit }) {
             <div style={{ display:"flex", gap:6 }}>
               {canEditDelete(selPost) && (
                 <>
-                  <Btn onClick={() => { setEditForm({ title:selPost.title, content:selPost.content }); setShowEdit(true); }} color={C.green} small>수정</Btn>
+                  <Btn onClick={() => {
+                    setEditForm(selPost.category === "작품공유"
+                      ? { title:selPost.title||"", content:selPost.content||"", ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], genreInput:"", runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
+                      : { title:selPost.title, content:selPost.content, ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
+                    setShowEdit(true);
+                  }} color={C.green} small>수정</Btn>
                   <Btn onClick={() => deleteMyPost(selPost.id)} color={C.red} small outline>삭제</Btn>
                 </>
               )}
@@ -1193,15 +1226,67 @@ export default function Community({ onExit }) {
             <span style={{ color:CINEMA.gold, fontSize:10, fontWeight:700, letterSpacing:"0.3em", fontFamily:"'Courier New', monospace" }}>✎ EDIT</span>
             <span style={{ fontSize:18, fontWeight:800, color:CINEMA.text, letterSpacing:"0.05em" }}>글 수정</span>
           </div>
-          <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
-          <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
-            <textarea value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
-              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
-          </div>
+          {selPost.category === "작품공유" ? (
+            <div>
+              <Inp label="작품 제목 *" placeholder="예: 완벽한 사과문" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="유튜브 링크 *" placeholder="https://youtu.be/..." value={editForm.ytUrl} onChange={e => setEditForm(p=>({...p,ytUrl:e.target.value}))} />
+              {getYouTubeId(editForm.ytUrl) && (
+                <div style={{ marginBottom:16 }}>
+                  <YouTubeEmbed url={editForm.ytUrl} />
+                </div>
+              )}
+              <Inp label="한 줄 소개" placeholder="작품을 한 문장으로" value={editForm.oneLiner} onChange={e => setEditForm(p=>({...p,oneLiner:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>장르 <span style={{ color:C.muted, fontWeight:400 }}>(최대 5개)</span></div>
+                <div style={{ display:"flex", gap:6, marginBottom: editForm.genres.length ? 8 : 0 }}>
+                  <input value={editForm.genreInput} placeholder="예: 드라마 (입력 후 추가)"
+                    onChange={e => setEditForm(p=>({...p,genreInput:e.target.value}))}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addGenreEdit(); } }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  <button type="button" onClick={addGenreEdit}
+                    style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                </div>
+                {editForm.genres.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {editForm.genres.map(g => (
+                      <span key={g} onClick={() => setEditForm(p=>({...p, genres:p.genres.filter(x=>x!==g)}))}
+                        style={{ background:C.yellowLight, color:"#92400E", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {g} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="러닝타임" placeholder="예: 12분" value={editForm.runtime} onChange={e => setEditForm(p=>({...p,runtime:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="제작년월" placeholder="예: 2026.03" value={editForm.prodDate} onChange={e => setEditForm(p=>({...p,prodDate:e.target.value}))} />
+                </div>
+              </div>
+              <Inp label="크레딧 (선택)" placeholder="연출 윤대식 · 촬영 ○○○ · 편집 ○○○" value={editForm.credits} onChange={e => setEditForm(p=>({...p,credits:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상세 내용 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea placeholder="작품 설명, 비하인드 등" value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
+              </div>
+            </div>
+          ) : (
+            <>
+              <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>내용 *</div>
+                <textarea value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:160, boxSizing:"border-box" }} />
+              </div>
+            </>
+          )}
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowEdit(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={updateMyPost} color={C.navy} full disabled={!editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
+            <Btn onClick={updateMyPost} color={C.navy} full disabled={selPost.category === "작품공유"
+              ? !editForm.title.trim() || !getYouTubeId(editForm.ytUrl)
+              : !editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
       )}
@@ -1370,6 +1455,8 @@ export default function Community({ onExit }) {
           <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
             {writeForm.category === LECTURE_CAT
               ? "⚠️ 익명으로 게시되며, 학생들이 댓글로 후기를 남길 수 있어요."
+              : writeForm.category === "작품공유"
+              ? "🎬 게시 후에도 작품 정보를 수정할 수 있어요."
               : REAL_CATS.includes(writeForm.category)
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
