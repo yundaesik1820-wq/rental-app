@@ -18,8 +18,8 @@ import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
-const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
-const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다"]; // 실명
+const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
+const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -133,6 +133,13 @@ function getDday(deadline) {
   return Math.round((end - today) / 86400000);
 }
 
+// 포지션 표시: {role, count} 객체 또는 기존 문자열 모두 지원
+function posLabel(pos) {
+  if (typeof pos === "string") return pos;
+  if (!pos) return "";
+  return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
+}
+
 export default function Community({ onExit }) {
   const { profile } = useAuth();
 
@@ -185,14 +192,15 @@ export default function Community({ onExit }) {
   const [cat, setCat]           = useState("전체");
   const [selPost, setSelPost]   = useState(null); // 상세 모달
   const [fsVideo,  setFsVideo]  = useState(null); // 가로 풀스크린 재생 (유튜브 ID)
+  const [applyPosition, setApplyPosition] = useState(""); // 크루 지원 시 선택 포지션
   const [showWrite, setShowWrite] = useState(false);
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-    positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
+    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
@@ -325,12 +333,14 @@ export default function Community({ onExit }) {
       credits:     isWorkPost ? writeForm.credits.trim() : "",
       // 크루 메이커스 전용 필드
       positions:   isCrewPost ? writeForm.positions : [],
+      crewDirector:isCrewPost ? writeForm.crewDirector.trim() : "",
       crewLogline: isCrewPost ? writeForm.crewLogline.trim() : "",
       crewSchedule:isCrewPost ? writeForm.crewSchedule.trim() : "",
       crewPlace:   isCrewPost ? writeForm.crewPlace.trim() : "",
       crewPay:     isCrewPost ? writeForm.crewPay.trim() : "",
       crewGenre:   isCrewPost ? writeForm.crewGenre.trim() : "",
       deadline:    isCrewPost ? writeForm.deadline : "",
+      applicants:  [],
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
       adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
@@ -343,7 +353,7 @@ export default function Community({ onExit }) {
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-      positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
+      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -358,19 +368,18 @@ export default function Community({ onExit }) {
     setWriteForm(p => ({ ...p, genres:[...p.genres, g], genreInput:"" }));
   };
 
-  // 크루 모집 포지션 — 드롭다운 선택 / 기타 직접 입력
+  // 크루 모집 포지션 — 드롭다운 선택 후 인원 입력 / 기타 직접 입력
   const pickPosition = (val) => {
-    if (!val) return;
-    if (val === CREW_ETC) { setWriteForm(p => ({ ...p, positionSelect: val })); return; }
-    setWriteForm(p => (p.positions.includes(val) || p.positions.length >= 8) ? { ...p, positionSelect:"" } : { ...p, positions:[...p.positions, val], positionSelect:"" });
+    setWriteForm(p => ({ ...p, positionSelect: val, positionInput:"", positionCount: val ? (p.positionCount || "1") : "" }));
   };
-  const addPositionCustom = () => {
-    const v = writeForm.positionInput.trim();
-    if (!v || writeForm.positions.includes(v) || writeForm.positions.length >= 8) {
-      setWriteForm(p => ({ ...p, positionInput:"", positionSelect:"" }));
+  const addPosition = () => {
+    const role = writeForm.positionSelect === CREW_ETC ? writeForm.positionInput.trim() : writeForm.positionSelect;
+    const count = (writeForm.positionCount || "1").trim();
+    if (!role || writeForm.positions.length >= 8 || writeForm.positions.some(p => p.role === role)) {
+      setWriteForm(p => ({ ...p, positionSelect:"", positionInput:"", positionCount:"" }));
       return;
     }
-    setWriteForm(p => ({ ...p, positions:[...p.positions, v], positionInput:"", positionSelect:"" }));
+    setWriteForm(p => ({ ...p, positions:[...p.positions, { role, count }], positionSelect:"", positionInput:"", positionCount:"" }));
   };
 
   // 댓글 작성
@@ -485,6 +494,7 @@ export default function Community({ onExit }) {
         title:       editForm.title.trim(),
         content:     editForm.content.trim(),
         positions:   editForm.positions,
+        crewDirector:editForm.crewDirector.trim(),
         crewLogline: editForm.crewLogline.trim(),
         crewSchedule:editForm.crewSchedule.trim(),
         crewPlace:   editForm.crewPlace.trim(),
@@ -506,19 +516,36 @@ export default function Community({ onExit }) {
     setShowEdit(false);
   };
 
-  // 수정 모달 크루 포지션 — 드롭다운 선택 / 기타 직접 입력
+  // 수정 모달 크루 포지션 — 드롭다운 선택 후 인원 입력 / 기타 직접 입력
   const pickPositionEdit = (val) => {
-    if (!val) return;
-    if (val === CREW_ETC) { setEditForm(p => ({ ...p, positionSelect: val })); return; }
-    setEditForm(p => (p.positions.includes(val) || p.positions.length >= 8) ? { ...p, positionSelect:"" } : { ...p, positions:[...p.positions, val], positionSelect:"" });
+    setEditForm(p => ({ ...p, positionSelect: val, positionInput:"", positionCount: val ? (p.positionCount || "1") : "" }));
   };
-  const addPositionCustomEdit = () => {
-    const v = editForm.positionInput.trim();
-    if (!v || editForm.positions.includes(v) || editForm.positions.length >= 8) {
-      setEditForm(p => ({ ...p, positionInput:"", positionSelect:"" }));
+  const addPositionEdit = () => {
+    const role = editForm.positionSelect === CREW_ETC ? editForm.positionInput.trim() : editForm.positionSelect;
+    const count = (editForm.positionCount || "1").trim();
+    if (!role || editForm.positions.length >= 8 || editForm.positions.some(p => p.role === role)) {
+      setEditForm(p => ({ ...p, positionSelect:"", positionInput:"", positionCount:"" }));
       return;
     }
-    setEditForm(p => ({ ...p, positions:[...p.positions, v], positionInput:"", positionSelect:"" }));
+    setEditForm(p => ({ ...p, positions:[...p.positions, { role, count }], positionSelect:"", positionInput:"", positionCount:"" }));
+  };
+
+  // 크루 모집 지원 (포지션 선택) / 취소 — 실명
+  const applyToCrew = async (position) => {
+    if (!selPost || !position) return;
+    const apps = selPost.applicants || [];
+    if (apps.some(a => a.uid === profile?.uid)) return;
+    const next = [...apps, { uid: profile?.uid || "", name: profile?.name || "", position, at: Date.now() }];
+    await updateItem("communityPosts", selPost.id, { applicants: next });
+    setSelPost({ ...selPost, applicants: next });
+    setApplyPosition("");
+  };
+  const cancelApply = async () => {
+    if (!selPost) return;
+    const apps = selPost.applicants || [];
+    const next = apps.filter(a => a.uid !== profile?.uid);
+    await updateItem("communityPosts", selPost.id, { applicants: next });
+    setSelPost({ ...selPost, applicants: next });
   };
 
   // 수정 모달 장르 태그 추가
@@ -1004,8 +1031,8 @@ export default function Community({ onExit }) {
               <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:6, lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
               {(p.positions||[]).length > 0 && (
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:6, alignItems:"center" }}>
-                  {(p.positions||[]).slice(0,3).map(v => (
-                    <span key={v} style={{ background:"rgba(249,115,22,0.12)", color:"#f97316", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:3 }}>{v}</span>
+                  {(p.positions||[]).slice(0,3).map((v, i) => (
+                    <span key={i} style={{ background:"rgba(249,115,22,0.12)", color:"#f97316", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:3 }}>{posLabel(v)}</span>
                   ))}
                   {(p.positions||[]).length > 3 && <span style={{ fontSize:9, color:CINEMA.muted }}>+{(p.positions||[]).length-3}</span>}
                 </div>
@@ -1110,12 +1137,12 @@ export default function Community({ onExit }) {
               {canEditDelete(selPost) && (
                 <>
                   <Btn onClick={() => {
-                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", crewLogline:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" };
+                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" };
                     setEditForm(
                       selPost.category === "작품공유"
                         ? { ...base, ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
                       : selPost.category === "협업모집"
-                        ? { ...base, positions:selPost.positions||[], crewLogline:selPost.crewLogline||"", crewSchedule:selPost.crewSchedule||"", crewPlace:selPost.crewPlace||"", crewPay:selPost.crewPay||"", crewGenre:selPost.crewGenre||"", deadline:selPost.deadline||"" }
+                        ? { ...base, positions:selPost.positions||[], crewDirector:selPost.crewDirector||"", crewLogline:selPost.crewLogline||"", crewSchedule:selPost.crewSchedule||"", crewPlace:selPost.crewPlace||"", crewPay:selPost.crewPay||"", crewGenre:selPost.crewGenre||"", deadline:selPost.deadline||"" }
                         : base
                     );
                     setShowEdit(true);
@@ -1202,14 +1229,20 @@ export default function Community({ onExit }) {
                   <div style={{ marginBottom:16 }}>
                     <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>RECRUITING POSITIONS</div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                      {(selPost.positions||[]).map(v => (
-                        <span key={v} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:500, padding:"5px 11px", borderRadius:14 }}>{v}</span>
+                      {(selPost.positions||[]).map((v, i) => (
+                        <span key={i} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:500, padding:"5px 11px", borderRadius:14 }}>{posLabel(v)}</span>
                       ))}
                     </div>
                   </div>
                 )}
-                {(selPost.crewSchedule || selPost.crewPlace || selPost.crewPay || selPost.crewGenre) && (
+                {(selPost.crewDirector || selPost.crewSchedule || selPost.crewPlace || selPost.crewPay || selPost.crewGenre) && (
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
+                    {selPost.crewDirector && (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>🎬 감독 / 연출</div>
+                        <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewDirector}</div>
+                      </div>
+                    )}
                     {selPost.crewSchedule && (
                       <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
                         <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>📅 촬영 일정</div>
@@ -1230,16 +1263,62 @@ export default function Community({ onExit }) {
                     )}
                     {selPost.crewGenre && (
                       <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"10px 12px" }}>
-                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>🎬 장르</div>
+                        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:3 }}>🏷️ 장르</div>
                         <div style={{ fontSize:12, color:CINEMA.text, fontWeight:500 }}>{selPost.crewGenre}</div>
                       </div>
                     )}
                   </div>
                 )}
                 {selPost.content && <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom:16, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
-                <div style={{ background:"rgba(249,115,22,0.1)", borderRadius:8, padding:"10px 12px", fontSize:12, color:"#f97316", marginBottom:4, textAlign:"center", fontWeight:600 }}>
-                  {closed ? "🚫 모집이 마감되었어요" : "💬 지원은 아래 댓글로 남겨주세요"}
-                </div>
+                {(() => {
+                  const apps = selPost.applicants || [];
+                  const isAuthor = selPost.authorId === profile?.uid;
+                  const mine = apps.find(a => a.uid === profile?.uid);
+                  const roles = (selPost.positions || []).map(posLabel);
+                  if (isAuthor) {
+                    return (
+                      <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"12px 14px", marginBottom:4 }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#f97316", marginBottom: apps.length ? 8 : 0, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>📋 지원자 {apps.length}명</div>
+                        {apps.length > 0 ? (
+                          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                            {apps.map((a, i) => (
+                              <div key={i} style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:CINEMA.text }}>
+                                <span style={{ fontWeight:600 }}>{a.name || "이름없음"}</span>
+                                {a.position && <span style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10 }}>{a.position}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        ) : <div style={{ fontSize:12, color:CINEMA.muted }}>아직 지원자가 없어요</div>}
+                      </div>
+                    );
+                  }
+                  if (mine) {
+                    return (
+                      <div style={{ display:"flex", alignItems:"center", gap:10, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:8, padding:"11px 14px", marginBottom:4 }}>
+                        <span style={{ fontSize:13, color:CINEMA.text, fontWeight:600, flex:1 }}>✓ {mine.position ? `'${mine.position}' 포지션으로 ` : ""}지원 완료</span>
+                        <button onClick={cancelApply} style={{ background:"transparent", border:`1px solid ${CINEMA.border}`, color:CINEMA.muted, borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", fontWeight:600 }}>취소하기</button>
+                      </div>
+                    );
+                  }
+                  if (closed) {
+                    return <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"11px 12px", fontSize:13, color:CINEMA.muted, textAlign:"center", fontWeight:600, marginBottom:4 }}>🚫 모집이 마감되었어요</div>;
+                  }
+                  return (
+                    <div style={{ display:"flex", gap:8, marginBottom:4 }}>
+                      <select value={applyPosition} onChange={e => setApplyPosition(e.target.value)}
+                        style={{ flex:1, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:8, color: applyPosition ? CINEMA.text : CINEMA.muted, padding:"11px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
+                        <option value="">지원할 포지션 선택...</option>
+                        {roles.map((r, i) => <option key={i} value={r}>{r}</option>)}
+                      </select>
+                      <button onClick={() => applyToCrew(applyPosition)} disabled={!applyPosition}
+                        style={{ border:"none", borderRadius:8, padding:"0 20px", fontSize:14, fontWeight:700, cursor: applyPosition ? "pointer" : "not-allowed", whiteSpace:"nowrap",
+                          background: applyPosition ? "#f97316" : CINEMA.surface,
+                          color: applyPosition ? "#0a0a0a" : CINEMA.mutedDim }}>
+                        📩 지원
+                      </button>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })() : (
@@ -1452,7 +1531,8 @@ export default function Community({ onExit }) {
             </div>
           ) : selPost.category === "협업모집" ? (
             <div>
-              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「완벽한 사과문」 크루 모집" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「물고기는 잠들지 않는다」 크루 모집" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="감독 / 연출" placeholder="예: 홍길동" value={editForm.crewDirector} onChange={e => setEditForm(p=>({...p,crewDirector:e.target.value}))} />
               <Inp label="한 줄 소개" placeholder="작품을 한 문장으로 (로그라인)" value={editForm.crewLogline} onChange={e => setEditForm(p=>({...p,crewLogline:e.target.value}))} />
               <div style={{ marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 포지션 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
@@ -1460,25 +1540,31 @@ export default function Community({ onExit }) {
                   style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: editForm.positionSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
                   <option value="">＋ 포지션 선택...</option>
                   {CREW_POSITIONS.map(pos => (
-                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && editForm.positions.includes(pos)}>{pos}</option>
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && editForm.positions.some(x => x.role === pos)}>{pos}</option>
                   ))}
                 </select>
-                {editForm.positionSelect === CREW_ETC && (
+                {editForm.positionSelect && (
                   <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                    <input value={editForm.positionInput} placeholder="포지션 직접 입력 (예: 스틸 촬영)" autoFocus
-                      onChange={e => setEditForm(p=>({...p,positionInput:e.target.value}))}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionCustomEdit(); } }}
-                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                    <button type="button" onClick={addPositionCustomEdit}
-                      style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                    {editForm.positionSelect === CREW_ETC && (
+                      <input value={editForm.positionInput} placeholder="역할명 (예: 스틸 촬영)" autoFocus
+                        onChange={e => setEditForm(p=>({...p,positionInput:e.target.value}))}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionEdit(); } }}
+                        style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    )}
+                    <input type="number" min="1" value={editForm.positionCount} placeholder="인원"
+                      onChange={e => setEditForm(p=>({...p,positionCount:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionEdit(); } }}
+                      style={{ width:80, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                    <button type="button" onClick={addPositionEdit}
+                      style={{ background:"#f97316", border:"none", borderRadius:10, color:"#0a0a0a", padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
                   </div>
                 )}
                 {editForm.positions.length > 0 && (
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
-                    {editForm.positions.map(v => (
-                      <span key={v} onClick={() => setEditForm(p=>({...p, positions:p.positions.filter(x=>x!==v)}))}
+                    {editForm.positions.map((v, i) => (
+                      <span key={i} onClick={() => setEditForm(p=>({...p, positions:p.positions.filter((_,j)=>j!==i)}))}
                         style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
-                        {v} ✕
+                        {posLabel(v)} ✕
                       </span>
                     ))}
                   </div>
@@ -1647,34 +1733,41 @@ export default function Community({ onExit }) {
             </div>
           ) : writeForm.category === "협업모집" ? (
             <div>
-              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「완벽한 사과문」 크루 모집" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="프로젝트 제목 *" placeholder="예: 단편영화 「물고기는 잠들지 않는다」 크루 모집" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="감독 / 연출" placeholder="예: 홍길동" value={writeForm.crewDirector} onChange={e => setWriteForm(p=>({...p,crewDirector:e.target.value}))} />
               <Inp label="한 줄 소개" placeholder="작품을 한 문장으로 (로그라인)" value={writeForm.crewLogline} onChange={e => setWriteForm(p=>({...p,crewLogline:e.target.value}))} />
-              {/* 모집 포지션 (직접 입력) */}
+              {/* 모집 포지션 (드롭다운 + 인원) */}
               <div style={{ marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>모집 포지션 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
                 <select value={writeForm.positionSelect} onChange={e => pickPosition(e.target.value)}
                   style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: writeForm.positionSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
                   <option value="">＋ 포지션 선택...</option>
                   {CREW_POSITIONS.map(pos => (
-                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && writeForm.positions.includes(pos)}>{pos}</option>
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && writeForm.positions.some(x => x.role === pos)}>{pos}</option>
                   ))}
                 </select>
-                {writeForm.positionSelect === CREW_ETC && (
+                {writeForm.positionSelect && (
                   <div style={{ display:"flex", gap:6, marginTop:8 }}>
-                    <input value={writeForm.positionInput} placeholder="포지션 직접 입력 (예: 스틸 촬영)" autoFocus
-                      onChange={e => setWriteForm(p=>({...p,positionInput:e.target.value}))}
-                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPositionCustom(); } }}
-                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
-                    <button type="button" onClick={addPositionCustom}
-                      style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                    {writeForm.positionSelect === CREW_ETC && (
+                      <input value={writeForm.positionInput} placeholder="역할명 (예: 스틸 촬영)" autoFocus
+                        onChange={e => setWriteForm(p=>({...p,positionInput:e.target.value}))}
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}
+                        style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    )}
+                    <input type="number" min="1" value={writeForm.positionCount} placeholder="인원"
+                      onChange={e => setWriteForm(p=>({...p,positionCount:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addPosition(); } }}
+                      style={{ width:80, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 12px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                    <button type="button" onClick={addPosition}
+                      style={{ background:"#f97316", border:"none", borderRadius:10, color:"#0a0a0a", padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
                   </div>
                 )}
                 {writeForm.positions.length > 0 && (
                   <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
-                    {writeForm.positions.map(v => (
-                      <span key={v} onClick={() => setWriteForm(p=>({...p, positions:p.positions.filter(x=>x!==v)}))}
+                    {writeForm.positions.map((v, i) => (
+                      <span key={i} onClick={() => setWriteForm(p=>({...p, positions:p.positions.filter((_,j)=>j!==i)}))}
                         style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
-                        {v} ✕
+                        {posLabel(v)} ✕
                       </span>
                     ))}
                   </div>
@@ -1716,7 +1809,7 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
               </div>
               <div style={{ background:"rgba(249,115,22,0.1)", borderRadius:8, padding:"9px 12px", fontSize:12, color:"#c2410c" }}>
-                💬 지원은 이 글의 댓글로 받아요. 지원자는 댓글을 남기면 됩니다.
+                📩 지원은 '지원하기' 버튼으로 받아요. 지원자 명단은 작성자에게만 보입니다.
               </div>
             </div>
           ) : (
@@ -1778,7 +1871,7 @@ export default function Community({ onExit }) {
               : writeForm.category === "작품공유"
               ? "🎬 게시 후에도 작품 정보를 수정할 수 있어요."
               : writeForm.category === "협업모집"
-              ? "🤝 게시 후에도 모집 내용을 수정할 수 있어요. 지원은 댓글로 받아요."
+              ? "🤝 실명으로 게시되며, 게시 후에도 모집 내용을 수정할 수 있어요."
               : REAL_CATS.includes(writeForm.category)
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
