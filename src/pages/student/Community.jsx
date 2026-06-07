@@ -79,11 +79,23 @@ const ROOMS = [
     icon:"🎥",
     subtitle:"KBATV BOXOFFICE",
     title:"KBATV 박스오피스",
-    desc:"협업 모집 · 작품 공유",
+    desc:"학생 단편·작품 상영관",
     color:"#a855f7",
     colorBg:"rgba(168,85,247,0.15)",
     borderStyle:"solid",
-    categories:["협업모집", "작품공유"],
+    categories:["작품공유"],
+  },
+  {
+    id:"crew",
+    number:"06",
+    icon:"🤝",
+    subtitle:"CREW MAKERS",
+    title:"크루 메이커스",
+    desc:"함께할 팀원·스태프 모집",
+    color:"#f97316",
+    colorBg:"rgba(249,115,22,0.15)",
+    borderStyle:"solid",
+    categories:["협업모집"],
   },
 ];
 
@@ -693,6 +705,10 @@ export default function Community({ onExit }) {
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
       {selectedRoom && selectedRoom !== "tools" && (
         <>
+      {selectedRoom === "boxoffice" ? (
+        <BoxOfficeView posts={posts} onOpen={openPost} />
+      ) : (
+        <>
 
       {/* 카테고리 탭 - 룸별 카테고리만 (시네마 톤 pill) */}
       <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch", marginTop:14 }}>
@@ -720,7 +736,7 @@ export default function Community({ onExit }) {
         {currentRoom?.id === "community" && "🔒 익명 게시판"}
         {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
         {currentRoom?.id === "marketplace" && "✅ 실명으로 게시"}
-        {currentRoom?.id === "boxoffice" && "🔒 익명으로 게시"}
+        {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
       </div>
 
       {/* 검색 - 시네마 톤 */}
@@ -939,6 +955,8 @@ export default function Community({ onExit }) {
         <div style={{ fontSize:10, color:CINEMA.mutedDim, textAlign:"center", marginTop:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>
           {(page-1)*PAGE_SIZE+1}~{Math.min(page*PAGE_SIZE, allFiltered.length)} / 전체 {allFiltered.length}개
         </div>
+      )}
+        </>
       )}
         </>
       )} {/* /게시판 룸 조건부 끝 */}
@@ -1428,6 +1446,100 @@ export default function Community({ onExit }) {
         )} {/* /FAB 조건부 끝 */}
       </div> {/* /시네마 풀스크린 컨테이너 */}
     </>
+  );
+}
+
+/** 🎥 박스오피스 — 넷플릭스 스타일 작품 브라우징 */
+function WorkCard({ p, rank, onOpen }) {
+  const ytId = getYouTubeId(p.ytUrl);
+  return (
+    <div onClick={() => onOpen(p)} style={{ flex:"0 0 150px", cursor:"pointer" }}>
+      <div style={{ position:"relative", aspectRatio:"16/9", background:"#1a1a1a", borderRadius:7, overflow:"hidden", marginBottom:6 }}>
+        {ytId
+          ? <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+          : <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", color:"#444" }}>🎬</div>}
+        {rank != null && (
+          <span style={{ position:"absolute", top:5, left:5, background: rank===1 ? "#dc2626" : "rgba(0,0,0,0.72)", color:"#fff", fontSize:13, fontWeight:700, width:22, height:22, borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Courier New', monospace" }}>{rank}</span>
+        )}
+        {p.runtime && <span style={{ position:"absolute", bottom:4, right:4, background:"rgba(0,0,0,0.8)", color:"#fff", fontSize:9, padding:"1px 5px", borderRadius:3 }}>{p.runtime}</span>}
+      </div>
+      <div style={{ fontSize:12, fontWeight:500, color:"#fafaf9", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{p.title}</div>
+    </div>
+  );
+}
+
+function CarouselRow({ title, badge, items, onOpen, ranked }) {
+  const ref = useRef(null);
+  if (!items.length) return null;
+  return (
+    <div style={{ marginBottom:4 }}>
+      <div style={{ padding:"16px 12px 8px", fontSize:14, fontWeight:600, color:"#fafaf9", display:"flex", alignItems:"center", gap:8 }}>
+        {badge && <span style={{ background:"#dc2626", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:3, fontFamily:"'Courier New', monospace" }}>TOP 10</span>}
+        {title}
+      </div>
+      <div style={{ position:"relative" }}>
+        <div ref={ref} className="bo-car" style={{ display:"flex", gap:8, overflowX:"auto", padding:"0 12px 12px" }}>
+          {items.map((p, i) => <WorkCard key={p.id} p={p} rank={ranked ? i+1 : null} onOpen={onOpen} />)}
+        </div>
+        {items.length > 2 && (
+          <div onClick={() => ref.current?.scrollBy({ left:300, behavior:"smooth" })} className="bo-arrow"
+            style={{ position:"absolute", top:0, right:0, width:34, height:84, background:"rgba(0,0,0,0.5)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", borderTopLeftRadius:7, borderBottomLeftRadius:7 }}>
+            <span style={{ color:"#fff", fontSize:24, fontWeight:300 }}>›</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BoxOfficeView({ posts, onOpen }) {
+  const works = posts.filter(p => p.category === "작품공유" && getYouTubeId(p.ytUrl));
+  const byDate = [...works].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
+  const byViews = [...works].sort((a,b) => (b.views||0) - (a.views||0)).slice(0, 10);
+  const hero = byDate[0];
+
+  // 장르별 행 (작품이 2개 이상인 장르만)
+  const genreMap = {};
+  works.forEach(p => (p.genres||[]).forEach(g => { (genreMap[g] = genreMap[g] || []).push(p); }));
+  const genreRows = Object.entries(genreMap).filter(([,arr]) => arr.length >= 2);
+
+  if (works.length === 0) {
+    return (
+      <div style={{ background:"#0a0a0a", borderRadius:10, margin:"14px 0 0", padding:"60px 20px", textAlign:"center", color:"#71706b" }}>
+        <div style={{ fontSize:48, opacity:0.3, marginBottom:12 }}>🎬</div>
+        <div style={{ fontSize:13, fontFamily:"'Courier New', monospace", letterSpacing:"0.15em", marginBottom:6 }}>NO FILMS YET</div>
+        <div style={{ fontSize:12 }}>첫 작품을 올려보세요</div>
+      </div>
+    );
+  }
+
+  const heroYt = getYouTubeId(hero.ytUrl);
+  return (
+    <div style={{ background:"#0a0a0a", borderRadius:10, overflow:"hidden", margin:"14px 0 0", paddingBottom:14 }}>
+      <style>{`.bo-car::-webkit-scrollbar{display:none}.bo-car{scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}.bo-arrow{transition:background 0.15s}.bo-arrow:active{background:rgba(0,0,0,0.78)}`}</style>
+
+      {/* 히어로 — 최신작 */}
+      <div onClick={() => onOpen(hero)} style={{ position:"relative", aspectRatio:"16/9", background:"#1a1a1a", cursor:"pointer" }}>
+        {heroYt && <img src={`https://img.youtube.com/vi/${heroYt}/hqdefault.jpg`} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
+        <div style={{ position:"absolute", left:0, right:0, bottom:0, padding:"16px 14px", background:"rgba(0,0,0,0.55)" }}>
+          <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:5 }}>FEATURED · 이번 주 작품</div>
+          <div style={{ fontSize:19, fontWeight:600, color:"#fafaf9", marginBottom:4, lineHeight:1.25 }}>{hero.title}</div>
+          <div style={{ fontSize:11, color:"#a8a29e", marginBottom:11 }}>
+            {[(hero.genres||[]).join(" · "), hero.runtime, hero.prodDate].filter(Boolean).join(" · ")}
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <span style={{ background:"#dc2626", color:"#fff", fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:6 }}>▶ 재생</span>
+            <span style={{ background:"rgba(255,255,255,0.16)", color:"#fafaf9", fontSize:12, padding:"7px 14px", borderRadius:6 }}>ⓘ 정보</span>
+          </div>
+        </div>
+      </div>
+
+      <CarouselRow title="🆕 최신작" items={byDate} onOpen={onOpen} />
+      <CarouselRow title="인기작" badge items={byViews} onOpen={onOpen} ranked />
+      {genreRows.map(([g, arr]) => (
+        <CarouselRow key={g} title={`🎬 ${g}`} items={arr} onOpen={onOpen} />
+      ))}
+    </div>
   );
 }
 
