@@ -172,6 +172,7 @@ export default function Community({ onExit }) {
 
   const [cat, setCat]           = useState("전체");
   const [selPost, setSelPost]   = useState(null); // 상세 모달
+  const [fsVideo,  setFsVideo]  = useState(null); // 가로 풀스크린 재생 (유튜브 ID)
   const [showWrite, setShowWrite] = useState(false);
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
@@ -706,7 +707,7 @@ export default function Community({ onExit }) {
       {selectedRoom && selectedRoom !== "tools" && (
         <>
       {selectedRoom === "boxoffice" ? (
-        <BoxOfficeView posts={posts} onOpen={openPost} />
+        <BoxOfficeView posts={posts} onOpen={openPost} onPlay={setFsVideo} />
       ) : (
         <>
 
@@ -1005,7 +1006,19 @@ export default function Community({ onExit }) {
                 <span>·</span>
                 <span>👁 {selPost.views||0}</span>
               </div>
-              {selPost.ytUrl && <div style={{ marginBottom:14 }}><YouTubeEmbed url={selPost.ytUrl} /></div>}
+              {getYouTubeId(selPost.ytUrl) && (
+                <div onClick={() => setFsVideo(getYouTubeId(selPost.ytUrl))}
+                  style={{ position:"relative", aspectRatio:"16/9", borderRadius:8, overflow:"hidden", background:"#000", cursor:"pointer", marginBottom:14 }}>
+                  <img src={`https://img.youtube.com/vi/${getYouTubeId(selPost.ytUrl)}/hqdefault.jpg`} alt="작품 썸네일"
+                    style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                  <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.28)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(220,38,38,0.94)", color:"#fff", padding:"9px 20px", borderRadius:8, fontSize:14, fontWeight:700 }}>
+                      <span style={{ fontSize:16 }}>▶</span> 재생
+                    </div>
+                  </div>
+                  <span style={{ position:"absolute", bottom:8, right:8, background:"rgba(0,0,0,0.7)", color:"#fff", fontSize:9, padding:"2px 7px", borderRadius:4, fontFamily:"'Courier New', monospace", letterSpacing:"0.05em" }}>가로 전체화면</span>
+                </div>
+              )}
               {((selPost.genres||[]).length > 0 || selPost.runtime || selPost.prodDate) && (
                 <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
                   {(selPost.genres||[]).map(g => (
@@ -1445,7 +1458,44 @@ export default function Community({ onExit }) {
         </button>
         )} {/* /FAB 조건부 끝 */}
       </div> {/* /시네마 풀스크린 컨테이너 */}
+
+      {/* 🎬 가로 풀스크린 재생 오버레이 */}
+      {fsVideo && <FullscreenPlayer videoId={fsVideo} onClose={() => setFsVideo(null)} />}
     </>
+  );
+}
+
+/** 🎬 가로 풀스크린 재생 — 세로로 들어도 영상이 가로로 꽉 (iOS/안드로이드 공통) */
+function FullscreenPlayer({ videoId, onClose }) {
+  const [box, setBox] = useState({
+    w: typeof window !== "undefined" ? window.innerWidth : 0,
+    h: typeof window !== "undefined" ? window.innerHeight : 0,
+  });
+  useEffect(() => {
+    const update = () => setBox({ w: window.innerWidth, h: window.innerHeight });
+    update();
+    window.addEventListener("resize", update);
+    const onOri = () => { setTimeout(update, 300); setTimeout(update, 600); };
+    window.addEventListener("orientationchange", onOri);
+    return () => { window.removeEventListener("resize", update); window.removeEventListener("orientationchange", onOri); };
+  }, []);
+  const portrait = box.h > box.w;
+  const stageW = portrait ? box.h : box.w;
+  const stageH = portrait ? box.w : box.h;
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:99999, background:"#000" }}>
+      <div style={{ position:"absolute", top:"50%", left:"50%", width:stageW, height:stageH, transform:`translate(-50%,-50%) ${portrait ? "rotate(-90deg)" : ""}` }}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0&playsinline=1&modestbranding=1`}
+          title="작품 재생"
+          allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+          allowFullScreen
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:"none" }}
+        />
+        <button onClick={onClose} aria-label="닫기"
+          style={{ position:"absolute", top:14, right:14, width:42, height:42, borderRadius:21, background:"rgba(0,0,0,0.55)", color:"#fff", border:"1px solid rgba(255,255,255,0.25)", fontSize:19, cursor:"pointer", zIndex:2, display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+      </div>
+    </div>
   );
 }
 
@@ -1492,7 +1542,7 @@ function CarouselRow({ title, badge, items, onOpen, ranked }) {
   );
 }
 
-function BoxOfficeView({ posts, onOpen }) {
+function BoxOfficeView({ posts, onOpen, onPlay }) {
   const works = posts.filter(p => p.category === "작품공유" && getYouTubeId(p.ytUrl));
   const byDate = [...works].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
   const byViews = [...works].sort((a,b) => (b.views||0) - (a.views||0)).slice(0, 10);
@@ -1528,8 +1578,10 @@ function BoxOfficeView({ posts, onOpen }) {
             {[(hero.genres||[]).join(" · "), hero.runtime, hero.prodDate].filter(Boolean).join(" · ")}
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <span style={{ background:"#dc2626", color:"#fff", fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:6 }}>▶ 재생</span>
-            <span style={{ background:"rgba(255,255,255,0.16)", color:"#fafaf9", fontSize:12, padding:"7px 14px", borderRadius:6 }}>ⓘ 정보</span>
+            <button onClick={(e) => { e.stopPropagation(); onPlay(heroYt); }}
+              style={{ background:"#dc2626", color:"#fff", fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:6, border:"none", cursor:"pointer" }}>▶ 재생</button>
+            <button onClick={(e) => { e.stopPropagation(); onOpen(hero); }}
+              style={{ background:"rgba(255,255,255,0.16)", color:"#fafaf9", fontSize:12, padding:"7px 14px", borderRadius:6, border:"none", cursor:"pointer" }}>ⓘ 정보</button>
           </div>
         </div>
       </div>
