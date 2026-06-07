@@ -17,9 +17,9 @@ import Scripter from "../../components/Scripter";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필"];
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
-const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집", "스탭프로필"]; // 실명
+const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집", "스탭프로필", "클래스"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -99,6 +99,18 @@ const ROOMS = [
     colorBg:"rgba(249,115,22,0.15)",
     borderStyle:"solid",
     categories:["협업모집", "스탭프로필"],
+  },
+  {
+    id:"class",
+    number:"07",
+    icon:"🎓",
+    subtitle:"FILM CLASS",
+    title:"필름 클래스",
+    desc:"영상 제작 강의 모음",
+    color:"#6366f1",
+    colorBg:"rgba(99,102,241,0.15)",
+    borderStyle:"solid",
+    categories:["클래스"],
   },
 ];
 
@@ -197,10 +209,10 @@ export default function Community({ onExit }) {
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
+    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
@@ -294,6 +306,7 @@ export default function Community({ onExit }) {
     const isWorkPost = writeForm.category === "작품공유";
     const isCrewPost = writeForm.category === "협업모집";
     const isStaffPost = writeForm.category === "스탭프로필";
+    const isClassPost = writeForm.category === "클래스";
     // 카테고리별 유효성 검사
     if (isLecturePost) {
       if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
@@ -305,6 +318,10 @@ export default function Community({ onExit }) {
       if (writeForm.positions.length === 0) { alert("모집 포지션을 1개 이상 추가해주세요."); return; }
     } else if (isStaffPost) {
       if (writeForm.staffRoles.length === 0) { alert("담당 분야를 1개 이상 선택해주세요."); return; }
+    } else if (isClassPost) {
+      if (!canUseRealName) { alert("강좌 등록은 조교·관리자만 가능해요."); return; }
+      if (!writeForm.title.trim()) { alert("강좌명을 입력해주세요."); return; }
+      if (writeForm.lessons.length === 0) { alert("영상을 1개 이상 추가해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
       if (writeForm.category === "장터" && writeForm.images.length === 0) return;
@@ -352,6 +369,10 @@ export default function Community({ onExit }) {
       staffContact:  isStaffPost ? writeForm.staffContact.trim() : "",
       staffStudentId:isStaffPost ? (profile?.studentId || "") : "",
       staffDept:     isStaffPost ? (profile?.dept || "") : "",
+      // 필름 클래스 전용 필드
+      classDesc:     isClassPost ? writeForm.classDesc.trim() : "",
+      classField:    isClassPost ? writeForm.classField.trim() : "",
+      lessons:       isClassPost ? writeForm.lessons : [],
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
       adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
@@ -364,7 +385,7 @@ export default function Community({ onExit }) {
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" });
+      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -482,6 +503,7 @@ export default function Community({ onExit }) {
     const isWork = selPost?.category === "작품공유";
     const isCrew = selPost?.category === "협업모집";
     const isStaff = selPost?.category === "스탭프로필";
+    const isClass = selPost?.category === "클래스";
     if (isWork) {
       if (!editForm.title.trim() || !getYouTubeId(editForm.ytUrl)) { alert("작품 제목과 올바른 유튜브 링크가 필요해요."); return; }
       const patch = {
@@ -533,6 +555,20 @@ export default function Community({ onExit }) {
       setShowEdit(false);
       return;
     }
+    if (isClass) {
+      if (!editForm.title.trim()) { alert("강좌명을 입력해주세요."); return; }
+      if (editForm.lessons.length === 0) { alert("영상을 1개 이상 추가해주세요."); return; }
+      const patch = {
+        title:      editForm.title.trim(),
+        classField: editForm.classField.trim(),
+        classDesc:  editForm.classDesc.trim(),
+        lessons:    editForm.lessons,
+      };
+      await updateItem("communityPosts", selPost.id, patch);
+      setSelPost({ ...selPost, ...patch });
+      setShowEdit(false);
+      return;
+    }
     if (!editForm.title.trim() || !editForm.content.trim()) return;
     await updateItem("communityPosts", selPost.id, {
       title:   editForm.title.trim(),
@@ -573,6 +609,22 @@ export default function Community({ onExit }) {
     await updateItem("communityPosts", selPost.id, { applicants: next });
     setSelPost({ ...selPost, applicants: next });
   };
+  // 필름 클래스 — 영상(차시) 추가 / 삭제
+  const addLesson = () => {
+    const title = writeForm.lessonTitle.trim();
+    const url = writeForm.lessonUrl.trim();
+    if (!title || !getYouTubeId(url)) { alert("영상 제목과 올바른 유튜브 링크를 입력해주세요."); return; }
+    setWriteForm(p => ({ ...p, lessons:[...p.lessons, { title, url, duration: p.lessonDuration.trim() }], lessonTitle:"", lessonUrl:"", lessonDuration:"" }));
+  };
+  const removeLesson = (idx) => setWriteForm(p => ({ ...p, lessons: p.lessons.filter((_, i) => i !== idx) }));
+  const addLessonEdit = () => {
+    const title = editForm.lessonTitle.trim();
+    const url = editForm.lessonUrl.trim();
+    if (!title || !getYouTubeId(url)) { alert("영상 제목과 올바른 유튜브 링크를 입력해주세요."); return; }
+    setEditForm(p => ({ ...p, lessons:[...p.lessons, { title, url, duration: p.lessonDuration.trim() }], lessonTitle:"", lessonUrl:"", lessonDuration:"" }));
+  };
+  const removeLessonEdit = (idx) => setEditForm(p => ({ ...p, lessons: p.lessons.filter((_, i) => i !== idx) }));
+
   // 스탭 프로필 담당 분야 — 드롭다운 선택 / 기타 직접 입력 (인원 없음)
   const pickStaffRole = (val) => {
     if (!val) return;
@@ -733,7 +785,7 @@ export default function Community({ onExit }) {
               return (
                 <div key={room.id} onClick={() => {
                     if (locked) { setBlockedRoom(room); return; }
-                    setSelectedRoom(room.id); setCat(room.id === "crew" ? "협업모집" : "전체"); setPage(1); setSearch("");
+                    setSelectedRoom(room.id); setCat(room.id === "crew" ? "협업모집" : room.id === "class" ? "클래스" : "전체"); setPage(1); setSearch("");
                   }}
                   style={{
                     background: "#1a1a1a",
@@ -912,7 +964,7 @@ export default function Community({ onExit }) {
 
       {/* 카테고리 탭 - 룸별 카테고리만 (시네마 톤 pill) */}
       <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch", marginTop:14 }}>
-        {[...(currentRoom?.id === "crew" ? [] : ["전체"]), ...(currentRoom?.categories || [])].map(c => {
+        {[...(currentRoom?.id === "crew" || currentRoom?.id === "class" ? [] : ["전체"]), ...(currentRoom?.categories || [])].map(c => {
           const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
           const active = cat === c;
           const roomColor = currentRoom?.color || CINEMA.red;
@@ -993,7 +1045,28 @@ export default function Community({ onExit }) {
           <div style={{ fontSize:13, fontFamily:"'Courier New', monospace", letterSpacing:"0.15em" }}>NO POSTS YET</div>
         </div>
       )}
-      {cat === "스탭프로필" ? (
+      {cat === "클래스" ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          {filtered.map(p => {
+            const firstYt = getYouTubeId(p.lessons?.[0]?.url || "");
+            return (
+              <div key={p.id} onClick={() => openPost(p)}
+                style={{ background:CINEMA.surfaceAlt, borderRadius:9, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
+                <div style={{ aspectRatio:"16/9", background:CINEMA.surface, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
+                  {firstYt
+                    ? <img src={`https://i.ytimg.com/vi/${firstYt}/hqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    : <span style={{ fontSize:24, color:CINEMA.mutedDim }}>🎓</span>}
+                  <span style={{ position:"absolute", bottom:5, right:6, background:"rgba(99,102,241,0.92)", color:"#fff", fontSize:9.5, fontWeight:700, padding:"2px 7px", borderRadius:8 }}>{(p.lessons||[]).length}강</span>
+                </div>
+                <div style={{ padding:"8px 9px" }}>
+                  <div style={{ fontSize:12.5, fontWeight:600, color:CINEMA.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+                  <div style={{ fontSize:10, color:"#818cf8", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.classField || "강좌"}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : cat === "스탭프로필" ? (
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(108px, 1fr))", gap:8 }}>
           {filtered.map(p => (
             <div key={p.id} onClick={() => openPost(p)}
@@ -1227,7 +1300,7 @@ export default function Community({ onExit }) {
               {canEditDelete(selPost) && (
                 <>
                   <Btn onClick={() => {
-                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" };
+                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" };
                     setEditForm(
                       selPost.category === "작품공유"
                         ? { ...base, ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
@@ -1235,6 +1308,8 @@ export default function Community({ onExit }) {
                         ? { ...base, positions:selPost.positions||[], crewDirector:selPost.crewDirector||"", crewLogline:selPost.crewLogline||"", crewSchedule:selPost.crewSchedule||"", crewPlace:selPost.crewPlace||"", crewPay:selPost.crewPay||"", crewGenre:selPost.crewGenre||"", deadline:selPost.deadline||"" }
                       : selPost.category === "스탭프로필"
                         ? { ...base, profileImage:selPost.profileImage||"", staffRoles:selPost.staffRoles||[], staffMajor:selPost.staffMajor||"", staffContact:selPost.staffContact||"" }
+                      : selPost.category === "클래스"
+                        ? { ...base, classField:selPost.classField||"", classDesc:selPost.classDesc||"", lessons:selPost.lessons||[] }
                         : base
                     );
                     setShowEdit(true);
@@ -1484,6 +1559,50 @@ export default function Community({ onExit }) {
                 </div>
               )}
             </div>
+          ) : selPost.category === "클래스" ? (
+            <div>
+              {(() => {
+                const firstYt = getYouTubeId(selPost.lessons?.[0]?.url || "");
+                return (
+                  <div onClick={() => firstYt && setFsVideo(firstYt)}
+                    style={{ width:"100%", aspectRatio:"16/9", borderRadius:12, overflow:"hidden", marginBottom:14, background:CINEMA.surface, position:"relative", cursor: firstYt ? "pointer" : "default" }}>
+                    {firstYt
+                      ? <img src={`https://i.ytimg.com/vi/${firstYt}/hqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:34, color:CINEMA.mutedDim }}>🎓</div>}
+                    {firstYt && (
+                      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <div style={{ width:54, height:54, borderRadius:"50%", background:"rgba(99,102,241,0.92)", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontSize:22 }}>▶</div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:6, lineHeight:1.3 }}>{selPost.title}</div>
+              <div style={{ display:"flex", gap:10, fontSize:11, color:CINEMA.muted, marginBottom:14, fontFamily:"'Courier New', monospace", flexWrap:"wrap" }}>
+                {selPost.classField && <span style={{ color:"#818cf8" }}>{selPost.classField}</span>}
+                <span>총 {(selPost.lessons||[]).length}강</span>
+                <span>·</span>
+                <span>👁 {selPost.views||0}</span>
+              </div>
+              {selPost.classDesc && <div style={{ fontSize:13.5, color:CINEMA.text, lineHeight:1.8, marginBottom:18, whiteSpace:"pre-wrap" }}>{selPost.classDesc}</div>}
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#6366f1", letterSpacing:"0.2em", fontWeight:700, marginBottom:10 }}>CURRICULUM</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
+                {(selPost.lessons || []).map((ls, i) => {
+                  const yt = getYouTubeId(ls.url || "");
+                  return (
+                    <div key={i} onClick={() => yt && setFsVideo(yt)}
+                      style={{ display:"flex", alignItems:"center", gap:10, background:CINEMA.surface, borderRadius:8, padding:"10px 12px", cursor: yt ? "pointer" : "default", border:`1px solid ${CINEMA.border}` }}>
+                      <span style={{ fontSize:13, color:"#818cf8", fontWeight:700, minWidth:18 }}>{i+1}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:13, color:CINEMA.text, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ls.title}</div>
+                      </div>
+                      {ls.duration && <span style={{ fontSize:10.5, color:CINEMA.muted, fontFamily:"'Courier New', monospace" }}>{ls.duration}</span>}
+                      <span style={{ fontSize:14, color:"#6366f1" }}>▶</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           ) : (
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8, lineHeight:1.3 }}>{selPost.title}</div>
@@ -1509,7 +1628,7 @@ export default function Community({ onExit }) {
           )}
 
           {/* 추천/비추천 - 작품공유·협업모집 제외 */}
-          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && (
+          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (
           <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
             <button onClick={() => toggleLike("post", selPost)}
               style={{
@@ -1535,7 +1654,7 @@ export default function Community({ onExit }) {
           )}
 
           {/* 댓글 영역 - 작품공유 제외 */}
-          {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && (<>
+          {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (<>
           {/* 댓글 헤더 - 시네마 톤 */}
           <div style={{
             fontSize:10, fontWeight:700, color:CINEMA.red, marginBottom:10,
@@ -1833,6 +1952,48 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:120, boxSizing:"border-box" }} />
               </div>
             </div>
+          ) : selPost.category === "클래스" ? (
+            <div>
+              <Inp label="강좌명 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="분야 / 부제" value={editForm.classField} onChange={e => setEditForm(p=>({...p,classField:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>강좌 소개 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea value={editForm.classDesc} onChange={e => setEditForm(p=>({...p,classDesc:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>강의 영상 * <span style={{ color:C.muted, fontWeight:400 }}>({editForm.lessons.length}강)</span></div>
+                {editForm.lessons.length > 0 && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+                    {editForm.lessons.map((ls, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px" }}>
+                        <span style={{ fontSize:12, color:"#6366f1", fontWeight:700, minWidth:16 }}>{i+1}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, color:C.text, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ls.title}</div>
+                        </div>
+                        {ls.duration && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>{ls.duration}</span>}
+                        <button onClick={() => removeLessonEdit(i)} style={{ background:"transparent", border:"none", color:C.red, cursor:"pointer", fontSize:13, fontWeight:700 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+                  <input value={editForm.lessonTitle} placeholder="영상 제목"
+                    onChange={e => setEditForm(p=>({...p,lessonTitle:e.target.value}))}
+                    style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:7 }} />
+                  <div style={{ display:"flex", gap:6 }}>
+                    <input value={editForm.lessonUrl} placeholder="유튜브 링크"
+                      onChange={e => setEditForm(p=>({...p,lessonUrl:e.target.value}))}
+                      style={{ flex:1, minWidth:0, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"8px 10px", fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <input value={editForm.lessonDuration} placeholder="12:34"
+                      onChange={e => setEditForm(p=>({...p,lessonDuration:e.target.value}))}
+                      style={{ width:62, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"8px 8px", fontSize:12, fontFamily:"monospace", outline:"none", boxSizing:"border-box", textAlign:"center" }} />
+                  </div>
+                  <button type="button" onClick={addLessonEdit}
+                    style={{ width:"100%", marginTop:8, background:"#6366f1", border:"none", borderRadius:8, color:"#fff", padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>＋ 영상 추가</button>
+                </div>
+              </div>
+            </div>
           ) : (
             <>
               <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
@@ -1851,6 +2012,8 @@ export default function Community({ onExit }) {
               ? !editForm.title.trim() || editForm.positions.length === 0
               : selPost.category === "스탭프로필"
               ? editForm.staffRoles.length === 0
+              : selPost.category === "클래스"
+              ? !editForm.title.trim() || editForm.lessons.length === 0
               : !editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
@@ -2117,6 +2280,49 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:120, boxSizing:"border-box" }} />
               </div>
             </div>
+          ) : writeForm.category === "클래스" ? (
+            <div>
+              <Inp label="강좌명 *" placeholder="예: 촬영 기초" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="분야 / 부제" placeholder="예: 카메라 · 구도 · 노출" value={writeForm.classField} onChange={e => setWriteForm(p=>({...p,classField:e.target.value}))} />
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>강좌 소개 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea placeholder="이 강좌에서 배우는 내용" value={writeForm.classDesc} onChange={e => setWriteForm(p=>({...p,classDesc:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box" }} />
+              </div>
+              {/* 영상(차시) 목록 */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>강의 영상 * <span style={{ color:C.muted, fontWeight:400 }}>({writeForm.lessons.length}강)</span></div>
+                {writeForm.lessons.length > 0 && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:10 }}>
+                    {writeForm.lessons.map((ls, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"8px 10px" }}>
+                        <span style={{ fontSize:12, color:"#6366f1", fontWeight:700, minWidth:16 }}>{i+1}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:12, color:C.text, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ls.title}</div>
+                        </div>
+                        {ls.duration && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>{ls.duration}</span>}
+                        <button onClick={() => removeLesson(i)} style={{ background:"transparent", border:"none", color:C.red, cursor:"pointer", fontSize:13, fontWeight:700 }}>✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div style={{ background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+                  <input value={writeForm.lessonTitle} placeholder="영상 제목 (예: 1강 카메라 기본 조작)"
+                    onChange={e => setWriteForm(p=>({...p,lessonTitle:e.target.value}))}
+                    style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:7 }} />
+                  <div style={{ display:"flex", gap:6 }}>
+                    <input value={writeForm.lessonUrl} placeholder="유튜브 링크"
+                      onChange={e => setWriteForm(p=>({...p,lessonUrl:e.target.value}))}
+                      style={{ flex:1, minWidth:0, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"8px 10px", fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <input value={writeForm.lessonDuration} placeholder="12:34"
+                      onChange={e => setWriteForm(p=>({...p,lessonDuration:e.target.value}))}
+                      style={{ width:62, background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, color:C.text, padding:"8px 8px", fontSize:12, fontFamily:"monospace", outline:"none", boxSizing:"border-box", textAlign:"center" }} />
+                  </div>
+                  <button type="button" onClick={addLesson}
+                    style={{ width:"100%", marginTop:8, background:"#6366f1", border:"none", borderRadius:8, color:"#fff", padding:"9px", fontSize:13, fontWeight:700, cursor:"pointer" }}>＋ 영상 추가</button>
+                </div>
+              </div>
+            </div>
           ) : (
             <div>
               <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
@@ -2128,7 +2334,7 @@ export default function Community({ onExit }) {
             </div>
           )}
           {/* 이미지 첨부 - 강의·작품공유·협업모집 게시판 제외 */}
-          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && writeForm.category !== "스탭프로필" && <div style={{ marginBottom:14 }}>
+          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && writeForm.category !== "스탭프로필" && writeForm.category !== "클래스" && <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
               이미지 첨부{" "}
               <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
@@ -2179,6 +2385,8 @@ export default function Community({ onExit }) {
               ? "🤝 실명으로 게시되며, 게시 후에도 모집 내용을 수정할 수 있어요."
               : writeForm.category === "스탭프로필"
               ? "🙋 실명으로 등록되며, 게시 후에도 프로필을 수정할 수 있어요."
+              : writeForm.category === "클래스"
+              ? "🎓 조교·관리자만 등록할 수 있어요. 등록 후에도 수정할 수 있어요."
               : REAL_CATS.includes(writeForm.category)
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
@@ -2194,6 +2402,8 @@ export default function Community({ onExit }) {
                 ? !writeForm.title.trim() || writeForm.positions.length === 0
                 : writeForm.category === "스탭프로필"
                 ? writeForm.staffRoles.length === 0
+                : writeForm.category === "클래스"
+                ? !writeForm.title.trim() || writeForm.lessons.length === 0
                 : !writeForm.title.trim() || !writeForm.content.trim() ||
                   (writeForm.category === "장터" && writeForm.images.length === 0))
             }>
@@ -2244,8 +2454,8 @@ export default function Community({ onExit }) {
           </div>
         )}
 
-        {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 */}
-        {selectedRoom && selectedRoom !== "tools" && (
+        {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 (클래스는 조교·관리자만) */}
+        {selectedRoom && selectedRoom !== "tools" && !(selectedRoom === "class" && !canUseRealName) && (
         <button
           onClick={() => {
             const defaultCat = (currentRoom?.categories?.includes(cat) ? cat : currentRoom?.categories?.[0]) || "자유";
