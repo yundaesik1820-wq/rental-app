@@ -52,20 +52,25 @@ export default function CinemaSlate({ onBack }) {
     localStorage.setItem("slate_orient_hint_seen", "1");
   };
 
-  // ─── 가로/세로 감지 + 정확한 viewport 픽셀 ─
-  const [dim, setDim] = useState(() => ({
-    w: typeof window !== "undefined" ? window.innerWidth : 800,
-    h: typeof window !== "undefined" ? window.innerHeight : 600,
-  }));
-  const portrait = dim.w < dim.h;
+  // ─── 가로/세로 감지 (matchMedia 기반 — 안드로이드 회전 직후 stale 픽셀 문제 방지) ─
+  const getPortrait = () =>
+    typeof window === "undefined" ? false
+    : (window.matchMedia ? window.matchMedia("(orientation: portrait)").matches
+                         : window.innerWidth < window.innerHeight);
+  const [portrait, setPortrait] = useState(getPortrait);
   useEffect(() => {
-    const handler = () => setDim({ w: window.innerWidth, h: window.innerHeight });
-    handler();
-    window.addEventListener("resize", handler);
-    window.addEventListener("orientationchange", handler);
+    const measure = () => setPortrait(getPortrait());
+    // 안드로이드는 orientationchange 직후 값이 늦게 갱신되므로 여러 번 재측정
+    const onOrient = () => { measure(); setTimeout(measure, 250); setTimeout(measure, 600); };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", onOrient);
+    const mq = window.matchMedia ? window.matchMedia("(orientation: portrait)") : null;
+    if (mq) { mq.addEventListener ? mq.addEventListener("change", measure) : mq.addListener(measure); }
     return () => {
-      window.removeEventListener("resize", handler);
-      window.removeEventListener("orientationchange", handler);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", onOrient);
+      if (mq) { mq.removeEventListener ? mq.removeEventListener("change", measure) : mq.removeListener(measure); }
     };
   }, []);
 
@@ -448,8 +453,8 @@ export default function CinemaSlate({ onBack }) {
     }}>
       {portrait ? (
         <div style={{
-          position:"absolute", top:0, left:`${dim.w}px`,
-          width:`${dim.h}px`, height:`${dim.w}px`,
+          position:"absolute", top:0, left:"100vw",
+          width:"100vh", height:"100vw",
           transformOrigin:"top left",
           transform:"rotate(90deg)",
         }}>
