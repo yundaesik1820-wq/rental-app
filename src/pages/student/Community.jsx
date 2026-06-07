@@ -209,10 +209,10 @@ export default function Community({ onExit }) {
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
+    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
@@ -372,6 +372,7 @@ export default function Community({ onExit }) {
       // 필름 클래스 전용 필드
       classDesc:     isClassPost ? writeForm.classDesc.trim() : "",
       classField:    isClassPost ? writeForm.classField.trim() : "",
+      channelUrl:    isClassPost ? writeForm.channelUrl.trim() : "",
       lessons:       isClassPost ? writeForm.lessons : [],
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
@@ -385,7 +386,7 @@ export default function Community({ onExit }) {
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
+      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -562,6 +563,7 @@ export default function Community({ onExit }) {
         title:      editForm.title.trim(),
         classField: editForm.classField.trim(),
         classDesc:  editForm.classDesc.trim(),
+        channelUrl: editForm.channelUrl.trim(),
         lessons:    editForm.lessons,
       };
       await updateItem("communityPosts", selPost.id, patch);
@@ -1300,7 +1302,7 @@ export default function Community({ onExit }) {
               {canEditDelete(selPost) && (
                 <>
                   <Btn onClick={() => {
-                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" };
+                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" };
                     setEditForm(
                       selPost.category === "작품공유"
                         ? { ...base, ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
@@ -1309,7 +1311,7 @@ export default function Community({ onExit }) {
                       : selPost.category === "스탭프로필"
                         ? { ...base, profileImage:selPost.profileImage||"", staffRoles:selPost.staffRoles||[], staffMajor:selPost.staffMajor||"", staffContact:selPost.staffContact||"" }
                       : selPost.category === "클래스"
-                        ? { ...base, classField:selPost.classField||"", classDesc:selPost.classDesc||"", lessons:selPost.lessons||[] }
+                        ? { ...base, classField:selPost.classField||"", classDesc:selPost.classDesc||"", channelUrl:selPost.channelUrl||"", lessons:selPost.lessons||[] }
                         : base
                     );
                     setShowEdit(true);
@@ -1585,6 +1587,12 @@ export default function Community({ onExit }) {
                 <span>👁 {selPost.views||0}</span>
               </div>
               {selPost.classDesc && <div style={{ fontSize:13.5, color:CINEMA.text, lineHeight:1.8, marginBottom:18, whiteSpace:"pre-wrap" }}>{selPost.classDesc}</div>}
+              {selPost.channelUrl && (
+                <button onClick={() => window.open(selPost.channelUrl, "_blank", "noopener,noreferrer")}
+                  style={{ width:"100%", marginBottom:18, background:"#FF0000", border:"none", borderRadius:10, color:"#fff", padding:"12px", fontSize:14, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+                  <span style={{ fontSize:16 }}>▶</span> 유튜브 채널 방문 · 구독
+                </button>
+              )}
               <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#6366f1", letterSpacing:"0.2em", fontWeight:700, marginBottom:10 }}>CURRICULUM</div>
               <div style={{ display:"flex", flexDirection:"column", gap:7 }}>
                 {(selPost.lessons || []).map((ls, i) => {
@@ -1956,6 +1964,7 @@ export default function Community({ onExit }) {
             <div>
               <Inp label="강좌명 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
               <Inp label="분야 / 부제" value={editForm.classField} onChange={e => setEditForm(p=>({...p,classField:e.target.value}))} />
+              <Inp label="유튜브 채널 링크" placeholder="https://youtube.com/@채널명" value={editForm.channelUrl} onChange={e => setEditForm(p=>({...p,channelUrl:e.target.value}))} />
               <div style={{ marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>강좌 소개 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
                 <textarea value={editForm.classDesc} onChange={e => setEditForm(p=>({...p,classDesc:e.target.value}))}
@@ -2284,6 +2293,7 @@ export default function Community({ onExit }) {
             <div>
               <Inp label="강좌명 *" placeholder="예: 촬영 기초" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
               <Inp label="분야 / 부제" placeholder="예: 카메라 · 구도 · 노출" value={writeForm.classField} onChange={e => setWriteForm(p=>({...p,classField:e.target.value}))} />
+              <Inp label="유튜브 채널 링크" placeholder="예: https://youtube.com/@채널명 (구독 버튼용)" value={writeForm.channelUrl} onChange={e => setWriteForm(p=>({...p,channelUrl:e.target.value}))} />
               <div style={{ marginBottom:16 }}>
                 <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>강좌 소개 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
                 <textarea placeholder="이 강좌에서 배우는 내용" value={writeForm.classDesc} onChange={e => setWriteForm(p=>({...p,classDesc:e.target.value}))}
