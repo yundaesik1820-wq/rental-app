@@ -11,7 +11,6 @@ import CinemaSlate from "../../components/CinemaSlate";
 import ExposureLive from "../../components/ExposureLive";
 import ExposureCalc from "../../components/ExposureCalc";
 import DofCalc from "../../components/DofCalc";
-import ARDistance from "../../components/ARDistance";
 import ColorTemp from "../../components/ColorTemp";
 import FovCalc from "../../components/FovCalc";
 import Scripter from "../../components/Scripter";
@@ -443,7 +442,6 @@ export default function Community({ onExit }) {
                 : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
                 : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
                 : selectedTool === "dof" ? "DOF"
-                : selectedTool === "ar-distance" ? "AR DISTANCE"
                 : selectedTool === "color-temp" ? "COLOR TEMP"
                 : selectedTool === "fov" ? "FOV"
                 : selectedTool === "scripter" ? "SCRIPTER"
@@ -575,24 +573,6 @@ export default function Community({ onExit }) {
               <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SCRIPT</div>
               <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>스크립터</div>
               <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>씬·테이크 기록</div>
-            </div>
-
-            {/* 📏 AR 거리 측정 - 사용 가능 */}
-            <div onClick={() => setSelectedTool("ar-distance")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>📏</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>AR DISTANCE</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>거리 측정</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>화면 두 점 → 실제 길이</div>
             </div>
 
             {/* 🎥 LIVE 노출 도우미 - 사용 가능 */}
@@ -744,11 +724,6 @@ export default function Community({ onExit }) {
       {/* 📐 DOF 계산기 */}
       {selectedRoom === "tools" && selectedTool === "dof" && (
         <DofCalc onBack={() => setSelectedTool(null)} />
-      )}
-
-      {/* 📏 AR 거리 측정 */}
-      {selectedRoom === "tools" && selectedTool === "ar-distance" && (
-        <ARDistance onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 🌡️ 색온도 계산기 */}
