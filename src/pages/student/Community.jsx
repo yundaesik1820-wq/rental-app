@@ -26,7 +26,7 @@ const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 🎬 ROOMS 정의 - ZZOTKYO 진입 분기
 const ROOMS = [
   {
-    id:"community",
+    id:"community", studentOnly:true,
     number:"01",
     icon:"💬",
     subtitle:"BEHIND THE SCENES",
@@ -38,7 +38,7 @@ const ROOMS = [
     categories:["자유", "질문", "새내기"],
   },
   {
-    id:"knowledge",
+    id:"knowledge", studentOnly:true,
     number:"02",
     icon:"📚",
     subtitle:"KNOWLEDGE",
@@ -77,8 +77,8 @@ const ROOMS = [
     id:"boxoffice",
     number:"05",
     icon:"🎥",
-    subtitle:"STUDENT BOXOFFICE",
-    title:"스튜던트 박스오피스",
+    subtitle:"KBATV BOXOFFICE",
+    title:"KBATV 박스오피스",
     desc:"협업 모집 · 작품 공유",
     color:"#a855f7",
     colorBg:"rgba(168,85,247,0.15)",
@@ -119,6 +119,7 @@ export default function Community({ onExit }) {
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
   const [selectedTool, setSelectedTool] = useState(null);
@@ -127,6 +128,7 @@ export default function Community({ onExit }) {
   const { data: comments } = useCollection("communityComments", "createdAt");
 
   const adminRole  = profile?.adminRole || "super";
+  const isProfOrTeacher = profile?.role === "admin" && (adminRole === "teacher" || adminRole === "professor"); // 학생 전용 룸 차단 대상
   const isSuper    = profile?.role === "admin"; // 모든 관리자 동일
   const isAssist   = false;
   const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
@@ -478,21 +480,25 @@ export default function Community({ onExit }) {
           {/* 5개 룸 박스 */}
           <div style={{ display:"flex", flexDirection:"column", gap:9 }}>
             {ROOMS.map(room => {
-              const isDashed = room.borderStyle === "dashed";
+              const locked = room.studentOnly && isProfOrTeacher;
               return (
-                <div key={room.id} onClick={() => { setSelectedRoom(room.id); setCat("전체"); setPage(1); setSearch(""); }}
+                <div key={room.id} onClick={() => {
+                    if (locked) { setBlockedRoom(room); return; }
+                    setSelectedRoom(room.id); setCat("전체"); setPage(1); setSearch("");
+                  }}
                   style={{
-                    background: isDashed ? "#16130d" : "#1a1a1a",
-                    border: isDashed ? `1px dashed ${room.color}` : `1px solid #2a2a2a`,
-                    borderLeft: isDashed ? `1px dashed ${room.color}` : `4px solid ${room.color}`,
+                    background: "#1a1a1a",
+                    border: "1px solid #2a2a2a",
+                    borderLeft: `4px solid ${room.color}`,
                     borderRadius:6, padding:"13px 14px", cursor:"pointer", position:"relative",
                     transition:"transform 0.15s",
+                    opacity: locked ? 0.6 : 1,
                   }}
                   onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
                   onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
                 >
                   <div style={{ position:"absolute", top:8, right:10, fontFamily:"'Courier New', monospace", fontSize:8, color:"#71706b", letterSpacing:"0.2em" }}>
-                    ROOM {room.number}
+                    {locked ? "🔒 STUDENTS" : `ROOM ${room.number}`}
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                     <div style={{ fontSize:32, lineHeight:1 }}>{room.icon}</div>
@@ -525,6 +531,31 @@ export default function Community({ onExit }) {
           <div style={{ padding:"18px 8px 30px", textAlign:"center", fontFamily:"'Courier New', monospace", fontSize:9, color:"#71706b", letterSpacing:"0.2em" }}>
             A ZZOTKYO PRESENTATION · {new Date().getFullYear()}
           </div>
+
+          {/* 🔒 학생 전용 안내 모달 */}
+          {blockedRoom && (
+            <div onClick={() => setBlockedRoom(null)}
+              style={{ position:"fixed", inset:0, zIndex:9500, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+              <div onClick={e => e.stopPropagation()}
+                style={{ background:"#0a0a0a", border:`1px solid ${blockedRoom.color}`, borderRadius:12, padding:"28px 24px", maxWidth:320, textAlign:"center" }}>
+                <div style={{ fontSize:44, marginBottom:12 }}>🔒</div>
+                <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:blockedRoom.color, letterSpacing:"0.3em", fontWeight:700, marginBottom:10 }}>
+                  STUDENTS ONLY
+                </div>
+                <div style={{ fontSize:15, fontWeight:800, color:"#fafaf9", marginBottom:8 }}>
+                  학생만 입장이 가능합니다
+                </div>
+                <div style={{ fontSize:12.5, color:"#a8a29e", lineHeight:1.6, marginBottom:20 }}>
+                  <strong style={{ color:"#fafaf9" }}>{blockedRoom.title}</strong> 게시판은<br/>영상계열 학생들의 공간이에요.<br/>
+                  <span style={{ color:"#71706b", fontSize:11 }}>필름 도구는 자유롭게 이용하실 수 있어요.</span>
+                </div>
+                <button onClick={() => setBlockedRoom(null)}
+                  style={{ width:"100%", padding:"11px", minHeight:44, background:blockedRoom.color, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:800, fontFamily:"Pretendard, sans-serif", cursor:"pointer", touchAction:"manipulation" }}>
+                  확인
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -541,156 +572,21 @@ export default function Community({ onExit }) {
 
           {/* 도구 카드 그리드 */}
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
-            {/* 슬레이터 - 사용 가능 */}
-            <div onClick={() => setSelectedTool("slate")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>🎬</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SLATE</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>전자식 슬레이터</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>타임코드 · CLAP</div>
-            </div>
+            <ToolCard icon="🎬" label="SLATE" title="전자식 슬레이터" desc="타임코드 · CLAP" onClick={() => setSelectedTool("slate")} />
+            <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" onClick={() => setSelectedTool("scripter")} />
+            <ToolCard icon="🎥" label="LIVE EXPOSURE" title="라이브 노출" desc="폴스컬러 · 제브라" onClick={() => setSelectedTool("live-exposure")} />
+            <ToolCard icon="📷" label="EXPOSURE CALC" title="노출 계산기" desc="180° 셔터 · 등가환산" onClick={() => setSelectedTool("exposure-calc")} />
+            <ToolCard icon="📐" label="DOF" title="피사계 심도" desc="DOF 계산" onClick={() => setSelectedTool("dof")} />
+            <ToolCard icon="🌡️" label="COLOR TEMP" title="색온도 계산기" desc="WB · 젤 계산" onClick={() => setSelectedTool("color-temp")} />
+            <ToolCard icon="🔭" label="FOV" title="렌즈 화각" desc="화각 · 역계산" onClick={() => setSelectedTool("fov")} />
+            <ToolCard icon="🌅" label="SUN SEEKER" title="태양 위치" desc="골든아워·일출일몰" onClick={() => setSelectedTool("sun")} />
 
-            {/* 스크립터 */}
-            <div onClick={() => setSelectedTool("scripter")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>📝</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SCRIPT</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>스크립터</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>씬·테이크 기록</div>
-            </div>
-
-            {/* 🎥 LIVE 노출 도우미 - 사용 가능 */}
-            <div onClick={() => setSelectedTool("live-exposure")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>🎥</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>LIVE EXPOSURE</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>라이브 노출</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>폴스컬러 · 제브라</div>
-            </div>
-
-            {/* 📷 노출 계산기 (이론) - 사용 가능 */}
-            <div onClick={() => setSelectedTool("exposure-calc")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>📷</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>EXPOSURE CALC</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>노출 계산기</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>180° 셔터 · 등가환산</div>
-            </div>
-
-            {/* 📐 DOF 계산기 - 사용 가능 */}
-            <div onClick={() => setSelectedTool("dof")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>📐</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>DOF</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>피사계 심도</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>DOF 계산</div>
-            </div>
-
-            {/* 색온도 계산기 */}
-            <div onClick={() => setSelectedTool("color-temp")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>🌡️</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>COLOR TEMP</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>색온도 계산기</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>WB · 젤 계산</div>
-            </div>
-
-            {/* 렌즈 화각 */}
-            <div onClick={() => setSelectedTool("fov")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>🔭</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>FOV</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>렌즈 화각</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>화각 · 역계산</div>
-            </div>
-
-            {/* 🌅 태양 위치 / 골든아워 */}
-            <div onClick={() => setSelectedTool("sun")}
-              style={{
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"16px 12px", cursor:"pointer",
-                textAlign:"center", minHeight:130,
-                display:"flex", flexDirection:"column", justifyContent:"center",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ fontSize:40, marginBottom:6 }}>🌅</div>
-              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SUN SEEKER</div>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>태양 위치</div>
-              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>골든아워·일출일몰</div>
-            </div>
-
-            {/* 자료 큐레이션 */}
+            {/* 자료 큐레이션 (가로형, 통일 디자인) */}
             <div onClick={() => setSelectedTool("resources")}
               style={{
                 gridColumn:"span 2",
-                background:"#16130d", border:"1px dashed #fbbf24",
-                borderRadius:6, padding:"14px 14px", cursor:"pointer",
+                background:"#1a1a1a", border:"1px solid #2a2a2a", borderLeft:"3px solid #fbbf24",
+                borderRadius:6, padding:"14px", cursor:"pointer",
                 transition:"transform 0.15s",
               }}
               onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
@@ -1382,16 +1278,21 @@ export default function Community({ onExit }) {
 }
 
 /** 🛠️ 도구 카드 (필름 도구 룸) */
-function ToolCard({ icon, label, title, desc, comingSoon }) {
+function ToolCard({ icon, label, title, desc, comingSoon, onClick }) {
   return (
-    <div style={{
-      background:"#1a1a1a", border:`1px ${comingSoon ? "solid" : "dashed"} ${comingSoon ? "#2a2a2a" : "#fbbf24"}`,
-      borderRadius:6, padding:"16px 12px",
-      cursor: comingSoon ? "not-allowed" : "pointer",
-      textAlign:"center", minHeight:130, opacity: comingSoon ? 0.5 : 1,
-      display:"flex", flexDirection:"column", justifyContent:"center",
-      position:"relative",
-    }}>
+    <div onClick={comingSoon ? undefined : onClick}
+      onMouseEnter={e => { if (!comingSoon) e.currentTarget.style.transform = "translateY(-2px)"; }}
+      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+      style={{
+        background:"#1a1a1a",
+        border:"1px solid #2a2a2a",
+        borderLeft: comingSoon ? "1px solid #2a2a2a" : "3px solid #fbbf24",
+        borderRadius:6, padding:"16px 12px",
+        cursor: comingSoon ? "not-allowed" : "pointer",
+        textAlign:"center", minHeight:130, opacity: comingSoon ? 0.5 : 1,
+        display:"flex", flexDirection:"column", justifyContent:"center",
+        position:"relative", transition:"transform 0.15s",
+      }}>
       {comingSoon && (
         <div style={{
           position:"absolute", top:6, right:8,
