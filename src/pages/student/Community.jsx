@@ -128,7 +128,14 @@ export default function Community({ onExit }) {
   const { data: comments } = useCollection("communityComments", "createdAt");
 
   const adminRole  = profile?.adminRole || "super";
-  const isProfOrTeacher = profile?.role === "admin" && (adminRole === "teacher" || adminRole === "professor"); // 학생 전용 룸 차단 대상
+  // 학생 전용 룸 차단 대상: 교수·교사 (조교/슈퍼관리자/학생은 제외)
+  //  - role:"professor"      → 교수님 목록에서 생성된 계정
+  //  - role:"teacher"        → (혹시 모를) 별도 교사 계정
+  //  - role:"admin" + adminRole:professor/teacher → 관리자로 등록된 교수·교사
+  const isProfOrTeacher =
+    profile?.role === "professor" ||
+    profile?.role === "teacher" ||
+    (profile?.role === "admin" && (profile?.adminRole === "teacher" || profile?.adminRole === "professor"));
   const isSuper    = profile?.role === "admin"; // 모든 관리자 동일
   const isAssist   = false;
   const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
