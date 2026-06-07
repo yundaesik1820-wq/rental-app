@@ -535,7 +535,7 @@ export default function Community({ onExit }) {
     if (!selPost || !position) return;
     const apps = selPost.applicants || [];
     if (apps.some(a => a.uid === profile?.uid)) return;
-    const next = [...apps, { uid: profile?.uid || "", name: profile?.name || "", position, at: Date.now() }];
+    const next = [...apps, { uid: profile?.uid || "", name: profile?.name || "", position, status: "pending", at: Date.now() }];
     await updateItem("communityPosts", selPost.id, { applicants: next });
     setSelPost({ ...selPost, applicants: next });
     setApplyPosition("");
@@ -544,6 +544,20 @@ export default function Community({ onExit }) {
     if (!selPost) return;
     const apps = selPost.applicants || [];
     const next = apps.filter(a => a.uid !== profile?.uid);
+    await updateItem("communityPosts", selPost.id, { applicants: next });
+    setSelPost({ ...selPost, applicants: next });
+  };
+  // 작성자: 포지션별 마감/재개 토글 (수동)
+  const togglePositionClosed = async (idx) => {
+    if (!selPost) return;
+    const next = (selPost.positions || []).map((p, i) => i === idx ? { ...p, closed: !p.closed } : p);
+    await updateItem("communityPosts", selPost.id, { positions: next });
+    setSelPost({ ...selPost, positions: next });
+  };
+  // 작성자: 지원자 수락/거절
+  const setApplicantStatus = async (uid, status) => {
+    if (!selPost) return;
+    const next = (selPost.applicants || []).map(a => a.uid === uid ? { ...a, status } : a);
     await updateItem("communityPosts", selPost.id, { applicants: next });
     setSelPost({ ...selPost, applicants: next });
   };
@@ -1208,6 +1222,7 @@ export default function Community({ onExit }) {
           ) : selPost.category === "협업모집" ? (() => {
             const dday = getDday(selPost.deadline);
             const closed = dday !== null && dday < 0;
+            const isAuthor = selPost.authorId === profile?.uid;
             return (
               <div>
                 <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10, flexWrap:"wrap" }}>
@@ -1228,9 +1243,18 @@ export default function Community({ onExit }) {
                 {(selPost.positions||[]).length > 0 && (
                   <div style={{ marginBottom:16 }}>
                     <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>RECRUITING POSITIONS</div>
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                       {(selPost.positions||[]).map((v, i) => (
-                        <span key={i} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:500, padding:"5px 11px", borderRadius:14 }}>{posLabel(v)}</span>
+                        <div key={i} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ background: v.closed ? "rgba(255,255,255,0.05)" : CINEMA.surface, border:`1px solid ${v.closed ? CINEMA.border : "#f97316"}`, color: v.closed ? CINEMA.mutedDim : CINEMA.text, fontSize:12, fontWeight:500, padding:"5px 11px", borderRadius:14, textDecoration: v.closed ? "line-through" : "none" }}>{posLabel(v)}</span>
+                          {v.closed && <span style={{ fontSize:10, color:CINEMA.muted, fontWeight:700 }}>마감</span>}
+                          {isAuthor && (
+                            <button onClick={() => togglePositionClosed(i)}
+                              style={{ marginLeft:"auto", background:"transparent", border:`1px solid ${CINEMA.border}`, color: v.closed ? "#f97316" : CINEMA.muted, borderRadius:8, padding:"3px 10px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
+                              {v.closed ? "재개" : "마감"}
+                            </button>
+                          )}
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -1272,19 +1296,32 @@ export default function Community({ onExit }) {
                 {selPost.content && <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom:16, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
                 {(() => {
                   const apps = selPost.applicants || [];
-                  const isAuthor = selPost.authorId === profile?.uid;
                   const mine = apps.find(a => a.uid === profile?.uid);
-                  const roles = (selPost.positions || []).map(posLabel);
+                  const openRoles = (selPost.positions || []).filter(p => !p.closed).map(posLabel);
                   if (isAuthor) {
                     return (
                       <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"12px 14px", marginBottom:4 }}>
-                        <div style={{ fontSize:11, fontWeight:700, color:"#f97316", marginBottom: apps.length ? 8 : 0, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>📋 지원자 {apps.length}명</div>
+                        <div style={{ fontSize:11, fontWeight:700, color:"#f97316", marginBottom: apps.length ? 10 : 0, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>📋 지원자 {apps.length}명</div>
                         {apps.length > 0 ? (
-                          <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
                             {apps.map((a, i) => (
-                              <div key={i} style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:CINEMA.text }}>
-                                <span style={{ fontWeight:600 }}>{a.name || "이름없음"}</span>
+                              <div key={i} style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                                <span style={{ fontSize:13, fontWeight:600, color:CINEMA.text }}>{a.name || "이름없음"}</span>
                                 {a.position && <span style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10 }}>{a.position}</span>}
+                                <div style={{ marginLeft:"auto", display:"flex", gap:6 }}>
+                                  <button onClick={() => setApplicantStatus(a.uid, a.status === "accepted" ? "pending" : "accepted")}
+                                    style={{ border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer",
+                                      background: a.status === "accepted" ? "#16a34a" : "rgba(22,163,74,0.15)",
+                                      color: a.status === "accepted" ? "#fff" : "#16a34a" }}>
+                                    {a.status === "accepted" ? "✓ 수락됨" : "수락"}
+                                  </button>
+                                  <button onClick={() => setApplicantStatus(a.uid, a.status === "rejected" ? "pending" : "rejected")}
+                                    style={{ border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer",
+                                      background: a.status === "rejected" ? CINEMA.red : "rgba(220,38,38,0.12)",
+                                      color: a.status === "rejected" ? "#fff" : CINEMA.redBright }}>
+                                    {a.status === "rejected" ? "거절됨" : "거절"}
+                                  </button>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -1293,22 +1330,34 @@ export default function Community({ onExit }) {
                     );
                   }
                   if (mine) {
+                    const st = mine.status;
                     return (
-                      <div style={{ display:"flex", alignItems:"center", gap:10, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:8, padding:"11px 14px", marginBottom:4 }}>
-                        <span style={{ fontSize:13, color:CINEMA.text, fontWeight:600, flex:1 }}>✓ {mine.position ? `'${mine.position}' 포지션으로 ` : ""}지원 완료</span>
-                        <button onClick={cancelApply} style={{ background:"transparent", border:`1px solid ${CINEMA.border}`, color:CINEMA.muted, borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", fontWeight:600 }}>취소하기</button>
+                      <div style={{ background:CINEMA.surface, border:`1px solid ${st === "accepted" ? "#16a34a" : st === "rejected" ? CINEMA.red : CINEMA.border}`, borderRadius:8, padding:"11px 14px", marginBottom:4 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                          <span style={{ fontSize:13, fontWeight:700, flex:1, color: st === "accepted" ? "#16a34a" : st === "rejected" ? CINEMA.redBright : CINEMA.text }}>
+                            {st === "accepted" ? `🎉 수락되었어요! (${mine.position||"-"})`
+                              : st === "rejected" ? "아쉽지만 이번엔 함께하지 못하게 되었어요"
+                              : `✓ ${mine.position ? `'${mine.position}' 포지션으로 ` : ""}지원 완료 · 대기 중`}
+                          </span>
+                          {st !== "accepted" && st !== "rejected" && (
+                            <button onClick={cancelApply} style={{ background:"transparent", border:`1px solid ${CINEMA.border}`, color:CINEMA.muted, borderRadius:8, padding:"6px 12px", fontSize:12, cursor:"pointer", fontWeight:600 }}>취소하기</button>
+                          )}
+                        </div>
                       </div>
                     );
                   }
                   if (closed) {
                     return <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"11px 12px", fontSize:13, color:CINEMA.muted, textAlign:"center", fontWeight:600, marginBottom:4 }}>🚫 모집이 마감되었어요</div>;
                   }
+                  if (openRoles.length === 0) {
+                    return <div style={{ background:"rgba(255,255,255,0.06)", borderRadius:8, padding:"11px 12px", fontSize:13, color:CINEMA.muted, textAlign:"center", fontWeight:600, marginBottom:4 }}>🚫 모든 포지션이 마감되었어요</div>;
+                  }
                   return (
                     <div style={{ display:"flex", gap:8, marginBottom:4 }}>
                       <select value={applyPosition} onChange={e => setApplyPosition(e.target.value)}
                         style={{ flex:1, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:8, color: applyPosition ? CINEMA.text : CINEMA.muted, padding:"11px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
                         <option value="">지원할 포지션 선택...</option>
-                        {roles.map((r, i) => <option key={i} value={r}>{r}</option>)}
+                        {openRoles.map((r, i) => <option key={i} value={r}>{r}</option>)}
                       </select>
                       <button onClick={() => applyToCrew(applyPosition)} disabled={!applyPosition}
                         style={{ border:"none", borderRadius:8, padding:"0 20px", fontSize:14, fontWeight:700, cursor: applyPosition ? "pointer" : "not-allowed", whiteSpace:"nowrap",
