@@ -15,6 +15,7 @@ import ARDistance from "../../components/ARDistance";
 import ColorTemp from "../../components/ColorTemp";
 import FovCalc from "../../components/FovCalc";
 import Scripter from "../../components/Scripter";
+import SunSeeker from "../../components/SunSeeker";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -446,6 +447,7 @@ export default function Community({ onExit }) {
                 : selectedTool === "color-temp" ? "COLOR TEMP"
                 : selectedTool === "fov" ? "FOV"
                 : selectedTool === "scripter" ? "SCRIPTER"
+                : selectedTool === "sun" ? "SUN SEEKER"
                 : currentRoom ? currentRoom.title
                 : "ZZOTKYO"}
             </span>
@@ -683,6 +685,24 @@ export default function Community({ onExit }) {
               <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>화각 · 역계산</div>
             </div>
 
+            {/* 🌅 태양 위치 / 골든아워 */}
+            <div onClick={() => setSelectedTool("sun")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>🌅</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SUN SEEKER</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>태양 위치</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>골든아워·일출일몰</div>
+            </div>
+
             {/* 자료 큐레이션 */}
             <div style={{
               gridColumn:"span 2",
@@ -744,6 +764,11 @@ export default function Community({ onExit }) {
       {/* 📝 스크립터 */}
       {selectedRoom === "tools" && selectedTool === "scripter" && (
         <Scripter onBack={() => setSelectedTool(null)} />
+      )}
+
+      {/* 🌅 태양 위치 */}
+      {selectedRoom === "tools" && selectedTool === "sun" && (
+        <SunSeeker onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
