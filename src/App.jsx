@@ -513,7 +513,7 @@ function AppContent() {
         case "license":  return <LicenseAdmin />;
         case "sns":      return <SNSManager />;
         case "community":
-          if (isTeacherProf) return null;
+          // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
           return <Community onExit={() => setTab("home")} />;
         default:         return <Dashboard setTab={setTab} />;
       }
