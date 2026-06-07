@@ -102,6 +102,13 @@ async function uploadImage(file) {
 const currentYear = new Date().getFullYear();
 const newbiePrefix = String(currentYear).slice(2); // ex) 2026 → "26"
 
+// 유튜브 링크에서 영상 ID 추출 (watch / youtu.be / shorts / embed 모두 지원)
+function getYouTubeId(url) {
+  if (!url) return null;
+  const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([\w-]{11})/);
+  return m ? m[1] : null;
+}
+
 export default function Community({ onExit }) {
   const { profile } = useAuth();
 
@@ -155,7 +162,8 @@ export default function Community({ onExit }) {
   const [selPost, setSelPost]   = useState(null); // 상세 모달
   const [showWrite, setShowWrite] = useState(false);
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
-    lectureName:"", professor:"", schedule:"", useRealName:false }); // 강의 전용 필드 + 관리자 실명모드
+    lectureName:"", professor:"", schedule:"", useRealName:false,
+    ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" }); // 강의/작품공유 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
   const [editForm,    setEditForm]    = useState({ title:"", content:"" });
@@ -248,9 +256,13 @@ export default function Community({ onExit }) {
   // 게시글 작성
   const submitPost = async () => {
     const isLecturePost = writeForm.category === LECTURE_CAT;
+    const isWorkPost = writeForm.category === "작품공유";
     // 카테고리별 유효성 검사
     if (isLecturePost) {
       if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
+    } else if (isWorkPost) {
+      if (!writeForm.title.trim()) return;
+      if (!getYouTubeId(writeForm.ytUrl)) { alert("올바른 유튜브 링크를 입력해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
       if (writeForm.category === "장터" && writeForm.images.length === 0) return;
@@ -274,6 +286,13 @@ export default function Community({ onExit }) {
       lectureName: isLecture ? writeForm.lectureName.trim() : "",
       professor:   isLecture ? writeForm.professor.trim() : "",
       schedule:    isLecture ? writeForm.schedule.trim() : "",
+      // 작품공유 전용 필드
+      ytUrl:       isWorkPost ? writeForm.ytUrl.trim() : "",
+      oneLiner:    isWorkPost ? writeForm.oneLiner.trim() : "",
+      genres:      isWorkPost ? writeForm.genres : [],
+      runtime:     isWorkPost ? writeForm.runtime.trim() : "",
+      prodDate:    isWorkPost ? writeForm.prodDate.trim() : "",
+      credits:     isWorkPost ? writeForm.credits.trim() : "",
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
       adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
@@ -284,9 +303,20 @@ export default function Community({ onExit }) {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false });
+    setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
+      ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"" });
     setShowWrite(false);
     setSubmitting(false);
+  };
+
+  // 작품공유 장르 태그 추가/삭제
+  const addGenre = () => {
+    const g = writeForm.genreInput.trim();
+    if (!g || writeForm.genres.includes(g) || writeForm.genres.length >= 5) {
+      setWriteForm(p => ({ ...p, genreInput:"" }));
+      return;
+    }
+    setWriteForm(p => ({ ...p, genres:[...p.genres, g], genreInput:"" }));
   };
 
   // 댓글 작성
@@ -796,6 +826,48 @@ export default function Community({ onExit }) {
           );
         }
 
+        // ===== 작품공유: 썸네일 카드 =====
+        if (p.category === "작품공유") {
+          const ytId = getYouTubeId(p.ytUrl);
+          return (
+            <div key={p.id} onClick={() => openPost(p)}
+              style={{
+                display:"flex", gap:10, background:CINEMA.surface,
+                border:`1px solid ${CINEMA.border}`, borderLeft:"3px solid #a855f7",
+                borderRadius:6, padding:10, marginBottom:9, cursor:"pointer",
+              }}>
+              <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:5, overflow:"hidden", background:"#000" }}>
+                {ytId && <img src={`https://img.youtube.com/vi/${ytId}/mqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />}
+                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <div style={{ width:30, height:22, borderRadius:5, background:"rgba(220,38,38,0.92)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                    <span style={{ color:"#fff", fontSize:10, marginLeft:1 }}>▶</span>
+                  </div>
+                </div>
+                {p.runtime && <span style={{ position:"absolute", bottom:3, right:3, background:"rgba(0,0,0,0.82)", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:3 }}>{p.runtime}</span>}
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:CINEMA.text, marginBottom:3, lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+                {p.oneLiner && <div style={{ fontSize:11, color:CINEMA.muted, marginBottom:5, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.oneLiner}</div>}
+                {(p.genres||[]).length > 0 && (
+                  <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:5 }}>
+                    {(p.genres||[]).slice(0,3).map(g => (
+                      <span key={g} style={{ background:"rgba(168,85,247,0.15)", color:"#a855f7", fontSize:9, fontWeight:700, padding:"1px 6px", borderRadius:3 }}>{g}</span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ fontSize:10, color:CINEMA.muted, display:"flex", gap:8, alignItems:"center" }}>
+                  <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName(p)}</span>
+                  <span style={{ marginLeft:"auto", display:"flex", gap:8, flexShrink:0 }}>
+                    <span>👁 {p.views||0}</span>
+                    <span style={{ color:CINEMA.redBright }}>♥ {p.likes||0}</span>
+                    <span>💬 {pComments.length}</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         // ===== A 스타일: 일반 글 카드 =====
         return (
           <div key={p.id} onClick={() => openPost(p)}
@@ -903,6 +975,30 @@ export default function Community({ onExit }) {
                 })()}
                 <span>👁 {selPost.views||0}</span>
               </div>
+            </div>
+          ) : selPost.category === "작품공유" ? (
+            <div>
+              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:6, lineHeight:1.3 }}>{selPost.title}</div>
+              {selPost.oneLiner && <div style={{ fontSize:13, color:CINEMA.muted, marginBottom:10, fontStyle:"italic" }}>"{selPost.oneLiner}"</div>}
+              <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:14, fontFamily:"'Courier New', monospace" }}>
+                <span style={{ color: selPost.useRealName ? CINEMA.gold : CINEMA.muted }}>{selPost.useRealName ? "🏛️ " : ""}{displayName(selPost)}</span>
+                <span>·</span>
+                <span>{formatDate(selPost.createdAt)}</span>
+                <span>·</span>
+                <span>👁 {selPost.views||0}</span>
+              </div>
+              {selPost.ytUrl && <div style={{ marginBottom:14 }}><YouTubeEmbed url={selPost.ytUrl} /></div>}
+              {((selPost.genres||[]).length > 0 || selPost.runtime || selPost.prodDate) && (
+                <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:14 }}>
+                  {(selPost.genres||[]).map(g => (
+                    <span key={g} style={{ background:CINEMA.surfaceAlt, color:CINEMA.gold, fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:12 }}>{g}</span>
+                  ))}
+                  {selPost.runtime && <span style={{ fontSize:12, color:CINEMA.muted }}>⏱ {selPost.runtime}</span>}
+                  {selPost.prodDate && <span style={{ fontSize:12, color:CINEMA.muted }}>📅 {selPost.prodDate}</span>}
+                </div>
+              )}
+              {selPost.credits && <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:14, paddingBottom:14, borderBottom:`1px solid ${CINEMA.border}` }}>🎬 {selPost.credits}</div>}
+              {selPost.content && <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
             </div>
           ) : (
             <div>
@@ -1138,6 +1234,55 @@ export default function Community({ onExit }) {
               <Inp label="강의명 *" placeholder="예: TV촬영실습I" value={writeForm.lectureName} onChange={e => setWriteForm(p=>({...p,lectureName:e.target.value}))} />
               <Inp label="담당 교수님 *" placeholder="예: 홍길동 교수님" value={writeForm.professor} onChange={e => setWriteForm(p=>({...p,professor:e.target.value}))} />
             </div>
+          ) : writeForm.category === "작품공유" ? (
+            <div>
+              <Inp label="작품 제목 *" placeholder="예: 완벽한 사과문" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              <Inp label="유튜브 링크 *" placeholder="https://youtu.be/..." value={writeForm.ytUrl} onChange={e => setWriteForm(p=>({...p,ytUrl:e.target.value}))} />
+              {getYouTubeId(writeForm.ytUrl) && (
+                <div style={{ marginBottom:16 }}>
+                  <YouTubeEmbed url={writeForm.ytUrl} />
+                </div>
+              )}
+              <Inp label="한 줄 소개" placeholder="작품을 한 문장으로" value={writeForm.oneLiner} onChange={e => setWriteForm(p=>({...p,oneLiner:e.target.value}))} />
+              {/* 장르 태그 (직접 입력) */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>장르 <span style={{ color:C.muted, fontWeight:400 }}>(최대 5개)</span></div>
+                <div style={{ display:"flex", gap:6, marginBottom: writeForm.genres.length ? 8 : 0 }}>
+                  <input value={writeForm.genreInput} placeholder="예: 드라마 (입력 후 추가)"
+                    onChange={e => setWriteForm(p=>({...p,genreInput:e.target.value}))}
+                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addGenre(); } }}
+                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                  <button type="button" onClick={addGenre}
+                    style={{ background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                </div>
+                {writeForm.genres.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {writeForm.genres.map(g => (
+                      <span key={g} onClick={() => setWriteForm(p=>({...p, genres:p.genres.filter(x=>x!==g)}))}
+                        style={{ background:C.yellowLight, color:"#92400E", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {g} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {/* 러닝타임 + 제작년월 */}
+              <div style={{ display:"flex", gap:10 }}>
+                <div style={{ flex:1 }}>
+                  <Inp label="러닝타임" placeholder="예: 12분" value={writeForm.runtime} onChange={e => setWriteForm(p=>({...p,runtime:e.target.value}))} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <Inp label="제작년월" placeholder="예: 2026.03" value={writeForm.prodDate} onChange={e => setWriteForm(p=>({...p,prodDate:e.target.value}))} />
+                </div>
+              </div>
+              <Inp label="크레딧 (선택)" placeholder="연출 윤대식 · 촬영 ○○○ · 편집 ○○○" value={writeForm.credits} onChange={e => setWriteForm(p=>({...p,credits:e.target.value}))} />
+              {/* 상세 내용 */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>상세 내용 <span style={{ color:C.muted, fontWeight:400 }}>(선택)</span></div>
+                <textarea placeholder="작품 설명, 비하인드 등" value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
+              </div>
+            </div>
           ) : (
             <div>
               <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
@@ -1148,8 +1293,8 @@ export default function Community({ onExit }) {
               </div>
             </div>
           )}
-          {/* 이미지 첨부 - 강의 게시판 제외 */}
-          {writeForm.category !== LECTURE_CAT && <div style={{ marginBottom:14 }}>
+          {/* 이미지 첨부 - 강의·작품공유 게시판 제외 */}
+          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
               이미지 첨부{" "}
               <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
@@ -1203,6 +1348,8 @@ export default function Community({ onExit }) {
             <Btn onClick={submitPost} color={C.navy} full disabled={submitting ||
               (writeForm.category === LECTURE_CAT
                 ? !writeForm.lectureName.trim() || !writeForm.professor.trim()
+                : writeForm.category === "작품공유"
+                ? !writeForm.title.trim() || !getYouTubeId(writeForm.ytUrl)
                 : !writeForm.title.trim() || !writeForm.content.trim() ||
                   (writeForm.category === "장터" && writeForm.images.length === 0))
             }>
@@ -1281,6 +1428,38 @@ export default function Community({ onExit }) {
         )} {/* /FAB 조건부 끝 */}
       </div> {/* /시네마 풀스크린 컨테이너 */}
     </>
+  );
+}
+
+/** ▶️ 유튜브 임베드 — 썸네일 먼저, 탭하면 재생 (의도적 재생이라 조회수에 유리) */
+function YouTubeEmbed({ url }) {
+  const id = getYouTubeId(url);
+  const [play, setPlay] = useState(false);
+  if (!id) return null;
+  if (play) {
+    return (
+      <div style={{ position:"relative", paddingTop:"56.25%", borderRadius:8, overflow:"hidden", background:"#000" }}>
+        <iframe
+          src={`https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`}
+          title="작품 영상"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          style={{ position:"absolute", inset:0, width:"100%", height:"100%", border:"none" }}
+        />
+      </div>
+    );
+  }
+  return (
+    <div onClick={() => setPlay(true)} role="button" aria-label="영상 재생"
+      style={{ position:"relative", paddingTop:"56.25%", borderRadius:8, overflow:"hidden", background:"#000", cursor:"pointer" }}>
+      <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt="작품 썸네일"
+        style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+      <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.28)" }}>
+        <div style={{ width:56, height:40, borderRadius:10, background:"rgba(220,38,38,0.94)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+          <span style={{ color:"#fff", fontSize:18, marginLeft:2 }}>▶</span>
+        </div>
+      </div>
+    </div>
   );
 }
 
