@@ -14,6 +14,7 @@ import DofCalc from "../../components/DofCalc";
 import ARDistance from "../../components/ARDistance";
 import ColorTemp from "../../components/ColorTemp";
 import FovCalc from "../../components/FovCalc";
+import Scripter from "../../components/Scripter";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "협업모집", "작품공유"]; // 익명
@@ -444,6 +445,7 @@ export default function Community({ onExit }) {
                 : selectedTool === "ar-distance" ? "AR DISTANCE"
                 : selectedTool === "color-temp" ? "COLOR TEMP"
                 : selectedTool === "fov" ? "FOV"
+                : selectedTool === "scripter" ? "SCRIPTER"
                 : currentRoom ? currentRoom.title
                 : "ZZOTKYO"}
             </span>
@@ -555,8 +557,23 @@ export default function Community({ onExit }) {
               <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>타임코드 · CLAP</div>
             </div>
 
-            {/* 스크립터 - 곧 공개 */}
-            <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" comingSoon />
+            {/* 스크립터 */}
+            <div onClick={() => setSelectedTool("scripter")}
+              style={{
+                background:"#16130d", border:"1px dashed #fbbf24",
+                borderRadius:6, padding:"16px 12px", cursor:"pointer",
+                textAlign:"center", minHeight:130,
+                display:"flex", flexDirection:"column", justifyContent:"center",
+                transition:"transform 0.15s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+            >
+              <div style={{ fontSize:40, marginBottom:6 }}>📝</div>
+              <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>SCRIPT</div>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>스크립터</div>
+              <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>씬·테이크 기록</div>
+            </div>
 
             {/* 📏 AR 거리 측정 - 사용 가능 */}
             <div onClick={() => setSelectedTool("ar-distance")}
@@ -722,6 +739,11 @@ export default function Community({ onExit }) {
       {/* 🔭 렌즈 화각 */}
       {selectedRoom === "tools" && selectedTool === "fov" && (
         <FovCalc onBack={() => setSelectedTool(null)} />
+      )}
+
+      {/* 📝 스크립터 */}
+      {selectedRoom === "tools" && selectedTool === "scripter" && (
+        <Scripter onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
