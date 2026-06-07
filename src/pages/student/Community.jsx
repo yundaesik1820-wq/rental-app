@@ -994,19 +994,19 @@ export default function Community({ onExit }) {
         </div>
       )}
       {cat === "스탭프로필" ? (
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(108px, 1fr))", gap:8 }}>
           {filtered.map(p => (
             <div key={p.id} onClick={() => openPost(p)}
-              style={{ background:CINEMA.surfaceAlt, borderRadius:9, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
+              style={{ background:CINEMA.surfaceAlt, borderRadius:8, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
               <div style={{ aspectRatio:"1/1", background:CINEMA.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {p.profileImage
                   ? <img src={p.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                  : <span style={{ fontSize:30, color:CINEMA.mutedDim }}>🙋</span>}
+                  : <span style={{ fontSize:24, color:CINEMA.mutedDim }}>🙋</span>}
               </div>
-              <div style={{ padding:"9px 10px" }}>
-                <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.authorName || p.title}</div>
-                <div style={{ fontSize:10, color:"#f97316", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.staffRoles||[]).join(" · ") || "분야 미지정"}</div>
-                <div style={{ fontSize:10, color:CINEMA.mutedDim, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              <div style={{ padding:"7px 8px" }}>
+                <div style={{ fontSize:12, fontWeight:600, color:CINEMA.text, marginBottom:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.authorName || p.title}</div>
+                <div style={{ fontSize:9.5, color:"#f97316", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.staffRoles||[]).join(" · ") || "분야 미지정"}</div>
+                <div style={{ fontSize:9.5, color:CINEMA.mutedDim, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {p.staffStudentId ? p.staffStudentId.slice(0,2)+"학번" : (p.staffDept || "")}
                   {p.staffMajor ? " · " + p.staffMajor : ""}
                 </div>
@@ -1451,20 +1451,20 @@ export default function Community({ onExit }) {
           })() : selPost.category === "스탭프로필" ? (
             <div>
               {selPost.profileImage && (
-                <div style={{ width:"100%", aspectRatio:"1/1", maxHeight:340, borderRadius:12, overflow:"hidden", marginBottom:16, background:CINEMA.surface }}>
+                <div style={{ width:"100%", maxWidth:260, aspectRatio:"1/1", borderRadius:12, overflow:"hidden", margin:"0 auto 16px", background:CINEMA.surface }}>
                   <img src={selPost.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                 </div>
               )}
-              <div style={{ fontSize:22, fontWeight:800, color:CINEMA.text, marginBottom:6 }}>{selPost.authorName || selPost.title}</div>
-              <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:16, fontFamily:"'Courier New', monospace" }}>
+              <div style={{ fontSize:22, fontWeight:800, color:CINEMA.text, marginBottom:6, textAlign:"center" }}>{selPost.authorName || selPost.title}</div>
+              <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:16, fontFamily:"'Courier New', monospace", textAlign:"center" }}>
                 {selPost.staffDept || selPost.dept}
                 {selPost.staffStudentId && <> · {selPost.staffStudentId.slice(0,2)}학번</>}
                 {selPost.staffMajor && <> · {selPost.staffMajor}</>}
               </div>
               {(selPost.staffRoles || []).length > 0 && (
                 <div style={{ marginBottom:16 }}>
-                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>SPECIALTY</div>
-                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8, textAlign:"center" }}>SPECIALTY</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"center" }}>
                     {(selPost.staffRoles || []).map((v, i) => (
                       <span key={i} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:600, padding:"5px 12px", borderRadius:14 }}>{v}</span>
                     ))}
