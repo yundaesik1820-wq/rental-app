@@ -147,7 +147,7 @@ export default function Notices({ isAdmin = true }) {
               <input type="checkbox" checked={form.popup} onChange={e => setForm(p => ({ ...p, popup: e.target.checked }))} style={{ width:17, height:17 }} />
               <div>
                 <div style={{ fontSize:13, fontWeight:700, color:C.text }}>📢 홈 화면 팝업 표시</div>
-                <div style={{ fontSize:11, color:C.muted }}>학생 홈 진입 시 팝업으로 표시됩니다 (오늘 하루 안보기 포함)</div>
+                <div style={{ fontSize:11, color:C.muted }}>학생 홈 진입 시 팝업으로 표시됩니다 (다시 보지 않기 포함)</div>
               </div>
             </label>
           </div>

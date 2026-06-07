@@ -27,7 +27,7 @@ function Timetable({ classes, onEdit, readOnly = false }) {
   const colW = `calc((100% - 36px) / 5)`;
 
   return (
-    <div style={{ background: C.surface, borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
       {/* 헤더 */}
       <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.bg }}>
         <div style={{ width: 36, flexShrink: 0 }} />
@@ -346,9 +346,8 @@ export default function StudentHome() {
     if (!popups.length) return;
     const latest = popups[popups.length - 1];
     const hiddenKey = `popup_hidden_${latest.id}`;
-    const hiddenDate = localStorage.getItem(hiddenKey);
-    const today = new Date().toISOString().slice(0, 10);
-    if (hiddenDate !== today) setPopupNotice(latest);
+    // '다시 보지 않기'를 누르면 값이 저장되며, 이후로는 이 공지를 표시하지 않는다.
+    if (!localStorage.getItem(hiddenKey)) setPopupNotice(latest);
   }, [notices]);
   const [editClass,     setEditClass]     = useState(null);  // null=추가, obj=수정
   const [showClassForm, setShowClassForm] = useState(false);
@@ -358,11 +357,9 @@ export default function StudentHome() {
   // 시간표 로드
   useEffect(() => {
     if (!uid) return;
-    getDoc(doc(db, "timetables", uid))
-      .then(snap => {
-        if (snap.exists()) setClasses(snap.data().classes || []);
-      })
-      .catch(e => console.warn("시간표 로드 실패:", e.code));
+    getDoc(doc(db, "timetables", uid)).then(snap => {
+      if (snap.exists()) setClasses(snap.data().classes || []);
+    });
   }, [uid]);
 
   // 시간표 저장
@@ -593,7 +590,7 @@ export default function StudentHome() {
       "승인됨":   { bg: C.greenLight,   col: C.green  },
       "대여중":   { bg: C.blueLight,    col: C.blue   },
       "연체":     { bg: C.redLight,     col: C.red    },
-      "반납완료": { bg: C.surface,    col: C.muted  },
+      "반납완료": { bg: "#F8FAFC",      col: C.muted  },
     };
     return map[status] || { bg: C.bg, col: C.muted };
   };
@@ -615,7 +612,7 @@ export default function StudentHome() {
               const { outcome } = await installPrompt.userChoice;
               setInstallPrompt(null);
               setShowInstall(false);
-            }} style={{ background:C.surface, color:C.navy, border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
+            }} style={{ background:"#fff", color:"#1B2B6B", border:"none", borderRadius:8, padding:"6px 12px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
               설치
             </button>
             <button onClick={() => setShowInstall(false)}
@@ -681,12 +678,12 @@ export default function StudentHome() {
         {/* 마스코트 + 말풍선 */}
         <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:C.surface, borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:`10px solid ${C.surface}` }}></div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.text, marginBottom:3, lineHeight:1.4 }}>
+          <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
+            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
+            <div style={{ fontSize:13, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
               난 장비대여실 마스코트 렌토리야!
             </div>
-            <div style={{ fontSize:12, color:C.muted, lineHeight:1.4 }}>
+            <div style={{ fontSize:12, color:"#475569", lineHeight:1.4 }}>
               오늘도 잘 부탁해, {profile?.name}님!
             </div>
           </div>
@@ -702,7 +699,7 @@ export default function StudentHome() {
             <button onClick={() => {
               const url = "https://rental-app-delta-kohl.vercel.app";
               if (navigator.share) {
-                navigator.share({ title:"KBAS 영상장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
+                navigator.share({ title:"KBAS 장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
               } else {
                 navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐어요! 친구에게 공유해보세요 😊"));
               }
@@ -765,10 +762,10 @@ export default function StudentHome() {
 
           <div style={{ display:"flex", gap:8 }}>
             <button onClick={() => {
-              localStorage.setItem(`popup_hidden_${popupNotice.id}`, new Date().toISOString().slice(0,10));
+              localStorage.setItem(`popup_hidden_${popupNotice.id}`, "1");
               setPopupNotice(null);
             }} style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"8px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
-              오늘 하루 안보기
+              다시 보지 않기
             </button>
             <button onClick={() => setPopupNotice(null)}
               style={{ flex:1, background:C.navy, border:"none", borderRadius:9, padding:"8px 0", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
@@ -785,7 +782,7 @@ export default function StudentHome() {
             <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
             <div style={{ fontSize:18, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:13, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-              렌토리는 한국방송예술진흥원 영상장비대여실에서 태어난 작은 수달이에요.<br/>
+              렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
               카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
               대여 신청부터 장비 확인, 반납 알림까지<br/>
               촬영의 시작과 끝을 함께하는<br/>
