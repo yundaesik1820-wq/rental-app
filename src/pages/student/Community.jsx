@@ -17,9 +17,9 @@ import Scripter from "../../components/Scripter";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유"];
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
-const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집"]; // 실명
+const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집", "스탭프로필"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -98,7 +98,7 @@ const ROOMS = [
     color:"#f97316",
     colorBg:"rgba(249,115,22,0.15)",
     borderStyle:"solid",
-    categories:["협업모집"],
+    categories:["협업모집", "스탭프로필"],
   },
 ];
 
@@ -197,16 +197,17 @@ export default function Community({ onExit }) {
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
+    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
-  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
+  const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" });
   const [commentText, setCommentText] = useState("");
   const [commentUseRealName, setCommentUseRealName] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [imgUploading, setImgUploading] = useState(false);
   const [selImage, setSelImage]   = useState(null); // 이미지 라이트박스
   const imgInputRef = useRef(null);
+  const staffImgRef = useRef(null);
   const [search, setSearch]           = useState("");
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
@@ -292,6 +293,7 @@ export default function Community({ onExit }) {
     const isLecturePost = writeForm.category === LECTURE_CAT;
     const isWorkPost = writeForm.category === "작품공유";
     const isCrewPost = writeForm.category === "협업모집";
+    const isStaffPost = writeForm.category === "스탭프로필";
     // 카테고리별 유효성 검사
     if (isLecturePost) {
       if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
@@ -301,6 +303,8 @@ export default function Community({ onExit }) {
     } else if (isCrewPost) {
       if (!writeForm.title.trim()) return;
       if (writeForm.positions.length === 0) { alert("모집 포지션을 1개 이상 추가해주세요."); return; }
+    } else if (isStaffPost) {
+      if (writeForm.staffRoles.length === 0) { alert("담당 분야를 1개 이상 선택해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
       if (writeForm.category === "장터" && writeForm.images.length === 0) return;
@@ -314,7 +318,7 @@ export default function Community({ onExit }) {
     // 강의 게시판은 완전 익명이므로 실명 모드 사용 안 함
     const useRealNameFinal = canUseRealName && writeForm.useRealName && !isLecture;
     await addItem("communityPosts", {
-      title:       isLecture ? writeForm.lectureName.trim() : writeForm.title.trim(),
+      title:       isLecture ? writeForm.lectureName.trim() : isStaffPost ? (profile?.name || "") : writeForm.title.trim(),
       content:     isLecture ? "" : writeForm.content.trim(),
       category:    writeForm.category,
       authorId:    profile?.uid || "",
@@ -341,6 +345,13 @@ export default function Community({ onExit }) {
       crewGenre:   isCrewPost ? writeForm.crewGenre.trim() : "",
       deadline:    isCrewPost ? writeForm.deadline : "",
       applicants:  [],
+      // 스탭 프로필 전용 필드
+      profileImage:  isStaffPost ? writeForm.profileImage : "",
+      staffRoles:    isStaffPost ? writeForm.staffRoles : [],
+      staffMajor:    isStaffPost ? writeForm.staffMajor.trim() : "",
+      staffContact:  isStaffPost ? writeForm.staffContact.trim() : "",
+      staffStudentId:isStaffPost ? (profile?.studentId || "") : "",
+      staffDept:     isStaffPost ? (profile?.dept || "") : "",
       // 관리자 실명 모드 플래그
       useRealName:        useRealNameFinal,
       adminRoleAtWrite:   useRealNameFinal ? adminRole : "",
@@ -353,7 +364,7 @@ export default function Community({ onExit }) {
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" });
+      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -470,6 +481,7 @@ export default function Community({ onExit }) {
   const updateMyPost = async () => {
     const isWork = selPost?.category === "작품공유";
     const isCrew = selPost?.category === "협업모집";
+    const isStaff = selPost?.category === "스탭프로필";
     if (isWork) {
       if (!editForm.title.trim() || !getYouTubeId(editForm.ytUrl)) { alert("작품 제목과 올바른 유튜브 링크가 필요해요."); return; }
       const patch = {
@@ -501,6 +513,20 @@ export default function Community({ onExit }) {
         crewPay:     editForm.crewPay.trim(),
         crewGenre:   editForm.crewGenre.trim(),
         deadline:    editForm.deadline,
+      };
+      await updateItem("communityPosts", selPost.id, patch);
+      setSelPost({ ...selPost, ...patch });
+      setShowEdit(false);
+      return;
+    }
+    if (isStaff) {
+      if (editForm.staffRoles.length === 0) { alert("담당 분야를 1개 이상 선택해주세요."); return; }
+      const patch = {
+        profileImage: editForm.profileImage,
+        staffRoles:   editForm.staffRoles,
+        staffMajor:   editForm.staffMajor.trim(),
+        staffContact: editForm.staffContact.trim(),
+        content:      editForm.content.trim(),
       };
       await updateItem("communityPosts", selPost.id, patch);
       setSelPost({ ...selPost, ...patch });
@@ -547,6 +573,34 @@ export default function Community({ onExit }) {
     await updateItem("communityPosts", selPost.id, { applicants: next });
     setSelPost({ ...selPost, applicants: next });
   };
+  // 스탭 프로필 담당 분야 — 드롭다운 선택 / 기타 직접 입력 (인원 없음)
+  const pickStaffRole = (val) => {
+    if (!val) return;
+    if (val === CREW_ETC) { setWriteForm(p => ({ ...p, staffRoleSelect: val })); return; }
+    setWriteForm(p => (p.staffRoles.includes(val) || p.staffRoles.length >= 8) ? { ...p, staffRoleSelect:"" } : { ...p, staffRoles:[...p.staffRoles, val], staffRoleSelect:"" });
+  };
+  const addStaffRoleCustom = () => {
+    const v = writeForm.staffRoleInput.trim();
+    if (!v || writeForm.staffRoles.includes(v) || writeForm.staffRoles.length >= 8) {
+      setWriteForm(p => ({ ...p, staffRoleInput:"", staffRoleSelect:"" }));
+      return;
+    }
+    setWriteForm(p => ({ ...p, staffRoles:[...p.staffRoles, v], staffRoleInput:"", staffRoleSelect:"" }));
+  };
+  const pickStaffRoleEdit = (val) => {
+    if (!val) return;
+    if (val === CREW_ETC) { setEditForm(p => ({ ...p, staffRoleSelect: val })); return; }
+    setEditForm(p => (p.staffRoles.includes(val) || p.staffRoles.length >= 8) ? { ...p, staffRoleSelect:"" } : { ...p, staffRoles:[...p.staffRoles, val], staffRoleSelect:"" });
+  };
+  const addStaffRoleCustomEdit = () => {
+    const v = editForm.staffRoleInput.trim();
+    if (!v || editForm.staffRoles.includes(v) || editForm.staffRoles.length >= 8) {
+      setEditForm(p => ({ ...p, staffRoleInput:"", staffRoleSelect:"" }));
+      return;
+    }
+    setEditForm(p => ({ ...p, staffRoles:[...p.staffRoles, v], staffRoleInput:"", staffRoleSelect:"" }));
+  };
+
   // 작성자: 포지션별 마감/재개 토글 (수동)
   const togglePositionClosed = async (idx) => {
     if (!selPost) return;
@@ -679,7 +733,7 @@ export default function Community({ onExit }) {
               return (
                 <div key={room.id} onClick={() => {
                     if (locked) { setBlockedRoom(room); return; }
-                    setSelectedRoom(room.id); setCat("전체"); setPage(1); setSearch("");
+                    setSelectedRoom(room.id); setCat(room.id === "crew" ? "협업모집" : "전체"); setPage(1); setSearch("");
                   }}
                   style={{
                     background: "#1a1a1a",
@@ -858,10 +912,11 @@ export default function Community({ onExit }) {
 
       {/* 카테고리 탭 - 룸별 카테고리만 (시네마 톤 pill) */}
       <div style={{ display:"flex", gap:6, marginBottom:10, flexWrap:"nowrap", overflowX:"auto", paddingBottom:4, WebkitOverflowScrolling:"touch", marginTop:14 }}>
-        {["전체", ...(currentRoom?.categories || [])].map(c => {
+        {[...(currentRoom?.id === "crew" ? [] : ["전체"]), ...(currentRoom?.categories || [])].map(c => {
           const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
           const active = cat === c;
           const roomColor = currentRoom?.color || CINEMA.red;
+          const labelMap = { "협업모집":"🤝 협업 모집", "스탭프로필":"🙋 스탭 프로필" };
           return (
             <button key={c} onClick={() => { setCat(c); setPage(1); }}
               style={{ padding:"6px 14px", borderRadius:14,
@@ -873,7 +928,7 @@ export default function Community({ onExit }) {
                 display:"flex", alignItems:"center", gap:3,
                 transition:"all 0.15s",
               }}>
-              {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
+              {c === NEWBIE_CAT && "🌱"}{labelMap[c] || c}{isLocked && " 🔒"}
             </button>
           );
         })}
@@ -938,7 +993,28 @@ export default function Community({ onExit }) {
           <div style={{ fontSize:13, fontFamily:"'Courier New', monospace", letterSpacing:"0.15em" }}>NO POSTS YET</div>
         </div>
       )}
-      {filtered.map(p => {
+      {cat === "스탭프로필" ? (
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+          {filtered.map(p => (
+            <div key={p.id} onClick={() => openPost(p)}
+              style={{ background:CINEMA.surfaceAlt, borderRadius:9, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
+              <div style={{ aspectRatio:"1/1", background:CINEMA.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                {p.profileImage
+                  ? <img src={p.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  : <span style={{ fontSize:30, color:CINEMA.mutedDim }}>🙋</span>}
+              </div>
+              <div style={{ padding:"9px 10px" }}>
+                <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.authorName || p.title}</div>
+                <div style={{ fontSize:10, color:"#f97316", fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.staffRoles||[]).join(" · ") || "분야 미지정"}</div>
+                <div style={{ fontSize:10, color:CINEMA.mutedDim, marginTop:4, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {p.staffStudentId ? p.staffStudentId.slice(0,2)+"학번" : (p.staffDept || "")}
+                  {p.staffMajor ? " · " + p.staffMajor : ""}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : filtered.map(p => {
         const pComments = postComments(p.id);
         const isLecture = p.category === LECTURE_CAT;
         const avgRating = isLecture && pComments.length > 0
@@ -1151,12 +1227,14 @@ export default function Community({ onExit }) {
               {canEditDelete(selPost) && (
                 <>
                   <Btn onClick={() => {
-                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"" };
+                    const base = { title:selPost.title||"", content:selPost.content||"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"" };
                     setEditForm(
                       selPost.category === "작품공유"
                         ? { ...base, ytUrl:selPost.ytUrl||"", oneLiner:selPost.oneLiner||"", genres:selPost.genres||[], runtime:selPost.runtime||"", prodDate:selPost.prodDate||"", credits:selPost.credits||"" }
                       : selPost.category === "협업모집"
                         ? { ...base, positions:selPost.positions||[], crewDirector:selPost.crewDirector||"", crewLogline:selPost.crewLogline||"", crewSchedule:selPost.crewSchedule||"", crewPlace:selPost.crewPlace||"", crewPay:selPost.crewPay||"", crewGenre:selPost.crewGenre||"", deadline:selPost.deadline||"" }
+                      : selPost.category === "스탭프로필"
+                        ? { ...base, profileImage:selPost.profileImage||"", staffRoles:selPost.staffRoles||[], staffMajor:selPost.staffMajor||"", staffContact:selPost.staffContact||"" }
                         : base
                     );
                     setShowEdit(true);
@@ -1370,7 +1448,43 @@ export default function Community({ onExit }) {
                 })()}
               </div>
             );
-          })() : (
+          })() : selPost.category === "스탭프로필" ? (
+            <div>
+              {selPost.profileImage && (
+                <div style={{ width:"100%", aspectRatio:"1/1", maxHeight:340, borderRadius:12, overflow:"hidden", marginBottom:16, background:CINEMA.surface }}>
+                  <img src={selPost.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                </div>
+              )}
+              <div style={{ fontSize:22, fontWeight:800, color:CINEMA.text, marginBottom:6 }}>{selPost.authorName || selPost.title}</div>
+              <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:16, fontFamily:"'Courier New', monospace" }}>
+                {selPost.staffDept || selPost.dept}
+                {selPost.staffStudentId && <> · {selPost.staffStudentId.slice(0,2)}학번</>}
+                {selPost.staffMajor && <> · {selPost.staffMajor}</>}
+              </div>
+              {(selPost.staffRoles || []).length > 0 && (
+                <div style={{ marginBottom:16 }}>
+                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>SPECIALTY</div>
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+                    {(selPost.staffRoles || []).map((v, i) => (
+                      <span key={i} style={{ background:CINEMA.surface, border:"1px solid #f97316", color:CINEMA.text, fontSize:12, fontWeight:600, padding:"5px 12px", borderRadius:14 }}>{v}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {selPost.staffContact && (
+                <div style={{ background:CINEMA.surfaceAlt, borderRadius:8, padding:"11px 14px", marginBottom:16, display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:14 }}>📩</span>
+                  <span style={{ fontSize:13, color:CINEMA.text, fontWeight:600, wordBreak:"break-all" }}>{selPost.staffContact}</span>
+                </div>
+              )}
+              {selPost.content && (
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#f97316", letterSpacing:"0.2em", fontWeight:700, marginBottom:8 }}>ABOUT</div>
+                  <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+                </div>
+              )}
+            </div>
+          ) : (
             <div>
               <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8, lineHeight:1.3 }}>{selPost.title}</div>
               <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:18, fontFamily:"'Courier New', monospace" }}>
@@ -1395,7 +1509,7 @@ export default function Community({ onExit }) {
           )}
 
           {/* 추천/비추천 - 작품공유·협업모집 제외 */}
-          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && (
+          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && (
           <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
             <button onClick={() => toggleLike("post", selPost)}
               style={{
@@ -1421,7 +1535,7 @@ export default function Community({ onExit }) {
           )}
 
           {/* 댓글 영역 - 작품공유 제외 */}
-          {selPost.category !== "작품공유" && (<>
+          {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && (<>
           {/* 댓글 헤더 - 시네마 톤 */}
           <div style={{
             fontSize:10, fontWeight:700, color:CINEMA.red, marginBottom:10,
@@ -1656,6 +1770,69 @@ export default function Community({ onExit }) {
                   style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box" }} />
               </div>
             </div>
+          ) : selPost.category === "스탭프로필" ? (
+            <div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대표 이미지 <span style={{ color:C.muted, fontWeight:400 }}>(본인 사진)</span></div>
+                {editForm.profileImage ? (
+                  <div style={{ position:"relative", width:120, height:120, borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}` }}>
+                    <img src={editForm.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    <button onClick={() => setEditForm(p=>({...p, profileImage:""}))}
+                      style={{ position:"absolute", top:4, right:4, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:22, height:22, cursor:"pointer", fontSize:12, fontWeight:700 }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => staffImgRef.current?.click()} disabled={imgUploading}
+                    style={{ width:120, height:120, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, color:C.muted, cursor:"pointer", fontSize:12, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    {imgUploading ? "⏳" : <><span style={{ fontSize:24 }}>📷</span><span>사진 추가</span></>}
+                  </button>
+                )}
+                <input ref={staffImgRef} type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setImgUploading(true);
+                    try { const url = await uploadImage(f); setEditForm(p=>({...p, profileImage:url})); }
+                    catch { alert("이미지 업로드 실패"); }
+                    finally { setImgUploading(false); e.target.value=""; }
+                  }} />
+              </div>
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>담당 분야 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
+                <select value={editForm.staffRoleSelect} onChange={e => pickStaffRoleEdit(e.target.value)}
+                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: editForm.staffRoleSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
+                  <option value="">＋ 분야 선택...</option>
+                  {CREW_POSITIONS.map(pos => (
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && editForm.staffRoles.includes(pos)}>{pos}</option>
+                  ))}
+                </select>
+                {editForm.staffRoleSelect === CREW_ETC && (
+                  <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                    <input value={editForm.staffRoleInput} placeholder="분야 직접 입력" autoFocus
+                      onChange={e => setEditForm(p=>({...p,staffRoleInput:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addStaffRoleCustomEdit(); } }}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <button type="button" onClick={addStaffRoleCustomEdit}
+                      style={{ background:"#f97316", border:"none", borderRadius:10, color:"#0a0a0a", padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                  </div>
+                )}
+                {editForm.staffRoles.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
+                    {editForm.staffRoles.map((v, i) => (
+                      <span key={i} onClick={() => setEditForm(p=>({...p, staffRoles:p.staffRoles.filter((_,j)=>j!==i)}))}
+                        style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {v} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Inp label="학과" placeholder="예: 영화영상학과" value={editForm.staffMajor} onChange={e => setEditForm(p=>({...p,staffMajor:e.target.value}))} />
+              <Inp label="연락처" placeholder="예: 인스타 @id · 010-0000-0000" value={editForm.staffContact} onChange={e => setEditForm(p=>({...p,staffContact:e.target.value}))} />
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>자기소개 / 경력</div>
+                <textarea placeholder="참여작, 보유 장비·기술, 어필 포인트 등" value={editForm.content} onChange={e => setEditForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:120, boxSizing:"border-box" }} />
+              </div>
+            </div>
           ) : (
             <>
               <Inp label="제목 *" value={editForm.title} onChange={e => setEditForm(p=>({...p,title:e.target.value}))} />
@@ -1672,6 +1849,8 @@ export default function Community({ onExit }) {
               ? !editForm.title.trim() || !getYouTubeId(editForm.ytUrl)
               : selPost.category === "협업모집"
               ? !editForm.title.trim() || editForm.positions.length === 0
+              : selPost.category === "스탭프로필"
+              ? editForm.staffRoles.length === 0
               : !editForm.title.trim() || !editForm.content.trim()}>수정 완료</Btn>
           </div>
         </Modal>
@@ -1866,6 +2045,78 @@ export default function Community({ onExit }) {
                 📩 지원은 '지원하기' 버튼으로 받아요. 지원자 명단은 작성자에게만 보입니다.
               </div>
             </div>
+          ) : writeForm.category === "스탭프로필" ? (
+            <div>
+              {/* 대표 이미지 (본인 사진) */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>대표 이미지 <span style={{ color:C.muted, fontWeight:400 }}>(본인 사진)</span></div>
+                {writeForm.profileImage ? (
+                  <div style={{ position:"relative", width:120, height:120, borderRadius:10, overflow:"hidden", border:`1px solid ${C.border}` }}>
+                    <img src={writeForm.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    <button onClick={() => setWriteForm(p=>({...p, profileImage:""}))}
+                      style={{ position:"absolute", top:4, right:4, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:22, height:22, cursor:"pointer", fontSize:12, fontWeight:700 }}>✕</button>
+                  </div>
+                ) : (
+                  <button onClick={() => staffImgRef.current?.click()} disabled={imgUploading}
+                    style={{ width:120, height:120, background:C.bg, border:`1.5px dashed ${C.border}`, borderRadius:10, color:C.muted, cursor:"pointer", fontSize:12, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    {imgUploading ? "⏳" : <><span style={{ fontSize:24 }}>📷</span><span>사진 추가</span></>}
+                  </button>
+                )}
+                <input ref={staffImgRef} type="file" accept="image/*" style={{ display:"none" }}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0]; if (!f) return;
+                    setImgUploading(true);
+                    try { const url = await uploadImage(f); setWriteForm(p=>({...p, profileImage:url})); }
+                    catch { alert("이미지 업로드 실패"); }
+                    finally { setImgUploading(false); e.target.value=""; }
+                  }} />
+              </div>
+              {/* 이름·학번·계열 자동 */}
+              <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", marginBottom:16, fontSize:12, color:C.muted }}>
+                <span style={{ color:C.text, fontWeight:700 }}>{profile?.name || "이름"}</span>
+                <span style={{ margin:"0 6px" }}>·</span>{profile?.dept || "계열"}
+                {profile?.studentId && <><span style={{ margin:"0 6px" }}>·</span>{profile.studentId.slice(0,2)}학번</>}
+                <span style={{ display:"block", fontSize:10, color:C.mutedDim, marginTop:3 }}>※ 이름·학번·계열은 자동으로 표시돼요</span>
+              </div>
+              {/* 담당 분야 */}
+              <div style={{ marginBottom:16 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>담당 분야 * <span style={{ color:C.muted, fontWeight:400 }}>(최대 8개)</span></div>
+                <select value={writeForm.staffRoleSelect} onChange={e => pickStaffRole(e.target.value)}
+                  style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color: writeForm.staffRoleSelect ? C.text : C.muted, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark", cursor:"pointer" }}>
+                  <option value="">＋ 분야 선택...</option>
+                  {CREW_POSITIONS.map(pos => (
+                    <option key={pos} value={pos} disabled={pos !== CREW_ETC && writeForm.staffRoles.includes(pos)}>{pos}</option>
+                  ))}
+                </select>
+                {writeForm.staffRoleSelect === CREW_ETC && (
+                  <div style={{ display:"flex", gap:6, marginTop:8 }}>
+                    <input value={writeForm.staffRoleInput} placeholder="분야 직접 입력" autoFocus
+                      onChange={e => setWriteForm(p=>({...p,staffRoleInput:e.target.value}))}
+                      onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addStaffRoleCustom(); } }}
+                      style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"9px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                    <button type="button" onClick={addStaffRoleCustom}
+                      style={{ background:"#f97316", border:"none", borderRadius:10, color:"#0a0a0a", padding:"0 16px", fontSize:13, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap" }}>추가</button>
+                  </div>
+                )}
+                {writeForm.staffRoles.length > 0 && (
+                  <div style={{ display:"flex", flexWrap:"wrap", gap:6, marginTop:8 }}>
+                    {writeForm.staffRoles.map((v, i) => (
+                      <span key={i} onClick={() => setWriteForm(p=>({...p, staffRoles:p.staffRoles.filter((_,j)=>j!==i)}))}
+                        style={{ background:"rgba(249,115,22,0.14)", color:"#f97316", fontSize:11, fontWeight:700, padding:"4px 10px", borderRadius:12, cursor:"pointer" }}>
+                        {v} ✕
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <Inp label="학과" placeholder="예: 영화영상학과" value={writeForm.staffMajor} onChange={e => setWriteForm(p=>({...p,staffMajor:e.target.value}))} />
+              <Inp label="연락처" placeholder="예: 인스타 @id · 010-0000-0000" value={writeForm.staffContact} onChange={e => setWriteForm(p=>({...p,staffContact:e.target.value}))} />
+              <div style={{ marginBottom:14 }}>
+                <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>자기소개 / 경력</div>
+                <textarea placeholder="참여작, 보유 장비·기술, 어필 포인트 등" value={writeForm.content} onChange={e => setWriteForm(p=>({...p,content:e.target.value}))}
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:120, boxSizing:"border-box" }} />
+              </div>
+            </div>
           ) : (
             <div>
               <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
@@ -1877,7 +2128,7 @@ export default function Community({ onExit }) {
             </div>
           )}
           {/* 이미지 첨부 - 강의·작품공유·협업모집 게시판 제외 */}
-          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && <div style={{ marginBottom:14 }}>
+          {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && writeForm.category !== "스탭프로필" && <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
               이미지 첨부{" "}
               <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
@@ -1926,6 +2177,8 @@ export default function Community({ onExit }) {
               ? "🎬 게시 후에도 작품 정보를 수정할 수 있어요."
               : writeForm.category === "협업모집"
               ? "🤝 실명으로 게시되며, 게시 후에도 모집 내용을 수정할 수 있어요."
+              : writeForm.category === "스탭프로필"
+              ? "🙋 실명으로 등록되며, 게시 후에도 프로필을 수정할 수 있어요."
               : REAL_CATS.includes(writeForm.category)
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
@@ -1939,6 +2192,8 @@ export default function Community({ onExit }) {
                 ? !writeForm.title.trim() || !getYouTubeId(writeForm.ytUrl)
                 : writeForm.category === "협업모집"
                 ? !writeForm.title.trim() || writeForm.positions.length === 0
+                : writeForm.category === "스탭프로필"
+                ? writeForm.staffRoles.length === 0
                 : !writeForm.title.trim() || !writeForm.content.trim() ||
                   (writeForm.category === "장터" && writeForm.images.length === 0))
             }>
@@ -1993,7 +2248,7 @@ export default function Community({ onExit }) {
         {selectedRoom && selectedRoom !== "tools" && (
         <button
           onClick={() => {
-            const defaultCat = currentRoom?.categories?.[0] || "자유";
+            const defaultCat = (currentRoom?.categories?.includes(cat) ? cat : currentRoom?.categories?.[0]) || "자유";
             setWriteForm(p => ({ ...p, category: defaultCat }));
             setShowWrite(true);
           }}
