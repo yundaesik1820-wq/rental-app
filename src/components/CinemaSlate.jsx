@@ -401,7 +401,7 @@ export default function CinemaSlate({ onBack }) {
             </div>
 
             {/* 🖊️ 손글씨 메모 박스 */}
-            <HandwritingCanvas C={C} inverted={inverted} />
+            <HandwritingCanvas C={C} inverted={inverted} portrait={portrait} />
           </div>
 
           {/* ── 우측: SCENE/CUT/TAKE (크고 강조) + 토글 + CLAP ── */}
@@ -602,8 +602,8 @@ function ToggleBtn({ active, onClick, children, color, C }) {
   );
 }
 
-/** 🖊️ 손글씨 캔버스 - 터치/마우스로 자유롭게 쓰기 */
-function HandwritingCanvas({ C, inverted }) {
+/** 🖊️ 손글씨 캔버스 - 터치/마우스/펜으로 자유롭게 쓰기 */
+function HandwritingCanvas({ C, inverted, portrait }) {
   const canvasRef = useRef(null);
   const isDrawing = useRef(false);
   const lastPos = useRef({ x: 0, y: 0 });
@@ -648,9 +648,19 @@ function HandwritingCanvas({ C, inverted }) {
   const getPos = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
     const touch = e.touches?.[0];
+    const clientX = touch?.clientX ?? e.clientX;
+    const clientY = touch?.clientY ?? e.clientY;
+    // 세로 기기에서 슬레이터는 90°(시계방향) 회전된 상태라,
+    // 화면 좌표를 캔버스 로컬 좌표로 역변환해야 펜 위치와 그려지는 위치가 일치한다.
+    if (portrait) {
+      return {
+        x: clientY - rect.top,
+        y: rect.width - (clientX - rect.left),
+      };
+    }
     return {
-      x: (touch?.clientX ?? e.clientX) - rect.left,
-      y: (touch?.clientY ?? e.clientY) - rect.top,
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     };
   };
 
