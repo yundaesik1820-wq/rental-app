@@ -52,26 +52,36 @@ export default function CinemaSlate({ onBack }) {
     localStorage.setItem("slate_orient_hint_seen", "1");
   };
 
-  // ─── 가로/세로 감지 (matchMedia 기반 — 안드로이드 회전 직후 stale 픽셀 문제 방지) ─
-  const getPortrait = () =>
-    typeof window === "undefined" ? false
-    : (window.matchMedia ? window.matchMedia("(orientation: portrait)").matches
-                         : window.innerWidth < window.innerHeight);
-  const [portrait, setPortrait] = useState(getPortrait);
+  // ─── 가로/세로 감지 (컨테이너 실측 — ResizeObserver로 기기·회전잠금·PWA·주소창 무관하게 정확) ─
+  const rootRef = useRef(null);
+  const [box, setBox] = useState({
+    w: typeof window !== "undefined" ? window.innerWidth : 800,
+    h: typeof window !== "undefined" ? window.innerHeight : 600,
+  });
+  const portrait = box.h > box.w;
   useEffect(() => {
-    const measure = () => setPortrait(getPortrait());
-    // 안드로이드는 orientationchange 직후 값이 늦게 갱신되므로 여러 번 재측정
-    const onOrient = () => { measure(); setTimeout(measure, 250); setTimeout(measure, 600); };
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", onOrient);
-    const mq = window.matchMedia ? window.matchMedia("(orientation: portrait)") : null;
-    if (mq) { mq.addEventListener ? mq.addEventListener("change", measure) : mq.addListener(measure); }
-    return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", onOrient);
-      if (mq) { mq.removeEventListener ? mq.removeEventListener("change", measure) : mq.removeListener(measure); }
-    };
+    const el = rootRef.current;
+    // 폴백: ResizeObserver 미지원 시 window 기준 + 회전 후 지연 재측정
+    if (!el || typeof ResizeObserver === "undefined") {
+      const measure = () => setBox({ w: window.innerWidth, h: window.innerHeight });
+      const onOrient = () => { measure(); setTimeout(measure, 250); setTimeout(measure, 600); };
+      measure();
+      window.addEventListener("resize", measure);
+      window.addEventListener("orientationchange", onOrient);
+      return () => {
+        window.removeEventListener("resize", measure);
+        window.removeEventListener("orientationchange", onOrient);
+      };
+    }
+    // 컨테이너의 실제 렌더 크기를 직접 관측 (innerWidth/Height의 stale 문제 없음)
+    const ro = new ResizeObserver(entries => {
+      for (const e of entries) {
+        const r = e.contentRect;
+        setBox({ w: Math.round(r.width), h: Math.round(r.height) });
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
   }, []);
 
   // 📐 슬레이터 진입 시 viewport zoom 잠금, 나갈 때 복원 + 강제 reflow
@@ -446,15 +456,15 @@ export default function CinemaSlate({ onBack }) {
 
   // ─── 풀스크린 + 자동 가로 ─────────────────
   return (
-    <div style={{
+    <div ref={rootRef} style={{
       position:"fixed", inset:0, zIndex:9000,
       background:"#000",
       overflow:"hidden",
     }}>
       {portrait ? (
         <div style={{
-          position:"absolute", top:0, left:"100vw",
-          width:"100vh", height:"100vw",
+          position:"absolute", top:0, left:`${box.w}px`,
+          width:`${box.h}px`, height:`${box.w}px`,
           transformOrigin:"top left",
           transform:"rotate(90deg)",
         }}>
