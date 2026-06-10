@@ -190,6 +190,12 @@ export default function Profile() {
         </div>
       </div>
 
+      <button
+        onClick={() => window.open("https://rental-app-delta-kohl.vercel.app/privacy.html", "_blank")}
+        style={{ width: "100%", background: C.surface, color: C.muted, border: `1px solid ${C.border}`, borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
+        개인정보처리방침
+      </button>
+
       <button onClick={logout} style={{ width: "100%", background: C.redLight, color: C.red, border: `1.5px solid ${C.red}30`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
         로그아웃
       </button>
