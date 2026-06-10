@@ -6,6 +6,7 @@ import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import { Spinner } from "./components/UI";
+import Onboarding from "./components/Onboarding";
 
 // Admin pages
 import Dashboard  from "./pages/admin/Dashboard";
@@ -555,6 +556,21 @@ function AppContent() {
 }
 
 export default function App() {
+  const [onboarded, setOnboarded] = useState(() => {
+    try { return localStorage.getItem("kbas_onboarded") === "1"; } catch { return true; }
+  });
+
+  if (!onboarded) {
+    return (
+      <Onboarding
+        onDone={() => {
+          try { localStorage.setItem("kbas_onboarded", "1"); } catch {}
+          setOnboarded(true);
+        }}
+      />
+    );
+  }
+
   return (
     <AuthProvider>
       <AppContent />
