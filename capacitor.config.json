@@ -1,5 +1,10 @@
 {
   "appId": "com.kbas.rental",
-  "appName": "KBAS 프로덕션",
-  "webDir": "dist"
+  "appName": "KBAS 장비대여",
+  "webDir": "dist",
+  "plugins": {
+    "FirebaseMessaging": {
+      "presentationOptions": ["alert", "badge", "sound"]
+    }
+  }
 }
