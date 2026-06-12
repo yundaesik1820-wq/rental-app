@@ -8,11 +8,10 @@ workflows:
     environment:
       vars:
         BUNDLE_ID: "com.kbas.rental"
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
       node: 22
       xcode: latest
-      cocoapods: default
     scripts:
       - name: Install npm dependencies
         script: |
@@ -23,9 +22,6 @@ workflows:
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-      - name: Install CocoaPods dependencies
-        script: |
-          cd ios/App && pod install
       - name: Initialize keychain
         script: |
           keychain initialize
@@ -43,7 +39,7 @@ workflows:
       - name: Build IPA
         script: |
           xcode-project build-ipa \
-            --workspace "$XCODE_WORKSPACE" \
+            --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
       - build/ios/ipa/*.ipa
