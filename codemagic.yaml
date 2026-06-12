@@ -39,6 +39,11 @@ workflows:
       - name: Set up code signing
         script: |
           xcode-project use-profiles
+      - name: Resolve SPM packages
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
       - name: Build IPA
         script: |
           xcode-project build-ipa \
