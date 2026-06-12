@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, setPersistence, browserLocalPersistence
 import { doc, setDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { getFcmTokenOnce } from "../hooks/useFCM.js";
 import { C } from "../theme";
 import { Btn, Inp } from "../components/UI";
 
@@ -58,6 +59,9 @@ export default function Login() {
     if (form.pw.length < 6) { setSignupErr("비밀번호는 6자리 이상이어야 합니다"); return; }
     setSignupLoading(true); setSignupErr("");
     try {
+      // 가입 승인 알림 수신을 위해 알림 권한/토큰을 미리 확보 (거부·실패해도 가입은 계속)
+      let fcmToken = null;
+      try { fcmToken = await getFcmTokenOnce(); } catch (e) { console.log("FCM 사전 등록 건너뜀:", e?.message); }
       const email = toEmail(form.studentId);
       const cred  = await createUserWithEmailAndPassword(auth, email, form.pw);
       await setDoc(doc(db, "users", cred.user.uid), {
@@ -65,6 +69,7 @@ export default function Login() {
         phone: form.phone, email,
         admissionYear: form.studentId.slice(0, 2),
         license: "", role: "student", status: "pending", rentals: 0,
+        ...(fcmToken ? { fcmToken } : {}),
         createdAt: serverTimestamp(),
       });
       setSignupDone(true);

@@ -83,6 +83,33 @@ async function initWebFCM(userId) {
   });
 }
 
+/* ───────── 1회용 토큰 발급 (회원가입 시 사전 등록용) ─────────
+   권한 요청 + 토큰 발급만 수행하고 토큰 문자열을 반환.
+   저장은 호출하는 쪽(가입 문서 setDoc)에서 처리한다. */
+export async function getFcmTokenOnce() {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+      const perm = await FirebaseMessaging.requestPermissions();
+      if (perm.receive !== "granted") return null;
+      const { token } = await FirebaseMessaging.getToken();
+      return token || null;
+    }
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return null;
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return null;
+    const swReg = await navigator.serviceWorker.register("/firebase-messaging-sw.js");
+    await waitForActiveServiceWorker(swReg);
+    const { getMessaging, getToken } = await import("firebase/messaging");
+    const { getApp } = await import("firebase/app");
+    const token = await getToken(getMessaging(getApp()), { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    return token || null;
+  } catch (e) {
+    console.error("FCM 사전 토큰 발급 실패:", e.message);
+    return null;
+  }
+}
+
 /* ───────── 진입점: 환경 자동 분기 ───────── */
 export function useFCM(userId) {
   useEffect(() => {
