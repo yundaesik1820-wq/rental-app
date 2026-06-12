@@ -170,14 +170,6 @@ function posLabel(pos) {
 }
 
 export default function Community({ onExit }) {
-  // [디버그] 헤더에 실제 적용된 paddingTop을 화면에 표시하기 위한 측정
-  const __headerRef = useRef(null);
-  const [__padDbg, __setPadDbg] = useState("?");
-  useEffect(() => {
-    if (__headerRef.current) {
-      try { __setPadDbg(getComputedStyle(__headerRef.current).paddingTop); } catch (e) { __setPadDbg("err"); }
-    }
-  }, []);
   const { profile } = useAuth();
 
   // 진입 인트로 - 세션당 한 번만 표시
@@ -740,7 +732,7 @@ export default function Community({ onExit }) {
         {/* 노치 커버 스페이서 — 패딩이 아닌 실제 요소로 안전영역 확보 */}
         <div style={{ position:"sticky", top:0, zIndex:51, height:SAFE_TOP_PX, minHeight:SAFE_TOP_PX, flexShrink:0, background:"#0a0a0a" }} />
         {/* 상단 시네마 헤더 - 룸별 동적 */}
-        <div ref={__headerRef} style={{
+        <div style={{
           position:"sticky", top:SAFE_TOP_PX, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
@@ -784,7 +776,7 @@ export default function Community({ onExit }) {
                 : "ZZOTKYO"}
             </span>
           </div>
-          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v11·{SAFE_TOP_PX}·{__padDbg}</div>
+          <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
         </div>
 
         {/* 본문 콘텐츠 */}
