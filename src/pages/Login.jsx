@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { createUserWithEmailAndPassword, setPersistence, browserLocalPersistence, browserSessionPersistence } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, addDoc, collection } from "firebase/firestore";
 import { auth, db } from "../firebase";
@@ -35,8 +36,11 @@ export default function Login() {
     if (!studentId || !pw) { setLoginErr("학번과 비밀번호를 입력하세요"); return; }
     setLoginLoading(true); setLoginErr("");
     try {
-      const persistence = keepLogin ? browserLocalPersistence : browserSessionPersistence;
-      await setPersistence(auth, persistence);
+      // 앱(Capacitor)에서는 initializeAuth가 이미 영속성을 설정하므로 웹에서만 적용
+      if (!Capacitor.isNativePlatform()) {
+        const persistence = keepLogin ? browserLocalPersistence : browserSessionPersistence;
+        await setPersistence(auth, persistence);
+      }
       const loginEmail = studentId.includes("@") ? studentId.trim() : toEmail(studentId);
       await login(loginEmail, pw);
     } catch (e) {

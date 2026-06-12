@@ -1,5 +1,6 @@
+import { Capacitor } from "@capacitor/core";
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth, indexedDBLocalPersistence } from "firebase/auth";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
@@ -15,11 +16,17 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-export const auth    = getAuth(app);
+
+// ⚠️ Capacitor(iOS/Android 앱)에서는 getAuth()가 제대로 초기화되지 않아
+// onAuthStateChanged가 영원히 발화하지 않는 알려진 문제가 있음.
+// → 네이티브에서는 initializeAuth + indexedDBLocalPersistence 사용 (Firebase 공식 권장)
+export const auth = Capacitor.isNativePlatform()
+  ? initializeAuth(app, { persistence: indexedDBLocalPersistence })
+  : getAuth(app);
 
 // 오프라인 캐시(앱 재진입 시 캐시 즉시 표시) +
 // experimentalForceLongPolling: iOS WKWebView에서 Firestore가 멈추지 않도록 통신 방식 강제
-export const db      = initializeFirestore(app, {
+export const db = initializeFirestore(app, {
   localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
   experimentalForceLongPolling: true,
 });
