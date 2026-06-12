@@ -17,6 +17,11 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
+      /* safe area 값을 CSS 변수로 정의 — 인라인 스타일에서 env()가 안 먹는 웹뷰 대응 */
+      :root {
+        --safe-top: env(safe-area-inset-top, 0px);
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+      }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: 'Noto Sans KR', sans-serif; background: #0F172A; }
 
