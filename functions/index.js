@@ -75,12 +75,19 @@ exports.onRentalStatusChange = functions.firestore
     const uid  = usersSnap.docs[0].id;
     const name = after.studentName || usersSnap.docs[0].data().name || "학생";
     console.log(`대여 알림 대상 - studentId: ${after.studentId}, uid: ${uid}`);
+    // 신청 장비명 추출 ("FX3 외 2건" 형태)
+    const itemNames = (after.items || [])
+      .map(i => i.modelName || i.equipName || "")
+      .filter(Boolean);
+    const label = itemNames.length > 1
+      ? `${itemNames[0]} 외 ${itemNames.length - 1}건`
+      : (itemNames[0] || after.equipName || "장비");
     const messages = {
-      "승인됨":   { title: "✅ 대여 승인됨",   body: `${name}님의 대여가 승인됐어요! 신청하신 날짜에 맞춰 방문해주세요.` },
-      "거절됨":   { title: "❌ 대여 거절됨",   body: `${name}님의 대여가 거절됐어요. 앱에 접속해 사유를 확인해주세요.` },
-      "반납완료": { title: "✅ 반납 완료",      body: `${name}님의 반납이 확인됐어요.` },
-      "보류":     { title: "⏸ 보류 처리됨",    body: `${name}님의 대여가 보류됐어요. 앱에 접속해 사유를 확인해주세요.` },
-      "연체":     { title: "⚠️ 반납 연체 중",   body: `${name}님의 반납이 지연되고 있어요!` },
+      "승인됨":   { title: "대여가 승인됐어요",      body: `${name}님, ${label} 대여가 승인됐어요. 신청한 시간에 맞춰 방문해주세요!` },
+      "거절됨":   { title: "대여가 거절됐어요",      body: `${name}님, 이번 신청은 승인되지 않았어요. 앱에서 사유를 확인해주세요!` },
+      "반납완료": { title: "반납이 완료됐어요",      body: `${label} 반납이 확인됐어요. 이용해주셔서 고마워요!` },
+      "보류":     { title: "대여가 보류됐어요",      body: `${name}님의 신청을 검토 중이에요. 앱에서 자세한 내용을 확인해주세요!` },
+      "연체":     { title: "반납일이 지났어요 🚨",   body: `${name}님, ${label} 반납이 늦어지고 있어요. 빠르게 반납해주세요!` },
     };
     const msg = messages[after.status];
     if (msg) await sendFCM(uid, msg.title, msg.body);
@@ -102,9 +109,9 @@ exports.onFacilityStatusChange = functions.firestore
     const name2    = after.studentName || usersSnap.docs[0].data().name || "학생";
     const facility = after.facilityName || "시설";
     const messages = {
-      "승인됨":   { title: "✅ 시설 대여 승인됨", body: `${name2}님의 ${facility} 대여가 승인됐어요!` },
-      "거절됨":   { title: "❌ 시설 대여 거절됨", body: `${name2}님의 ${facility} 대여가 거절됐어요.` },
-      "반납완료": { title: "✅ 시설 반납 완료",    body: `${name2}님의 ${facility} 반납이 확인됐어요.` },
+      "승인됨":   { title: "시설 예약이 확정됐어요",   body: `${facility} 예약이 승인됐어요. 예약 시간에 맞춰 방문해주세요!` },
+      "거절됨":   { title: "시설 예약이 거절됐어요",   body: `${name2}님, ${facility} 예약이 승인되지 않았어요. 앱에서 사유를 확인해주세요!` },
+      "반납완료": { title: "시설 이용이 완료됐어요",   body: `${facility} 이용이 확인됐어요. 다음에 또 이용해주세요!` },
     };
     const msg = messages[after.status];
     if (msg) await sendFCM(uid, msg.title, msg.body);
@@ -121,7 +128,7 @@ exports.onNewNotice = functions.firestore
       .where("status", "==", "approved").where("role", "==", "student").get();
     const sends = usersSnap.docs
       .filter(d => d.data().fcmToken)
-      .map(d => sendFCM(d.id, `📌 공지사항: ${notice.title}`, ""));
+      .map(d => sendFCM(d.id, "새 공지사항이 있어요", notice.title || ""));
     await Promise.allSettled(sends);
   });
 
@@ -153,12 +160,12 @@ exports.onCommunityComment = functions.firestore
     // 익명 게시판은 작성자 이름 숨김
     const anonCategories = ["자유", "질문", "강의", "새내기"];
     const isAnon = anonCategories.includes(post.category);
-    const commenterDisplay = isAnon ? "익명의 누군가" : (comment.authorName || "누군가");
+    const commenterDisplay = isAnon ? "익명의 누군가가" : `${comment.authorName || "누군가"}님이`;
 
     await sendFCM(
       postAuthorId,
-      `💬 ${catName} 새 댓글`,
-      `"${postTitle.slice(0, 20)}${postTitle.length > 20 ? "..." : ""}"에 ${commenterDisplay}가 댓글을 달았어요!`
+      "내 글에 새 댓글이 달렸어요",
+      `"${postTitle.slice(0, 20)}${postTitle.length > 20 ? "..." : ""}"에 ${commenterDisplay} 댓글을 남겼어요!`
     );
   });
 
@@ -227,17 +234,63 @@ exports.checkOverdue = functions.pubsub
       newOverdue.map(async r => {
         await admin.firestore().collection("rentalRequests").doc(r.id)
           .update({ overdueAlerted: false });
-        return sendFCM(r.uid, "⚠️ 반납 기한 초과", "반납 시간이 지났어요. 빠른 반납 부탁드려요!");
+        return sendFCM(r.uid, "반납 시간이 지났어요 🚨", `${r.name ? r.name + "님, " : ""}지금 장비대여실에 방문해 반납을 완료해주세요!`);
       })
     );
 
     // 30분 초과 연체 알림
     await Promise.allSettled(
       alertTargets.map(r =>
-        sendFCM(r.uid, "🚨 반납 연체 중", "반납 기한이 30분 이상 초과됐어요! 즉시 반납해주세요.")
+        sendFCM(r.uid, "아직 반납되지 않았어요 🚨", "연체 30분이 지났어요. 연체가 계속되면 다음 대여가 제한될 수 있어요!")
       )
     );
 
     console.log(`연체 처리: ${newOverdue.length}건, 30분 알림: ${alertTargets.length}건`);
     return null;
   });
+
+// ── 가입 승인 알림 ────────────────────────────────────────
+exports.onUserApproved = functions.firestore
+  .document("users/{userId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after  = change.after.data();
+    if (before.status === after.status) return;
+    if (before.status !== "pending" || after.status !== "approved") return;
+    const name = after.name || "";
+    await sendFCM(
+      context.params.userId,
+      "가입이 승인됐어요",
+      `${name ? name + "님, " : ""}이제 로그인하고 장비를 대여할 수 있어요!`
+    );
+  });
+
+// ── 관리자 수동 알림 (제목/내용 직접 입력해서 발송) ──────────
+// 호출 예: sendCustomAlert({ title, body, target: "all" })            → 승인된 학생 전체
+//          sendCustomAlert({ title, body, target: "25237001" })       → 특정 학번 1명
+exports.sendCustomAlert = functions.https.onCall(async (data, context) => {
+  if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
+  const callerDoc = await admin.firestore().collection("users").doc(context.auth.uid).get();
+  if (!callerDoc.exists || callerDoc.data().role !== "admin")
+    throw new functions.https.HttpsError("permission-denied", "관리자만 사용할 수 있습니다.");
+
+  const { title, body, target } = data || {};
+  if (!title || !target)
+    throw new functions.https.HttpsError("invalid-argument", "제목과 대상(target)이 필요합니다.");
+
+  if (target === "all") {
+    const usersSnap = await admin.firestore().collection("users")
+      .where("status", "==", "approved").where("role", "==", "student").get();
+    const targets = usersSnap.docs.filter(d => d.data().fcmToken);
+    await Promise.allSettled(targets.map(d => sendFCM(d.id, title, body || "")));
+    return { success: true, sent: targets.length };
+  }
+
+  // 특정 학번 1명
+  const oneSnap = await admin.firestore().collection("users")
+    .where("studentId", "==", String(target)).limit(1).get();
+  if (oneSnap.empty)
+    throw new functions.https.HttpsError("not-found", "해당 학번의 사용자를 찾을 수 없습니다.");
+  await sendFCM(oneSnap.docs[0].id, title, body || "");
+  return { success: true, sent: 1 };
+});
