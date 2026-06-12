@@ -170,6 +170,14 @@ function posLabel(pos) {
 }
 
 export default function Community({ onExit }) {
+  // [디버그] 헤더에 실제 적용된 paddingTop을 화면에 표시하기 위한 측정
+  const __headerRef = useRef(null);
+  const [__padDbg, __setPadDbg] = useState("?");
+  useEffect(() => {
+    if (__headerRef.current) {
+      try { __setPadDbg(getComputedStyle(__headerRef.current).paddingTop); } catch (e) { __setPadDbg("err"); }
+    }
+  }, []);
   const { profile } = useAuth();
 
   // 진입 인트로 - 세션당 한 번만 표시
@@ -730,11 +738,11 @@ export default function Community({ onExit }) {
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
         {/* 상단 시네마 헤더 - 룸별 동적 */}
-        <div style={{
+        <div ref={__headerRef} style={{
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          padding:`${14 + SAFE_TOP_PX}px 18px 18px`,
+          paddingTop: 14 + SAFE_TOP_PX, paddingLeft: 18, paddingRight: 18, paddingBottom: 18,
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
@@ -774,7 +782,7 @@ export default function Community({ onExit }) {
                 : "ZZOTKYO"}
             </span>
           </div>
-          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v9·{SAFE_TOP_PX}</div>
+          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v10·{SAFE_TOP_PX}·{__padDbg}</div>
         </div>
 
         {/* 본문 콘텐츠 */}
