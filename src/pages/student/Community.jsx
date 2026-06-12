@@ -1,4 +1,21 @@
 import { useState, useRef, useEffect } from "react";
+
+// 노치(safe area) 높이를 JS로 직접 측정해 픽셀 숫자로 확정.
+// CSS 변수/env()를 거치지 않으므로 테마 코드 등 어떤 외부 요인에도 영향받지 않음.
+const SAFE_TOP_PX = (() => {
+  try {
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;";
+    document.documentElement.appendChild(probe);
+    let v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+    probe.remove();
+    const big = Math.max(screen.width, screen.height);
+    if (v === 0 && /iPhone/.test(navigator.userAgent) && big >= 812) {
+      v = big >= 852 ? 59 : 47;
+    }
+    return Math.round(v);
+  } catch (e) { return 0; }
+})();
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -717,7 +734,7 @@ export default function Community({ onExit }) {
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          padding:"calc(14px + var(--safe-top, 0px)) 18px 18px",
+          padding:`${14 + SAFE_TOP_PX}px 18px 18px`,
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
@@ -757,7 +774,7 @@ export default function Community({ onExit }) {
                 : "ZZOTKYO"}
             </span>
           </div>
-          <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
+          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v9·{SAFE_TOP_PX}</div>
         </div>
 
         {/* 본문 콘텐츠 */}
