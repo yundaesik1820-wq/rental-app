@@ -15,6 +15,12 @@ export default function Notices({ isAdmin = true }) {
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
 
+  // 푸시 알림 보내기 (관리자 수동 발송)
+  const [showSend, setShowSend]     = useState(false);
+  const [alertForm, setAlertForm]   = useState({ target: "all", studentId: "", title: "", body: "" });
+  const [sending, setSending]       = useState(false);
+  const [sendResult, setSendResult] = useState(null);
+
   const addNotice = async () => {
     if (!form.title || !form.content) return;
     const authorRole  = profile?.adminRole || "super";
@@ -24,6 +30,27 @@ export default function Notices({ isAdmin = true }) {
     await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
     setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false });
     setShowAdd(false);
+  };
+
+  const sendCustomAlert = async () => {
+    if (!alertForm.title.trim()) { setSendResult({ ok: false, msg: "제목을 입력하세요" }); return; }
+    if (alertForm.target === "one" && !alertForm.studentId.trim()) { setSendResult({ ok: false, msg: "학번을 입력하세요" }); return; }
+    if (alertForm.target === "all" && !window.confirm("전체 학생에게 알림을 보낼까요?")) return;
+    setSending(true); setSendResult(null);
+    try {
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const fn  = httpsCallable(getFunctions(), "sendCustomAlert");
+      const res = await fn({
+        title:  alertForm.title.trim(),
+        body:   alertForm.body.trim(),
+        target: alertForm.target === "all" ? "all" : alertForm.studentId.trim(),
+      });
+      setSendResult({ ok: true, msg: `✅ ${res.data?.sent ?? 0}명에게 발송 완료` });
+      setAlertForm(p => ({ ...p, studentId: "", title: "", body: "" }));
+    } catch (e) {
+      setSendResult({ ok: false, msg: "발송 실패: " + (e.message || "오류") });
+    }
+    setSending(false);
   };
 
   const submitComment = async () => {
@@ -106,6 +133,54 @@ export default function Notices({ isAdmin = true }) {
         <PageTitle>📢 공지사항</PageTitle>
         {isAdmin && <Btn onClick={() => setShowAdd(true)}>+ 공지 작성</Btn>}
       </div>
+
+      {/* 푸시 알림 보내기 (관리자, 접이식) */}
+      {isAdmin && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 16, overflow: "hidden" }}>
+          <button onClick={() => setShowSend(s => !s)}
+            style={{ width: "100%", background: "none", border: "none", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>🔔 푸시 알림 보내기</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>공지 등록 없이 학생들에게 알림만 보낼 수 있어요</div>
+            </div>
+            <span style={{ color: C.muted, fontSize: 13 }}>{showSend ? "▲" : "▼"}</span>
+          </button>
+          {showSend && (
+            <div style={{ padding: "0 18px 16px" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>받는 사람</div>
+              <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 12 }}>
+                {[["all", "전체 학생"], ["one", "특정 학번"]].map(([v, l]) => (
+                  <button key={v} onClick={() => { setAlertForm(p => ({ ...p, target: v })); setSendResult(null); }}
+                    style={{ flex: 1, background: alertForm.target === v ? C.navy : "transparent", color: alertForm.target === v ? "#fff" : C.muted, border: "none", borderRadius: 7, padding: "8px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{l}</button>
+                ))}
+              </div>
+              {alertForm.target === "one" && (
+                <Inp label="학번" placeholder="예: 25237001" value={alertForm.studentId} onChange={e => setAlertForm(p => ({ ...p, studentId: e.target.value }))} />
+              )}
+              <Inp label="제목" placeholder="알림 제목 입력" value={alertForm.title} onChange={e => setAlertForm(p => ({ ...p, title: e.target.value }))} />
+              <div style={{ marginBottom: 12 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>내용</div>
+                <textarea placeholder="알림 내용을 입력하세요..." value={alertForm.body} onChange={e => setAlertForm(p => ({ ...p, body: e.target.value }))}
+                  style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", resize: "vertical", minHeight: 70, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>미리보기</div>
+              <div style={{ background: C.bg, borderRadius: 12, padding: "10px 12px", display: "flex", gap: 10, marginBottom: 14 }}>
+                <div style={{ width: 30, height: 30, borderRadius: 8, background: C.navy, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ color: "#fff", fontSize: 9, fontWeight: 700 }}>KB</span>
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{alertForm.title || "알림 제목"}</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.45 }}>{alertForm.body || "알림 내용"}</div>
+                </div>
+              </div>
+              <Btn onClick={sendCustomAlert} color={C.navy} full disabled={sending}>{sending ? "발송 중..." : "알림 보내기"}</Btn>
+              {sendResult && (
+                <div style={{ fontSize: 12, color: sendResult.ok ? C.teal : C.red, textAlign: "center", marginTop: 10 }}>{sendResult.msg}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* 공지 작성 모달 */}
       {showAdd && (
