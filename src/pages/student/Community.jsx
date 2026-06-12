@@ -737,12 +737,14 @@ export default function Community({ onExit }) {
         WebkitOverflowScrolling:"touch",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
+        {/* 노치 커버 스페이서 — 패딩이 아닌 실제 요소로 안전영역 확보 */}
+        <div style={{ position:"sticky", top:0, zIndex:51, height:SAFE_TOP_PX, minHeight:SAFE_TOP_PX, flexShrink:0, background:"#0a0a0a" }} />
         {/* 상단 시네마 헤더 - 룸별 동적 */}
         <div ref={__headerRef} style={{
-          position:"sticky", top:0, zIndex:50,
+          position:"sticky", top:SAFE_TOP_PX, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          paddingTop: 14 + SAFE_TOP_PX, paddingLeft: 18, paddingRight: 18, paddingBottom: 18,
+          paddingTop: 14, paddingLeft: 18, paddingRight: 18, paddingBottom: 18,
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
@@ -782,7 +784,7 @@ export default function Community({ onExit }) {
                 : "ZZOTKYO"}
             </span>
           </div>
-          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v10·{SAFE_TOP_PX}·{__padDbg}</div>
+          <div style={{ width:80, fontSize:9, color:"#57534e", textAlign:"right", letterSpacing:"0.05em" }}>v11·{SAFE_TOP_PX}·{__padDbg}</div>
         </div>
 
         {/* 본문 콘텐츠 */}
