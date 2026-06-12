@@ -2,6 +2,9 @@
   "appId": "com.kbas.rental",
   "appName": "KBAS 장비대여",
   "webDir": "dist",
+  "server": {
+    "url": "https://rental-app-delta-kohl.vercel.app"
+  },
   "plugins": {
     "FirebaseMessaging": {
       "presentationOptions": ["alert", "badge", "sound"]

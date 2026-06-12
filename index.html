@@ -17,7 +17,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-      /* safe area 값을 CSS 변수로 정의 — 인라인 스타일에서 env()가 안 먹는 웹뷰 대응 */
+      /* safe area 변수 — 아래 스크립트가 JS로 측정한 실제 픽셀값으로 덮어씀 */
       :root {
         --safe-top: env(safe-area-inset-top, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -27,10 +27,10 @@
 
       /* 노치(상단)·홈바(하단) 안전영역 확보 — 웹 브라우저에서는 값이 0이라 영향 없음 */
       #root {
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-        padding-left: env(safe-area-inset-left);
-        padding-right: env(safe-area-inset-right);
+        padding-top: var(--safe-top, 0px);
+        padding-bottom: var(--safe-bottom, 0px);
+        padding-left: env(safe-area-inset-left, 0px);
+        padding-right: env(safe-area-inset-right, 0px);
         min-height: 100vh;
       }
 
@@ -51,6 +51,38 @@
         display: block;
       }
     </style>
+    <script>
+      /* safe area를 JS로 직접 측정해서 --safe-top / --safe-bottom에 "픽셀값"으로 주입.
+         CSS env()가 환경에 따라 안 먹는 문제를 원천 우회한다. */
+      (function () {
+        function measure(prop) {
+          try {
+            var probe = document.createElement("div");
+            probe.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;padding-top:env(" + prop + ", 0px);visibility:hidden;";
+            document.documentElement.appendChild(probe);
+            var v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+            probe.remove();
+            return v;
+          } catch (e) { return 0; }
+        }
+        function apply() {
+          var top = measure("safe-area-inset-top");
+          var bottom = measure("safe-area-inset-bottom");
+          // 측정이 0인데 노치형 아이폰이면 기기 화면 높이에 따른 기본값 강제 적용
+          var isiPhone = /iPhone/.test(navigator.userAgent);
+          var h = Math.max(screen.width, screen.height);
+          if (isiPhone && h >= 812) {
+            if (top === 0)    top    = (h >= 852) ? 59 : 47;
+            if (bottom === 0) bottom = 34;
+          }
+          var s = document.documentElement.style;
+          s.setProperty("--safe-top",    top + "px");
+          s.setProperty("--safe-bottom", bottom + "px");
+        }
+        apply();
+        window.addEventListener("orientationchange", function () { setTimeout(apply, 300); });
+      })();
+    </script>
   </head>
   <body>
     <div id="splash">
