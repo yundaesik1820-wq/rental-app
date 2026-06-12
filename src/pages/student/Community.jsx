@@ -717,7 +717,7 @@ export default function Community({ onExit }) {
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          padding:"14px 18px 18px",
+          padding:"calc(14px + env(safe-area-inset-top, 0px)) 18px 18px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
