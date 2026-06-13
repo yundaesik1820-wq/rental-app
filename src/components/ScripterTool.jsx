@@ -149,6 +149,7 @@ export default function ScripterTool({ C, onBack }) {
 function ScriptEditor({ C, script, onBack, onSave }) {
   const [pageCount, setPageCount] = useState(script.pages?.length ? script.pages.length : 1);
   const [saving, setSaving] = useState(false);
+  const [tool, setTool] = useState("pen");   // "pen" | "eraser"
   const initialPages = useRef(script.pages?.length ? script.pages : [null]);
   const pageRefs = useRef([]);   // 각 PenPage의 ref
 
@@ -180,18 +181,27 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <button onClick={back} style={{ ...iconBtn(C), fontSize: 13 }}>← 목록</button>
-        <div style={{ fontSize: 13, fontWeight: 700, color: C.text, flex: 1, textAlign: "center", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", padding: "0 8px" }}>{script.name}</div>
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          <button onClick={() => setTool("pen")}
+            style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? "#fff" : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            ✏️ 펜
+          </button>
+          <button onClick={() => setTool("eraser")}
+            style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? "#fff" : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            🧽 지우개
+          </button>
+        </div>
         <button onClick={save} disabled={saving}
           style={{ background: (C.navy||C.red||"#1A2B6B"), color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>
 
-      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: "12px 30px", display: "flex", flexDirection: "column", gap: 16 }}>
         {Array.from({ length: pageCount }).map((_, i) => (
           <div key={i}>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pageCount} —</div>
-            <PenPage ref={(el) => { pageRefs.current[i] = el; }} C={C} initial={initialPages.current[i] || null} />
+            <PenPage ref={(el) => { pageRefs.current[i] = el; }} C={C} initial={initialPages.current[i] || null} tool={tool} />
           </div>
         ))}
         <button onClick={addPage} style={addBtn(C)}>+ 페이지 추가</button>
@@ -203,7 +213,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
 /* ============================================================
    한 장: 양식 배경 이미지 + 투명 펜 캔버스
    ============================================================ */
-const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
+const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
   const wrapRef   = useRef(null);   // 고정 뷰포트 (overflow hidden)
   const stageRef  = useRef(null);   // 확대/이동되는 내부 (양식+캔버스)
   const canvasRef = useRef(null);
@@ -328,18 +338,25 @@ const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
       return;
     }
 
-    // 그리기
+    // 그리기 / 지우기
     if (!drawing.current) return;
     const ctx = canvasRef.current.getContext("2d");
     const p = toLocal(e.clientX, e.clientY);
-    ctx.strokeStyle = "#111";
-    ctx.lineWidth = 2.2;
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";  // 펜 글씨만 투명하게 (양식 배경은 그대로)
+      ctx.lineWidth = 24;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 2.2;
+    }
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     ctx.beginPath();
     ctx.moveTo(last.current.x, last.current.y);
     ctx.lineTo(p.x, p.y);
     ctx.stroke();
+    ctx.globalCompositeOperation = "source-over";  // 원복
     last.current = p;
   };
 
@@ -391,7 +408,7 @@ const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
         </button>
         <button onClick={clearPage}
           style={{ background: "rgba(255,255,255,0.9)", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, padding: "3px 8px", cursor: "pointer", color: "#333" }}>
-          이 장 지우기
+          이 장 전체삭제
         </button>
       </div>
     </div>
