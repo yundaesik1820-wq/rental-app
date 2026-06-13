@@ -646,22 +646,19 @@ function HandwritingCanvas({ C, inverted, portrait }) {
   }, []);
 
   const getPos = (e) => {
-    const rect = canvasRef.current.getBoundingClientRect();
-    const touch = e.touches?.[0];
-    const clientX = touch?.clientX ?? e.clientX;
-    const clientY = touch?.clientY ?? e.clientY;
-    // 세로 기기에서 슬레이터는 90°(시계방향) 회전된 상태라,
-    // 화면 좌표를 캔버스 로컬 좌표로 역변환해야 펜 위치와 그려지는 위치가 일치한다.
-    if (portrait) {
-      return {
-        x: clientY - rect.top,
-        y: rect.width - (clientX - rect.left),
-      };
+    const canvas = canvasRef.current;
+    const ne = e.nativeEvent || e;
+    // Pointer 이벤트의 offsetX/Y는 브라우저가 회전(transform)·스케일·위치를 모두
+    // 역계산해 요소 로컬 좌표로 제공하므로, 부모가 rotate(90deg)여도 정확하다.
+    // ctx가 dpr만큼 scale 돼 있어 CSS px(offset) 좌표를 그대로 쓰면 된다.
+    let x = ne.offsetX, y = ne.offsetY;
+    if (x == null || y == null) {
+      // 폴백 (구형): rect 기준 단순 매핑
+      const rect = canvas.getBoundingClientRect();
+      const cx = ne.clientX ?? 0, cy = ne.clientY ?? 0;
+      x = cx - rect.left; y = cy - rect.top;
     }
-    return {
-      x: clientX - rect.left,
-      y: clientY - rect.top,
-    };
+    return { x, y };
   };
 
   const startDraw = (e) => {
@@ -737,13 +734,11 @@ function HandwritingCanvas({ C, inverted, portrait }) {
       </button>
       {/* 캔버스 */}
       <canvas ref={canvasRef}
-        onMouseDown={startDraw}
-        onMouseMove={draw}
-        onMouseUp={endDraw}
-        onMouseLeave={endDraw}
-        onTouchStart={startDraw}
-        onTouchMove={draw}
-        onTouchEnd={endDraw}
+        onPointerDown={e => { e.currentTarget.setPointerCapture?.(e.pointerId); startDraw(e); }}
+        onPointerMove={draw}
+        onPointerUp={endDraw}
+        onPointerLeave={endDraw}
+        onPointerCancel={endDraw}
         style={{
           width:"100%", height:"100%",
           display:"block",
