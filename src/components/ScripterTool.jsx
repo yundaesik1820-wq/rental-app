@@ -57,12 +57,11 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
    메인 컴포넌트
    ============================================================ */
 export default function ScripterTool({ C, onBack }) {
-  // view: "folders" | "scripts" | "edit"
+  // view: "folders" | "edit"  (폴더 = 스크립트 하나)
   const [view, setView]       = useState("folders");
-  const [items, setItems]     = useState([]);     // 전체 데이터 (폴더+스크립트 평면 저장)
+  const [items, setItems]     = useState([]);     // 폴더(=스크립트) 목록
   const [loading, setLoading] = useState(true);
-  const [curFolder, setCurFolder] = useState(null); // folder id
-  const [curScript, setCurScript] = useState(null); // script id
+  const [curFolder, setCurFolder] = useState(null); // 현재 작품 id
 
   useEffect(() => {
     (async () => {
@@ -72,38 +71,19 @@ export default function ScripterTool({ C, onBack }) {
   }, []);
 
   const folders = items.filter(i => i.type === "folder");
-  const scriptsOf = (fid) => items.filter(i => i.type === "script" && i.folderId === fid);
 
   const reload = async () => setItems(await dbAll());
 
   /* ── 폴더 생성/삭제 ── */
   const addFolder = async () => {
-    const name = prompt("작품 폴더 이름을 입력하세요");
+    const name = prompt("작품 이름을 입력하세요");
     if (!name?.trim()) return;
-    await dbPut({ id: uid(), type: "folder", name: name.trim(), createdAt: Date.now() });
+    await dbPut({ id: uid(), type: "folder", name: name.trim(), pages: [null], createdAt: Date.now(), updatedAt: Date.now() });
     reload();
   };
   const delFolder = async (fid) => {
-    if (!window.confirm("이 폴더와 안의 모든 스크립트를 삭제할까요?")) return;
-    for (const s of scriptsOf(fid)) await dbDel(s.id);
+    if (!window.confirm("이 작품을 삭제할까요?")) return;
     await dbDel(fid);
-    reload();
-  };
-
-  /* ── 스크립트 생성/삭제 ── */
-  const addScript = async () => {
-    const name = prompt("스크립트 이름 (예: S01 오프닝)");
-    if (!name?.trim()) return;
-    const s = { id: uid(), type: "script", folderId: curFolder, name: name.trim(),
-                pages: [null], createdAt: Date.now(), updatedAt: Date.now() };
-    await dbPut(s);
-    await reload();
-    setCurScript(s.id);
-    setView("edit");
-  };
-  const delScript = async (sid) => {
-    if (!window.confirm("이 스크립트를 삭제할까요?")) return;
-    await dbDel(sid);
     reload();
   };
 
@@ -111,87 +91,57 @@ export default function ScripterTool({ C, onBack }) {
     return <div style={{ padding: 40, textAlign: "center", color: C.muted }}>불러오는 중...</div>;
   }
 
-  /* ── 작성 화면 ── */
-  if (view === "edit" && curScript) {
-    const script = items.find(i => i.id === curScript);
-    if (!script) { setView("scripts"); return null; }
+  /* ── 작성 화면 (폴더 = 스크립트 하나) ── */
+  if (view === "edit" && curFolder) {
+    const folder = items.find(i => i.id === curFolder);
+    if (!folder) { setView("folders"); return null; }
     return (
       <ScriptEditor
         C={C}
-        script={script}
-        onBack={() => { reload(); setView("scripts"); }}
+        script={folder}
+        onBack={() => { reload(); setView("folders"); }}
         onSave={async (pages) => {
-          await dbPut({ ...script, pages, updatedAt: Date.now() });
+          await dbPut({ ...folder, pages, updatedAt: Date.now() });
           await reload();
         }}
       />
     );
   }
 
-  /* ── 스크립트 목록 ── */
-  if (view === "scripts" && curFolder) {
-    const folder = folders.find(f => f.id === curFolder);
-    const list = scriptsOf(curFolder);
-    return (
-      <div style={{ padding: 12 }}>
-        <Header C={C} title={folder?.name || "폴더"} onBack={() => setView("folders")} />
-        {list.length === 0 && (
-          <div style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: "24px 0" }}>
-            아직 스크립트가 없어요. 아래 버튼으로 시작하세요.
-          </div>
-        )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {list.map(s => (
-            <div key={s.id} style={card(C)}>
-              <div onClick={() => { setCurScript(s.id); setView("edit"); }}
-                   style={{ flex: 1, minWidth: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18 }}>📝</span>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</div>
-                  <div style={{ fontSize: 11, color: C.muted }}>{s.pages.length}장 · {new Date(s.updatedAt).toLocaleDateString()}</div>
-                </div>
-              </div>
-              <button onClick={() => delScript(s.id)} style={iconBtn(C)} title="삭제">🗑️</button>
-            </div>
-          ))}
-          <button onClick={addScript} style={addBtn(C)}>+ 새 스크립트</button>
-        </div>
-      </div>
-    );
-  }
-
-  /* ── 폴더 목록 ── */
+  /* ── 작품 목록 ── */
   return (
     <div style={{ padding: 12 }}>
       <Header C={C} title="🎬 스크립터" onBack={onBack} />
       <div style={{ fontSize: 12, color: C.muted, marginBottom: 12, lineHeight: 1.6 }}>
-        스크립트 용지에 펜으로 작성하고 작품별로 관리하세요. 기기 안에 저장되니, 중요한 건 폴더를 공유해 백업하세요.
+        스크립트 용지에 펜으로 바로 작성하세요. 기기 안에 저장되니, 중요한 건 공유해서 백업하세요.
       </div>
       {folders.length === 0 && (
         <div style={{ textAlign: "center", color: C.muted, fontSize: 13, padding: "24px 0" }}>
-          작품 폴더를 먼저 만들어보세요.
+          새 작품을 만들어 시작하세요.
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {folders.map(f => (
           <div key={f.id} style={card(C)}>
-            <div onClick={() => { setCurFolder(f.id); setView("scripts"); }}
+            <div onClick={() => { setCurFolder(f.id); setView("edit"); }}
                  style={{ flex: 1, minWidth: 0, cursor: "pointer", display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 20 }}>📁</span>
+              <span style={{ fontSize: 20 }}>📄</span>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: C.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{f.name}</div>
-                <div style={{ fontSize: 11, color: C.muted }}>스크립트 {scriptsOf(f.id).length}장</div>
+                <div style={{ fontSize: 11, color: C.muted }}>{(f.pages?.length || 0)}장 · {f.updatedAt ? new Date(f.updatedAt).toLocaleDateString() : ""}</div>
               </div>
             </div>
-            <button onClick={() => shareFolder(f, scriptsOf(f.id), C)} style={iconBtn(C)} title="폴더 공유">📤</button>
+            <button onClick={() => shareFolder(f, [f], C)} style={iconBtn(C)} title="공유">📤</button>
             <button onClick={() => delFolder(f.id)} style={iconBtn(C)} title="삭제">🗑️</button>
           </div>
         ))}
-        <button onClick={addFolder} style={addBtn(C)}>+ 새 작품 폴더</button>
+        <button onClick={addFolder} style={addBtn(C)}>+ 새 작품</button>
       </div>
     </div>
   );
 }
+
+
 
 /* ============================================================
    스크립트 작성 에디터 (양식 배경 + 펜 레이어, 페이지 여러 장)
@@ -343,42 +293,30 @@ function PenPage({ C, initial, onChange }) {
 /* ============================================================
    폴더 공유: 폴더 안 스크립트들을 각각 PDF로 만들어 zip으로 묶어 공유/다운로드
    ============================================================ */
-async function shareFolder(folder, scripts, C) {
-  if (!scripts.length) { alert("폴더가 비어 있어요."); return; }
+async function shareFolder(folder, _ignored, C) {
+  const pages = folder.pages || [];
+  if (!pages.length || pages.every(p => !p)) { alert("작성된 내용이 없어요."); return; }
   try {
-    const [{ PDFDocument }, JSZip] = await Promise.all([
-      import("pdf-lib"),
-      import("jszip").then(m => m.default || m),
-    ]);
-
-    // 양식 원본 PDF 1장 로드 (벡터 유지)
+    const { PDFDocument } = await import("pdf-lib");
     const tplBytes = await fetch(TEMPLATE_PDF).then(r => r.arrayBuffer());
 
-    const zip = new JSZip();
-    for (const s of scripts) {
-      const out = await PDFDocument.create();
-      for (const pageData of s.pages) {
-        // 양식 페이지 복제
-        const tpl = await PDFDocument.load(tplBytes);
-        const [tplPage] = await out.copyPages(tpl, [0]);
-        const page = out.addPage(tplPage);
-        // 펜 레이어 오버레이
-        if (pageData) {
-          const png = await out.embedPng(pageData);
-          const { width, height } = page.getSize();
-          page.drawImage(png, { x: 0, y: 0, width, height });
-        }
+    const out = await PDFDocument.create();
+    for (const pageData of pages) {
+      const tpl = await PDFDocument.load(tplBytes);
+      const [tplPage] = await out.copyPages(tpl, [0]);
+      const page = out.addPage(tplPage);
+      if (pageData) {
+        const png = await out.embedPng(pageData);
+        const { width, height } = page.getSize();
+        page.drawImage(png, { x: 0, y: 0, width, height });
       }
-      const pdfBytes = await out.save();
-      const safe = s.name.replace(/[\\/:*?"<>|]/g, "_");
-      zip.file(`${safe}.pdf`, pdfBytes);
     }
+    const pdfBytes = await out.save();
+    const safe = (folder.name || "스크립트").replace(/[\\/:*?"<>|]/g, "_");
+    const fname = `${safe}.pdf`;
+    const blob = new Blob([pdfBytes], { type: "application/pdf" });
+    const file = new File([blob], fname, { type: "application/pdf" });
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    const fname = `${folder.name.replace(/[\\/:*?"<>|]/g, "_")}.zip`;
-    const file = new File([blob], fname, { type: "application/zip" });
-
-    // 네이티브 공유 시트 (가능하면) → 아니면 다운로드
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({ files: [file], title: folder.name });
     } else {
