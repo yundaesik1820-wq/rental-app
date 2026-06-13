@@ -214,6 +214,7 @@ const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
   const view = useRef({ scale: 1, tx: 0, ty: 0 });
   const pointers = useRef(new Map());        // 현재 닿아있는 포인터들
   const pinch = useRef(null);                // 핀치 시작 정보
+  const didInit = useRef(false);             // 첫 셋업 구분 (초기 복원 보호)
 
   // 저장 시 부모가 현재 그림을 직접 읽어가도록 노출
   useImperativeHandle(ref, () => ({
@@ -246,18 +247,20 @@ const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
     stage.style.width = w + "px";
     stage.style.height = h + "px";
     const dpr = window.devicePixelRatio || 1;
+    // 첫 셋업에서는 빈 기본 캔버스를 백업하지 않는다 (저장된 initial을 덮어쓰지 않도록).
     let old = null;
-    if (canvas.width > 0) { try { old = canvas.toDataURL(); } catch (e) {} }
+    if (didInit.current && canvas.width > 0) { try { old = canvas.toDataURL(); } catch (e) {} }
     canvas.width  = w * dpr;
     canvas.height = h * dpr;
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const restore = old || initial;
+    const restore = old || initial;   // 첫 셋업이면 initial(저장된 그림) 복원
     if (restore) {
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, w, h);
       img.src = restore;
     }
+    didInit.current = true;
   }, [initial]);
 
   useEffect(() => {
