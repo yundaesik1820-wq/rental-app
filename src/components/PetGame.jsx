@@ -76,6 +76,22 @@ function levelFromAdultExp(adultExp) {
   return { level: lvl, cur: remain, need: levelReq(lvl), max: false };
 }
 
+// ── 배틀 스탯 계산 (레벨 + 등급 기반) ──
+function petLevel(pet) {
+  if (!pet || stageFromExp(pet.exp) !== "adult") return 1;
+  return levelFromAdultExp(pet.exp - ADULT_BASE).level;
+}
+function battleStats(pet) {
+  const lvl = petLevel(pet);
+  const bonus = RARITY[pet.rarity]?.bonus || 1;
+  return {
+    maxHp: Math.round((60 + lvl * 8) * (0.9 + bonus * 0.1)),  // 등급 높을수록 체력↑
+    atk:   Math.round((12 + lvl * 2) * (0.9 + bonus * 0.1)),  // 등급 높을수록 공격↑
+    level: lvl,
+  };
+}
+const rngBetween = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
 // 펫 이미지 경로
 function petImg(pet) {
   if (!pet) return null;
@@ -566,9 +582,10 @@ export async function grantPetExp(uid, activity) {
    친구 펫 데이터는 users/{friendUid}.pet 에서 읽음 (읽기 권한 있음)
    하트는 pet.hearts(총합) + pet.heartedBy(누른 사람 uid 배열)로 관리
    ============================================================ */
-export function FriendPetCard({ friendUid, myUid, friendName }) {
+export function FriendPetCard({ friendUid, myUid, friendName, myPet }) {
   const [pet, setPet] = useState(undefined);
   const [hearting, setHearting] = useState(false);
+  const [battling, setBattling] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -602,25 +619,256 @@ export function FriendPetCard({ friendUid, myUid, friendName }) {
     setHearting(false);
   };
 
+  // 배틀 가능 조건: 나/상대 모두 성체 + 본인 펫 아님
+  const myAdult = myPet && stageFromExp(myPet.exp) === "adult";
+  const opAdult = stage === "adult";
+  const canBattle = myUid !== friendUid && myAdult && opAdult;
+  const remain = myPet ? battleRemaining(myPet) : 0;
+
+  const startBattle = () => {
+    if (myUid === friendUid) return;
+    if (!myAdult) { alert("내 펫이 성체가 되어야 배틀할 수 있어요!"); return; }
+    if (!opAdult) { alert("상대 펫이 아직 성체가 아니에요!"); return; }
+    if (remain <= 0) { alert("오늘 배틀 횟수를 다 썼어요! (하루 5회)"); return; }
+    setBattling(true);
+  };
+
   return (
-    <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:12 }}>
-      <div style={{ width:56, height:56, background:C.surface, border:`2px solid ${rarity.color}`, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
-        <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+    <>
+      <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:56, height:56, background:C.surface, border:`2px solid ${rarity.color}`, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+          <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:13, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+            <span style={{ fontSize:10, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:4, padding:"1px 5px", flexShrink:0 }}>{rarity.kr}</span>
+          </div>
+          <div style={{ fontSize:11, color:C.muted, marginTop:3 }}>
+            {stage === "egg" ? "부화 전" : `${SPECIES_KR[pet.species]} · ${stage === "adult" ? `성체 Lv.${petLevel(pet)}` : STAGE_KR[stage]}`} · ❤️ {hearts}
+          </div>
+        </div>
+        <button onClick={toggleHeart} disabled={hearting}
+          style={{ background: iHearted ? C.redLight : "transparent", border:`1.5px solid ${iHearted ? C.red : C.border}`, borderRadius:10, padding:"8px 12px", fontSize:16, cursor:"pointer", flexShrink:0, lineHeight:1 }}
+          title={iHearted ? "하트 취소" : "하트 주기"}>
+          {iHearted ? "❤️" : "🤍"}
+        </button>
+      </div>
+
+      {/* 배틀 신청 버튼 */}
+      <button onClick={startBattle}
+        style={{ width:"100%", marginTop:8, background: canBattle ? C.red : C.border, color:"#fff", border:"none", borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:800, cursor:"pointer", opacity: canBattle ? 1 : 0.55 }}>
+        ⚔️ 배틀 신청 {canBattle && remain > 0 ? `(오늘 ${remain}회 남음)` : ""}
+      </button>
+      {!opAdult && <div style={{ fontSize:11, color:C.muted, marginTop:4, textAlign:"center" }}>상대 펫이 성체가 되면 배틀할 수 있어요</div>}
+      {opAdult && !myAdult && <div style={{ fontSize:11, color:C.muted, marginTop:4, textAlign:"center" }}>내 펫이 성체가 되면 배틀할 수 있어요</div>}
+
+      {battling && (
+        <BattleScreen uid={myUid} myPet={myPet} oppPet={pet} oppName={friendName}
+          onClose={() => setBattling(false)} />
+      )}
+    </>
+  );
+}
+
+
+/* ============================================================
+   배틀 화면 (턴제) — 성체끼리 비동기 배틀
+   props: uid(나), myPet, oppPet, oppName, onClose(결과반영)
+   ============================================================ */
+const BATTLE_MAX = 5;       // 하루 배틀 횟수
+const SPECIAL_MAX = 2;      // 배틀당 필살기 횟수
+const CRIT_RATE = 0.15;     // 크리티컬 확률
+const SPECIAL_HIT = 0.65;   // 필살기 명중률
+
+export function BattleScreen({ uid, myPet, oppPet, oppName, onClose }) {
+  const myStat0 = battleStats(myPet);
+  const opStat0 = battleStats(oppPet);
+
+  const [myHp, setMyHp] = useState(myStat0.maxHp);
+  const [opHp, setOpHp] = useState(opStat0.maxHp);
+  const [turn, setTurn] = useState(1);
+  const [log, setLog] = useState(["배틀 시작! 행동을 선택하세요."]);
+  const [special, setSpecial] = useState(SPECIAL_MAX);
+  const [myGuard, setMyGuard] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [over, setOver] = useState(null);   // null | "win" | "lose" | "flee"
+  const [rewardMsg, setRewardMsg] = useState("");
+
+  const myName = myPet.name || SPECIES_KR[myPet.species];
+  const opName2 = oppPet.name || SPECIES_KR[oppPet.species];
+
+  const addLog = (line) => setLog(prev => [...prev.slice(-3), line]);
+
+  // 데미지 계산 (운빨: ±20% 범위 + 크리티컬)
+  const calcDamage = (atk, guard) => {
+    let dmg = Math.round(atk * (rngBetween(80, 120) / 100));
+    let crit = Math.random() < CRIT_RATE;
+    if (crit) dmg = Math.round(dmg * 2);
+    if (guard) dmg = Math.round(dmg / 2);
+    return { dmg: Math.max(1, dmg), crit };
+  };
+
+  // 상대(친구 펫) AI 턴
+  const enemyTurn = (curMyHp) => {
+    const r = Math.random();
+    let opGuard = false;
+    if (r < 0.7) {
+      // 공격
+      const { dmg, crit } = calcDamage(opStat0.atk, myGuard);
+      const after = Math.max(0, curMyHp - dmg);
+      setMyHp(after);
+      addLog(`${opName2}의 공격! ${myName} ${dmg} 데미지${crit ? " (크리티컬!)" : ""}`);
+      setMyGuard(false);
+      if (after <= 0) { finish("lose"); return; }
+    } else if (r < 0.9) {
+      addLog(`${opName2}이(가) 방어 자세!`);
+      opGuard = true;
+    } else {
+      // 필살기
+      if (Math.random() < SPECIAL_HIT) {
+        const { dmg } = calcDamage(opStat0.atk * 2, myGuard);
+        const after = Math.max(0, curMyHp - dmg);
+        setMyHp(after);
+        addLog(`${opName2}의 필살기! ${myName} ${dmg} 데미지 ✨`);
+        setMyGuard(false);
+        if (after <= 0) { finish("lose"); return; }
+      } else {
+        addLog(`${opName2}의 필살기가 빗나갔어요!`);
+      }
+    }
+    setTurn(t => t + 1);
+    setBusy(false);
+    return opGuard;
+  };
+
+  // 내 행동
+  const act = (type) => {
+    if (busy || over) return;
+    setBusy(true);
+
+    if (type === "flee") { finish("flee"); return; }
+
+    if (type === "attack") {
+      const { dmg, crit } = calcDamage(myStat0.atk, false);
+      const after = Math.max(0, opHp - dmg);
+      setOpHp(after);
+      addLog(`${myName}의 공격! ${opName2} ${dmg} 데미지${crit ? " (크리티컬!)" : ""}`);
+      if (after <= 0) { finish("win"); return; }
+      setTimeout(() => enemyTurn(myHp), 700);
+    } else if (type === "guard") {
+      setMyGuard(true);
+      addLog(`${myName}이(가) 방어 자세를 취했어요!`);
+      setTimeout(() => enemyTurn(myHp), 700);
+    } else if (type === "special") {
+      if (special <= 0) { addLog("필살기를 다 썼어요!"); setBusy(false); return; }
+      setSpecial(s => s - 1);
+      if (Math.random() < SPECIAL_HIT) {
+        const { dmg } = calcDamage(myStat0.atk * 2, false);
+        const after = Math.max(0, opHp - dmg);
+        setOpHp(after);
+        addLog(`${myName}의 필살기 적중! ${opName2} ${dmg} 데미지 ✨`);
+        if (after <= 0) { finish("win"); return; }
+      } else {
+        addLog(`${myName}의 필살기가 빗나갔어요…`);
+      }
+      setTimeout(() => enemyTurn(myHp), 700);
+    }
+  };
+
+  // 배틀 종료 + 보상/전적 반영
+  const finish = async (result) => {
+    setOver(result);
+    setBusy(true);
+    try {
+      const snap = await getDoc(doc(db, "users", uid));
+      const pet = snap.data().pet;
+      const today = todayStr();
+      const bdate = pet.lastBattleDate === today;
+      let patch = {
+        "pet.lastBattleDate": today,
+        "pet.battleCount": (bdate ? (pet.battleCount || 0) : 0) + 1,
+      };
+      if (result === "win") {
+        const bonus = RARITY[pet.rarity]?.bonus || 1;
+        const lvlDiff = Math.max(0, opStat0.level - myStat0.level);
+        const gain = Math.round((50 + lvlDiff * 3) * bonus);
+        patch["pet.exp"] = (pet.exp || 0) + gain;
+        patch["pet.battleWin"] = (pet.battleWin || 0) + 1;
+        setRewardMsg(`승리! +${gain} EXP 획득 🎉`);
+      } else if (result === "lose") {
+        patch["pet.battleLose"] = (pet.battleLose || 0) + 1;
+        setRewardMsg("패배… 다음엔 이길 수 있어요!");
+      } else {
+        setRewardMsg("배틀에서 도망쳤어요.");
+      }
+      await updateDoc(doc(db, "users", uid), patch);
+    } catch (e) {}
+    setBusy(false);
+  };
+
+  const HpBar = ({ pet, name, hp, max, level, color, side }) => (
+    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
+      <div style={{ width:54, height:54, background:"#0f1320", border:`2px solid ${color}`, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+        <img src={petImg(pet)} alt="" style={{ width:"90%", height:"90%", objectFit:"contain", imageRendering:"pixelated" }} />
       </div>
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:13, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
-          <span style={{ fontSize:10, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:4, padding:"1px 5px", flexShrink:0 }}>{rarity.kr}</span>
+        <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, marginBottom:3, color:"#e8eaf0" }}>
+          <span style={{ fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{name} <span style={{ color }}>Lv.{level}</span></span>
+          <span style={{ color:"#8b90a8", flexShrink:0 }}>{hp} / {max}</span>
         </div>
-        <div style={{ fontSize:11, color:C.muted, marginTop:3 }}>
-          {stage === "egg" ? "부화 전" : `${SPECIES_KR[pet.species]} · ${STAGE_KR[stage]}`} · ❤️ {hearts}
+        <div style={{ height:9, background:"#0f1320", borderRadius:5, overflow:"hidden" }}>
+          <div style={{ width:`${Math.max(0,(hp/max)*100)}%`, height:"100%", background: hp/max > 0.3 ? "#1d9e75" : "#e24b4a", transition:"width .4s" }} />
         </div>
       </div>
-      <button onClick={toggleHeart} disabled={hearting}
-        style={{ background: iHearted ? C.redLight : "transparent", border:`1.5px solid ${iHearted ? C.red : C.border}`, borderRadius:10, padding:"8px 12px", fontSize:16, cursor:"pointer", flexShrink:0, lineHeight:1 }}
-        title={iHearted ? "하트 취소" : "하트 주기"}>
-        {iHearted ? "❤️" : "🤍"}
-      </button>
     </div>
   );
+
+  const opColor = RARITY[oppPet.rarity]?.color || "#9ca3af";
+  const myColor = RARITY[myPet.rarity]?.color || "#9ca3af";
+
+  return (
+    <div style={{ position:"fixed", inset:0, zIndex:9700, background:"rgba(0,0,0,0.6)", display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ maxWidth:380, width:"100%", background:"#161b2e", borderRadius:18, padding:"16px 14px", color:"#e8eaf0" }}>
+        <div style={{ textAlign:"center", fontSize:12, color:"#8b90a8", marginBottom:12 }}>⚔️ 배틀 · {turn}턴째</div>
+
+        <HpBar pet={oppPet} name={`${opName2} (상대)`} hp={opHp} max={opStat0.maxHp} level={opStat0.level} color={opColor} side="op" />
+        <div style={{ textAlign:"center", fontSize:11, color:"#8b90a8", margin:"10px 0" }}>─ VS ─</div>
+        <HpBar pet={myPet} name={`${myName} (나)`} hp={myHp} max={myStat0.maxHp} level={myStat0.level} color={myColor} side="my" />
+
+        <div style={{ background:"#0f1320", borderRadius:10, padding:"10px 12px", fontSize:12, lineHeight:1.7, color:"#b8bcd0", margin:"14px 0", minHeight:74 }}>
+          {log.map((l, i) => <div key={i}>{l}</div>)}
+        </div>
+
+        {!over ? (
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8 }}>
+            <button onClick={() => act("attack")} disabled={busy}
+              style={{ background:"#2D4A9B", color:"#fff", border:"none", borderRadius:12, padding:"13px 0", fontSize:14, fontWeight:700, cursor:"pointer", opacity:busy?0.6:1 }}>🗡️ 공격</button>
+            <button onClick={() => act("guard")} disabled={busy}
+              style={{ background:"#1d9e75", color:"#fff", border:"none", borderRadius:12, padding:"13px 0", fontSize:14, fontWeight:700, cursor:"pointer", opacity:busy?0.6:1 }}>🛡️ 방어</button>
+            <button onClick={() => act("special")} disabled={busy || special<=0}
+              style={{ background:"#9d4edd", color:"#fff", border:"none", borderRadius:12, padding:"13px 0", fontSize:14, fontWeight:700, cursor:"pointer", opacity:(busy||special<=0)?0.5:1 }}>✨ 필살기 ({special})</button>
+            <button onClick={() => act("flee")} disabled={busy}
+              style={{ background:"#3a3f55", color:"#e8eaf0", border:"none", borderRadius:12, padding:"13px 0", fontSize:14, fontWeight:700, cursor:"pointer", opacity:busy?0.6:1 }}>💨 도망</button>
+          </div>
+        ) : (
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontSize:18, fontWeight:800, marginBottom:6, color: over==="win"?"#5dcaa5":over==="lose"?"#f09595":"#b8bcd0" }}>
+              {over==="win" ? "🏆 승리!" : over==="lose" ? "😢 패배" : "💨 도망쳤어요"}
+            </div>
+            <div style={{ fontSize:13, color:"#b8bcd0", marginBottom:16 }}>{rewardMsg}</div>
+            <button onClick={onClose}
+              style={{ background:"#2D4A9B", color:"#fff", border:"none", borderRadius:12, padding:"12px 36px", fontSize:14, fontWeight:800, cursor:"pointer" }}>확인</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// 오늘 배틀 가능 횟수 조회용 헬퍼
+export function battleRemaining(pet) {
+  if (!pet) return BATTLE_MAX;
+  const used = pet.lastBattleDate === todayStr() ? (pet.battleCount || 0) : 0;
+  return Math.max(0, BATTLE_MAX - used);
 }

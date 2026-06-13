@@ -248,6 +248,7 @@ export default function StudentHome() {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
+  const [myPetData, setMyPetData] = useState(null);
 
   // 계정 전환 (학생↔관리자)
   const switchKey = `linked_creds_${profile?.uid}`;
@@ -356,6 +357,15 @@ export default function StudentHome() {
   const [showClassForm, setShowClassForm] = useState(false);
 
   const uid = profile?.uid;
+  useEffect(() => {
+    if (!uid) return;
+    (async () => {
+      try {
+        const s = await getDoc(doc(db, "users", uid));
+        setMyPetData(s.exists() && s.data().pet ? s.data().pet : null);
+      } catch (e) {}
+    })();
+  }, [uid, petRefresh]);
 
   // 시간표 로드
   useEffect(() => {
@@ -1020,7 +1030,7 @@ export default function StudentHome() {
                                     </div>
                                     <div style={{ marginTop:8 }}>
                                       <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>🐾 {viewFriend.name}님의 펫</div>
-                                      <FriendPetCard friendUid={viewFriend.id} myUid={profile?.uid} friendName={viewFriend.name} />
+                                      <FriendPetCard friendUid={viewFriend.id} myUid={profile?.uid} friendName={viewFriend.name} myPet={myPetData} />
                                     </div>
                                   </div>
                                 )}
