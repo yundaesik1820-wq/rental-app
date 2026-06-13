@@ -8,6 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -245,6 +246,8 @@ function GpaCalculator() {
 
 export default function StudentHome() {
   const { profile, logout } = useAuth();
+  const [showPet, setShowPet] = useState(false);
+  const [petRefresh, setPetRefresh] = useState(0);
 
   // 계정 전환 (학생↔관리자)
   const switchKey = `linked_creds_${profile?.uid}`;
@@ -712,6 +715,10 @@ export default function StudentHome() {
           </span>
         </div>
       </div>
+
+      {/* 🐾 펫 키우기 카드 */}
+      <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
+      {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }} />}
 
       {/* 공지 팝업 모달 */}
       {popupNotice && (
