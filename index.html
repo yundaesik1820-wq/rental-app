@@ -103,6 +103,16 @@
           }
         }, 800);
       });
+
+      // 새 버전(서비스워커)이 활성화되면 한 번 자동 새로고침 → 항상 최신 화면 유지
+      if ('serviceWorker' in navigator) {
+        let reloaded = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (reloaded) return;
+          reloaded = true;
+          window.location.reload();
+        });
+      }
     </script>
   </body>
 </html>

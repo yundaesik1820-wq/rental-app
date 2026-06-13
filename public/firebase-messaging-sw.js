@@ -12,6 +12,14 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// ── 새 버전이 배포되면 즉시 최신으로 갈아타기 (옛 화면 고착 방지) ──
+self.addEventListener("install", () => {
+  self.skipWaiting();            // 대기 없이 새 SW 즉시 설치
+});
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());  // 열려있는 탭을 새 SW가 즉시 제어
+});
+
 // data payload를 받아 직접 알림 표시 (notification payload 없으므로 중복 없음)
 messaging.onBackgroundMessage((payload) => {
   const title = payload.data?.title || "KBAS 알림";
