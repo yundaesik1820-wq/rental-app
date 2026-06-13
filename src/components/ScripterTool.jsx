@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
 
 /* ============================================================
    스크립터 — 스크립트 용지 위에 펜으로 작성 + 작품 폴더 관리
@@ -147,25 +147,28 @@ export default function ScripterTool({ C, onBack }) {
    스크립트 작성 에디터 (양식 배경 + 펜 레이어, 페이지 여러 장)
    ============================================================ */
 function ScriptEditor({ C, script, onBack, onSave }) {
-  const [pages, setPages] = useState(script.pages.length ? script.pages : [null]); // 각 원소 = dataURL or null
+  const [pageCount, setPageCount] = useState(script.pages?.length ? script.pages.length : 1);
   const [saving, setSaving] = useState(false);
-  const dirty = useRef(false);
+  const initialPages = useRef(script.pages?.length ? script.pages : [null]);
+  const pageRefs = useRef([]);   // 각 PenPage의 ref
 
-  const updatePage = (idx, dataUrl) => {
-    setPages(prev => { const n = [...prev]; n[idx] = dataUrl; return n; });
-    dirty.current = true;
-  };
-  const addPage = () => { setPages(prev => [...prev, null]); dirty.current = true; };
+  const addPage = () => setPageCount(n => n + 1);
+
+  // 모든 페이지 캔버스에서 현재 그림을 직접 수집
+  const collect = () => pageRefs.current.map(r => (r && r.getData ? r.getData() : null));
 
   const save = async () => {
     setSaving(true);
-    await onSave(pages);
-    dirty.current = false;
+    try {
+      await onSave(collect());
+    } catch (e) {
+      alert("저장 실패: " + (e.message || e));
+    }
     setSaving(false);
   };
 
   const back = async () => {
-    if (dirty.current) await onSave(pages);
+    try { await onSave(collect()); } catch (e) {}
     onBack();
   };
 
@@ -185,10 +188,10 @@ function ScriptEditor({ C, script, onBack, onSave }) {
       </div>
 
       <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
-        {pages.map((data, i) => (
+        {Array.from({ length: pageCount }).map((_, i) => (
           <div key={i}>
-            <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pages.length} —</div>
-            <PenPage C={C} initial={data} onChange={(d) => updatePage(i, d)} />
+            <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pageCount} —</div>
+            <PenPage ref={(el) => { pageRefs.current[i] = el; }} C={C} initial={initialPages.current[i] || null} />
           </div>
         ))}
         <button onClick={addPage} style={addBtn(C)}>+ 페이지 추가</button>
@@ -200,7 +203,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
 /* ============================================================
    한 장: 양식 배경 이미지 + 투명 펜 캔버스
    ============================================================ */
-function PenPage({ C, initial, onChange }) {
+const PenPage = forwardRef(function PenPage({ C, initial }, ref) {
   const wrapRef   = useRef(null);   // 고정 뷰포트 (overflow hidden)
   const stageRef  = useRef(null);   // 확대/이동되는 내부 (양식+캔버스)
   const canvasRef = useRef(null);
@@ -211,6 +214,21 @@ function PenPage({ C, initial, onChange }) {
   const view = useRef({ scale: 1, tx: 0, ty: 0 });
   const pointers = useRef(new Map());        // 현재 닿아있는 포인터들
   const pinch = useRef(null);                // 핀치 시작 정보
+
+  // 저장 시 부모가 현재 그림을 직접 읽어가도록 노출
+  useImperativeHandle(ref, () => ({
+    getData() {
+      const canvas = canvasRef.current;
+      if (!canvas) return null;
+      try {
+        // 빈 캔버스면 null 반환 (불필요한 용량 방지)
+        const blank = document.createElement("canvas");
+        blank.width = canvas.width; blank.height = canvas.height;
+        if (canvas.toDataURL() === blank.toDataURL()) return null;
+        return canvas.toDataURL("image/png");
+      } catch (e) { return null; }
+    },
+  }));
 
   const applyTransform = () => {
     const s = stageRef.current; if (!s) return;
@@ -327,7 +345,6 @@ function PenPage({ C, initial, onChange }) {
     if (pointers.current.size < 2) pinch.current = null;
     if (drawing.current && pointers.current.size === 0) {
       drawing.current = false;
-      try { onChange(canvasRef.current.toDataURL("image/png")); } catch (e) {}
     }
   };
 
@@ -352,7 +369,6 @@ function PenPage({ C, initial, onChange }) {
     const ctx = canvas.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
-    onChange(null);
   };
 
   return (
@@ -377,7 +393,7 @@ function PenPage({ C, initial, onChange }) {
       </div>
     </div>
   );
-}
+});
 
 /* ============================================================
    폴더 공유: 폴더 안 스크립트들을 각각 PDF로 만들어 zip으로 묶어 공유/다운로드
