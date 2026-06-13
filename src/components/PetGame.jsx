@@ -455,3 +455,42 @@ function QuestBtn({ label, used, max, onClick, disabled, color }) {
     </button>
   );
 }
+
+
+/* ============================================================
+   외부(에브리타임 등)에서 펫 경험치 적립 — 도배 방지 포함
+   activity: "post"(+15, 하루 3회) | "comment"(+5, 하루 5회)
+   조용히 실패해도 됨(펫 없으면 무시). 성공 시 적립된 EXP 반환.
+   ============================================================ */
+const ACTIVITY = {
+  post:    { exp: 15, dailyMax: 3 },
+  comment: { exp: 5,  dailyMax: 5 },
+};
+export async function grantPetExp(uid, activity) {
+  if (!uid || !ACTIVITY[activity]) return 0;
+  try {
+    const ref = doc(db, "users", uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists() || !snap.data().pet) return 0;  // 펫 없으면 무시
+    const pet = snap.data().pet;
+    // 알 단계에서는 활동 경험치 미적립 (부화는 밥/놀기/퀴즈로만 → 종 결정+이름짓기 UI 보장)
+    if (stageFromExp(pet.exp || 0) === "egg" || !pet.species) return 0;
+    const today = todayStr();
+    const conf = ACTIVITY[activity];
+
+    // 오늘 적립 횟수 (날짜 바뀌면 리셋)
+    const log = (pet.actLog && pet.actLog.date === today) ? { ...pet.actLog } : { date: today, post: 0, comment: 0 };
+    if ((log[activity] || 0) >= conf.dailyMax) return 0;   // 일일 한도 초과 → 적립 안 함
+    log[activity] = (log[activity] || 0) + 1;
+
+    const bonus = RARITY[pet.rarity]?.bonus || 1;
+    const gain = Math.round(conf.exp * bonus);
+    const updated = { ...pet, exp: (pet.exp || 0) + gain, actLog: log };
+    // 알 단계에서 활동만으로 부화하지는 않게 — 부화는 밥/놀기/퀴즈에서만 처리하므로
+    // 여기선 종 결정 로직 없이 exp만 적립 (egg면 exp만 쌓이고 다음 밥/퀴즈 때 부화 트리거)
+    await updateDoc(ref, { pet: updated });
+    return gain;
+  } catch (e) {
+    return 0;  // 조용히 실패
+  }
+}

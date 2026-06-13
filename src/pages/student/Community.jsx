@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { grantPetExp } from "../../components/PetGame.jsx";
 
 // 노치(safe area) 높이를 JS로 직접 측정해 픽셀 숫자로 확정.
 // CSS 변수/env()를 거치지 않으므로 테마 코드 등 어떤 외부 요인에도 영향받지 않음.
@@ -401,6 +402,7 @@ export default function Community({ onExit }) {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
+    grantPetExp(profile?.uid, "post");   // 펫 경험치 (하루 3회까지, 알 단계 제외)
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
       positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
@@ -454,6 +456,7 @@ export default function Community({ onExit }) {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
+    grantPetExp(profile?.uid, "comment");   // 펫 경험치 (하루 5회까지, 알 단계 제외)
     setCommentText("");
     setCommentRating(0);
     setCommentUseRealName(false);
