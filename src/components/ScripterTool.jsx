@@ -426,7 +426,7 @@ async function shareFolder(folder, _ignored, C) {
     const file = new File([blob], fname, { type: "application/pdf" });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: folder.name });
+      await navigator.share({ files: [file] });
     } else {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
