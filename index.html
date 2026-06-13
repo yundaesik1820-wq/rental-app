@@ -22,6 +22,8 @@
         --safe-top: env(safe-area-inset-top, 0px);
         --safe-bottom: env(safe-area-inset-bottom, 0px);
       }
+      /* 가로↔세로 회전 시 글자 자동 확대(iOS) 방지 */
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: 'Noto Sans KR', sans-serif; background: #0F172A; }
 

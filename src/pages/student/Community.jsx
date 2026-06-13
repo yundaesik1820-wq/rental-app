@@ -727,6 +727,7 @@ export default function Community({ onExit }) {
         color:"#fafaf9",
         overflowY:"auto",
         WebkitOverflowScrolling:"touch",
+        WebkitTextSizeAdjust:"100%", textSizeAdjust:"100%",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
         {/* 노치 커버 스페이서 — 패딩이 아닌 실제 요소로 안전영역 확보 */}
