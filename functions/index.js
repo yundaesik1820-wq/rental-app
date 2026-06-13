@@ -267,7 +267,7 @@ exports.onUserApproved = functions.firestore
 
 // ── 관리자 수동 알림 (제목/내용 직접 입력해서 발송) ──────────
 // 호출 예: sendCustomAlert({ title, body, target: "all" })            → 승인된 학생 전체
-//          sendCustomAlert({ title, body, target: "25237001" })       → 특정 학번 1명
+//          sendCustomAlert({ title, body, target: "25237001, 25237002" }) → 특정 학번 여러 명(쉼표 구분)
 exports.sendCustomAlert = functions.https.onCall(async (data, context) => {
   if (!context.auth) throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
   const callerDoc = await admin.firestore().collection("users").doc(context.auth.uid).get();
@@ -286,11 +286,19 @@ exports.sendCustomAlert = functions.https.onCall(async (data, context) => {
     return { success: true, sent: targets.length };
   }
 
-  // 특정 학번 1명
-  const oneSnap = await admin.firestore().collection("users")
-    .where("studentId", "==", String(target)).limit(1).get();
-  if (oneSnap.empty)
-    throw new functions.https.HttpsError("not-found", "해당 학번의 사용자를 찾을 수 없습니다.");
-  await sendFCM(oneSnap.docs[0].id, title, body || "");
-  return { success: true, sent: 1 };
+  // 특정 학번 — 쉼표/공백으로 여러 명 입력 가능 (예: "25237001, 25237002")
+  const ids = String(target).split(/[\s,]+/).filter(Boolean);
+  if (ids.length === 0)
+    throw new functions.https.HttpsError("invalid-argument", "학번을 입력해주세요.");
+
+  let sent = 0;
+  const notFound = [];
+  for (const sid of ids) {
+    const snap = await admin.firestore().collection("users")
+      .where("studentId", "==", sid).limit(1).get();
+    if (snap.empty) { notFound.push(sid); continue; }
+    await sendFCM(snap.docs[0].id, title, body || "");
+    sent++;
+  }
+  return { success: true, sent, notFound };
 });

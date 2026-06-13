@@ -45,7 +45,11 @@ export default function Notices({ isAdmin = true }) {
         body:   alertForm.body.trim(),
         target: alertForm.target === "all" ? "all" : alertForm.studentId.trim(),
       });
-      setSendResult({ ok: true, msg: `✅ ${res.data?.sent ?? 0}명에게 발송 완료` });
+      const nf = res.data?.notFound || [];
+      setSendResult({
+        ok: true,
+        msg: `✅ ${res.data?.sent ?? 0}명에게 발송 완료` + (nf.length ? ` · 미발견 학번: ${nf.join(", ")}` : ""),
+      });
       setAlertForm(p => ({ ...p, studentId: "", title: "", body: "" }));
     } catch (e) {
       setSendResult({ ok: false, msg: "발송 실패: " + (e.message || "오류") });
@@ -155,7 +159,7 @@ export default function Notices({ isAdmin = true }) {
                 ))}
               </div>
               {alertForm.target === "one" && (
-                <Inp label="학번" placeholder="예: 25237001" value={alertForm.studentId} onChange={e => setAlertForm(p => ({ ...p, studentId: e.target.value }))} />
+                <Inp label="학번 (여러 명은 쉼표로 구분)" placeholder="예: 25237001, 25237002" value={alertForm.studentId} onChange={e => setAlertForm(p => ({ ...p, studentId: e.target.value }))} />
               )}
               <Inp label="제목" placeholder="알림 제목 입력" value={alertForm.title} onChange={e => setAlertForm(p => ({ ...p, title: e.target.value }))} />
               <div style={{ marginBottom: 12 }}>
