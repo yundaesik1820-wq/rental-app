@@ -174,10 +174,12 @@ function ScriptEditor({ C, script, onBack, onSave }) {
   };
 
   return (
-    <div style={{ padding: 0 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: C.bg, display: "flex", flexDirection: "column" }}>
       <div style={{
-        position: "sticky", top: 0, zIndex: 10, background: C.surface,
-        borderBottom: `1px solid ${C.border}`, padding: "10px 12px",
+        flexShrink: 0, zIndex: 10, background: C.surface,
+        borderBottom: `1px solid ${C.border}`,
+        padding: "10px 12px",
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <button onClick={back} style={{ ...iconBtn(C), fontSize: 13 }}>← 목록</button>
@@ -201,7 +203,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         </button>
       </div>
 
-      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 12, paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)", display: "flex", flexDirection: "column", gap: 16 }}>
         {Array.from({ length: pageCount }).map((_, i) => (
           <div key={i}>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pageCount} —</div>
