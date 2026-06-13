@@ -494,3 +494,68 @@ export async function grantPetExp(uid, activity) {
     return 0;  // 조용히 실패
   }
 }
+
+
+/* ============================================================
+   친구 펫 보기 (읽기 전용) + 하트 누르기
+   친구 펫 데이터는 users/{friendUid}.pet 에서 읽음 (읽기 권한 있음)
+   하트는 pet.hearts(총합) + pet.heartedBy(누른 사람 uid 배열)로 관리
+   ============================================================ */
+export function FriendPetCard({ friendUid, myUid, friendName }) {
+  const [pet, setPet] = useState(undefined);
+  const [hearting, setHearting] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, "users", friendUid));
+        setPet(snap.exists() && snap.data().pet ? snap.data().pet : null);
+      } catch (e) { setPet(null); }
+    })();
+  }, [friendUid]);
+
+  if (pet === undefined) return <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>펫 불러오는 중...</div>;
+  if (!pet) return <div style={{ fontSize:12, color:C.muted, padding:"10px 0", textAlign:"center" }}>아직 펫이 없어요</div>;
+
+  const stage = stageFromExp(pet.exp);
+  const rarity = RARITY[pet.rarity] || RARITY.common;
+  const hearts = pet.hearts || 0;
+  const heartedBy = pet.heartedBy || [];
+  const iHearted = heartedBy.includes(myUid);
+  const label = stage === "egg" ? `${rarity.kr} 알` : (pet.name || SPECIES_KR[pet.species]);
+
+  const toggleHeart = async () => {
+    if (hearting || !myUid || myUid === friendUid) return;  // 본인 펫엔 못 누름
+    setHearting(true);
+    try {
+      const ref = doc(db, "users", friendUid);
+      const newHeartedBy = iHearted ? heartedBy.filter(u => u !== myUid) : [...heartedBy, myUid];
+      const newHearts = newHeartedBy.length;
+      await updateDoc(ref, { "pet.hearts": newHearts, "pet.heartedBy": newHeartedBy });
+      setPet(p => ({ ...p, hearts: newHearts, heartedBy: newHeartedBy }));
+    } catch (e) {}
+    setHearting(false);
+  };
+
+  return (
+    <div style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px", display:"flex", alignItems:"center", gap:12 }}>
+      <div style={{ width:56, height:56, background:C.surface, border:`2px solid ${rarity.color}`, borderRadius:10, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+        <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+      </div>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          <span style={{ fontSize:13, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+          <span style={{ fontSize:10, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:4, padding:"1px 5px", flexShrink:0 }}>{rarity.kr}</span>
+        </div>
+        <div style={{ fontSize:11, color:C.muted, marginTop:3 }}>
+          {stage === "egg" ? "부화 전" : `${SPECIES_KR[pet.species]} · ${STAGE_KR[stage]}`} · ❤️ {hearts}
+        </div>
+      </div>
+      <button onClick={toggleHeart} disabled={hearting}
+        style={{ background: iHearted ? C.redLight : "transparent", border:`1.5px solid ${iHearted ? C.red : C.border}`, borderRadius:10, padding:"8px 12px", fontSize:16, cursor:"pointer", flexShrink:0, lineHeight:1 }}
+        title={iHearted ? "하트 취소" : "하트 주기"}>
+        {iHearted ? "❤️" : "🤍"}
+      </button>
+    </div>
+  );
+}
