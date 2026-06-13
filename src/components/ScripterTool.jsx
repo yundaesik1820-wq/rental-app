@@ -183,12 +183,16 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         <button onClick={back} style={{ ...iconBtn(C), fontSize: 13 }}>← 목록</button>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <button onClick={() => setTool("pen")}
-            style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? "#fff" : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            ✏️ 펜
+            style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? "#fff" : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            ✏️
           </button>
           <button onClick={() => setTool("eraser")}
-            style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? "#fff" : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 12px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-            🧽 지우개
+            style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? "#fff" : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            🧽
+          </button>
+          <button onClick={() => setTool("scroll")}
+            style={{ background: tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "scroll" ? "#fff" : C.muted, border: `1px solid ${tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            ✋
           </button>
         </div>
         <button onClick={save} disabled={saving}
@@ -197,7 +201,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         </button>
       </div>
 
-      <div style={{ padding: "12px 30px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ padding: 12, display: "flex", flexDirection: "column", gap: 16 }}>
         {Array.from({ length: pageCount }).map((_, i) => (
           <div key={i}>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pageCount} —</div>
@@ -393,12 +397,12 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
 
   return (
     <div style={{ position: "relative", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden", background: "#fff" }}>
-      <div ref={wrapRef} style={{ position: "relative", width: "100%", overflow: "hidden", touchAction: "none" }}>
+      <div ref={wrapRef} style={{ position: "relative", width: "100%", overflow: "hidden", touchAction: tool === "scroll" ? "pan-y" : "none" }}>
         <div ref={stageRef} style={{ position: "absolute", top: 0, left: 0, transformOrigin: "top left",
           backgroundImage: `url(${TEMPLATE_IMG})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
           <canvas ref={canvasRef}
             onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: "none", cursor: "crosshair" }} />
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: tool === "scroll" ? "pan-y" : "none", cursor: tool === "scroll" ? "grab" : "crosshair", pointerEvents: tool === "scroll" ? "none" : "auto" }} />
         </div>
       </div>
       <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 6, zIndex: 2 }}>
