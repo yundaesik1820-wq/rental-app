@@ -27,6 +27,7 @@ const STAGE_KR = { egg:"알", baby:"유년기", juvenile:"성장기", adult:"성
 
 const QUEST_MAX = 5;       // 각 퀘스트 하루 5회
 const QUEST_EXP = 10;      // 성공 시 기본 경험치
+const QUIZ_EXP  = 30;      // 오늘의 퀴즈 정답 시 기본 경험치
 const QUEST_SUCCESS = 0.9; // 90% 성공
 
 const todayStr = () => {
@@ -139,13 +140,56 @@ export function PetOverlay({ uid, onClose }) {
   const [naming, setNaming] = useState(false);   // 부화 직후 이름짓기
   const [nameInput, setNameInput] = useState("");
   const [justHatched, setJustHatched] = useState(null); // 부화 연출용 species
+  const [quiz, setQuiz] = useState(undefined);          // 오늘의 퀴즈 (undefined=로딩, null=없음)
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizPick, setQuizPick] = useState(null);       // 고른 보기 인덱스
+  const [quizResult, setQuizResult] = useState(null);   // {correct, answer}
 
   const load = useCallback(async () => {
     const snap = await getDoc(doc(db, "users", uid));
     const p = snap.exists() && snap.data().pet ? snap.data().pet : null;
     setPet(p);
+    // 오늘의 퀴즈 로드
+    try {
+      const qs = await getDoc(doc(db, "quizzes", todayStr()));
+      setQuiz(qs.exists() ? qs.data() : null);
+    } catch (e) { setQuiz(null); }
   }, [uid]);
   useEffect(() => { load(); }, [load]);
+
+  // 오늘 퀴즈 이미 풀었는지 (pet에 기록)
+  const quizDoneToday = pet && pet.lastQuizDate === todayStr();
+
+  // 퀴즈 정답 제출
+  const submitQuiz = async () => {
+    if (quizPick == null || !quiz || busy) return;
+    setBusy(true);
+    const correct = quizPick === quiz.answer;
+    const bonus = RARITY[pet.rarity]?.bonus || 1;
+    const gain = correct ? Math.round(QUIZ_EXP * bonus) : 0;
+
+    const prevStage = stageFromExp(pet.exp);
+    const newExp = pet.exp + gain;
+    const newStage = stageFromExp(newExp);
+
+    let updated = { ...pet, exp:newExp, lastQuizDate: todayStr() };
+    // 퀴즈로 부화하는 경우도 처리
+    let hatched = false;
+    if (prevStage === "egg" && newStage !== "egg" && !pet.species) {
+      updated.species = rollSpecies();
+      hatched = true;
+    }
+    await updateDoc(doc(db, "users", uid), { pet: updated });
+    setPet(updated);
+    setQuizResult({ correct, answer: quiz.answer });
+    setBusy(false);
+
+    if (hatched) {
+      setTimeout(() => { setQuizOpen(false); setJustHatched(updated.species); setNaming(true); }, 1400);
+    } else if (newStage !== prevStage) {
+      setTimeout(() => { setQuizOpen(false); showToast(`${STAGE_KR[newStage]}(으)로 성장했어요! 🎉`); }, 1400);
+    }
+  };
 
   const showToast = (msg, good=true) => { setToast({ msg, good }); setTimeout(()=>setToast(null), 1800); };
 
@@ -275,6 +319,51 @@ export function PetOverlay({ uid, onClose }) {
         </div>
       )}
 
+      {/* 오늘의 퀴즈 모달 */}
+      {quizOpen && quiz && (
+        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.75)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:25, padding:18 }}>
+          <div style={{ background:C.surface, borderRadius:18, padding:"22px 20px", maxWidth:380, width:"100%", maxHeight:"86%", overflowY:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <span style={{ fontSize:13, fontWeight:800, color:C.purple }}>📚 오늘의 퀴즈</span>
+              <button onClick={() => setQuizOpen(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ fontSize:15, fontWeight:700, color:C.text, lineHeight:1.5, marginBottom:16 }}>{quiz.question}</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {quiz.options.map((opt, i) => {
+                let bg = C.bg, bd = C.border, tc = C.text;
+                if (quizResult) {
+                  if (i === quizResult.answer) { bg = C.greenLight; bd = C.green; tc = C.green; }
+                  else if (i === quizPick) { bg = C.redLight; bd = C.red; tc = C.red; }
+                } else if (i === quizPick) { bg = C.purpleLight; bd = C.purple; tc = C.purple; }
+                return (
+                  <button key={i} onClick={() => !quizResult && setQuizPick(i)} disabled={!!quizResult}
+                    style={{ textAlign:"left", background:bg, border:`1.5px solid ${bd}`, borderRadius:10, padding:"12px 14px", fontSize:14, color:tc, fontWeight: (quizPick===i||quizResult&&i===quizResult.answer)?700:400, cursor: quizResult?"default":"pointer", fontFamily:"inherit", display:"flex", gap:8 }}>
+                    <span style={{ fontWeight:800, flexShrink:0 }}>{["①","②","③","④","⑤"][i]}</span>
+                    <span>{opt}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {!quizResult ? (
+              <button onClick={submitQuiz} disabled={quizPick==null || busy}
+                style={{ width:"100%", marginTop:16, background: quizPick!=null?C.purple:C.border, color:"#fff", border:"none", borderRadius:10, padding:"13px 0", fontSize:15, fontWeight:800, cursor: quizPick!=null?"pointer":"default" }}>
+                제출하기
+              </button>
+            ) : (
+              <div style={{ marginTop:16, textAlign:"center" }}>
+                <div style={{ fontSize:16, fontWeight:800, color: quizResult.correct?C.green:C.red, marginBottom:10 }}>
+                  {quizResult.correct ? "정답이에요! 🎉" : "아쉬워요, 오답이에요"}
+                </div>
+                <button onClick={() => setQuizOpen(false)}
+                  style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"11px 30px", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                  확인
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       <div style={{ padding:"8px 20px 32px", textAlign:"center" }}>
         {/* 펫 이미지 */}
         <div style={{ width:180, height:180, margin:"10px auto 0", background:C.bg, border:`3px solid ${rarity.color}`, borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
@@ -313,6 +402,20 @@ export function PetOverlay({ uid, onClose }) {
         </div>
         <div style={{ fontSize:11, color:C.muted, marginTop:14, lineHeight:1.6 }}>
           매일 자정에 횟수가 충전돼요.<br/>밥과 놀이로 경험치를 모아 성장시켜요!
+        </div>
+
+        {/* 오늘의 퀴즈 */}
+        <div style={{ marginTop:24, paddingTop:20, borderTop:`1px solid ${C.border}` }}>
+          {quiz === undefined ? null : !quiz ? (
+            <div style={{ fontSize:13, color:C.muted }}>📚 오늘의 퀴즈가 아직 없어요</div>
+          ) : quizDoneToday ? (
+            <div style={{ fontSize:13, color:C.muted }}>✅ 오늘의 퀴즈를 완료했어요!</div>
+          ) : (
+            <button onClick={() => { setQuizOpen(true); setQuizPick(null); setQuizResult(null); }}
+              style={{ background:C.purple, color:"#fff", border:"none", borderRadius:14, padding:"14px 28px", fontSize:15, fontWeight:800, cursor:"pointer" }}>
+              📚 오늘의 퀴즈 풀기 <span style={{ fontSize:12, opacity:0.85 }}>(+{Math.round(QUIZ_EXP*(RARITY[pet.rarity]?.bonus||1))} EXP)</span>
+            </button>
+          )}
         </div>
       </div>
 

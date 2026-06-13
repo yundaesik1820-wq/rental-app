@@ -3,6 +3,8 @@ import { C, NOTICE_CAT } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, PageTitle, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase";
 
 export default function Notices({ isAdmin = true }) {
   const { profile } = useAuth();
@@ -20,6 +22,49 @@ export default function Notices({ isAdmin = true }) {
   const [alertForm, setAlertForm]   = useState({ target: "all", studentId: "", title: "", body: "" });
   const [sending, setSending]       = useState(false);
   const [sendResult, setSendResult] = useState(null);
+
+  // 오늘의 퀴즈 등록
+  const [showQuiz, setShowQuiz]   = useState(false);
+  const [quizDate, setQuizDate]   = useState(() => {
+    const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  });
+  const [quizQ, setQuizQ]         = useState("");
+  const [quizOpts, setQuizOpts]   = useState(["","","","",""]);
+  const [quizAns, setQuizAns]     = useState(0);
+  const [quizSaving, setQuizSaving] = useState(false);
+  const [quizMsg, setQuizMsg]     = useState(null);
+
+  const saveQuiz = async () => {
+    if (!quizQ.trim()) { setQuizMsg({ ok:false, m:"문제를 입력하세요" }); return; }
+    if (quizOpts.some(o => !o.trim())) { setQuizMsg({ ok:false, m:"보기 5개를 모두 입력하세요" }); return; }
+    setQuizSaving(true); setQuizMsg(null);
+    try {
+      await setDoc(doc(db, "quizzes", quizDate), {
+        question: quizQ.trim(),
+        options: quizOpts.map(o => o.trim()),
+        answer: quizAns,
+        date: quizDate,
+      });
+      setQuizMsg({ ok:true, m:"✅ 등록 완료! 학생들이 오늘 이 문제를 풀 수 있어요" });
+      setQuizQ(""); setQuizOpts(["","","","",""]); setQuizAns(0);
+    } catch (e) {
+      setQuizMsg({ ok:false, m:"등록 실패: " + (e.message || "오류") });
+    }
+    setQuizSaving(false);
+  };
+
+  const loadQuizForDate = async (date) => {
+    try {
+      const snap = await getDoc(doc(db, "quizzes", date));
+      if (snap.exists()) {
+        const q = snap.data();
+        setQuizQ(q.question || ""); setQuizOpts(q.options || ["","","","",""]); setQuizAns(q.answer || 0);
+        setQuizMsg({ ok:true, m:"이 날짜에 등록된 퀴즈를 불러왔어요 (수정 후 다시 저장 가능)" });
+      } else {
+        setQuizQ(""); setQuizOpts(["","","","",""]); setQuizAns(0); setQuizMsg(null);
+      }
+    } catch (e) {}
+  };
 
   const addNotice = async () => {
     if (!form.title || !form.content) return;
@@ -180,6 +225,49 @@ export default function Notices({ isAdmin = true }) {
               <Btn onClick={sendCustomAlert} color={C.navy} full disabled={sending}>{sending ? "발송 중..." : "알림 보내기"}</Btn>
               {sendResult && (
                 <div style={{ fontSize: 12, color: sendResult.ok ? C.teal : C.red, textAlign: "center", marginTop: 10 }}>{sendResult.msg}</div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 오늘의 퀴즈 등록 (관리자, 접이식) */}
+      {isAdmin && (
+        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 16, marginBottom: 16, overflow: "hidden" }}>
+          <button onClick={() => setShowQuiz(s => !s)}
+            style={{ width: "100%", background: "none", border: "none", padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", cursor: "pointer" }}>
+            <div style={{ textAlign: "left" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>📚 오늘의 퀴즈 등록</div>
+              <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>객관식 5지선다. 학생들이 펫 화면에서 풀어요</div>
+            </div>
+            <span style={{ color: C.muted, fontSize: 13 }}>{showQuiz ? "▲" : "▼"}</span>
+          </button>
+          {showQuiz && (
+            <div style={{ padding: "0 18px 16px" }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>날짜</div>
+              <input type="date" value={quizDate} onChange={e => { setQuizDate(e.target.value); loadQuizForDate(e.target.value); }}
+                style={{ width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 12 }} />
+
+              <Inp label="문제" placeholder="예: 다음 중 클로즈업 샷이 아닌 것은?" value={quizQ} onChange={e => setQuizQ(e.target.value)} />
+
+              <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, margin: "4px 0 6px" }}>보기 (정답을 ○로 선택)</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+                {quizOpts.map((opt, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button onClick={() => setQuizAns(i)}
+                      style={{ width: 30, height: 30, flexShrink: 0, borderRadius: "50%", border: `2px solid ${quizAns === i ? C.teal : C.border}`, background: quizAns === i ? C.teal : "transparent", color: quizAns === i ? "#fff" : C.muted, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+                      {["①","②","③","④","⑤"][i]}
+                    </button>
+                    <input value={opt} placeholder={`보기 ${i+1}`}
+                      onChange={e => setQuizOpts(p => { const n = [...p]; n[i] = e.target.value; return n; })}
+                      style={{ flex: 1, background: C.bg, border: `1.5px solid ${quizAns === i ? C.teal : C.border}`, borderRadius: 10, color: C.text, padding: "9px 12px", fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", minWidth: 0 }} />
+                  </div>
+                ))}
+              </div>
+
+              <Btn onClick={saveQuiz} color={C.navy} full disabled={quizSaving}>{quizSaving ? "저장 중..." : "오늘의 퀴즈 등록"}</Btn>
+              {quizMsg && (
+                <div style={{ fontSize: 12, color: quizMsg.ok ? C.teal : C.red, textAlign: "center", marginTop: 10 }}>{quizMsg.m}</div>
               )}
             </div>
           )}
