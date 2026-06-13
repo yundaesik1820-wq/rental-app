@@ -30,7 +30,7 @@ import ExposureCalc from "../../components/ExposureCalc";
 import DofCalc from "../../components/DofCalc";
 import ColorTemp from "../../components/ColorTemp";
 import FovCalc from "../../components/FovCalc";
-import Scripter from "../../components/Scripter";
+import ScripterTool from "../../components/ScripterTool";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 
@@ -963,7 +963,7 @@ export default function Community({ onExit }) {
 
       {/* 📝 스크립터 */}
       {selectedRoom === "tools" && selectedTool === "scripter" && (
-        <Scripter onBack={() => setSelectedTool(null)} />
+        <ScripterTool C={CINEMA} onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 🌅 태양 위치 */}
