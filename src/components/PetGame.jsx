@@ -59,6 +59,23 @@ function stageProgress(exp) {
   return { cur: 1, need: 1, base: 0 }; // adult = 만렙
 }
 
+// ── 성체 레벨 시스템 ──
+const MAX_LEVEL = 100;
+const ADULT_BASE = STAGE_REQ.juvenile; // 성체 진입 누적 EXP (= 1200)
+// Lv.N → N+1 필요 EXP = 200 + (N-1)*60  (점증)
+function levelReq(level) { return 200 + (level - 1) * 60; }
+// 성체 진입 후 쌓은 EXP(adultExp)로 현재 레벨 + 진행도 계산
+function levelFromAdultExp(adultExp) {
+  let lvl = 1, remain = adultExp;
+  while (lvl < MAX_LEVEL) {
+    const req = levelReq(lvl);
+    if (remain < req) break;
+    remain -= req; lvl++;
+  }
+  if (lvl >= MAX_LEVEL) return { level: MAX_LEVEL, cur: 0, need: 0, max: true };
+  return { level: lvl, cur: remain, need: levelReq(lvl), max: false };
+}
+
 // 펫 이미지 경로
 function petImg(pet) {
   if (!pet) return null;
@@ -265,6 +282,23 @@ export function PetOverlay({ uid, onClose }) {
     showToast(`${nm} 탄생! 🎉`);
   };
 
+  // 놓아주기 (확인 2번)
+  const releaseStep1 = () => {
+    const nm = pet?.name || (pet?.species ? SPECIES_KR[pet.species] : "이 알");
+    if (!window.confirm(`정말 ${nm}을(를) 놓아줄까요?\n되돌릴 수 없어요.`)) return;
+    if (!window.confirm(`마지막 확인이에요.\n${nm}을(를) 정말 놓아주면 처음부터 다시 시작해요. 진행할까요?`)) return;
+    releaseConfirm();
+  };
+  const releaseConfirm = async () => {
+    setBusy(true);
+    try {
+      await updateDoc(doc(db, "users", uid), { pet: null });
+      setPet(null);
+      showToast("펫을 놓아줬어요. 새 알을 받을 수 있어요.");
+    } catch (e) { showToast("실패했어요", false); }
+    setBusy(false);
+  };
+
   if (pet === undefined) {
     return <Overlay onClose={onClose}><div style={{ color:C.muted, padding:40 }}>불러오는 중...</div></Overlay>;
   }
@@ -294,6 +328,9 @@ export function PetOverlay({ uid, onClose }) {
   const pct = Math.min(100, Math.round((prog.cur / prog.need) * 100));
   const feedUsed = questUsed(pet, "feed");
   const playUsed = questUsed(pet, "play");
+  // 성체 레벨 (성체 진입 누적 EXP 초과분 기준)
+  const lv = stage === "adult" ? levelFromAdultExp(pet.exp - ADULT_BASE) : null;
+  const lvPct = lv && !lv.max ? Math.min(100, Math.round((lv.cur / lv.need) * 100)) : 100;
 
   return (
     <Overlay onClose={onClose}>
@@ -377,20 +414,23 @@ export function PetOverlay({ uid, onClose }) {
               {stage === "egg" ? `${rarity.kr} 알` : (pet.name || SPECIES_KR[pet.species])}
             </span>
             <span style={{ fontSize:12, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:5, padding:"2px 7px" }}>{rarity.kr}</span>
+            {stage === "adult" && lv && (
+              <span style={{ fontSize:12, color:"#fff", background:rarity.color, borderRadius:5, padding:"2px 8px", fontWeight:800 }}>Lv.{lv.level}</span>
+            )}
           </div>
           {stage !== "egg" && (
-            <div style={{ fontSize:13, color:C.muted, marginTop:4 }}>{SPECIES_KR[pet.species]} · {STAGE_KR[stage]}</div>
+            <div style={{ fontSize:13, color:C.muted, marginTop:4 }}>{SPECIES_KR[pet.species]} · {stage === "adult" ? "성체" : STAGE_KR[stage]}</div>
           )}
         </div>
 
         {/* 경험치 바 */}
         <div style={{ maxWidth:300, margin:"18px auto 0" }}>
           <div style={{ display:"flex", justifyContent:"space-between", fontSize:12, color:C.muted, marginBottom:5 }}>
-            <span>{stage === "adult" ? "MAX" : `다음 단계까지`}</span>
-            <span>{stage === "adult" ? "🎉" : `${prog.cur} / ${prog.need}`}</span>
+            <span>{stage === "adult" ? (lv.max ? "만렙!" : `Lv.${lv.level} → ${lv.level+1}`) : `다음 단계까지`}</span>
+            <span>{stage === "adult" ? (lv.max ? "🏆" : `${lv.cur} / ${lv.need}`) : `${prog.cur} / ${prog.need}`}</span>
           </div>
           <div style={{ height:10, background:C.bg, borderRadius:5, overflow:"hidden" }}>
-            <div style={{ width:`${stage==="adult"?100:pct}%`, height:"100%", background:rarity.color, transition:"width .4s" }} />
+            <div style={{ width:`${stage==="adult"?lvPct:pct}%`, height:"100%", background:rarity.color, transition:"width .4s" }} />
           </div>
           <div style={{ fontSize:11, color:C.muted, marginTop:6 }}>총 경험치 {pet.exp} · 보너스 ×{rarity.bonus}</div>
         </div>
@@ -416,6 +456,31 @@ export function PetOverlay({ uid, onClose }) {
               📚 오늘의 퀴즈 풀기 <span style={{ fontSize:12, opacity:0.85 }}>(+{Math.round(QUIZ_EXP*(RARITY[pet.rarity]?.bonus||1))} EXP)</span>
             </button>
           )}
+        </div>
+
+        {/* 배틀 (성체부터) — 토대 */}
+        {stage !== "egg" && (
+          <div style={{ marginTop:20, paddingTop:20, borderTop:`1px solid ${C.border}` }}>
+            <button
+              onClick={() => { if (stage !== "adult") showToast("성체가 된 이후부터 친구와 배틀이 가능해요!", false); }}
+              style={{ background: stage === "adult" ? C.red : C.border, color:"#fff", border:"none", borderRadius:14, padding:"13px 28px", fontSize:15, fontWeight:800, cursor:"pointer", opacity: stage === "adult" ? 1 : 0.55 }}>
+              ⚔️ 배틀하기
+            </button>
+            {stage !== "adult" && (
+              <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>성체가 되면 친구와 배틀할 수 있어요</div>
+            )}
+            {stage === "adult" && (
+              <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>배틀 기능은 곧 추가될 예정이에요!</div>
+            )}
+          </div>
+        )}
+
+        {/* 놓아주기 */}
+        <div style={{ marginTop:28 }}>
+          <button onClick={releaseStep1}
+            style={{ background:"none", border:"none", color:C.muted, fontSize:12, textDecoration:"underline", cursor:"pointer" }}>
+            펫 놓아주기
+          </button>
         </div>
       </div>
 
