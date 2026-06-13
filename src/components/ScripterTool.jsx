@@ -201,21 +201,33 @@ function ScriptEditor({ C, script, onBack, onSave }) {
    한 장: 양식 배경 이미지 + 투명 펜 캔버스
    ============================================================ */
 function PenPage({ C, initial, onChange }) {
-  const wrapRef   = useRef(null);
+  const wrapRef   = useRef(null);   // 고정 뷰포트 (overflow hidden)
+  const stageRef  = useRef(null);   // 확대/이동되는 내부 (양식+캔버스)
   const canvasRef = useRef(null);
   const drawing   = useRef(false);
   const last      = useRef({ x: 0, y: 0 });
-  const [ready, setReady] = useState(false);
 
-  // 캔버스 해상도 = 양식 원본 비율에 맞춤 (A4)
+  // 줌/팬 상태
+  const view = useRef({ scale: 1, tx: 0, ty: 0 });
+  const pointers = useRef(new Map());        // 현재 닿아있는 포인터들
+  const pinch = useRef(null);                // 핀치 시작 정보
+
+  const applyTransform = () => {
+    const s = stageRef.current; if (!s) return;
+    const v = view.current;
+    s.style.transform = `translate(${v.tx}px, ${v.ty}px) scale(${v.scale})`;
+  };
+
+  // 캔버스 해상도 = 양식 원본 비율(A4)
   const setup = useCallback(() => {
-    const wrap = wrapRef.current, canvas = canvasRef.current;
-    if (!wrap || !canvas) return;
+    const wrap = wrapRef.current, stage = stageRef.current, canvas = canvasRef.current;
+    if (!wrap || !stage || !canvas) return;
     const w = wrap.clientWidth;
     const h = Math.round(w / A4_RATIO);
     wrap.style.height = h + "px";
+    stage.style.width = w + "px";
+    stage.style.height = h + "px";
     const dpr = window.devicePixelRatio || 1;
-    // 기존 그림 백업
     let old = null;
     if (canvas.width > 0) { try { old = canvas.toDataURL(); } catch (e) {} }
     canvas.width  = w * dpr;
@@ -228,7 +240,6 @@ function PenPage({ C, initial, onChange }) {
       img.onload = () => ctx.drawImage(img, 0, 0, w, h);
       img.src = restore;
     }
-    setReady(true);
   }, [initial]);
 
   useEffect(() => {
@@ -238,21 +249,68 @@ function PenPage({ C, initial, onChange }) {
     return () => obs.disconnect();
   }, [setup]);
 
-  const getPos = (e) => {
-    const ne = e.nativeEvent || e;
-    let x = ne.offsetX, y = ne.offsetY;
-    if (x == null || y == null) {
-      const r = canvasRef.current.getBoundingClientRect();
-      x = (ne.clientX ?? 0) - r.left; y = (ne.clientY ?? 0) - r.top;
-    }
+  // 화면 좌표 → 캔버스 로컬 좌표 (현재 줌/팬 역산)
+  const toLocal = (clientX, clientY) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();   // 변환(scale·pan) 반영된 실제 화면 위치/크기
+    const v = view.current;
+    // rect.width = 원본 CSS폭 × scale 이므로, 로컬 좌표 = 화면거리 ÷ scale
+    const x = (clientX - rect.left) / v.scale;
+    const y = (clientY - rect.top)  / v.scale;
     return { x, y };
   };
-  const start = (e) => { e.preventDefault(); e.currentTarget.setPointerCapture?.(e.pointerId); drawing.current = true; last.current = getPos(e); };
-  const move = (e) => {
-    if (!drawing.current) return;
+
+  const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  const mid  = (a, b) => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+  const onDown = (e) => {
     e.preventDefault();
+    canvasRef.current.setPointerCapture?.(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
+
+    if (pointers.current.size >= 2) {
+      // 핀치 시작 → 그리기 취소
+      drawing.current = false;
+      const pts = [...pointers.current.values()];
+      pinch.current = {
+        startDist: dist(pts[0], pts[1]),
+        startScale: view.current.scale,
+        startMid: mid(pts[0], pts[1]),
+        startTx: view.current.tx,
+        startTy: view.current.ty,
+      };
+      return;
+    }
+    // 한 포인터 → 그리기
+    drawing.current = true;
+    last.current = toLocal(e.clientX, e.clientY);
+  };
+
+  const onMove = (e) => {
+    if (!pointers.current.has(e.pointerId)) return;
+    e.preventDefault();
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
+
+    // 핀치 줌/팬
+    if (pointers.current.size >= 2 && pinch.current) {
+      const pts = [...pointers.current.values()];
+      const d = dist(pts[0], pts[1]);
+      const m = mid(pts[0], pts[1]);
+      let scale = pinch.current.startScale * (d / pinch.current.startDist);
+      scale = Math.max(1, Math.min(5, scale));   // 1~5배
+      view.current.scale = scale;
+      // 두 손가락 중점 이동만큼 팬
+      view.current.tx = pinch.current.startTx + (m.x - pinch.current.startMid.x);
+      view.current.ty = pinch.current.startTy + (m.y - pinch.current.startMid.y);
+      clampPan();
+      applyTransform();
+      return;
+    }
+
+    // 그리기
+    if (!drawing.current) return;
     const ctx = canvasRef.current.getContext("2d");
-    const p = getPos(e);
+    const p = toLocal(e.clientX, e.clientY);
     ctx.strokeStyle = "#111";
     ctx.lineWidth = 2.2;
     ctx.lineCap = "round";
@@ -263,29 +321,60 @@ function PenPage({ C, initial, onChange }) {
     ctx.stroke();
     last.current = p;
   };
-  const end = () => {
-    if (!drawing.current) return;
-    drawing.current = false;
-    try { onChange(canvasRef.current.toDataURL("image/png")); } catch (e) {}
+
+  const onUp = (e) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) pinch.current = null;
+    if (drawing.current && pointers.current.size === 0) {
+      drawing.current = false;
+      try { onChange(canvasRef.current.toDataURL("image/png")); } catch (e) {}
+    }
   };
+
+  // 확대 상태에서 양식이 화면 밖으로 너무 빠지지 않게 제한
+  const clampPan = () => {
+    const wrap = wrapRef.current; if (!wrap) return;
+    const v = view.current;
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const maxX = (v.scale - 1) * w;
+    const maxY = (v.scale - 1) * h;
+    v.tx = Math.max(-maxX, Math.min(0, v.tx));
+    v.ty = Math.max(-maxY, Math.min(0, v.ty));
+  };
+
+  const resetZoom = () => {
+    view.current = { scale: 1, tx: 0, ty: 0 };
+    applyTransform();
+  };
+
   const clearPage = () => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const dpr = window.devicePixelRatio || 1;
+    ctx.clearRect(0, 0, canvas.width / dpr, canvas.height / dpr);
     onChange(null);
   };
 
   return (
     <div style={{ position: "relative", border: `1px solid ${C.border}`, borderRadius: 4, overflow: "hidden", background: "#fff" }}>
-      <div ref={wrapRef} style={{ position: "relative", width: "100%", backgroundImage: `url(${TEMPLATE_IMG})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
-        <canvas ref={canvasRef}
-          onPointerDown={start} onPointerMove={move} onPointerUp={end} onPointerLeave={end} onPointerCancel={end}
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: "none", cursor: "crosshair" }} />
+      <div ref={wrapRef} style={{ position: "relative", width: "100%", overflow: "hidden", touchAction: "none" }}>
+        <div ref={stageRef} style={{ position: "absolute", top: 0, left: 0, transformOrigin: "top left",
+          backgroundImage: `url(${TEMPLATE_IMG})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
+          <canvas ref={canvasRef}
+            onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp}
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: "none", cursor: "crosshair" }} />
+        </div>
       </div>
-      <button onClick={clearPage}
-        style={{ position: "absolute", top: 6, right: 6, background: "rgba(255,255,255,0.85)", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, padding: "3px 8px", cursor: "pointer", color: "#333", zIndex: 2 }}>
-        이 장 지우기
-      </button>
+      <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 6, zIndex: 2 }}>
+        <button onClick={resetZoom}
+          style={{ background: "rgba(255,255,255,0.9)", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, padding: "3px 8px", cursor: "pointer", color: "#333" }}>
+          100%
+        </button>
+        <button onClick={clearPage}
+          style={{ background: "rgba(255,255,255,0.9)", border: `1px solid ${C.border}`, borderRadius: 6, fontSize: 11, padding: "3px 8px", cursor: "pointer", color: "#333" }}>
+          이 장 지우기
+        </button>
+      </div>
     </div>
   );
 }
