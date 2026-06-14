@@ -188,6 +188,10 @@ function ScriptEditor({ C, script, onBack, onSave }) {
             style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? "#fff" : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             ✏️
           </button>
+          <button onClick={() => setTool("text")}
+            style={{ background: tool === "text" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "text" ? "#fff" : C.muted, border: `1px solid ${tool === "text" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            🅣
+          </button>
           <button onClick={() => setTool("eraser")}
             style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? "#fff" : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🧽
@@ -220,6 +224,12 @@ function ScriptEditor({ C, script, onBack, onSave }) {
    한 장: 양식 배경 이미지 + 투명 펜 캔버스
    ============================================================ */
 const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
+  // initial 하위호환: 문자열(펜 PNG) → {penImg, texts}
+  const init0 = typeof initial === "string" ? { penImg: initial, texts: [] } : (initial || { penImg: null, texts: [] });
+  const [texts, setTexts] = useState(init0.texts || []);  // [{id,rx,ry,rsize,text}] 비율(0~1) 저장
+  const [editingId, setEditingId] = useState(null);
+  const [stageDim, setStageDim] = useState({ w: 1, h: 1 });
+  const dragRef = useRef(null);     // 텍스트 드래그 상태
   const wrapRef   = useRef(null);   // 고정 뷰포트 (overflow hidden)
   const stageRef  = useRef(null);   // 확대/이동되는 내부 (양식+캔버스)
   const canvasRef = useRef(null);
@@ -236,16 +246,19 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
   useImperativeHandle(ref, () => ({
     getData() {
       const canvas = canvasRef.current;
-      if (!canvas) return null;
-      try {
-        // 빈 캔버스면 null 반환 (불필요한 용량 방지)
-        const blank = document.createElement("canvas");
-        blank.width = canvas.width; blank.height = canvas.height;
-        if (canvas.toDataURL() === blank.toDataURL()) return null;
-        return canvas.toDataURL("image/png");
-      } catch (e) { return null; }
+      let penImg = null;
+      if (canvas) {
+        try {
+          const blank = document.createElement("canvas");
+          blank.width = canvas.width; blank.height = canvas.height;
+          if (canvas.toDataURL() !== blank.toDataURL()) penImg = canvas.toDataURL("image/png");
+        } catch (e) {}
+      }
+      const cleanTexts = texts.filter(t => (t.text || "").trim());
+      if (!penImg && cleanTexts.length === 0) return null;
+      return { penImg, texts: cleanTexts };
     },
-  }));
+  }), [texts]);
 
   const applyTransform = () => {
     const s = stageRef.current; if (!s) return;
@@ -270,12 +283,13 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
     canvas.height = h * dpr;
     const ctx = canvas.getContext("2d");
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const restore = old || initial;   // 첫 셋업이면 initial(저장된 그림) 복원
+    const restore = old || init0.penImg;   // 첫 셋업이면 저장된 펜 그림 복원
     if (restore) {
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, w, h);
       img.src = restore;
     }
+    setStageDim({ w, h });
     didInit.current = true;
   }, [initial]);
 
@@ -302,6 +316,15 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
 
   const onDown = (e) => {
     e.preventDefault();
+    // 텍스트 모드: 빈 곳 탭 → 새 텍스트 박스 생성
+    if (tool === "text") {
+      const p = toLocal(e.clientX, e.clientY);
+      const W = stageDim.w || 1, H = stageDim.h || 1;
+      const id = Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+      setTexts(prev => [...prev, { id, rx: Math.max(0, (p.x - 4) / W), ry: Math.max(0, (p.y - 10) / H), rsize: 15 / W, text: "" }]);
+      setEditingId(id);
+      return;
+    }
     canvasRef.current.setPointerCapture?.(e.pointerId);
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY, type: e.pointerType });
 
@@ -404,7 +427,62 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
           backgroundImage: `url(${TEMPLATE_IMG})`, backgroundSize: "100% 100%", backgroundRepeat: "no-repeat" }}>
           <canvas ref={canvasRef}
             onPointerDown={onDown} onPointerMove={onMove} onPointerUp={onUp} onPointerCancel={onUp} onPointerLeave={onUp}
-            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: tool === "scroll" ? "pan-y" : "none", cursor: tool === "scroll" ? "grab" : "crosshair", pointerEvents: tool === "scroll" ? "none" : "auto" }} />
+            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", touchAction: tool === "scroll" ? "pan-y" : "none", cursor: tool === "text" ? "text" : (tool === "scroll" ? "grab" : "crosshair"), pointerEvents: tool === "scroll" ? "none" : "auto" }} />
+
+          {/* 텍스트 박스 레이어 (비율 → px 변환) */}
+          {texts.map(t => {
+            const W = stageDim.w || 1, H = stageDim.h || 1;
+            const px = t.rx * W, py = t.ry * H, fsize = t.rsize * W;
+            return (
+            <div key={t.id}
+              style={{ position: "absolute", left: px, top: py, pointerEvents: tool === "text" ? "auto" : "none", zIndex: 3 }}>
+              {tool === "text" && editingId === t.id && (
+                <div style={{ position: "absolute", top: -22, left: 0, display: "flex", gap: 3, whiteSpace: "nowrap" }}>
+                  <span
+                    onPointerDown={(e) => {
+                      e.preventDefault(); e.stopPropagation();
+                      dragRef.current = { id: t.id, startX: e.clientX, startY: e.clientY, orx: t.rx, ory: t.ry };
+                      e.currentTarget.setPointerCapture?.(e.pointerId);
+                    }}
+                    onPointerMove={(e) => {
+                      if (!dragRef.current || dragRef.current.id !== t.id) return;
+                      const dx = (e.clientX - dragRef.current.startX) / view.current.scale;
+                      const dy = (e.clientY - dragRef.current.startY) / view.current.scale;
+                      const nrx = Math.max(0, dragRef.current.orx + dx / W);
+                      const nry = Math.max(0, dragRef.current.ory + dy / H);
+                      setTexts(prev => prev.map(p => p.id === t.id ? { ...p, rx: nrx, ry: nry } : p));
+                    }}
+                    onPointerUp={() => { dragRef.current = null; }}
+                    style={{ background: C.navy || "#1A2B6B", color: "#fff", fontSize: 10, padding: "2px 6px", borderRadius: 4, cursor: "move", userSelect: "none" }}>✛ 이동</span>
+                  <span onClick={(e) => { e.stopPropagation();
+                      const nid = Date.now() + "_" + Math.random().toString(36).slice(2, 6);
+                      setTexts(prev => [...prev, { ...t, id: nid, rx: t.rx + 0.02, ry: t.ry + 0.02 }]);
+                      setEditingId(nid);
+                    }}
+                    style={{ background: "#fff", color: "#333", fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${C.border}`, cursor: "pointer", userSelect: "none" }}>복사</span>
+                  <span onClick={(e) => { e.stopPropagation();
+                      setTexts(prev => prev.filter(p => p.id !== t.id)); setEditingId(null);
+                    }}
+                    style={{ background: "#fff", color: "#d33", fontSize: 10, padding: "2px 6px", borderRadius: 4, border: `1px solid ${C.border}`, cursor: "pointer", userSelect: "none" }}>삭제</span>
+                </div>
+              )}
+              <textarea
+                value={t.text}
+                onChange={(e) => setTexts(prev => prev.map(p => p.id === t.id ? { ...p, text: e.target.value } : p))}
+                onFocus={() => setEditingId(t.id)}
+                onPointerDown={(e) => e.stopPropagation()}
+                placeholder="텍스트"
+                rows={1}
+                style={{
+                  margin: 0, border: editingId === t.id ? `1px dashed ${C.navy || "#1A2B6B"}` : "1px solid transparent",
+                  background: editingId === t.id ? "rgba(255,255,255,0.7)" : "transparent",
+                  font: `${fsize}px sans-serif`, color: "#111", lineHeight: 1.3,
+                  resize: "none", outline: "none", padding: "1px 2px", overflow: "hidden",
+                  width: "auto", minWidth: 40, fieldSizing: "content",
+                }} />
+            </div>
+            );
+          })}
         </div>
       </div>
       <div style={{ position: "absolute", top: 6, right: 6, display: "flex", gap: 6, zIndex: 2 }}>
@@ -424,9 +502,31 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
 /* ============================================================
    폴더 공유: 폴더 안 스크립트들을 각각 PDF로 만들어 zip으로 묶어 공유/다운로드
    ============================================================ */
+/* 텍스트 박스들을 양식 비율 캔버스에 그려 PNG dataURL로 반환 (PDF 오버레이용) */
+function textsToPng(texts, W, H) {
+  if (!texts || texts.length === 0) return null;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#111";
+  ctx.textBaseline = "top";
+  let drew = false;
+  for (const t of texts) {
+    const txt = (t.text || "").trim();
+    if (!txt) continue;
+    drew = true;
+    const fs = (t.rsize || 0.02) * W;
+    ctx.font = `${fs}px sans-serif`;
+    const x = (t.rx || 0) * W, y = (t.ry || 0) * H;
+    txt.split("\n").forEach((line, i) => ctx.fillText(line, x + fs * 0.1, y + i * fs * 1.3));
+  }
+  return drew ? canvas.toDataURL("image/png") : null;
+}
+
 async function shareFolder(folder, _ignored, C) {
   const pages = folder.pages || [];
-  if (!pages.length || pages.every(p => !p)) { alert("작성된 내용이 없어요."); return; }
+  const hasContent = (p) => p && (typeof p === "string" || p.penImg || (p.texts && p.texts.some(t => (t.text||"").trim())));
+  if (!pages.length || !pages.some(hasContent)) { alert("작성된 내용이 없어요."); return; }
   try {
     const { PDFDocument } = await import("pdf-lib");
     const tplBytes = await fetch(TEMPLATE_PDF).then(r => r.arrayBuffer());
@@ -437,9 +537,20 @@ async function shareFolder(folder, _ignored, C) {
       const [tplPage] = await out.copyPages(tpl, [0]);
       const page = out.addPage(tplPage);
       if (pageData) {
-        const png = await out.embedPng(pageData);
         const { width, height } = page.getSize();
-        page.drawImage(png, { x: 0, y: 0, width, height });
+        // 하위호환: 문자열이면 펜 PNG
+        const penImg = typeof pageData === "string" ? pageData : pageData.penImg;
+        const texts  = typeof pageData === "string" ? [] : (pageData.texts || []);
+        if (penImg) {
+          const png = await out.embedPng(penImg);
+          page.drawImage(png, { x: 0, y: 0, width, height });
+        }
+        // 텍스트를 고해상도 PNG로 그려 오버레이
+        const txtPng = textsToPng(texts, Math.round(width * 2), Math.round(height * 2));
+        if (txtPng) {
+          const tp = await out.embedPng(txtPng);
+          page.drawImage(tp, { x: 0, y: 0, width, height });
+        }
       }
     }
     const pdfBytes = await out.save();
