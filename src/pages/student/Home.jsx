@@ -8,7 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
+import { PetHomeCard, PetOverlay, grantPetExp } from "../../components/PetGame.jsx";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -370,6 +370,7 @@ export default function StudentHome() {
     if (!uid) return;
     await setDoc(doc(db, "timetables", uid), { classes: newClasses });
     setClasses(newClasses);
+    if (newClasses.length > 0) grantPetExp(uid, "timetable");  // 시간표 등록 (1회성)
   };
 
   const handleSaveClass = async (form) => {

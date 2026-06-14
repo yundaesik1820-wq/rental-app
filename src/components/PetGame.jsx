@@ -341,6 +341,19 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
     showToast(`${nm} 탄생! 🎉`);
   };
 
+  // 출석 체크
+  const doAttend = async () => {
+    if (busy || !pet) return;
+    const log = (pet.actLog && pet.actLog.date === todayStr()) ? pet.actLog : null;
+    if (log && log.attend >= 1) { showToast("오늘 이미 출석했어요!", false); return; }
+    setBusy(true);
+    const gain = await grantPetExp(uid, "attend");
+    await load();
+    setBusy(false);
+    if (gain > 0) showToast(`출석 완료! +${gain} EXP 🎉`);
+    else showToast("오늘 이미 출석했어요!", false);
+  };
+
   // 놓아주기 (확인 2번)
   const releaseStep1 = () => {
     const nm = pet?.name || (pet?.species ? SPECIES_KR[pet.species] : "이 알");
@@ -530,6 +543,48 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
           )}
         </div>
 
+        {/* 일일 퀘스트 안내판 */}
+        {(() => {
+          const today = todayStr();
+          const log = (pet.actLog && pet.actLog.date === today) ? pet.actLog : {};
+          const done = {
+            quiz: quizDoneToday,
+            attend: (log.attend || 0) >= 1,
+            post: (log.post || 0) >= 1,
+            rental: (log.rental || 0) >= 1 || (log.rdreturn || 0) >= 1,
+            addfriend: (log.addfriend || 0) >= 1,
+          };
+          const rows = [
+            { key:"quiz", label:"오늘의 퀴즈 풀기", exp:30 },
+            { key:"attend", label:"출석 체크하기", exp:15, btn:true },
+            { key:"post", label:"에브리타임에 글 쓰기", exp:15 },
+            { key:"rental", label:"장비 대여 / 반납하기", exp:20 },
+            { key:"addfriend", label:"친구 추가하기", exp:20 },
+          ];
+          return (
+            <div style={{ marginTop:20, background:C.surface, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", textAlign:"left" }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.text, marginBottom:12 }}>📋 오늘의 퀘스트</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:11 }}>
+                {rows.map(r => (
+                  <div key={r.key} style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ fontSize:15 }}>{done[r.key] ? "✅" : "⬜"}</span>
+                    <span style={{ fontSize:13, color: done[r.key] ? C.muted : C.text, flex:1 }}>{r.label}</span>
+                    {r.btn && !done[r.key] ? (
+                      <button onClick={doAttend} disabled={busy}
+                        style={{ background:C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:800, cursor:"pointer" }}>출석</button>
+                    ) : (
+                      <span style={{ fontSize:11, color: done[r.key] ? C.muted : C.navy, fontWeight:700 }}>+{r.exp}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <div style={{ borderTop:`1px solid ${C.border}`, marginTop:12, paddingTop:10, fontSize:11, color:C.muted, textAlign:"center" }}>
+                매일 자정에 초기화돼요
+              </div>
+            </div>
+          );
+        })()}
+
         {/* 배틀 (성체부터) — 토대 */}
         {stage !== "egg" && (
           <div style={{ marginTop:20, paddingTop:20, borderTop:`1px solid ${C.border}` }}>
@@ -568,7 +623,14 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
 
       {/* ───── 순위 탭 ───── */}
       {tab === "rank" && (
-        <RankTab uid={uid} rankData={rankData} rankKind={rankKind} setRankKind={setRankKind} />
+        <RankTab uid={uid} rankData={rankData} rankKind={rankKind} setRankKind={setRankKind}
+          me={me} myPet={pet} friendUids={friends.map(f => f.uid)} showToast={showToast}
+          onBattle={(row) => {
+            if (stageFromExp(pet.exp) !== "adult") { showToast("내 펫이 성체가 되어야 배틀할 수 있어요!", false); return; }
+            if (stageFromExp(row.pet.exp) !== "adult") { showToast(`${row.name}님의 펫이 아직 성체가 아니에요`, false); return; }
+            if (battleRemaining(pet) <= 0) { showToast("오늘 배틀 횟수를 다 썼어요! (하루 5회)", false); return; }
+            setBattleOpp({ uid: row.uid, name: row.name, pet: row.pet });
+          }} />
       )}
 
       {/* 토스트 */}
@@ -670,8 +732,14 @@ function QuestBtn({ label, used, max, onClick, disabled, color }) {
    조용히 실패해도 됨(펫 없으면 무시). 성공 시 적립된 EXP 반환.
    ============================================================ */
 const ACTIVITY = {
-  post:    { exp: 15, dailyMax: 3 },
-  comment: { exp: 5,  dailyMax: 5 },
+  post:     { exp: 15, dailyMax: 3 },
+  comment:  { exp: 5,  dailyMax: 5 },
+  rental:   { exp: 20, dailyMax: 2 },   // 장비 대여 완료
+  rdreturn: { exp: 20, dailyMax: 2 },   // 장비 반납 완료
+  attend:   { exp: 15, dailyMax: 1 },   // 출석 체크
+  addfriend:{ exp: 20, dailyMax: 3 },   // 친구 추가
+  timetable:{ exp: 30, dailyMax: 1, once: true }, // 시간표 등록 (1회성)
+  heart:    { exp: 5,  dailyMax: 10 },  // 하트 받기
 };
 export async function grantPetExp(uid, activity) {
   if (!uid || !ACTIVITY[activity]) return 0;
@@ -686,7 +754,18 @@ export async function grantPetExp(uid, activity) {
     const conf = ACTIVITY[activity];
 
     // 오늘 적립 횟수 (날짜 바뀌면 리셋)
-    const log = (pet.actLog && pet.actLog.date === today) ? { ...pet.actLog } : { date: today, post: 0, comment: 0 };
+    // 1회성(시간표 등) 처리: pet.onceLog에 기록
+    if (conf.once) {
+      const onceLog = pet.onceLog || {};
+      if (onceLog[activity]) return 0;   // 이미 받음
+      onceLog[activity] = true;
+      const bonus0 = RARITY[pet.rarity]?.bonus || 1;
+      const gain0 = Math.round(conf.exp * bonus0);
+      await updateDoc(ref, { "pet.exp": (pet.exp || 0) + gain0, "pet.onceLog": onceLog });
+      return gain0;
+    }
+
+    const log = (pet.actLog && pet.actLog.date === today) ? { ...pet.actLog } : { date: today };
     if ((log[activity] || 0) >= conf.dailyMax) return 0;   // 일일 한도 초과 → 적립 안 함
     log[activity] = (log[activity] || 0) + 1;
 
@@ -741,6 +820,7 @@ export function FriendPetCard({ friendUid, myUid, friendName, myPet }) {
       const newHearts = newHeartedBy.length;
       await updateDoc(ref, { "pet.hearts": newHearts, "pet.heartedBy": newHeartedBy });
       setPet(p => ({ ...p, hearts: newHearts, heartedBy: newHeartedBy }));
+      if (!iHearted) grantPetExp(friendUid, "heart");  // 새 하트 → 상대에게 경험치
     } catch (e) {}
     setHearting(false);
   };
@@ -1087,6 +1167,8 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
         createdAt: serverTimestamp(),
       });
       setReceived(p => p.filter(r => r.id !== req.id));
+      grantPetExp(uid, "addfriend");        // 나
+      grantPetExp(req.fromId, "addfriend"); // 신청한 친구
       showToast(`${req.fromName}님과 친구가 됐어요!`);
     } catch (e) { showToast("수락 실패", false); }
   };
@@ -1236,6 +1318,7 @@ function FriendPetView({ uid, friend }) {
       const nb = iHearted ? heartedBy.filter(u => u !== uid) : [...heartedBy, uid];
       await updateDoc(ref, { "pet.hearts": nb.length, "pet.heartedBy": nb });
       setPet(p => ({ ...p, hearts: nb.length, heartedBy: nb }));
+      if (!iHearted) grantPetExp(friend.uid, "heart");  // 새 하트 → 상대에게 경험치
     } catch (e) {}
     setHearting(false);
   };
@@ -1265,7 +1348,38 @@ function FriendPetView({ uid, friend }) {
 /* ============================================================
    순위 탭 — 전체 학생 대상, 하트/배틀(승률)/레벨 순위
    ============================================================ */
-function RankTab({ uid, rankData, rankKind, setRankKind }) {
+function RankTab({ uid, rankData, rankKind, setRankKind, me, myPet, friendUids, showToast, onBattle }) {
+  const [selected, setSelected] = useState(null);  // 순위에서 누른 펫
+  const [sentUids, setSentUids] = useState([]);     // 친구신청 보낸 uid
+  const [localHearts, setLocalHearts] = useState({}); // uid → {hearts, iHearted} 로컬 갱신
+
+  const sendReq = async (row) => {
+    try {
+      await addDoc(collection(db, "friendRequests"), {
+        fromId: uid, fromName: me.name, fromStudentId: me.studentId,
+        toId: row.uid, toName: row.name, toStudentId: "",
+        status: "pending", createdAt: serverTimestamp(),
+      });
+      setSentUids(p => [...p, row.uid]);
+      showToast(`${row.name}님께 친구 신청을 보냈어요!`);
+    } catch (e) { showToast("신청 실패", false); }
+  };
+
+  const heartRow = async (row) => {
+    if (row.uid === uid) return;
+    const cur = localHearts[row.uid];
+    const heartedBy = row.pet.heartedBy || [];
+    const already = cur ? cur.iHearted : heartedBy.includes(uid);
+    try {
+      const ref = doc(db, "users", row.uid);
+      const base = heartedBy.filter(u => u !== uid);
+      const nb = already ? base : [...base, uid];
+      await updateDoc(ref, { "pet.hearts": nb.length, "pet.heartedBy": nb });
+      setLocalHearts(p => ({ ...p, [row.uid]: { hearts: nb.length, iHearted: !already } }));
+      if (!already) grantPetExp(row.uid, "heart");
+    } catch (e) {}
+  };
+
   if (rankData === undefined) {
     return <div style={{ padding:"40px 0", textAlign:"center", color:C.muted, fontSize:14 }}>순위 불러오는 중...</div>;
   }
@@ -1304,8 +1418,8 @@ function RankTab({ uid, rankData, rankKind, setRankKind }) {
           const isMe = r.uid === uid;
           const rarity = RARITY[r.pet.rarity] || RARITY.common;
           return (
-            <div key={r.uid}
-              style={{ display:"flex", alignItems:"center", gap:10, background: isMe ? C.navy+"18" : C.bg, border:`1px solid ${isMe ? C.navy : C.border}`, borderRadius:10, padding:"8px 12px" }}>
+            <div key={r.uid} onClick={() => setSelected(r)}
+              style={{ display:"flex", alignItems:"center", gap:10, background: isMe ? C.navy+"18" : C.bg, border:`1px solid ${isMe ? C.navy : C.border}`, borderRadius:10, padding:"8px 12px", cursor:"pointer" }}>
               <span style={{ fontSize:14, fontWeight:800, color: i<3?C.text:C.muted, width:28, textAlign:"center", flexShrink:0 }}>{medal(i)}</span>
               <div style={{ width:36, height:36, background:C.surface, border:`2px solid ${rarity.color}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
                 <img src={petImg(r.pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
@@ -1321,6 +1435,60 @@ function RankTab({ uid, rankData, rankKind, setRankKind }) {
           );
         })}
       </div>
+
+      {/* 순위 → 펫 상세 박스 */}
+      {selected && (() => {
+        const r = selected;
+        const isMe = r.uid === uid;
+        const rarity = RARITY[r.pet.rarity] || RARITY.common;
+        const lh = localHearts[r.uid];
+        const hearts = lh ? lh.hearts : (r.pet.hearts || 0);
+        const iHearted = lh ? lh.iHearted : (r.pet.heartedBy || []).includes(uid);
+        const isFriend = friendUids.includes(r.uid);
+        const sent = sentUids.includes(r.uid);
+        const lvl = stageFromExp(r.pet.exp) === "adult" ? petLevel(r.pet) : null;
+        return (
+          <div onClick={() => setSelected(null)}
+            style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:28, padding:18 }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background:C.surface, border:`1.5px solid ${C.navy}`, borderRadius:16, padding:"20px 18px", maxWidth:320, width:"100%", textAlign:"center" }}>
+              <div style={{ width:96, height:96, margin:"0 auto 12px", background:C.bg, border:`2px solid ${rarity.color}`, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+                <img src={petImg(r.pet)} alt="" style={{ width:"86%", height:"86%", objectFit:"contain", imageRendering:"pixelated" }} />
+              </div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text }}>
+                {r.pet.name || SPECIES_KR[r.pet.species]}
+                {lvl && <span style={{ fontSize:12, background:rarity.color, color:"#fff", borderRadius:5, padding:"2px 7px", marginLeft:6, fontWeight:800 }}>Lv.{lvl}</span>}
+              </div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{r.name}님의 펫 · {SPECIES_KR[r.pet.species]}</div>
+              <div style={{ fontSize:12, color:C.muted, marginTop:8 }}>받은 하트 ❤️ {hearts}</div>
+
+              {isMe ? (
+                <div style={{ fontSize:12, color:C.navy, marginTop:16, fontWeight:700 }}>내 펫이에요 🐾</div>
+              ) : (
+                <>
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:8, marginTop:16 }}>
+                    <button onClick={() => { setSelected(null); onBattle(r); }}
+                      style={{ background:C.red, color:"#fff", border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>⚔️ 배틀하기</button>
+                    <button onClick={() => heartRow(r)}
+                      style={{ background: iHearted ? C.red : C.bg, color: iHearted ? "#fff" : C.text, border:`1.5px solid ${iHearted ? C.red : C.border}`, borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>
+                      {iHearted ? "❤️ 하트취소" : "🤍 하트주기"}
+                    </button>
+                  </div>
+                  {!isFriend && (
+                    <button onClick={() => !sent && sendReq(r)} disabled={sent}
+                      style={{ width:"100%", marginTop:8, background: sent ? C.border : C.navy, color:"#fff", border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor: sent ? "default" : "pointer" }}>
+                      {sent ? "신청함" : "➕ 친구 추가"}
+                    </button>
+                  )}
+                  {isFriend && <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>이미 친구예요</div>}
+                </>
+              )}
+              <button onClick={() => setSelected(null)}
+                style={{ marginTop:14, background:"none", border:"none", color:C.muted, fontSize:13, cursor:"pointer" }}>닫기</button>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
