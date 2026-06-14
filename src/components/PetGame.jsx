@@ -9,8 +9,21 @@ import { C } from "../theme";
    알 → 유년기(baby) → 성장기(juvenile) → 성체(adult)
    ============================================================ */
 
-const SPECIES = ["dog", "cat", "dragon", "fox", "otter", "penguin"];
-const SPECIES_KR = { dog:"강아지", cat:"고양이", dragon:"용", fox:"여우", otter:"수달", penguin:"펭귄" };
+const SPECIES = [
+  // 기존 6종
+  "dog", "cat", "dragon", "fox", "otter", "penguin",
+  // 추가 16종 (batch1)
+  "bear", "griffin", "hamster", "hedgehog", "lion", "octopus", "panda", "phoenix",
+  "rabbit", "raccoon", "slime", "squirrel", "tiger", "turtle", "unicorn", "wolf",
+];
+const SPECIES_KR = {
+  // 기존 6종
+  dog:"강아지", cat:"고양이", dragon:"용", fox:"여우", otter:"수달", penguin:"펭귄",
+  // 추가 16종
+  bear:"곰", griffin:"그리핀", hamster:"햄스터", hedgehog:"고슴도치", lion:"사자",
+  octopus:"문어", panda:"판다", phoenix:"피닉스", rabbit:"토끼", raccoon:"너구리",
+  slime:"슬라임", squirrel:"다람쥐", tiger:"호랑이", turtle:"거북이", unicorn:"유니콘", wolf:"늑대",
+};
 
 // 등급: 확률 + 경험치 보너스
 const RARITY = {
