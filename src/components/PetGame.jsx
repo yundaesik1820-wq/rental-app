@@ -196,6 +196,16 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
       const qs = await getDoc(doc(db, "quizzes", todayStr()));
       setQuiz(qs.exists() ? qs.data() : null);
     } catch (e) { setQuiz(null); }
+    // 시간표 이미 등록한 기존 사용자 자동 지급 (1회성, 부화한 펫만)
+    try {
+      if (p && p.species && !(p.onceLog && p.onceLog.timetable)) {
+        const tt = await getDoc(doc(db, "timetables", uid));
+        if (tt.exists() && (tt.data().classes || []).length > 0) {
+          const gained = await grantPetExp(uid, "timetable");
+          if (gained > 0) { showToast(`시간표 등록 보너스! +${gained} EXP 🎉`); load(); }
+        }
+      }
+    } catch (e) {}
   }, [uid]);
   useEffect(() => { load(); }, [load]);
 
