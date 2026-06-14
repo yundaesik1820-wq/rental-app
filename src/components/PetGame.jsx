@@ -1134,14 +1134,17 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
       </button>
 
       {addOpen && (
-        <div style={{ marginBottom:16 }}>
+        <div style={{ marginBottom:16, background:C.tealLight, border:`1.5px solid ${C.teal}`, borderRadius:14, padding:"14px 14px 16px" }}>
+          <div style={{ fontSize:13, fontWeight:800, color:C.teal, marginBottom:12, display:"flex", alignItems:"center", gap:6 }}>
+            👥 친구 추가하기
+          </div>
           {/* 받은 신청 */}
           {received.length > 0 && (
             <div style={{ marginBottom:14 }}>
               <div style={{ fontSize:12, fontWeight:800, color:C.text, marginBottom:6 }}>받은 친구 신청 {received.length}</div>
               <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
                 {received.map(r => (
-                  <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
+                  <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
                     <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.fromName} <span style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</span></span>
                     <button onClick={() => accept(r)} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
                     <button onClick={() => reject(r)} style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>거절</button>
@@ -1156,7 +1159,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
             <div style={{ fontSize:12, fontWeight:800, color:C.text, marginBottom:6 }}>학번으로 추가</div>
             <div style={{ display:"flex", gap:6 }}>
               <input value={addSid} onChange={e => { setAddSid(e.target.value); setAddMsg(null); }} placeholder="학번 8자리"
-                style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+                style={{ flex:1, minWidth:0, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
               <button onClick={addByStudentId} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:9, padding:"8px 16px", fontSize:13, fontWeight:800, cursor:"pointer", flexShrink:0 }}>신청</button>
             </div>
             {addMsg && <div style={{ fontSize:11, color: addMsg.ok ? C.teal : C.red, marginTop:5 }}>{addMsg.m}</div>}
@@ -1167,7 +1170,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
               <span style={{ fontSize:12, fontWeight:800, color:C.text }}>추천 친구</span>
               <button onClick={loadAddData} disabled={recLoading}
-                style={{ background:C.bg, color:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🔄 새로고침</button>
+                style={{ background:C.surface, color:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🔄 새로고침</button>
             </div>
             {recLoading ? (
               <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"14px 0" }}>불러오는 중...</div>
@@ -1178,7 +1181,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
                 {recommend.map(r => {
                   const sent = sentIds.includes(r.uid);
                   return (
-                    <div key={r.uid} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
+                    <div key={r.uid} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
                       <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.name} <span style={{ fontSize:11, color:C.muted }}>{r.sid}</span></span>
                       <button onClick={() => !sent && sendRequest(r)} disabled={sent}
                         style={{ background: sent ? C.border : C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor: sent ? "default" : "pointer" }}>
