@@ -8,7 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { PetHomeCard, PetOverlay, FriendPetCard } from "../../components/PetGame.jsx";
+import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -248,7 +248,6 @@ export default function StudentHome() {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
-  const [myPetData, setMyPetData] = useState(null);
 
   // 계정 전환 (학생↔관리자)
   const switchKey = `linked_creds_${profile?.uid}`;
@@ -357,15 +356,6 @@ export default function StudentHome() {
   const [showClassForm, setShowClassForm] = useState(false);
 
   const uid = profile?.uid;
-  useEffect(() => {
-    if (!uid) return;
-    (async () => {
-      try {
-        const s = await getDoc(doc(db, "users", uid));
-        setMyPetData(s.exists() && s.data().pet ? s.data().pet : null);
-      } catch (e) {}
-    })();
-  }, [uid, petRefresh]);
 
   // 시간표 로드
   useEffect(() => {
@@ -1023,18 +1013,12 @@ export default function StudentHome() {
                                   </button>
                                 </div>
                                 {isViewing && viewFriend && (
-                                  <div style={{ marginTop:6 }}>
-                                    <div style={{ overflowX:"auto" }}>
-                                      <div style={{ minWidth:320 }}>
-                                        {viewFriend.classes.length === 0
-                                          ? <div style={{ textAlign:"center", padding:"16px 0", fontSize:12, color:C.muted }}>등록된 시간표가 없어요</div>
-                                          : <Timetable classes={viewFriend.classes} readOnly />
-                                        }
-                                      </div>
-                                    </div>
-                                    <div style={{ marginTop:8 }}>
-                                      <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>🐾 {viewFriend.name}님의 펫</div>
-                                      <FriendPetCard friendUid={viewFriend.id} myUid={profile?.uid} friendName={viewFriend.name} myPet={myPetData} />
+                                  <div style={{ marginTop:6, overflowX:"auto" }}>
+                                    <div style={{ minWidth:320 }}>
+                                      {viewFriend.classes.length === 0
+                                        ? <div style={{ textAlign:"center", padding:"16px 0", fontSize:12, color:C.muted }}>등록된 시간표가 없어요</div>
+                                        : <Timetable classes={viewFriend.classes} readOnly />
+                                      }
                                     </div>
                                   </div>
                                 )}

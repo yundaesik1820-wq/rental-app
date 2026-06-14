@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
 import { db } from "../firebase";
 import { C } from "../theme";
 
@@ -176,6 +176,10 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
   const [battlePick, setBattlePick] = useState(false);  // 상대 선택 모달
   const [battleOpp, setBattleOpp] = useState(null);     // 선택된 상대 {uid, name, pet}
   const [loadingOpp, setLoadingOpp] = useState(false);
+  const [tab, setTab] = useState("mine");               // mine | friends | rank
+  const [friendView, setFriendView] = useState(null);   // 친구 펫 탭에서 보는 친구 {uid,name,sid,pet}
+  const [rankData, setRankData] = useState(undefined);  // 순위 데이터
+  const [rankKind, setRankKind] = useState("heart");    // heart | battle | level
   const [quiz, setQuiz] = useState(undefined);          // 오늘의 퀴즈 (undefined=로딩, null=없음)
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizPick, setQuizPick] = useState(null);       // 고른 보기 인덱스
@@ -195,6 +199,34 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
 
   // 오늘 퀴즈 이미 풀었는지 (pet에 기록)
   const quizDoneToday = pet && pet.lastQuizDate === todayStr();
+
+  // 순위 로드 (전체 학생) — 탭 진입 시 1회
+  const loadRank = useCallback(async () => {
+    setRankData(undefined);
+    try {
+      const snap = await getDocs(collection(db, "users"));
+      const rows = [];
+      snap.forEach(d => {
+        const u = d.data();
+        if (!u.pet || !u.pet.species) return;          // 펫 없거나 미부화 제외
+        const p = u.pet;
+        const lvl = petLevel(p);
+        const win = p.battleWin || 0, lose = p.battleLose || 0;
+        const total = win + lose;
+        rows.push({
+          uid: d.id,
+          name: u.name || "익명",
+          pet: p,
+          hearts: p.hearts || 0,
+          win, lose, total,
+          winRate: total > 0 ? win / total : 0,
+          level: lvl,
+          exp: p.exp || 0,
+        });
+      });
+      setRankData(rows);
+    } catch (e) { setRankData([]); }
+  }, []);
 
   // 퀴즈 정답 제출
   const submitQuiz = async () => {
@@ -420,6 +452,19 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
         </div>
       )}
 
+      {/* 탭 바 */}
+      <div style={{ display:"flex", gap:6, padding:"10px 16px 0", justifyContent:"center" }}>
+        {[["mine","나의 펫"],["friends","친구 펫"],["rank","순위"]].map(([k,label]) => (
+          <button key={k}
+            onClick={() => { setTab(k); setFriendView(null); if (k==="rank") loadRank(); }}
+            style={{ flex:1, maxWidth:110, background: tab===k ? C.navy : C.bg, color: tab===k ? "#fff" : C.muted, border:`1px solid ${tab===k ? C.navy : C.border}`, borderRadius:10, padding:"9px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* ───── 나의 펫 탭 ───── */}
+      {tab === "mine" && (
       <div style={{ padding:"8px 20px 32px", textAlign:"center" }}>
         {/* 펫 이미지 */}
         <div style={{ width:180, height:180, margin:"10px auto 0", background:C.bg, border:`3px solid ${rarity.color}`, borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
@@ -506,6 +551,17 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
           </button>
         </div>
       </div>
+      )}
+
+      {/* ───── 친구 펫 탭 ───── */}
+      {tab === "friends" && (
+        <FriendsTab uid={uid} friends={friends} friendView={friendView} setFriendView={setFriendView} showToast={showToast} />
+      )}
+
+      {/* ───── 순위 탭 ───── */}
+      {tab === "rank" && (
+        <RankTab uid={uid} rankData={rankData} rankKind={rankKind} setRankKind={setRankKind} />
+      )}
 
       {/* 토스트 */}
       {toast && (
@@ -923,4 +979,171 @@ export function battleRemaining(pet) {
   if (!pet) return BATTLE_MAX;
   const used = pet.lastBattleDate === todayStr() ? (pet.battleCount || 0) : 0;
   return Math.max(0, BATTLE_MAX - used);
+}
+
+
+/* ============================================================
+   친구 펫 탭 — 친구 목록 → 친구 펫 구경 + 하트
+   ============================================================ */
+function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
+  const [loading, setLoading] = useState(false);
+
+  const openFriend = async (f) => {
+    setLoading(true);
+    try {
+      const s = await getDoc(doc(db, "users", f.uid));
+      const p = s.exists() && s.data().pet ? s.data().pet : null;
+      setFriendView({ ...f, pet: p });
+    } catch (e) { showToast("불러오기 실패", false); }
+    setLoading(false);
+  };
+
+  if (friendView) {
+    const pet = friendView.pet;
+    return (
+      <div style={{ padding:"14px 18px 32px" }}>
+        <button onClick={() => setFriendView(null)}
+          style={{ background:"none", border:"none", color:C.navy, fontSize:13, fontWeight:700, cursor:"pointer", marginBottom:12 }}>
+          ← 친구 목록
+        </button>
+        {!pet || !pet.species ? (
+          <div style={{ textAlign:"center", padding:"40px 0", color:C.muted, fontSize:14 }}>
+            {friendView.name}님은 아직 펫이 없어요
+          </div>
+        ) : (
+          <FriendPetView uid={uid} friend={friendView} />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ padding:"14px 18px 32px" }}>
+      {friends.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"40px 0", color:C.muted, fontSize:14 }}>
+          아직 친구가 없어요.<br/>친구를 추가하면 펫을 구경할 수 있어요!
+        </div>
+      ) : (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {friends.map(f => (
+            <button key={f.uid} onClick={() => openFriend(f)} disabled={loading}
+              style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"12px 14px", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}>
+              <span style={{ fontSize:14, fontWeight:700, color:C.text, flex:1 }}>{f.name}</span>
+              <span style={{ fontSize:11, color:C.muted }}>{f.sid}</span>
+              <span style={{ fontSize:13, color:C.navy, fontWeight:700 }}>펫 보기 →</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {loading && <div style={{ fontSize:12, color:C.muted, textAlign:"center", marginTop:12 }}>불러오는 중...</div>}
+    </div>
+  );
+}
+
+// 친구 펫 상세 + 하트 (친구 펫 탭 내부)
+function FriendPetView({ uid, friend }) {
+  const [pet, setPet] = useState(friend.pet);
+  const [hearting, setHearting] = useState(false);
+  const stage = stageFromExp(pet.exp);
+  const rarity = RARITY[pet.rarity] || RARITY.common;
+  const hearts = pet.hearts || 0;
+  const heartedBy = pet.heartedBy || [];
+  const iHearted = heartedBy.includes(uid);
+  const lv = stage === "adult" ? petLevel(pet) : null;
+
+  const toggleHeart = async () => {
+    if (hearting || uid === friend.uid) return;
+    setHearting(true);
+    try {
+      const ref = doc(db, "users", friend.uid);
+      const nb = iHearted ? heartedBy.filter(u => u !== uid) : [...heartedBy, uid];
+      await updateDoc(ref, { "pet.hearts": nb.length, "pet.heartedBy": nb });
+      setPet(p => ({ ...p, hearts: nb.length, heartedBy: nb }));
+    } catch (e) {}
+    setHearting(false);
+  };
+
+  return (
+    <div style={{ textAlign:"center" }}>
+      <div style={{ width:160, height:160, margin:"0 auto", background:C.bg, border:`3px solid ${rarity.color}`, borderRadius:24, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
+        <img src={petImg(pet)} alt="" style={{ width:"86%", height:"86%", objectFit:"contain", imageRendering:"pixelated" }} />
+      </div>
+      <div style={{ marginTop:14, display:"inline-flex", alignItems:"center", gap:8 }}>
+        <span style={{ fontSize:18, fontWeight:800, color:C.text }}>{stage==="egg" ? `${rarity.kr} 알` : (pet.name || SPECIES_KR[pet.species])}</span>
+        <span style={{ fontSize:12, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:5, padding:"2px 7px" }}>{rarity.kr}</span>
+        {lv && <span style={{ fontSize:12, color:"#fff", background:rarity.color, borderRadius:5, padding:"2px 8px", fontWeight:800 }}>Lv.{lv}</span>}
+      </div>
+      <div style={{ fontSize:13, color:C.muted, marginTop:5 }}>
+        {friend.name}님의 펫 {stage!=="egg" && `· ${SPECIES_KR[pet.species]}`}
+      </div>
+      <div style={{ fontSize:13, color:C.muted, marginTop:10 }}>받은 하트 ❤️ {hearts}</div>
+      <button onClick={toggleHeart} disabled={hearting}
+        style={{ marginTop:16, background: iHearted ? C.red : C.surface, color: iHearted ? "#fff" : C.text, border:`1.5px solid ${iHearted ? C.red : C.border}`, borderRadius:12, padding:"12px 32px", fontSize:15, fontWeight:800, cursor:"pointer" }}>
+        {iHearted ? "❤️ 하트 취소" : "🤍 하트 주기"}
+      </button>
+    </div>
+  );
+}
+
+/* ============================================================
+   순위 탭 — 전체 학생 대상, 하트/배틀(승률)/레벨 순위
+   ============================================================ */
+function RankTab({ uid, rankData, rankKind, setRankKind }) {
+  if (rankData === undefined) {
+    return <div style={{ padding:"40px 0", textAlign:"center", color:C.muted, fontSize:14 }}>순위 불러오는 중...</div>;
+  }
+  if (rankData.length === 0) {
+    return <div style={{ padding:"40px 0", textAlign:"center", color:C.muted, fontSize:14 }}>아직 순위가 없어요</div>;
+  }
+
+  // 정렬
+  let sorted = [...rankData];
+  if (rankKind === "heart")  sorted.sort((a,b) => b.hearts - a.hearts);
+  if (rankKind === "battle") sorted.sort((a,b) => b.winRate - a.winRate || b.win - a.win);
+  if (rankKind === "level")  sorted.sort((a,b) => b.exp - a.exp);
+  sorted = sorted.slice(0, 30); // 상위 30명
+
+  const valueOf = (r) => {
+    if (rankKind === "heart")  return `❤️ ${r.hearts}`;
+    if (rankKind === "battle") return r.total > 0 ? `${Math.round(r.winRate*100)}% (${r.win}승 ${r.lose}패)` : "전적 없음";
+    return `Lv.${r.level}`;
+  };
+  const medal = (i) => i===0?"🥇":i===1?"🥈":i===2?"🥉":`${i+1}`;
+
+  return (
+    <div style={{ padding:"14px 16px 32px" }}>
+      {/* 순위 종류 토글 */}
+      <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+        {[["heart","하트"],["battle","배틀"],["level","레벨"]].map(([k,label]) => (
+          <button key={k} onClick={() => setRankKind(k)}
+            style={{ flex:1, background: rankKind===k ? C.purple : C.bg, color: rankKind===k ? "#fff" : C.muted, border:`1px solid ${rankKind===k ? C.purple : C.border}`, borderRadius:9, padding:"8px 0", fontSize:12, fontWeight:800, cursor:"pointer" }}>
+            {label}순위
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+        {sorted.map((r, i) => {
+          const isMe = r.uid === uid;
+          const rarity = RARITY[r.pet.rarity] || RARITY.common;
+          return (
+            <div key={r.uid}
+              style={{ display:"flex", alignItems:"center", gap:10, background: isMe ? C.navy+"18" : C.bg, border:`1px solid ${isMe ? C.navy : C.border}`, borderRadius:10, padding:"8px 12px" }}>
+              <span style={{ fontSize:14, fontWeight:800, color: i<3?C.text:C.muted, width:28, textAlign:"center", flexShrink:0 }}>{medal(i)}</span>
+              <div style={{ width:36, height:36, background:C.surface, border:`2px solid ${rarity.color}`, borderRadius:8, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                <img src={petImg(r.pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+              </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  {r.pet.name || SPECIES_KR[r.pet.species]} {isMe && <span style={{ fontSize:10, color:C.navy }}>(나)</span>}
+                </div>
+                <div style={{ fontSize:11, color:C.muted }}>{r.name}</div>
+              </div>
+              <span style={{ fontSize:12, fontWeight:700, color:C.text, flexShrink:0 }}>{valueOf(r)}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
