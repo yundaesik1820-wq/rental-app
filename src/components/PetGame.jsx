@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs } from "firebase/firestore";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../firebase";
 import { C } from "../theme";
 
@@ -166,7 +166,7 @@ export function PetHomeCard({ uid, onOpen }) {
 /* ============================================================
    전체화면 오버레이 — 펫 상세 + 퀘스트
    ============================================================ */
-export function PetOverlay({ uid, onClose, friends = [] }) {
+export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
   const [pet, setPet] = useState(undefined);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);     // {msg, good}
@@ -176,6 +176,8 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
   const [battlePick, setBattlePick] = useState(false);  // 상대 선택 모달
   const [battleOpp, setBattleOpp] = useState(null);     // 선택된 상대 {uid, name, pet}
   const [loadingOpp, setLoadingOpp] = useState(false);
+  const [battlePool, setBattlePool] = useState([]);     // 랜덤 5명
+  const [refreshLeft, setRefreshLeft] = useState(3);    // 새로고침 잔여(세션)
   const [tab, setTab] = useState("mine");               // mine | friends | rank
   const [friendView, setFriendView] = useState(null);   // 친구 펫 탭에서 보는 친구 {uid,name,sid,pet}
   const [rankData, setRankData] = useState(undefined);  // 순위 데이터
@@ -260,6 +262,12 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
   };
 
   const showToast = (msg, good=true) => { setToast({ msg, good }); setTimeout(()=>setToast(null), 1800); };
+
+  // 친구 중 랜덤 5명 뽑기
+  const pickBattlePool = () => {
+    const shuffled = [...friends].sort(() => Math.random() - 0.5);
+    setBattlePool(shuffled.slice(0, 5));
+  };
 
   // 오늘 퀘스트 횟수 (날짜 바뀌면 0)
   const questUsed = (p, key) => (p.lastQuestDate === todayStr() ? (p.quests?.[key] || 0) : 0);
@@ -454,7 +462,7 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
 
       {/* 탭 바 */}
       <div style={{ display:"flex", gap:6, padding:"10px 16px 0", justifyContent:"center" }}>
-        {[["mine","나의 펫"],["friends","친구 펫"],["rank","순위"]].map(([k,label]) => (
+        {[["mine","내 펫"],["friends","친구 펫"],["rank","순위"]].map(([k,label]) => (
           <button key={k}
             onClick={() => { setTab(k); setFriendView(null); if (k==="rank") loadRank(); }}
             style={{ flex:1, maxWidth:110, background: tab===k ? C.navy : C.bg, color: tab===k ? "#fff" : C.muted, border:`1px solid ${tab===k ? C.navy : C.border}`, borderRadius:10, padding:"9px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>
@@ -529,7 +537,7 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
               onClick={() => {
                 if (stage !== "adult") { showToast("성체가 된 이후부터 친구와 배틀이 가능해요!", false); return; }
                 if (battleRemaining(pet) <= 0) { showToast("오늘 배틀 횟수를 다 썼어요! (하루 5회)", false); return; }
-                setBattlePick(true);
+                pickBattlePool(); setRefreshLeft(3); setBattlePick(true);
               }}
               style={{ background: stage === "adult" ? C.red : C.border, color:"#fff", border:"none", borderRadius:14, padding:"13px 28px", fontSize:15, fontWeight:800, cursor:"pointer", opacity: stage === "adult" ? 1 : 0.55 }}>
               ⚔️ 배틀하기
@@ -555,7 +563,7 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
 
       {/* ───── 친구 펫 탭 ───── */}
       {tab === "friends" && (
-        <FriendsTab uid={uid} friends={friends} friendView={friendView} setFriendView={setFriendView} showToast={showToast} />
+        <FriendsTab uid={uid} me={me} friends={friends} friendView={friendView} setFriendView={setFriendView} showToast={showToast} />
       )}
 
       {/* ───── 순위 탭 ───── */}
@@ -574,35 +582,45 @@ export function PetOverlay({ uid, onClose, friends = [] }) {
       {battlePick && (
         <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:28, padding:18 }}>
           <div style={{ background:C.surface, borderRadius:18, padding:"20px 18px", maxWidth:340, width:"100%", maxHeight:"80%", overflowY:"auto" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
               <span style={{ fontSize:15, fontWeight:800, color:C.text }}>⚔️ 누구랑 배틀할까요?</span>
               <button onClick={() => setBattlePick(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✕</button>
             </div>
             {friends.length === 0 ? (
               <div style={{ fontSize:13, color:C.muted, textAlign:"center", padding:"20px 0" }}>아직 친구가 없어요.<br/>친구를 추가하고 배틀해보세요!</div>
             ) : (
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                {friends.map(f => (
-                  <button key={f.uid} disabled={loadingOpp}
-                    onClick={async () => {
-                      setLoadingOpp(true);
-                      try {
-                        const s = await getDoc(doc(db, "users", f.uid));
-                        const op = s.exists() && s.data().pet ? s.data().pet : null;
-                        if (!op) { showToast(`${f.name}님은 아직 펫이 없어요`, false); setLoadingOpp(false); return; }
-                        if (stageFromExp(op.exp) !== "adult") { showToast(`${f.name}님의 펫이 아직 성체가 아니에요`, false); setLoadingOpp(false); return; }
-                        setBattleOpp({ uid: f.uid, name: f.name, pet: op });
-                        setBattlePick(false);
-                      } catch (e) { showToast("불러오기 실패", false); }
-                      setLoadingOpp(false);
-                    }}
-                    style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}>
-                    <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{f.name}</span>
-                    <span style={{ fontSize:11, color:C.muted }}>{f.sid}</span>
-                    <span style={{ fontSize:12, color:C.red, fontWeight:800 }}>도전 →</span>
+              <>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <span style={{ fontSize:11, color:C.muted }}>랜덤 상대 {battlePool.length}명</span>
+                  <button onClick={() => { if (refreshLeft > 0) { pickBattlePool(); setRefreshLeft(n => n - 1); } }}
+                    disabled={refreshLeft <= 0 || friends.length <= 5}
+                    style={{ background: (refreshLeft > 0 && friends.length > 5) ? C.bg : C.border, color: (refreshLeft > 0 && friends.length > 5) ? C.navy : C.muted, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 10px", fontSize:11, fontWeight:700, cursor: (refreshLeft > 0 && friends.length > 5) ? "pointer" : "default" }}>
+                    🔄 새로고침 ({refreshLeft})
                   </button>
-                ))}
-              </div>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                  {battlePool.map(f => (
+                    <button key={f.uid} disabled={loadingOpp}
+                      onClick={async () => {
+                        setLoadingOpp(true);
+                        try {
+                          const s = await getDoc(doc(db, "users", f.uid));
+                          const op = s.exists() && s.data().pet ? s.data().pet : null;
+                          if (!op) { showToast(`${f.name}님은 아직 펫이 없어요`, false); setLoadingOpp(false); return; }
+                          if (stageFromExp(op.exp) !== "adult") { showToast(`${f.name}님의 펫이 아직 성체가 아니에요`, false); setLoadingOpp(false); return; }
+                          setBattleOpp({ uid: f.uid, name: f.name, pet: op });
+                          setBattlePick(false);
+                        } catch (e) { showToast("불러오기 실패", false); }
+                        setLoadingOpp(false);
+                      }}
+                      style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{f.name}</span>
+                      <span style={{ fontSize:11, color:C.muted }}>{f.sid}</span>
+                      <span style={{ fontSize:12, color:C.red, fontWeight:800 }}>도전 →</span>
+                    </button>
+                  ))}
+                </div>
+              </>
             )}
             {loadingOpp && <div style={{ fontSize:12, color:C.muted, textAlign:"center", marginTop:10 }}>상대 펫 불러오는 중...</div>}
           </div>
@@ -985,8 +1003,99 @@ export function battleRemaining(pet) {
 /* ============================================================
    친구 펫 탭 — 친구 목록 → 친구 펫 구경 + 하트
    ============================================================ */
-function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
+function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) {
   const [loading, setLoading] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [recommend, setRecommend] = useState([]);   // 추천친구 랜덤 목록
+  const [recLoading, setRecLoading] = useState(false);
+  const [received, setReceived] = useState([]);      // 받은 신청
+  const [sentIds, setSentIds] = useState([]);        // 내가 신청한 uid
+  const [addSid, setAddSid] = useState("");          // 학번 직접 추가
+  const [addMsg, setAddMsg] = useState(null);
+
+  const friendUids = friends.map(f => f.uid);
+
+  // 추천친구 + 받은신청 로드
+  const loadAddData = useCallback(async () => {
+    setRecLoading(true);
+    try {
+      // 받은 신청
+      const rq = await getDocs(query(collection(db, "friendRequests"), where("toId", "==", uid), where("status", "==", "pending")));
+      setReceived(rq.docs.map(d => ({ id: d.id, ...d.data() })));
+      // 내가 보낸 신청 (중복 방지용)
+      const sq = await getDocs(query(collection(db, "friendRequests"), where("fromId", "==", uid), where("status", "==", "pending")));
+      setSentIds(sq.docs.map(d => d.data().toId));
+      // 추천친구: 전체 학생 중 친구 아님 + 본인 아님 → 랜덤
+      const us = await getDocs(query(collection(db, "users"), where("role", "==", "student")));
+      const cand = [];
+      us.forEach(d => {
+        if (d.id === uid) return;
+        if (friendUids.includes(d.id)) return;
+        const u = d.data();
+        cand.push({ uid: d.id, name: u.name || "익명", sid: u.studentId || "" });
+      });
+      setRecommend(cand.sort(() => Math.random() - 0.5).slice(0, 5));
+    } catch (e) {}
+    setRecLoading(false);
+  }, [uid, friends.length]);
+
+  const openAdd = () => { setAddOpen(true); loadAddData(); };
+
+  // 친구 신청 보내기 (추천에서)
+  const sendRequest = async (target) => {
+    try {
+      await addDoc(collection(db, "friendRequests"), {
+        fromId: uid, fromName: me.name, fromStudentId: me.studentId,
+        toId: target.uid, toName: target.name, toStudentId: target.sid,
+        status: "pending", createdAt: serverTimestamp(),
+      });
+      setSentIds(p => [...p, target.uid]);
+      showToast(`${target.name}님께 신청을 보냈어요!`);
+    } catch (e) { showToast("신청 실패", false); }
+  };
+
+  // 학번으로 추가
+  const addByStudentId = async () => {
+    const sid = addSid.trim();
+    if (sid.length < 8) { setAddMsg({ ok:false, m:"학번을 정확히 입력해주세요" }); return; }
+    if (sid === me.studentId) { setAddMsg({ ok:false, m:"본인에게는 신청할 수 없어요" }); return; }
+    try {
+      const snap = await getDocs(query(collection(db, "users"), where("studentId", "==", sid), where("role", "==", "student")));
+      if (snap.empty) { setAddMsg({ ok:false, m:"해당 학번 학생을 찾을 수 없어요" }); return; }
+      const t = snap.docs[0];
+      if (friendUids.includes(t.id)) { setAddMsg({ ok:false, m:"이미 친구예요!" }); return; }
+      if (sentIds.includes(t.id)) { setAddMsg({ ok:false, m:"이미 신청을 보냈어요" }); return; }
+      const td = t.data();
+      await addDoc(collection(db, "friendRequests"), {
+        fromId: uid, fromName: me.name, fromStudentId: me.studentId,
+        toId: t.id, toName: td.name, toStudentId: td.studentId,
+        status: "pending", createdAt: serverTimestamp(),
+      });
+      setSentIds(p => [...p, t.id]);
+      setAddMsg({ ok:true, m:`${td.name}님께 신청을 보냈어요!` });
+      setAddSid("");
+    } catch (e) { setAddMsg({ ok:false, m:"오류가 발생했어요" }); }
+  };
+
+  // 받은 신청 수락 / 거절
+  const accept = async (req) => {
+    try {
+      await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
+      await addDoc(collection(db, "friends"), {
+        userId: req.fromId, userName: req.fromName, userStudentId: req.fromStudentId,
+        friendId: req.toId, friendName: req.toName, friendStudentId: req.toStudentId,
+        createdAt: serverTimestamp(),
+      });
+      setReceived(p => p.filter(r => r.id !== req.id));
+      showToast(`${req.fromName}님과 친구가 됐어요!`);
+    } catch (e) { showToast("수락 실패", false); }
+  };
+  const reject = async (req) => {
+    try {
+      await updateDoc(doc(db, "friendRequests", req.id), { status: "rejected" });
+      setReceived(p => p.filter(r => r.id !== req.id));
+    } catch (e) {}
+  };
 
   const openFriend = async (f) => {
     setLoading(true);
@@ -998,6 +1107,7 @@ function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
     setLoading(false);
   };
 
+  // 친구 펫 상세 보기
   if (friendView) {
     const pet = friendView.pet;
     return (
@@ -1007,9 +1117,7 @@ function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
           ← 친구 목록
         </button>
         {!pet || !pet.species ? (
-          <div style={{ textAlign:"center", padding:"40px 0", color:C.muted, fontSize:14 }}>
-            {friendView.name}님은 아직 펫이 없어요
-          </div>
+          <div style={{ textAlign:"center", padding:"40px 0", color:C.muted, fontSize:14 }}>{friendView.name}님은 아직 펫이 없어요</div>
         ) : (
           <FriendPetView uid={uid} friend={friendView} />
         )}
@@ -1019,9 +1127,76 @@ function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
 
   return (
     <div style={{ padding:"14px 18px 32px" }}>
+      {/* 친구 추가 토글 */}
+      <button onClick={() => addOpen ? setAddOpen(false) : openAdd()}
+        style={{ width:"100%", background: addOpen ? C.bg : C.navy, color: addOpen ? C.text : "#fff", border:`1px solid ${addOpen ? C.border : C.navy}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:800, cursor:"pointer", marginBottom:12 }}>
+        {addOpen ? "닫기" : "➕ 친구 추가"}
+      </button>
+
+      {addOpen && (
+        <div style={{ marginBottom:16 }}>
+          {/* 받은 신청 */}
+          {received.length > 0 && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:800, color:C.text, marginBottom:6 }}>받은 친구 신청 {received.length}</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {received.map(r => (
+                  <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
+                    <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.fromName} <span style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</span></span>
+                    <button onClick={() => accept(r)} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
+                    <button onClick={() => reject(r)} style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>거절</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 학번으로 추가 */}
+          <div style={{ marginBottom:14 }}>
+            <div style={{ fontSize:12, fontWeight:800, color:C.text, marginBottom:6 }}>학번으로 추가</div>
+            <div style={{ display:"flex", gap:6 }}>
+              <input value={addSid} onChange={e => { setAddSid(e.target.value); setAddMsg(null); }} placeholder="학번 8자리"
+                style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+              <button onClick={addByStudentId} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:9, padding:"8px 16px", fontSize:13, fontWeight:800, cursor:"pointer", flexShrink:0 }}>신청</button>
+            </div>
+            {addMsg && <div style={{ fontSize:11, color: addMsg.ok ? C.teal : C.red, marginTop:5 }}>{addMsg.m}</div>}
+          </div>
+
+          {/* 추천친구 */}
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+              <span style={{ fontSize:12, fontWeight:800, color:C.text }}>추천 친구</span>
+              <button onClick={loadAddData} disabled={recLoading}
+                style={{ background:C.bg, color:C.navy, border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🔄 새로고침</button>
+            </div>
+            {recLoading ? (
+              <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"14px 0" }}>불러오는 중...</div>
+            ) : recommend.length === 0 ? (
+              <div style={{ fontSize:12, color:C.muted, textAlign:"center", padding:"14px 0" }}>추천할 친구가 없어요</div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                {recommend.map(r => {
+                  const sent = sentIds.includes(r.uid);
+                  return (
+                    <div key={r.uid} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
+                      <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.name} <span style={{ fontSize:11, color:C.muted }}>{r.sid}</span></span>
+                      <button onClick={() => !sent && sendRequest(r)} disabled={sent}
+                        style={{ background: sent ? C.border : C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor: sent ? "default" : "pointer" }}>
+                        {sent ? "신청함" : "친구 신청"}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 내 친구 목록 */}
       {friends.length === 0 ? (
-        <div style={{ textAlign:"center", padding:"40px 0", color:C.muted, fontSize:14 }}>
-          아직 친구가 없어요.<br/>친구를 추가하면 펫을 구경할 수 있어요!
+        <div style={{ textAlign:"center", padding:"30px 0", color:C.muted, fontSize:14 }}>
+          아직 친구가 없어요.<br/>위 "친구 추가"로 친구를 만들어보세요!
         </div>
       ) : (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -1040,7 +1215,6 @@ function FriendsTab({ uid, friends, friendView, setFriendView, showToast }) {
   );
 }
 
-// 친구 펫 상세 + 하트 (친구 펫 탭 내부)
 function FriendPetView({ uid, friend }) {
   const [pet, setPet] = useState(friend.pet);
   const [hearting, setHearting] = useState(false);

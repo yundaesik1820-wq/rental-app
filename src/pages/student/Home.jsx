@@ -719,6 +719,7 @@ export default function StudentHome() {
       {/* 🐾 펫 키우기 카드 */}
       <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
       {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }}
+        me={{ uid: profile?.uid, name: profile?.name, studentId: profile?.studentId }}
         friends={myFriends.map(f => {
           const isMine = f.userId === profile?.uid;
           return { uid: isMine ? f.friendId : f.userId, name: isMine ? f.friendName : f.userName, sid: isMine ? f.friendStudentId : f.userStudentId };
@@ -972,13 +973,13 @@ export default function StudentHome() {
                   return (
                     <div>
                       {/* 검색 + 정렬 */}
-                      <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
+                      <div style={{ display:"flex", gap:5, marginBottom:8, alignItems:"center" }}>
                         <input value={friendSearch} onChange={e => { setFriendSearch(e.target.value); setFriendPage(1); }}
-                          placeholder="이름 또는 학번 검색"
-                          style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+                          placeholder="검색"
+                          style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                         {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
                           <button key={v} onClick={() => { setFriendSort(v); setFriendPage(1); }}
-                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
+                            style={{ padding:"5px 8px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap", background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
                             {l}
                           </button>
                         ))}
