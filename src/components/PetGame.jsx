@@ -166,13 +166,16 @@ export function PetHomeCard({ uid, onOpen }) {
 /* ============================================================
    전체화면 오버레이 — 펫 상세 + 퀘스트
    ============================================================ */
-export function PetOverlay({ uid, onClose }) {
+export function PetOverlay({ uid, onClose, friends = [] }) {
   const [pet, setPet] = useState(undefined);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);     // {msg, good}
   const [naming, setNaming] = useState(false);   // 부화 직후 이름짓기
   const [nameInput, setNameInput] = useState("");
   const [justHatched, setJustHatched] = useState(null); // 부화 연출용 species
+  const [battlePick, setBattlePick] = useState(false);  // 상대 선택 모달
+  const [battleOpp, setBattleOpp] = useState(null);     // 선택된 상대 {uid, name, pet}
+  const [loadingOpp, setLoadingOpp] = useState(false);
   const [quiz, setQuiz] = useState(undefined);          // 오늘의 퀴즈 (undefined=로딩, null=없음)
   const [quizOpen, setQuizOpen] = useState(false);
   const [quizPick, setQuizPick] = useState(null);       // 고른 보기 인덱스
@@ -478,7 +481,11 @@ export function PetOverlay({ uid, onClose }) {
         {stage !== "egg" && (
           <div style={{ marginTop:20, paddingTop:20, borderTop:`1px solid ${C.border}` }}>
             <button
-              onClick={() => { if (stage !== "adult") showToast("성체가 된 이후부터 친구와 배틀이 가능해요!", false); }}
+              onClick={() => {
+                if (stage !== "adult") { showToast("성체가 된 이후부터 친구와 배틀이 가능해요!", false); return; }
+                if (battleRemaining(pet) <= 0) { showToast("오늘 배틀 횟수를 다 썼어요! (하루 5회)", false); return; }
+                setBattlePick(true);
+              }}
               style={{ background: stage === "adult" ? C.red : C.border, color:"#fff", border:"none", borderRadius:14, padding:"13px 28px", fontSize:15, fontWeight:800, cursor:"pointer", opacity: stage === "adult" ? 1 : 0.55 }}>
               ⚔️ 배틀하기
             </button>
@@ -486,7 +493,7 @@ export function PetOverlay({ uid, onClose }) {
               <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>성체가 되면 친구와 배틀할 수 있어요</div>
             )}
             {stage === "adult" && (
-              <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>배틀 기능은 곧 추가될 예정이에요!</div>
+              <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>오늘 {battleRemaining(pet)}회 배틀 가능 · 친구를 골라 도전하세요!</div>
             )}
           </div>
         )}
@@ -505,6 +512,51 @@ export function PetOverlay({ uid, onClose }) {
         <div style={{ position:"absolute", bottom:40, left:"50%", transform:"translateX(-50%)", background:toast.good?C.navy:C.red, color:"#fff", borderRadius:10, padding:"10px 20px", fontSize:14, fontWeight:700, zIndex:30, whiteSpace:"nowrap" }}>
           {toast.msg}
         </div>
+      )}
+
+      {/* 배틀 상대 선택 모달 */}
+      {battlePick && (
+        <div style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:28, padding:18 }}>
+          <div style={{ background:C.surface, borderRadius:18, padding:"20px 18px", maxWidth:340, width:"100%", maxHeight:"80%", overflowY:"auto" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <span style={{ fontSize:15, fontWeight:800, color:C.text }}>⚔️ 누구랑 배틀할까요?</span>
+              <button onClick={() => setBattlePick(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:18, cursor:"pointer" }}>✕</button>
+            </div>
+            {friends.length === 0 ? (
+              <div style={{ fontSize:13, color:C.muted, textAlign:"center", padding:"20px 0" }}>아직 친구가 없어요.<br/>친구를 추가하고 배틀해보세요!</div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {friends.map(f => (
+                  <button key={f.uid} disabled={loadingOpp}
+                    onClick={async () => {
+                      setLoadingOpp(true);
+                      try {
+                        const s = await getDoc(doc(db, "users", f.uid));
+                        const op = s.exists() && s.data().pet ? s.data().pet : null;
+                        if (!op) { showToast(`${f.name}님은 아직 펫이 없어요`, false); setLoadingOpp(false); return; }
+                        if (stageFromExp(op.exp) !== "adult") { showToast(`${f.name}님의 펫이 아직 성체가 아니에요`, false); setLoadingOpp(false); return; }
+                        setBattleOpp({ uid: f.uid, name: f.name, pet: op });
+                        setBattlePick(false);
+                      } catch (e) { showToast("불러오기 실패", false); }
+                      setLoadingOpp(false);
+                    }}
+                    style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", cursor:"pointer", textAlign:"left", fontFamily:"inherit" }}>
+                    <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{f.name}</span>
+                    <span style={{ fontSize:11, color:C.muted }}>{f.sid}</span>
+                    <span style={{ fontSize:12, color:C.red, fontWeight:800 }}>도전 →</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {loadingOpp && <div style={{ fontSize:12, color:C.muted, textAlign:"center", marginTop:10 }}>상대 펫 불러오는 중...</div>}
+          </div>
+        </div>
+      )}
+
+      {/* 배틀 화면 */}
+      {battleOpp && (
+        <BattleScreen uid={uid} myPet={pet} oppPet={battleOpp.pet} oppName={battleOpp.name}
+          onClose={() => { setBattleOpp(null); load(); }} />
       )}
     </Overlay>
   );

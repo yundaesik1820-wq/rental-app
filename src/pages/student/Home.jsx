@@ -728,7 +728,11 @@ export default function StudentHome() {
 
       {/* 🐾 펫 키우기 카드 */}
       <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
-      {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }} />}
+      {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }}
+        friends={myFriends.map(f => {
+          const isMine = f.userId === profile?.uid;
+          return { uid: isMine ? f.friendId : f.userId, name: isMine ? f.friendName : f.userName, sid: isMine ? f.friendStudentId : f.userStudentId };
+        })} />}
 
       {/* 공지 팝업 모달 */}
       {popupNotice && (
