@@ -76,12 +76,21 @@ export default function ExposureLive({ onBack }) {
       setSafeTop(top);
       setSafeBottom(bottom);
     };
-    measure();
-    window.addEventListener("resize", measure);
-    window.addEventListener("orientationchange", measure);
+    // 회전 시 iOS는 safe-area 값을 늦게 갱신함 → 이벤트 직후 여러 번 재측정해서 안정값 확보
+    const remeasure = () => {
+      measure();
+      setTimeout(measure, 150);
+      setTimeout(measure, 400);
+      setTimeout(measure, 800);
+    };
+    remeasure();
+    window.addEventListener("resize", remeasure);
+    window.addEventListener("orientationchange", remeasure);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", remeasure);
     return () => {
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("orientationchange", measure);
+      window.removeEventListener("resize", remeasure);
+      window.removeEventListener("orientationchange", remeasure);
+      if (window.visualViewport) window.visualViewport.removeEventListener("resize", remeasure);
     };
   }, []);
 
