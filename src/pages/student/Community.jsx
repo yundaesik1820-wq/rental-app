@@ -197,6 +197,30 @@ export default function Community({ onExit }) {
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
   const [selectedTool, setSelectedTool] = useState(null);
 
+  // 🔧 상태바(노치) 높이를 JS로 직접 측정해서 px로 적용
+  //    일부 WebView(특히 구형 안드로이드)는 calc() 안에 중첩된 max()+env()를
+  //    무효 처리해서 padding이 통째로 0이 되는 버그가 있음 → 헤더가 상태바에 겹침.
+  //    probe 엘리먼트의 실제 렌더 높이를 읽어 픽셀 값으로 박으면 파싱 이슈를 완전히 우회.
+  const [safeTop, setSafeTop] = useState(48);
+  useEffect(() => {
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
+      document.documentElement.appendChild(probe);
+      const measured = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      setSafeTop(Math.max(measured, 48)); // 48px = 상태바 최소 확보 높이(바닥값)
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
 
@@ -740,7 +764,7 @@ export default function Community({ onExit }) {
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          padding:"calc(14px + max(env(safe-area-inset-top, 0px), 48px)) 18px 18px",
+          paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 18, paddingLeft: 18,
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
