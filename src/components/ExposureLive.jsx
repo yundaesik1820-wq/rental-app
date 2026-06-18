@@ -313,6 +313,7 @@ export default function ExposureLive({ onBack }) {
         flexShrink: 0,
         background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
         padding: "10px 14px",
+        paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         borderBottom: "1px solid rgba(251,191,36,0.2)",
       }}>
@@ -495,6 +496,7 @@ export default function ExposureLive({ onBack }) {
         flexShrink: 0,
         background: "#0a0a0a",
         padding: "10px 14px 12px",
+        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
         borderTop: "1px solid #1a1a1a",
       }}>
         {/* 모드 선택 */}
