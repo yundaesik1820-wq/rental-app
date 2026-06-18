@@ -45,13 +45,19 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
     ? (adminRole === "teacher" ? "교사" : adminRole === "assistant" ? "조교" : adminRole === "professor" ? "교수" : "관리자")
     : null;
 
-  // 에브리타임 사이드탭: 모든 관리자(교사·교수 포함) + 교수(role:professor)에게 노출.
-  //   교수·교사는 입장 후 커뮤니티/정보공유 등 학생 전용 룸이 Community 내부에서 차단됨.
-  // 학생은 영상계열만 노출.
-  const hideEverytime = profile?.role === "student" && (profile?.dept||"") !== "영상계열";
+  // 일반 직원(교사/조교)은 대여/반납 숨김
+  // 일반관리자: 대여/반납 탭 보이되 제한된 뷰 (대여중~반납완료만)
+  // 교사·교수는 에브리타임 숨김 (조교는 보임)
+  // 에브리타임: 영상계열 학생만 접근, 교수도 숨김
+  const hideEverytime = profile?.role === "professor" ||
+    (profile?.role === "student" && (profile?.dept||"") !== "영상계열");
+  const isTeacherOrProf = profile?.role === "admin" &&
+    (profile?.adminRole === "teacher" || profile?.adminRole === "professor");
 
   const nav = profile?.role === "admin"
-    ? ADMIN_NAV
+    ? (isTeacherOrProf
+        ? ADMIN_NAV.filter(n => n.id !== "community")
+        : ADMIN_NAV)
     : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
   // 모바일 하단 2줄 그리드 (4x2 고정)
@@ -61,7 +67,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const currentNav = nav.find(n => n.id === tab);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div style={{ display: "flex", minHeight: "100vh", paddingTop: "env(safe-area-inset-top, 0px)", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
 
       {/* ── Sidebar (desktop) ── */}
       <aside style={{
@@ -268,8 +274,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
 
 
-      {/* 모바일 하단 2줄 네비 (에브리타임에선 숨김 - 몰입 모드) */}
-      {tab !== "community" && (
+      {/* 모바일 하단 2줄 네비 */}
       <div className="mobile-nav" style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0,
@@ -313,7 +318,6 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           </div>
         ))}
       </div>
-      )}
 
     </div>
   );
