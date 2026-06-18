@@ -284,7 +284,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         borderTop: `1px solid ${C.border}`,
         boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
         zIndex: 100,
-        paddingBottom: 0,
+        paddingBottom: 8,
       }}>
         {[row1, row2].map((row, rowIdx) => (
           <div key={rowIdx} className="bottom-nav-row" style={{

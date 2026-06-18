@@ -236,9 +236,8 @@ export default function Community({ onExit }) {
   const isSuper    = profile?.role === "admin"; // 모든 관리자 동일
   const isAssist   = false;
   const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
-  // 실명 모드 사용 권한: 슈퍼관리자 + 조교만
-  const canUseRealName = profile?.role === "admin" &&
-    (adminRole === "super" || adminRole === "assistant");
+  // 관리자 실명 게시 기능 제거됨 — 항상 비활성
+  const canUseRealName = false;
   // 관리자 역할 라벨 (에브리타임에서는 super도 조교로 표시 - 학생 친화적)
   const adminRoleLabel = adminRole === "teacher"   ? "교사"
                        : adminRole === "professor" ? "교수"
@@ -297,26 +296,12 @@ export default function Community({ onExit }) {
 
   // 카테고리 기반 이름 표시
   const displayName = (post) => {
-    // 관리자가 실명 모드로 작성한 글: 이름(역할)로 모두에게 표시
-    if (post.useRealName && post.adminRoleAtWrite) {
-      const lbl = post.adminRoleAtWrite === "teacher"   ? "교사"
-                : post.adminRoleAtWrite === "professor" ? "교수"
-                : "조교";  // super, assistant 둘 다 조교
-      return `${post.authorName || "관리자"}(${lbl})`;
-    }
     if (post.category === LECTURE_CAT) return "익명"; // 강의는 항상 완전 익명
     if (REAL_CATS.includes(post.category)) return post.authorName || ""; // 실명
     if (canSeeReal) return `${post.authorName || "익명"} (익명)`; // 관리자는 실명 보임
     return "익명";
   };
   const displayCommentName = (c, postCategory) => {
-    // 관리자가 실명 모드로 작성한 댓글
-    if (c.useRealName && c.adminRoleAtWrite) {
-      const lbl = c.adminRoleAtWrite === "teacher"   ? "교사"
-                : c.adminRoleAtWrite === "professor" ? "교수"
-                : "조교";  // super, assistant 둘 다 조교
-      return `${c.authorName || "관리자"}(${lbl})`;
-    }
     if (postCategory === LECTURE_CAT) return "익명"; // 강의 댓글 항상 익명
     if (REAL_CATS.includes(postCategory)) return c.authorName || ""; // 실명 게시판 댓글
     if (canSeeReal) return `${c.authorName || "익명"} (익명)`;
@@ -1142,8 +1127,8 @@ export default function Community({ onExit }) {
         const avgRating = isLecture && pComments.length > 0
           ? (pComments.reduce((s,c) => s+(c.rating||0), 0) / pComments.length).toFixed(1)
           : null;
-        // 관리자 실명 모드 글은 메모지(C) 스타일로 강조
-        const isMemo = p.useRealName && (p.adminRoleAtWrite === "super" || p.adminRoleAtWrite === "assistant");
+        // 관리자 실명 게시 기능 제거됨 — 메모지 강조 비활성
+        const isMemo = false;
 
         if (isMemo) {
           // ===== C 스타일: 골드 메모지 =====
