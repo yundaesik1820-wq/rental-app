@@ -759,6 +759,15 @@ export default function Community({ onExit }) {
         WebkitOverflowScrolling:"touch",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
+        {/* 🔧🔧 임시 진단 배지 — 새 빌드 적용 확인용 (확인 끝나면 이 블록 통째로 삭제) */}
+        <div style={{
+          position:"fixed", bottom:96, left:"50%", transform:"translateX(-50%)",
+          zIndex:99999, background:"#16a34a", color:"#fff",
+          fontSize:12, fontWeight:800, padding:"6px 14px", borderRadius:20,
+          pointerEvents:"none", boxShadow:"0 2px 10px rgba(0,0,0,0.5)", whiteSpace:"nowrap",
+        }}>
+          ✓ NEW BUILD · safeTop={safeTop}px
+        </div>
         {/* 상단 시네마 헤더 - 룸별 동적 */}
         <div style={{
           position:"sticky", top:0, zIndex:50,
