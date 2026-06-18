@@ -67,7 +67,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const currentNav = nav.find(n => n.id === tab);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", paddingTop: "env(safe-area-inset-top, 0px)", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div className="kbas-root" style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
 
       {/* ── Sidebar (desktop) ── */}
       <aside style={{
@@ -173,6 +173,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
       {/* ── 모바일 2줄 하단 네비 ── */}
       <style>{`
         @media (max-width: 768px) {
+          /* 폰: 노치/상태바 아래로 내림 (env 안 잡히는 환경 대비 최소 48px 보장) */
+          .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), 48px) !important; }
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
 
