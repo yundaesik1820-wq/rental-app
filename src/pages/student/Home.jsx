@@ -8,7 +8,7 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { PetHomeCard, PetOverlay, grantPetExp } from "../../components/PetGame.jsx";
+import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -293,7 +293,6 @@ export default function StudentHome() {
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [selPost, setSelPost] = useState(null);
   const [commentText,     setCommentText]     = useState("");
   const [submitting,      setSubmitting]      = useState(false);
 
@@ -370,7 +369,6 @@ export default function StudentHome() {
     if (!uid) return;
     await setDoc(doc(db, "timetables", uid), { classes: newClasses });
     setClasses(newClasses);
-    if (newClasses.length > 0) grantPetExp(uid, "timetable");  // 시간표 등록 (1회성)
   };
 
   const handleSaveClass = async (form) => {
@@ -720,7 +718,6 @@ export default function StudentHome() {
       {/* 🐾 펫 키우기 카드 */}
       <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
       {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }}
-        me={{ uid: profile?.uid, name: profile?.name, studentId: profile?.studentId }}
         friends={myFriends.map(f => {
           const isMine = f.userId === profile?.uid;
           return { uid: isMine ? f.friendId : f.userId, name: isMine ? f.friendName : f.userName, sid: isMine ? f.friendStudentId : f.userStudentId };
@@ -974,13 +971,13 @@ export default function StudentHome() {
                   return (
                     <div>
                       {/* 검색 + 정렬 */}
-                      <div style={{ display:"flex", gap:5, marginBottom:8, alignItems:"center" }}>
+                      <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
                         <input value={friendSearch} onChange={e => { setFriendSearch(e.target.value); setFriendPage(1); }}
-                          placeholder="검색"
-                          style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 10px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+                          placeholder="이름 또는 학번 검색"
+                          style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                         {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
                           <button key={v} onClick={() => { setFriendSort(v); setFriendPage(1); }}
-                            style={{ padding:"5px 8px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, whiteSpace:"nowrap", background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
+                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
                             {l}
                           </button>
                         ))}
@@ -1235,41 +1232,6 @@ export default function StudentHome() {
           );
         })()}
 
-        {/* 에브리타임 최신글 */}
-        {profile?.role !== "professor" && (() => {
-          const currentYear = new Date().getFullYear();
-          const newbiePrefix = String(currentYear).slice(2);
-          const isNewbie = (profile?.studentId || "").startsWith(newbiePrefix);
-          const recent5 = [...communityPosts]
-            .filter(p => p.category !== "강의")   // 강의 게시글 제외
-            .filter(p => p.category !== "새내기")  // 새내기 게시글 제외
-            .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
-            .slice(0, 5);
-          if (recent5.length === 0) return null;
-          return (
-            <section>
-              <SectionTitle>🔥 에브리타임 최신글</SectionTitle>
-              {recent5.map(p => (
-                <Card key={p.id} onClick={() => setSelPost(p)} style={{ marginBottom:8, cursor:"pointer" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10 }}>
-                    <div style={{ minWidth:0, flex:1 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:3 }}>
-                        <span style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:5, padding:"1px 6px", fontSize:10, color:C.muted, flexShrink:0 }}>{p.category}</span>
-                        <span style={{ fontSize:13, fontWeight:600, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-                      </div>
-                      <div style={{ display:"flex", gap:8, fontSize:11, color:C.muted }}>
-                        <span>👍 {p.likes||0}</span>
-                        <span>💬 {communityComments.filter(c=>c.postId===p.id).length}</span>
-                        <span>👁 {p.views||0}</span>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </section>
-          );
-        })()}
-
         {/* 예약현황 */}
 
       {/* 수업 추가/수정 모달 */}
@@ -1342,47 +1304,6 @@ export default function StudentHome() {
         );
       })()}
 
-      {/* 에브리타임 글 상세 모달 */}
-      {selPost && (
-        <Modal onClose={() => setSelPost(null)} width={520}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-            <span style={{ background:
-              selPost.category==="저격" ? C.redLight :
-              selPost.category==="새내기" ? C.purpleLight :
-              selPost.category==="질문" ? C.orangeLight :
-              selPost.category==="정보" ? C.greenLight : C.blueLight,
-              color:
-              selPost.category==="저격" ? C.red :
-              selPost.category==="새내기" ? C.purple :
-              selPost.category==="질문" ? C.orange :
-              selPost.category==="정보" ? C.green : C.blue,
-              borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
-              {selPost.category}
-            </span>
-          </div>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:8 }}>{selPost.title}</div>
-          <div style={{ display:"flex", gap:10, fontSize:12, color:C.muted, marginBottom:16 }}>
-            <span>익명</span>
-            <span>👁 {selPost.views||0}</span>
-            <span>👍 {selPost.likes||0}</span>
-            <span>💬 {communityComments.filter(c=>c.postId===selPost.id).length}</span>
-          </div>
-          <div style={{ fontSize:14, color:C.text, lineHeight:1.8, whiteSpace:"pre-wrap", marginBottom: selPost.images?.length>0?12:0 }}>
-            {selPost.content}
-          </div>
-          {selPost.images?.length > 0 && (
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(140px,1fr))", gap:8, marginTop:12 }}>
-              {selPost.images.map((url,i) => (
-                <img key={i} src={url} alt="" onClick={() => window.open(url,"_blank")}
-                  style={{ width:"100%", borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${C.border}` }} />
-              ))}
-            </div>
-          )}
-          <div style={{ marginTop:16 }}>
-            <Btn onClick={() => setSelPost(null)} color={C.muted} outline full>닫기</Btn>
-          </div>
-        </Modal>
-      )}
 
       {/* 대여 상세 모달 */}
       {selectedRequest && (
