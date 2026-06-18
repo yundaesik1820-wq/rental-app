@@ -47,6 +47,22 @@ workflows:
           xcodebuild -resolvePackageDependencies \
             -project "$XCODE_PROJECT" \
             -scheme "$XCODE_SCHEME"
+      - name: Bump iOS build number (must exceed last TestFlight upload)
+        script: |
+          cd ios/App
+          LATEST=""
+          if [ -n "$APP_STORE_APP_ID" ]; then
+            LATEST=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo "")
+          fi
+          if [ -n "$LATEST" ]; then
+            NEW_BUILD=$((LATEST + 1))
+            echo "[codemagic] build number: $LATEST -> $NEW_BUILD (순차)"
+          else
+            NEW_BUILD=$(date +%s)
+            echo "[codemagic] APP_STORE_APP_ID 미설정 → 타임스탬프 사용: $NEW_BUILD"
+          fi
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NEW_BUILD;/g" App.xcodeproj/project.pbxproj
+          echo "[codemagic] CFBundleVersion = $NEW_BUILD"
       - name: Build IPA
         script: |
           xcode-project build-ipa \
