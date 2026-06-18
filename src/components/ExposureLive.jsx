@@ -363,7 +363,7 @@ export default function ExposureLive({ onBack }) {
           color: "#fbbf24", fontSize: 10, fontWeight: 700,
           letterSpacing: "0.2em", fontFamily: FONT_MONO,
         }}>
-          🎥 LIVE · T{safeTop} B{safeBottom}
+          🎥 LIVE EXPOSURE
         </span>
         <button onClick={() => setFacingMode(f => f === "environment" ? "user" : "environment")}
           style={{

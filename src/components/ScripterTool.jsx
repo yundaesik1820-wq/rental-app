@@ -153,6 +153,36 @@ function ScriptEditor({ C, script, onBack, onSave }) {
   const initialPages = useRef(script.pages?.length ? script.pages : [null]);
   const pageRefs = useRef([]);   // 각 PenPage의 ref
 
+  // iOS 노치/홈바 안전영역 — JS로 px 측정 (이 WebView는 calc(env()) 를 무시함). ExposureLive 검증 방식 그대로.
+  const [safeTop, setSafeTop] = useState(0);
+  const [safeBottom, setSafeBottom] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "position:fixed;left:0;width:0;visibility:hidden;pointer-events:none;top:0;height:env(safe-area-inset-top,0px);";
+      document.documentElement.appendChild(probe);
+      const top = probe.getBoundingClientRect().height || 0;
+      probe.style.height = "env(safe-area-inset-bottom,0px)";
+      const bottom = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      setSafeTop(top);
+      setSafeBottom(bottom);
+    };
+    measure(); // 최초 1회 측정 — 정적 상태는 건드리지 않음
+    const onRotate = () => {
+      measure();
+      setTimeout(measure, 300);
+      setTimeout(measure, 700);
+    };
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", onRotate);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", onRotate);
+    };
+  }, []);
+
   const addPage = () => setPageCount(n => n + 1);
 
   // 모든 페이지 캔버스에서 현재 그림을 직접 수집
@@ -179,7 +209,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         flexShrink: 0, zIndex: 10, background: C.surface,
         borderBottom: `1px solid ${C.border}`,
         padding: "10px 12px",
-        paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
+        paddingTop: safeTop + 10,
         display: "flex", alignItems: "center", justifyContent: "space-between",
       }}>
         <button onClick={back} style={{ ...iconBtn(C), fontSize: 13 }}>← 목록</button>
@@ -207,7 +237,7 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         </button>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 12, paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 24px)", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch", padding: 12, paddingBottom: safeBottom + 24, display: "flex", flexDirection: "column", gap: 16 }}>
         {Array.from({ length: pageCount }).map((_, i) => (
           <div key={i}>
             <div style={{ fontSize: 11, color: C.muted, marginBottom: 4, textAlign: "center" }}>— {i + 1} / {pageCount} —</div>

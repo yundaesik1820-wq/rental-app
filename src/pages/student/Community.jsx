@@ -221,18 +221,6 @@ export default function Community({ onExit }) {
     };
   }, []);
 
-  // 🔧 [진단용] 헤더의 실제 적용된 padding-top을 읽어 배지에 표시 (확인 후 제거)
-  const headerRef = useRef(null);
-  const [headerPad, setHeaderPad] = useState("?");
-  useEffect(() => {
-    const id = requestAnimationFrame(() => {
-      if (headerRef.current) {
-        setHeaderPad(getComputedStyle(headerRef.current).paddingTop);
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [safeTop]);
-
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
 
@@ -771,17 +759,8 @@ export default function Community({ onExit }) {
         WebkitOverflowScrolling:"touch",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
-        {/* 🔧🔧 임시 진단 배지 — 새 빌드 적용 확인용 (확인 끝나면 이 블록 통째로 삭제) */}
-        <div style={{
-          position:"fixed", bottom:96, left:"50%", transform:"translateX(-50%)",
-          zIndex:99999, background:"#16a34a", color:"#fff",
-          fontSize:12, fontWeight:800, padding:"6px 14px", borderRadius:20,
-          pointerEvents:"none", boxShadow:"0 2px 10px rgba(0,0,0,0.5)", whiteSpace:"nowrap",
-        }}>
-          ✓ safeTop={safeTop}px · headerPad={headerPad}
-        </div>
         {/* 상단 시네마 헤더 - 룸별 동적 */}
-        <div ref={headerRef} data-cinema="1" style={{
+        <div data-cinema="1" style={{
           position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
