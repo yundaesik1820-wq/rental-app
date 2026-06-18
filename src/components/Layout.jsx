@@ -67,7 +67,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   const currentNav = nav.find(n => n.id === tab);
 
   return (
-    <div className="kbas-root" style={{ display: "flex", minHeight: "100vh", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
+    <div className="kbas-root" style={{ display: "flex", height: "100%", background: C.bg, fontFamily: "'Noto Sans KR', sans-serif" }}>
 
       {/* ── Sidebar (desktop) ── */}
       <aside style={{
@@ -136,7 +136,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
       </aside>
 
       {/* ── Main ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0 }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         {/* Top bar */}
         <header style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: C.navy }}>
@@ -165,7 +165,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         </header>
 
         {/* Content */}
-        <main style={{ flex: 1, padding: "24px", overflowY: "auto" }}>
+        <main style={{ flex: 1, padding: "24px", overflowY: "auto", minHeight: 0 }}>
           {children}
         </main>
       </div>
@@ -284,7 +284,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         borderTop: `1px solid ${C.border}`,
         boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
         zIndex: 100,
-        paddingBottom: "env(safe-area-inset-bottom, 8px)",
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
       }}>
         {[row1, row2].map((row, rowIdx) => (
           <div key={rowIdx} className="bottom-nav-row" style={{
