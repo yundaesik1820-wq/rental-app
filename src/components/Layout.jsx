@@ -222,7 +222,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           button { min-height: 36px; }
 
           /* 홈 배너 */
-          [style*="linear-gradient"] { border-radius: 14px !important; padding: 18px 16px !important; }
+          [style*="linear-gradient"]:not([data-cinema]) { border-radius: 14px !important; padding: 18px 16px !important; }
 
           /* 입력창 */
           input, textarea, select { font-size: 16px !important; }
