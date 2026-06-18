@@ -725,8 +725,8 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
 function Overlay({ children, onClose }) {
   return (
     <div style={{ position:"fixed", inset:0, zIndex:9600, background:C.bg, display:"flex", flexDirection:"column",
-      paddingTop:"calc(env(safe-area-inset-top, 0px) + 0px)" }}>
-      <div style={{ flexShrink:0, padding:"calc(env(safe-area-inset-top, 0px) + 12px) 16px 12px", display:"flex", alignItems:"center", borderBottom:`1px solid ${C.border}`, background:C.surface }}>
+      paddingTop:"env(safe-area-inset-top, 0px)" }}>
+      <div style={{ flexShrink:0, padding:"12px 16px", display:"flex", alignItems:"center", borderBottom:`1px solid ${C.border}`, background:C.surface }}>
         <button onClick={onClose} style={{ background:"transparent", border:"none", color:C.text, fontSize:15, fontWeight:700, cursor:"pointer" }}>← 닫기</button>
         <div style={{ flex:1, textAlign:"center", fontSize:15, fontWeight:800, color:C.text, marginRight:48 }}>나의 펫</div>
       </div>
