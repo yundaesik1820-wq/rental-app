@@ -76,7 +76,14 @@ export default function ExposureLive({ onBack }) {
     async function start() {
       try {
         if (!navigator.mediaDevices?.getUserMedia) {
-          throw new Error("이 브라우저는 카메라를 지원하지 않습니다");
+          const md = navigator.mediaDevices;
+          const diag =
+            `proto=${location.protocol} · host=${location.host || "-"} · ` +
+            `secure=${window.isSecureContext} · ` +
+            `mediaDevices=${typeof md} · ` +
+            `getUserMedia=${md ? typeof md.getUserMedia : "-"} · ` +
+            `legacyGUM=${typeof navigator.getUserMedia}`;
+          throw new Error("이 브라우저는 카메라를 지원하지 않습니다\n\n[진단] " + diag);
         }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
@@ -387,7 +394,7 @@ export default function ExposureLive({ onBack }) {
             }}>
               CAMERA ERROR
             </div>
-            <div style={{ fontSize: 13, color: "#fafaf9", lineHeight: 1.6, maxWidth: 320 }}>
+            <div style={{ fontSize: 13, color: "#fafaf9", lineHeight: 1.6, maxWidth: 320, whiteSpace: "pre-line", wordBreak: "break-word" }}>
               {error}
             </div>
             <button onClick={() => setFacingMode(f => f)}
