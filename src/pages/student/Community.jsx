@@ -136,21 +136,27 @@ function getYouTubeId(url) {
   return m ? m[1] : null;
 }
 
-// 유튜브 썸네일 (maxres→hq→mq→0 단계 폴백, 다 없으면 플레이스홀더)
+// 유튜브 썸네일 (maxres→hq→mq→0 단계 폴백)
+// ⚠️ 유튜브는 썸네일이 없어도 120x90 회색 더미를 200 OK로 반환 → onError가 안 터짐.
+//    그래서 onLoad에서 naturalWidth로 더미(<=120px)를 감지해 다음 단계로 넘긴다.
 function YtThumb({ id, alt = "", style }) {
   const [stage, setStage] = useState(0);
   useEffect(() => { setStage(0); }, [id]);  // id 바뀌면 처음부터
   if (!id) return <div style={{ ...style, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1a1a", color:"#444", fontSize:28 }}>🎬</div>;
   const urls = [
-    `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,
-    `https://img.youtube.com/vi/${id}/hqdefault.jpg`,
-    `https://img.youtube.com/vi/${id}/mqdefault.jpg`,
-    `https://img.youtube.com/vi/${id}/0.jpg`,
+    `https://img.youtube.com/vi/${id}/maxresdefault.jpg`,  // 1280
+    `https://img.youtube.com/vi/${id}/sddefault.jpg`,      // 640
+    `https://img.youtube.com/vi/${id}/hqdefault.jpg`,      // 480 (항상 존재)
   ];
   if (stage >= urls.length) {
-    return <div style={{ ...style, display:"flex", alignItems:"center", justifyContent:"center", background:"#1a1a1a", color:"#444", fontSize:28 }}>🎬</div>;
+    // hqdefault까지 실패하면 hqdefault를 그냥 표시 (거의 항상 존재함)
+    return <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt={alt} style={style} />;
   }
-  return <img src={urls[stage]} alt={alt} onError={() => setStage(s => s + 1)} style={style} />;
+  const handleLoad = (e) => {
+    // 유튜브 더미 회색 이미지는 120px → 다음(더 낮은) 화질로
+    if (e.currentTarget.naturalWidth <= 121 && stage < urls.length) setStage(s => s + 1);
+  };
+  return <img src={urls[stage]} alt={alt} onLoad={handleLoad} onError={() => setStage(s => s + 1)} style={style} />;
 }
 
 // 모집 마감일 → 남은 일수 (양수: 남음, 0: 당일, 음수: 마감)
