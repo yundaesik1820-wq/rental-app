@@ -21,6 +21,9 @@ workflows:
       - name: Build web assets (Vite)
         script: |
           npm run build
+      - name: Point iOS build at live web app (server.url)
+        script: |
+          node -e "const fs=require('fs');const p='capacitor.config.json';const c=JSON.parse(fs.readFileSync(p));c.server=Object.assign({},c.server,{url:'https://rental-app-delta-kohl.vercel.app'});fs.writeFileSync(p,JSON.stringify(c,null,2));console.log('[codemagic] iOS server.url =',c.server.url);"
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
