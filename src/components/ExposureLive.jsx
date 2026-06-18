@@ -76,21 +76,18 @@ export default function ExposureLive({ onBack }) {
       setSafeTop(top);
       setSafeBottom(bottom);
     };
-    // 회전 시 iOS는 safe-area 값을 늦게 갱신함 → 이벤트 직후 여러 번 재측정해서 안정값 확보
-    const remeasure = () => {
+    measure(); // 최초 1회 측정 — 동작하던 버전 그대로 (정적 상태는 건드리지 않음)
+    // 회전할 때만: iOS가 회전 후 safe-area를 늦게 갱신하므로 지연 재측정으로 안정값 확보
+    const onRotate = () => {
       measure();
-      setTimeout(measure, 150);
-      setTimeout(measure, 400);
-      setTimeout(measure, 800);
+      setTimeout(measure, 300);
+      setTimeout(measure, 700);
     };
-    remeasure();
-    window.addEventListener("resize", remeasure);
-    window.addEventListener("orientationchange", remeasure);
-    if (window.visualViewport) window.visualViewport.addEventListener("resize", remeasure);
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", onRotate);
     return () => {
-      window.removeEventListener("resize", remeasure);
-      window.removeEventListener("orientationchange", remeasure);
-      if (window.visualViewport) window.visualViewport.removeEventListener("resize", remeasure);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", onRotate);
     };
   }, []);
 
