@@ -59,6 +59,32 @@ export default function ExposureLive({ onBack }) {
   const [loading, setLoading] = useState(true);
   const [histogram, setHistogram] = useState(new Array(48).fill(0));
 
+  // 🔧 노치/홈인디케이터 안전영역을 JS로 직접 측정해서 px로 적용.
+  //    이 WebView는 calc() 안의 env()를 무시해서 paddingTop이 안 먹음 → 픽셀로 직접 박음.
+  const [safeTop, setSafeTop] = useState(0);
+  const [safeBottom, setSafeBottom] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "position:fixed;left:0;width:0;visibility:hidden;pointer-events:none;top:0;height:env(safe-area-inset-top,0px);";
+      document.documentElement.appendChild(probe);
+      const top = probe.getBoundingClientRect().height || 0;
+      probe.style.height = "env(safe-area-inset-bottom,0px)";
+      const bottom = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      setSafeTop(top);
+      setSafeBottom(bottom);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   // 모드 등을 ref로 (frame 루프에서 최신 값 참조)
   const modeRef       = useRef(mode);
   const zebraRef      = useRef(zebraThreshold);
@@ -313,7 +339,7 @@ export default function ExposureLive({ onBack }) {
         flexShrink: 0,
         background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
         padding: "10px 14px",
-        paddingTop: "calc(env(safe-area-inset-top, 0px) + 10px)",
+        paddingTop: safeTop + 10,
         display: "flex", justifyContent: "space-between", alignItems: "center",
         borderBottom: "1px solid rgba(251,191,36,0.2)",
       }}>
@@ -331,7 +357,7 @@ export default function ExposureLive({ onBack }) {
           color: "#fbbf24", fontSize: 10, fontWeight: 700,
           letterSpacing: "0.2em", fontFamily: FONT_MONO,
         }}>
-          🎥 LIVE EXPOSURE
+          🎥 LIVE · T{safeTop} B{safeBottom}
         </span>
         <button onClick={() => setFacingMode(f => f === "environment" ? "user" : "environment")}
           style={{
@@ -496,7 +522,7 @@ export default function ExposureLive({ onBack }) {
         flexShrink: 0,
         background: "#0a0a0a",
         padding: "10px 14px 12px",
-        paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)",
+        paddingBottom: safeBottom + 12,
         borderTop: "1px solid #1a1a1a",
       }}>
         {/* 모드 선택 */}
