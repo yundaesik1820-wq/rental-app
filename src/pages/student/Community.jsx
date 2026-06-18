@@ -1,22 +1,4 @@
 import { useState, useRef, useEffect } from "react";
-import { grantPetExp } from "../../components/PetGame.jsx";
-
-// 노치(safe area) 높이를 JS로 직접 측정해 픽셀 숫자로 확정.
-// CSS 변수/env()를 거치지 않으므로 테마 코드 등 어떤 외부 요인에도 영향받지 않음.
-const SAFE_TOP_PX = (() => {
-  try {
-    const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;top:0;left:0;width:0;height:0;padding-top:env(safe-area-inset-top,0px);visibility:hidden;";
-    document.documentElement.appendChild(probe);
-    let v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
-    probe.remove();
-    const big = Math.max(screen.width, screen.height);
-    if (v === 0 && /iPhone/.test(navigator.userAgent) && big >= 812) {
-      v = big >= 852 ? 59 : 47;
-    }
-    return Math.round(v);
-  } catch (e) { return 0; }
-})();
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -31,7 +13,7 @@ import ExposureCalc from "../../components/ExposureCalc";
 import DofCalc from "../../components/DofCalc";
 import ColorTemp from "../../components/ColorTemp";
 import FovCalc from "../../components/FovCalc";
-import ScripterTool from "../../components/ScripterTool";
+import Scripter from "../../components/Scripter";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 
@@ -152,6 +134,16 @@ function getYouTubeId(url) {
   if (!url) return null;
   const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([\w-]{11})/);
   return m ? m[1] : null;
+}
+
+// 유튜브 고화질 썸네일 (maxres 없으면 hqdefault로 자동 대체)
+function YtThumb({ id, alt = "", style }) {
+  if (!id) return null;
+  const onErr = (e) => {
+    const el = e.currentTarget;
+    if (!el.dataset.fb) { el.dataset.fb = "1"; el.src = `https://img.youtube.com/vi/${id}/hqdefault.jpg`; }
+  };
+  return <img src={`https://img.youtube.com/vi/${id}/maxresdefault.jpg`} alt={alt} onError={onErr} style={style} />;
 }
 
 // 모집 마감일 → 남은 일수 (양수: 남음, 0: 당일, 음수: 마감)
@@ -402,7 +394,6 @@ export default function Community({ onExit }) {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    grantPetExp(profile?.uid, "post");   // 펫 경험치 (하루 3회까지, 알 단계 제외)
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
       positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
@@ -456,7 +447,6 @@ export default function Community({ onExit }) {
       dislikedBy: [],
       createdAt:  serverTimestamp(),
     });
-    grantPetExp(profile?.uid, "comment");   // 펫 경험치 (하루 5회까지, 알 단계 제외)
     setCommentText("");
     setCommentRating(0);
     setCommentUseRealName(false);
@@ -730,17 +720,14 @@ export default function Community({ onExit }) {
         color:"#fafaf9",
         overflowY:"auto",
         WebkitOverflowScrolling:"touch",
-        WebkitTextSizeAdjust:"100%", textSizeAdjust:"100%",
         paddingBottom:"env(safe-area-inset-bottom, 16px)",
       }}>
-        {/* 노치 커버 스페이서 — 패딩이 아닌 실제 요소로 안전영역 확보 */}
-        <div style={{ position:"sticky", top:0, zIndex:51, height:SAFE_TOP_PX, minHeight:SAFE_TOP_PX, flexShrink:0, background:"#0a0a0a" }} />
         {/* 상단 시네마 헤더 - 룸별 동적 */}
         <div style={{
-          position:"sticky", top:SAFE_TOP_PX, zIndex:50,
+          position:"sticky", top:0, zIndex:50,
           background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
           backdropFilter:"blur(8px)",
-          paddingTop: 14, paddingLeft: 18, paddingRight: 18, paddingBottom: 18,
+          padding:"14px 18px 18px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
           borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
         }}>
@@ -966,7 +953,7 @@ export default function Community({ onExit }) {
 
       {/* 📝 스크립터 */}
       {selectedRoom === "tools" && selectedTool === "scripter" && (
-        <ScripterTool C={CINEMA} onBack={() => setSelectedTool(null)} />
+        <Scripter onBack={() => setSelectedTool(null)} />
       )}
 
       {/* 🌅 태양 위치 */}
@@ -1079,7 +1066,7 @@ export default function Community({ onExit }) {
                 style={{ background:CINEMA.surfaceAlt, borderRadius:9, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
                 <div style={{ aspectRatio:"16/9", background:CINEMA.surface, display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
                   {firstYt
-                    ? <img src={`https://i.ytimg.com/vi/${firstYt}/hqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    ? <YtThumb id={firstYt} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                     : <span style={{ fontSize:24, color:CINEMA.mutedDim }}>🎓</span>}
                   <span style={{ position:"absolute", bottom:5, right:6, background:"rgba(99,102,241,0.92)", color:"#fff", fontSize:9.5, fontWeight:700, padding:"2px 7px", borderRadius:8 }}>{(p.lessons||[]).length}강</span>
                 </div>
@@ -1375,7 +1362,7 @@ export default function Community({ onExit }) {
               {getYouTubeId(selPost.ytUrl) && (
                 <div onClick={() => setFsVideo(getYouTubeId(selPost.ytUrl))}
                   style={{ position:"relative", aspectRatio:"16/9", borderRadius:8, overflow:"hidden", background:"#000", cursor:"pointer", marginBottom:14 }}>
-                  <img src={`https://img.youtube.com/vi/${getYouTubeId(selPost.ytUrl)}/hqdefault.jpg`} alt="작품 썸네일"
+                  <YtThumb id={getYouTubeId(selPost.ytUrl)} alt="작품 썸네일"
                     style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
                   <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.28)" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, background:"rgba(220,38,38,0.94)", color:"#fff", padding:"9px 20px", borderRadius:8, fontSize:14, fontWeight:700 }}>
@@ -1592,7 +1579,7 @@ export default function Community({ onExit }) {
                   <div onClick={() => firstYt && setFsVideo(firstYt)}
                     style={{ width:"100%", aspectRatio:"16/9", borderRadius:12, overflow:"hidden", marginBottom:14, background:CINEMA.surface, position:"relative", cursor: firstYt ? "pointer" : "default" }}>
                     {firstYt
-                      ? <img src={`https://i.ytimg.com/vi/${firstYt}/hqdefault.jpg`} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      ? <YtThumb id={firstYt} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                       : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:34, color:CINEMA.mutedDim }}>🎓</div>}
                     {firstYt && (
                       <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
@@ -2626,7 +2613,7 @@ function BoxOfficeView({ posts, onOpen, onPlay }) {
 
       {/* 히어로 — 최신작 */}
       <div onClick={() => onOpen(hero)} style={{ position:"relative", aspectRatio:"16/9", background:"#1a1a1a", cursor:"pointer" }}>
-        {heroYt && <img src={`https://img.youtube.com/vi/${heroYt}/hqdefault.jpg`} alt="" style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
+        {heroYt && <YtThumb id={heroYt} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
         <div style={{ position:"absolute", left:0, right:0, bottom:0, padding:"16px 14px", background:"rgba(0,0,0,0.55)" }}>
           <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:5 }}>FEATURED · 이번 주 작품</div>
           <div style={{ fontSize:19, fontWeight:600, color:"#fafaf9", marginBottom:4, lineHeight:1.25 }}>{hero.title}</div>
@@ -2672,7 +2659,7 @@ function YouTubeEmbed({ url }) {
   return (
     <div onClick={() => setPlay(true)} role="button" aria-label="영상 재생"
       style={{ position:"relative", paddingTop:"56.25%", borderRadius:8, overflow:"hidden", background:"#000", cursor:"pointer" }}>
-      <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt="작품 썸네일"
+      <YtThumb id={id} alt="작품 썸네일"
         style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
       <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.28)" }}>
         <div style={{ width:56, height:40, borderRadius:10, background:"rgba(220,38,38,0.94)", display:"flex", alignItems:"center", justifyContent:"center" }}>
