@@ -728,7 +728,7 @@ export default function Community({ onExit }) {
 
       {/* 🎬 시네마 톤 풀스크린 컨테이너 */}
       <div style={{
-        position:"fixed", inset:0, zIndex:90,
+        position:"fixed", inset:0, zIndex:200,
         background:"#0a0a0a",
         color:"#fafaf9",
         overflowY:"auto",
