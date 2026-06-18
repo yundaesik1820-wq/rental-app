@@ -47,5 +47,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>라이브 노출(노출 시각화) 등 촬영 도구에서 실시간 영상을 표시하기 위해 카메라를 사용합니다.</string>
 </dict>
 </plist>
