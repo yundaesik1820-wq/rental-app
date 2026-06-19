@@ -68,7 +68,9 @@ export default function ScenePatch() {
   };
 
   const shown = filter === "전체" ? articles : articles.filter(a => a.tag === filter);
-  const [lead, ...rest] = shown;
+  const HERO_MAX = 5; // 히어로 슬라이드 개수 (최신 N개)
+  const heroSlides = shown.slice(0, Math.min(HERO_MAX, shown.length));
+  const rest = shown.slice(heroSlides.length);
 
   return (
     <div style={{ paddingTop: 6 }}>
@@ -111,22 +113,8 @@ export default function ScenePatch() {
         </div>
       ) : (
         <>
-          {/* 리드 기사 */}
-          {lead && (
-            <div onClick={() => openArticle(lead)}
-              style={{ borderRadius: 12, overflow: "hidden", background: SURFACE, border: `1px solid ${BORDER}`, marginBottom: 14, cursor: "pointer" }}>
-              <div style={{ height: 170, background: SURF2, display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                {lead.thumbnail
-                  ? <img src={lead.thumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                  : <span style={{ fontSize: 30, opacity: .35 }}>🎞️</span>}
-                <span style={{ position: "absolute", top: 10, left: 10, fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 5, ...tagStyle(lead.tag) }}>{lead.tag}</span>
-              </div>
-              <div style={{ padding: "12px 14px 14px" }}>
-                <div style={{ fontSize: 16, fontWeight: 900, color: TEXT, lineHeight: 1.35 }}>{lead.title}</div>
-                <Meta a={lead} hot />
-              </div>
-            </div>
-          )}
+          {/* 히어로 슬라이드 */}
+          {heroSlides.length > 0 && <HeroCarousel slides={heroSlides} onOpen={openArticle} />}
 
           {/* 나머지 카드 */}
           {rest.map((a, i) => (
@@ -180,6 +168,68 @@ export default function ScenePatch() {
   );
 }
 
+/* ───────────── 히어로 캐러셀 (슬라이드) ───────────── */
+function HeroCarousel({ slides, onOpen }) {
+  const [idx, setIdx] = useState(0);
+  const n = slides.length;
+  const touchX = useRef(null);
+
+  useEffect(() => {
+    if (n <= 1) return;
+    const t = setInterval(() => setIdx(i => (i + 1) % n), 4500);
+    return () => clearInterval(t);
+  }, [n]);
+  useEffect(() => { if (idx >= n) setIdx(0); }, [n, idx]);
+
+  const onStart = (e) => { touchX.current = e.touches[0].clientX; };
+  const onEnd = (e) => {
+    if (touchX.current == null) return;
+    const dx = e.changedTouches[0].clientX - touchX.current;
+    if (Math.abs(dx) > 40 && n > 1) setIdx(i => (i + (dx < 0 ? 1 : -1) + n) % n);
+    touchX.current = null;
+  };
+
+  const fmtDate = (a) => {
+    const d = a.createdAt?.toDate ? a.createdAt.toDate() : null;
+    return d ? `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}` : "방금";
+  };
+
+  return (
+    <div style={{ position: "relative", marginBottom: 14, borderRadius: 12, overflow: "hidden", border: `1px solid ${BORDER}` }}
+      onTouchStart={onStart} onTouchEnd={onEnd}>
+      <div style={{ display: "flex", transform: `translateX(-${idx * 100}%)`, transition: "transform 0.4s ease" }}>
+        {slides.map(a => (
+          <div key={a.id} onClick={() => onOpen(a)}
+            style={{ flex: "0 0 100%", position: "relative", height: 210, cursor: "pointer", background: SURF2 }}>
+            {a.thumbnail
+              ? <img src={a.thumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34, opacity: .3 }}>🎞️</div>}
+            <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.25) 52%, rgba(0,0,0,0) 100%)" }} />
+            <span style={{ position: "absolute", top: 12, left: 12, fontSize: 10, fontWeight: 800, padding: "3px 9px", borderRadius: 5, ...tagStyle(a.tag) }}>{a.tag}</span>
+            <div style={{ position: "absolute", left: 14, right: 14, bottom: 26 }}>
+              <div style={{ fontSize: 17, fontWeight: 900, color: "#fff", lineHeight: 1.32,
+                display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{a.title}</div>
+              <div style={{ display: "flex", gap: 7, marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.82)", fontWeight: 600, flexWrap: "wrap" }}>
+                <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span>
+                <span>{fmtDate(a)}</span><span>·</span>
+                <span>👁 {a.views || 0}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+      {n > 1 && (
+        <div style={{ position: "absolute", bottom: 10, left: 0, right: 0, display: "flex", justifyContent: "center", gap: 6 }}>
+          {slides.map((_, i) => (
+            <span key={i} onClick={(e) => { e.stopPropagation(); setIdx(i); }}
+              style={{ width: i === idx ? 18 : 6, height: 6, borderRadius: 3, background: i === idx ? RED : "rgba(255,255,255,0.45)", transition: "all .3s", cursor: "pointer" }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ───────────── 메타 (날짜·조회·댓글) ───────────── */
 function Meta({ a, hot }) {
   const d = a.createdAt?.toDate ? a.createdAt.toDate() : null;
@@ -187,7 +237,7 @@ function Meta({ a, hot }) {
   return (
     <div style={{ display: "flex", gap: 8, marginTop: 9, fontSize: 11, color: DIM, fontWeight: 600, flexWrap: "wrap" }}>
       {hot && <><span style={{ color: GOLD, fontWeight: 800 }}>HOT</span><span>·</span></>}
-      <span>{a.authorName || "기자"}</span><span>·</span>
+      <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span>
       <span>{ds}</span><span>·</span>
       <span>👁 {a.views || 0}</span>
     </div>
@@ -473,7 +523,7 @@ function Article({ article, canManage, onClose }) {
         <span style={{ display: "inline-block", fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 6, ...tagStyle(a.tag) }}>{a.tag}</span>
         <h1 style={{ fontSize: 22, fontWeight: 900, color: TEXT, lineHeight: 1.4, margin: "12px 0 0" }}>{a.title}</h1>
         <div style={{ display: "flex", gap: 8, marginTop: 11, fontSize: 12, color: DIM, fontWeight: 600, flexWrap: "wrap" }}>
-          <span>{a.authorName || "기자"}</span><span>·</span><span>{ds}</span><span>·</span><span>👁 {a.views || 0}</span>
+          <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span><span>{ds}</span><span>·</span><span>👁 {a.views || 0}</span>
         </div>
         <div style={{ height: 1, background: LINE, margin: "16px 0 4px" }} />
 
