@@ -119,16 +119,24 @@ export default function ScenePatch() {
           {/* 히어로 슬라이드 */}
           {heroSlides.length > 0 && <HeroCarousel slides={heroSlides} onOpen={openArticle} />}
 
+          {/* 섹션 라벨 */}
+          {rest.length > 0 && (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0 2px" }}>
+              <span style={{ width: 3, height: 13, background: RED, borderRadius: 2 }} />
+              <span style={{ fontSize: 12.5, fontWeight: 800, color: MUTED, letterSpacing: "0.06em" }}>오늘의 씬</span>
+            </div>
+          )}
+
           {/* 나머지 카드 */}
           {rest.map((a, i) => (
             <div key={a.id} onClick={() => openArticle(a)}
-              style={{ display: "flex", gap: 12, padding: "13px 0", borderBottom: i < rest.length - 1 ? `1px solid ${LINE}` : "none", cursor: "pointer" }}>
+              style={{ display: "flex", gap: 13, padding: "15px 0", borderBottom: i < rest.length - 1 ? `1px solid ${LINE}` : "none", cursor: "pointer" }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "inline-block", fontSize: 10, fontWeight: 800, padding: "3px 8px", borderRadius: 5, ...tagStyle(a.tag) }}>{a.tag}</span>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: TEXT, lineHeight: 1.4, marginTop: 8 }}>{a.title}</div>
+                <span style={{ display: "inline-block", fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 6, ...tagStyle(a.tag) }}>{a.tag}</span>
+                <div style={{ fontSize: 14.5, fontWeight: 700, color: TEXT, lineHeight: 1.4, marginTop: 9, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" }}>{a.title}</div>
                 <Meta a={a} />
               </div>
-              <div style={{ flex: "0 0 72px", height: 72, borderRadius: 10, background: SURF2, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+              <div style={{ flex: "0 0 78px", height: 78, borderRadius: 11, background: SURF2, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                 {a.thumbnail
                   ? <img src={a.thumbnail} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   : <span style={{ fontSize: 20, opacity: .5 }}>📰</span>}
