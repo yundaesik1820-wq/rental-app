@@ -219,7 +219,7 @@ export default function Notices({ isAdmin = true }) {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{alertForm.title || "알림 제목"}</div>
-                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.45 }}>{alertForm.body || "알림 내용"}</div>
+                  <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.45, whiteSpace: "pre-line" }}>{alertForm.body || "알림 내용"}</div>
                 </div>
               </div>
               <Btn onClick={sendCustomAlert} color={C.navy} full disabled={sending}>{sending ? "발송 중..." : "알림 보내기"}</Btn>
