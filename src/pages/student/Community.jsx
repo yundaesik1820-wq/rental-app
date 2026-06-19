@@ -16,6 +16,7 @@ import FovCalc from "../../components/FovCalc";
 import ScripterTool from "../../components/ScripterTool";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
+import ScenePatch from "../../components/ScenePatch";
 
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
@@ -1001,69 +1002,7 @@ export default function Community({ onExit }) {
       )}
 
       {/* 📡 씬스패치 피드 */}
-      {selectedRoom === "scenepatch" && (
-        <div style={{ paddingTop:6 }}>
-          {/* 마스트헤드 */}
-          <div style={{ marginBottom:14 }}>
-            <span style={{ fontSize:26, fontWeight:900, letterSpacing:"0.04em", color:"#fafaf9", lineHeight:1 }}>
-              SCENE<span style={{ color:"#ED1B2F" }}>PATCH</span>
-            </span>
-            <div style={{ display:"flex", alignItems:"center", gap:7, marginTop:6, fontSize:11, color:"#a8a29e", fontWeight:600 }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:5, color:"#ED1B2F", fontWeight:800 }}>
-                <span style={{ width:6, height:6, borderRadius:"50%", background:"#ED1B2F", display:"inline-block" }} />씬스패치
-              </span>
-              <span>·</span><span>영상계열 단독</span>
-            </div>
-            <div style={{ height:3, background:"#ED1B2F", marginTop:10 }} />
-          </div>
-
-          {/* 태그 필터 */}
-          <div style={{ display:"flex", gap:7, overflowX:"auto", paddingBottom:12 }}>
-            {[["전체",true],["단독",false],["포착",false],["현장",false],["인터뷰",false],["공지",false]].map(([t,on]) => (
-              <span key={t} style={{ flex:"0 0 auto", fontSize:12, fontWeight:700, padding:"6px 13px", borderRadius:18,
-                color: on ? "#fff" : "#a8a29e", background: on ? "#ED1B2F" : "#1a1a1a", border:`1px solid ${on ? "#ED1B2F" : "#2a2a2a"}` }}>{t}</span>
-            ))}
-          </div>
-
-          {/* 리드 기사 */}
-          <div style={{ borderRadius:12, overflow:"hidden", background:"#161616", border:"1px solid #2a2a2a", marginBottom:14 }}>
-            <div style={{ height:150, background:"#202020", display:"flex", alignItems:"center", justifyContent:"center", position:"relative" }}>
-              <span style={{ fontSize:30, opacity:0.4 }}>🎞️</span>
-              <span style={{ position:"absolute", top:10, left:10, background:"#ED1B2F", color:"#fff", fontSize:10, fontWeight:800, padding:"3px 9px", borderRadius:5 }}>단독</span>
-            </div>
-            <div style={{ padding:"12px 14px 14px" }}>
-              <div style={{ fontSize:16, fontWeight:900, color:"#fafaf9", lineHeight:1.35 }}>영상연기과 졸업작품, 부산국제영화제 단편경쟁 진출 확정</div>
-              <div style={{ display:"flex", gap:8, marginTop:9, fontSize:11, color:"#71706b", fontWeight:600 }}>
-                <span style={{ color:"#fbbf24", fontWeight:800 }}>HOT</span><span>·</span><span>2026.06.18</span><span>·</span><span>👁 1,204</span><span>·</span><span>💬 37</span>
-              </div>
-            </div>
-          </div>
-
-          {/* 피드 카드들 */}
-          {[
-            { tag:"포착", tagC:"#f472b6", tagBg:"rgba(244,114,182,0.16)", title:"새벽 4시 편집실, 아직 불 켜진 그 사람의 정체", date:"2026.06.17", v:"892", c:"21", emoji:"📷" },
-            { tag:"현장", tagC:"#60a5fa", tagBg:"rgba(96,165,250,0.16)", title:"졸업영화제 무대인사 비하인드 — 눈물의 엔딩크레딧", date:"2026.06.16", v:"1,033", c:"44", emoji:"🎥" },
-            { tag:"인터뷰", tagC:"#4ade80", tagBg:"rgba(74,222,128,0.16)", title:"이번 학기 최우수작 감독 김○○ \"세 번 갈아엎었다\"", date:"2026.06.15", v:"671", c:"12", emoji:"🎬" },
-            { tag:"공지", tagC:"#cbd5e1", tagBg:"rgba(148,163,184,0.16)", title:"장비대여실 운영시간 변경 안내 (6/20~)", date:"2026.06.14", v:"2,418", c:"5", emoji:"📢" },
-          ].map((a, i) => (
-            <div key={i} style={{ display:"flex", gap:12, padding:"13px 0", borderBottom: i < 3 ? "1px solid #232323" : "none" }}>
-              <div style={{ flex:1, minWidth:0 }}>
-                <span style={{ display:"inline-block", fontSize:10, fontWeight:800, padding:"3px 8px", borderRadius:5, color:a.tagC, background:a.tagBg }}>{a.tag}</span>
-                <div style={{ fontSize:13.5, fontWeight:700, color:"#fafaf9", lineHeight:1.4, marginTop:8 }}>{a.title}</div>
-                <div style={{ display:"flex", gap:7, marginTop:8, fontSize:11, color:"#71706b", fontWeight:500 }}>
-                  <span>{a.date}</span><span>·</span><span>👁 {a.v}</span><span>·</span><span>💬 {a.c}</span>
-                </div>
-              </div>
-              <div style={{ flex:"0 0 72px", height:72, borderRadius:10, background:"#1f1f1f", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, opacity:0.85 }}>{a.emoji}</div>
-            </div>
-          ))}
-
-          {/* 샘플 안내 */}
-          <div style={{ marginTop:18, padding:"12px 14px", borderRadius:10, background:"rgba(237,27,47,0.06)", border:"1px solid rgba(237,27,47,0.2)", fontSize:11.5, color:"#a8a29e", lineHeight:1.6, textAlign:"center" }}>
-            📡 샘플 기사예요. 실제 기사 등록 기능은 곧 연결할게요.
-          </div>
-        </div>
-      )}
+      {selectedRoom === "scenepatch" && <ScenePatch />}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
       {selectedRoom && selectedRoom !== "tools" && selectedRoom !== "scenepatch" && (
@@ -2574,7 +2513,7 @@ export default function Community({ onExit }) {
         )}
 
         {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 (클래스는 조교·관리자만) */}
-        {selectedRoom && selectedRoom !== "tools" && !(selectedRoom === "class" && !canUseRealName) && (
+        {selectedRoom && selectedRoom !== "tools" && selectedRoom !== "scenepatch" && !(selectedRoom === "class" && !canUseRealName) && (
         <button
           onClick={() => {
             const defaultCat = (currentRoom?.categories?.includes(cat) ? cat : currentRoom?.categories?.[0]) || "자유";
