@@ -50,8 +50,9 @@ export default function ScenePatch() {
   const { user, profile } = useAuth();
   const { data: articles, loading } = useCollection("scenepatchArticles");
 
+  const adminRole = profile?.adminRole || "super"; // App.jsx와 동일: 미설정 관리자는 super 취급
   const isAdminWriter = profile?.role === "admin" &&
-    (profile?.adminRole === "super" || profile?.adminRole === "assistant");
+    (adminRole === "super" || adminRole === "assistant");
   const isReporter = profile?.reporterStatus === "approved"; // 2단계에서 연결
   const canWrite = isAdminWriter || isReporter;
 
