@@ -88,6 +88,9 @@ export default function ScenePatch() {
         <div style={{ height: 3, background: RED, marginTop: 10 }} />
       </div>
 
+      {/* 관리자: 기자단 신청 관리 */}
+      {isAdminWriter && <ReporterAdminButton />}
+
       {/* 태그 필터 */}
       <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 12 }}>
         {["전체", ...TAGS.map(t => t.key)].map(t => {
@@ -252,6 +255,7 @@ function Editor({ author, onClose }) {
   const [focusedId, setFocusedId] = useState(null);
   const [publishing, setPublishing] = useState(false);
   const [byline, setByline] = useState("");
+  const [isRecruit, setIsRecruit] = useState(false);
   const fileRef = useRef(null);
 
   const patch  = (id, p) => setBlocks(bs => bs.map(b => b.id === id ? { ...b, ...p } : b));
@@ -306,7 +310,7 @@ function Editor({ author, onClose }) {
     setPublishing(true);
     try {
       await addItem("scenepatchArticles", {
-        tag, title: title.trim(), blocks: clean, thumbnail, byline: byline.trim(),
+        tag, title: title.trim(), blocks: clean, thumbnail, byline: byline.trim(), isRecruit,
         authorUid: author.uid || "", authorName: author.name, authorRole: author.role, views: 0,
       });
       onClose();
@@ -363,6 +367,18 @@ function Editor({ author, onClose }) {
                   color: on ? "#fff" : MUTED, background: on ? RED : SURFACE, border: `1px solid ${on ? RED : BORDER}` }}>{t.key}</span>
             );
           })}
+        </div>
+
+        {/* 기자단 모집 공고 토글 */}
+        <div onClick={() => setIsRecruit(v => !v)}
+          style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 13px", marginBottom: 16, borderRadius: 10,
+            background: isRecruit ? "rgba(237,27,47,0.1)" : SURFACE, border: `1px solid ${isRecruit ? RED : BORDER}`, cursor: "pointer" }}>
+          <span style={{ width: 20, height: 20, borderRadius: 6, flex: "0 0 auto", display: "flex", alignItems: "center", justifyContent: "center",
+            border: `2px solid ${isRecruit ? RED : DIM}`, background: isRecruit ? RED : "transparent", color: "#fff", fontSize: 13 }}>{isRecruit ? "✓" : ""}</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>📋 기자단 모집 공고로 등록</div>
+            <div style={{ fontSize: 11, color: DIM, marginTop: 2 }}>켜면 이 기사 하단에 "기자단 신청하기" 버튼이 생겨요.</div>
+          </div>
         </div>
 
         {/* 제목 */}
@@ -529,6 +545,8 @@ function Article({ article, canManage, onClose }) {
 
         {(a.blocks || []).map((b, i) => <ReadBlock key={i} b={b} />)}
 
+        {a.isRecruit && <ApplySection article={a} />}
+
         {/* 바이라인 */}
         <div style={{ marginTop: 30, paddingTop: 16, borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <span style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span>
@@ -563,4 +581,162 @@ function ReadBlock({ b }) {
     quote:   { fontSize: 15.5, fontWeight: 400, lineHeight: 1.85, fontStyle: "italic", borderLeft: `3px solid ${RED}`, paddingLeft: 14, margin: "18px 0" },
   };
   return <p style={{ color: b.color || SUB, textAlign: b.align || "left", whiteSpace: "pre-wrap", ...styleMap[b.style || "body"] }}>{b.text}</p>;
+}
+
+/* ════════════════════════ 기자단 신청 (학생) ════════════════════════ */
+function ApplySection({ article }) {
+  const { user, profile } = useAuth();
+  const [status, setStatus] = useState(profile?.reporterStatus || "none");
+  const [showForm, setShowForm] = useState(false);
+  const [reason, setReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const isStudent = !["admin", "professor", "teacher"].includes(profile?.role);
+  const box = { marginTop: 26, padding: "16px 16px", borderRadius: 12, background: "rgba(237,27,47,0.07)", border: "1px solid rgba(237,27,47,0.3)" };
+  const btn = { marginTop: 14, width: "100%", background: RED, color: "#fff", border: "none", borderRadius: 10, padding: "12px", fontSize: 14, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" };
+
+  if (!isStudent) {
+    return (
+      <div style={box}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>📋 기자단 모집 중</div>
+        <div style={{ fontSize: 12, color: MUTED, marginTop: 6 }}>학생만 신청할 수 있어요.</div>
+      </div>
+    );
+  }
+
+  const submit = async () => {
+    setSubmitting(true);
+    try {
+      await addItem("reporterApplications", {
+        uid: user?.uid || "",
+        name: profile?.name || "",
+        studentId: profile?.studentId || "",
+        dept: profile?.dept || "",
+        reason: reason.trim(),
+        status: "pending",
+        articleId: article.id || "",
+        articleTitle: article.title || "",
+      });
+      await updateItem("users", user.uid, { reporterStatus: "pending" }).catch(() => {});
+      setStatus("pending");
+      setShowForm(false);
+    } catch (e) {
+      console.warn("기자단 신청 실패:", e);
+      window.alert("신청에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    }
+    setSubmitting(false);
+  };
+
+  if (status === "approved")
+    return <div style={box}><div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>✓ 이미 기자단이에요</div></div>;
+  if (status === "pending")
+    return <div style={box}><div style={{ fontSize: 13, fontWeight: 700, color: GOLD }}>📨 신청 완료 — 관리자 검토 중</div></div>;
+
+  return (
+    <div style={box}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>📋 씬스패치 기자단 모집</div>
+      {status === "rejected" && <div style={{ fontSize: 11.5, color: "#ff6b6b", marginTop: 6 }}>지난 신청은 반려됐어요. 다시 신청할 수 있어요.</div>}
+      <div style={{ fontSize: 12.5, color: MUTED, marginTop: 6, lineHeight: 1.6 }}>승인되면 직접 기사를 작성할 수 있어요.</div>
+      {!showForm ? (
+        <button onClick={() => setShowForm(true)} style={btn}>기자단 신청하기</button>
+      ) : (
+        <div style={{ marginTop: 12 }}>
+          <textarea value={reason} onChange={(e) => setReason(e.target.value)} placeholder="지원 동기를 간단히 적어주세요 (선택)" rows={3}
+            style={{ width: "100%", background: OVERLAY_BG, border: `1px solid ${BORDER}`, borderRadius: 8, color: TEXT, fontSize: 13, padding: "10px 12px", outline: "none", resize: "none", fontFamily: "inherit", lineHeight: 1.6 }} />
+          <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+            <button onClick={() => setShowForm(false)} style={{ ...btn, marginTop: 0, flex: 1, background: "transparent", color: MUTED, border: `1px solid ${BORDER}` }}>취소</button>
+            <button onClick={submit} disabled={submitting} style={{ ...btn, marginTop: 0, flex: 2, opacity: submitting ? .6 : 1 }}>{submitting ? "전송 중…" : "신청서 제출"}</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ════════════════════════ 기자단 신청 관리 (관리자) ════════════════════════ */
+function ReporterAdminButton() {
+  const { data: apps } = useCollection("reporterApplications");
+  const [open, setOpen] = useState(false);
+  const pending = apps.filter(a => a.status === "pending");
+  return (
+    <>
+      <button onClick={() => setOpen(true)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12,
+          background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "11px 13px", cursor: "pointer" }}>
+        <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>📋 기자단 신청 관리</span>
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {pending.length > 0 && <span style={{ background: RED, color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 10, padding: "2px 8px" }}>{pending.length}</span>}
+          <span style={{ color: DIM, fontSize: 16 }}>›</span>
+        </span>
+      </button>
+      {open && <ReporterAdminPanel apps={apps} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+function ReporterAdminPanel({ apps, onClose }) {
+  const [busy, setBusy] = useState("");
+  const act = async (app, decision) => {
+    setBusy(app.id);
+    try {
+      await updateItem("reporterApplications", app.id, { status: decision });
+      await updateItem("users", app.uid, { reporterStatus: decision }).catch(() => {});
+    } catch (e) {
+      console.warn("기자단 처리 실패:", e);
+      window.alert("처리에 실패했어요.");
+    }
+    setBusy("");
+  };
+  const order = { pending: 0, approved: 1, rejected: 2 };
+  const sorted = [...apps].sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+  const fmt = (a) => {
+    const d = a.createdAt?.toDate ? a.createdAt.toDate() : null;
+    return d ? `${d.getMonth() + 1}.${d.getDate()}` : "";
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 9100, background: OVERLAY_BG, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "calc(env(safe-area-inset-top,0px) + 10px) 16px 12px", borderBottom: `1px solid ${LINE}` }}>
+        <span style={{ fontSize: 15, fontWeight: 800, color: TEXT }}>📋 기자단 신청 관리</span>
+        <button onClick={onClose} style={{ background: "none", border: "none", color: MUTED, fontSize: 20, cursor: "pointer" }} aria-label="닫기">✕</button>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", padding: "16px 16px 40px" }}>
+        {sorted.length === 0 ? (
+          <div style={{ textAlign: "center", color: DIM, fontSize: 13, padding: "40px 0" }}>아직 신청자가 없어요.</div>
+        ) : sorted.map(app => (
+          <div key={app.id} style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "14px 14px", marginBottom: 10 }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: TEXT }}>{app.name || "이름없음"} <span style={{ fontSize: 12, fontWeight: 600, color: DIM }}>{app.studentId}</span></div>
+              <StatusBadge status={app.status} />
+            </div>
+            {(app.dept || fmt(app)) && <div style={{ fontSize: 12, color: MUTED, marginTop: 3 }}>{app.dept}{app.dept && fmt(app) ? " · " : ""}{fmt(app)}</div>}
+            {app.reason && <div style={{ fontSize: 13, color: SUB, marginTop: 9, lineHeight: 1.6, background: OVERLAY_BG, borderRadius: 8, padding: "9px 11px" }}>{app.reason}</div>}
+            {app.status === "pending" ? (
+              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+                <button onClick={() => act(app, "rejected")} disabled={busy === app.id}
+                  style={{ flex: 1, background: "transparent", color: "#ff6b6b", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>거절</button>
+                <button onClick={() => act(app, "approved")} disabled={busy === app.id}
+                  style={{ flex: 2, background: "#22c55e", color: "#fff", border: "none", borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 800, cursor: "pointer", opacity: busy === app.id ? .6 : 1 }}>{busy === app.id ? "처리 중…" : "승인"}</button>
+              </div>
+            ) : (
+              <button onClick={() => act(app, app.status === "approved" ? "rejected" : "approved")}
+                style={{ marginTop: 10, width: "100%", background: "transparent", color: MUTED, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "8px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>
+                {app.status === "approved" ? "승인 취소 (거절로 변경)" : "다시 승인"}
+              </button>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StatusBadge({ status }) {
+  const map = {
+    pending:  { t: "검토 중", c: GOLD,      bg: "rgba(251,191,36,0.15)" },
+    approved: { t: "승인됨",  c: "#4ade80", bg: "rgba(74,222,128,0.15)" },
+    rejected: { t: "거절됨",  c: "#ff6b6b", bg: "rgba(255,107,107,0.15)" },
+  };
+  const s = map[status] || map.pending;
+  return <span style={{ fontSize: 11, fontWeight: 800, color: s.c, background: s.bg, borderRadius: 6, padding: "3px 9px" }}>{s.t}</span>;
 }
