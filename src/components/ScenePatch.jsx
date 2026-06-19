@@ -201,6 +201,7 @@ function Editor({ author, onClose }) {
   const [blocks, setBlocks] = useState([newBlock("text")]);
   const [focusedId, setFocusedId] = useState(null);
   const [publishing, setPublishing] = useState(false);
+  const [byline, setByline] = useState("");
   const fileRef = useRef(null);
 
   const patch  = (id, p) => setBlocks(bs => bs.map(b => b.id === id ? { ...b, ...p } : b));
@@ -255,7 +256,7 @@ function Editor({ author, onClose }) {
     setPublishing(true);
     try {
       await addItem("scenepatchArticles", {
-        tag, title: title.trim(), blocks: clean, thumbnail,
+        tag, title: title.trim(), blocks: clean, thumbnail, byline: byline.trim(),
         authorUid: author.uid || "", authorName: author.name, authorRole: author.role, views: 0,
       });
       onClose();
@@ -326,6 +327,16 @@ function Editor({ author, onClose }) {
         {blocks.map(b => (
           <Block key={b.id} b={b} patch={patch} remove={remove} move={move} setFocusedId={setFocusedId} />
         ))}
+
+        {/* 기자명 (바이라인) */}
+        <div style={{ marginTop: 24, paddingTop: 16, borderTop: `1px solid ${LINE}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: DIM, letterSpacing: "0.06em", marginBottom: 8 }}>기자명 (바이라인)</div>
+          <input value={byline} onChange={(e) => setByline(e.target.value)}
+            placeholder={`${author.name || "기자명"} 기자`}
+            style={{ width: "100%", background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 8, outline: "none",
+              color: TEXT, fontSize: 14, fontWeight: 700, fontFamily: "inherit", padding: "10px 12px" }} />
+          <div style={{ fontSize: 11, color: DIM, marginTop: 6 }}>비워두면 "{author.name || "작성자"} 기자"로 자동 표시돼요.</div>
+        </div>
       </div>
 
       {/* 하단 글감 바 */}
@@ -467,6 +478,12 @@ function Article({ article, canManage, onClose }) {
         <div style={{ height: 1, background: LINE, margin: "16px 0 4px" }} />
 
         {(a.blocks || []).map((b, i) => <ReadBlock key={i} b={b} />)}
+
+        {/* 바이라인 */}
+        <div style={{ marginTop: 30, paddingTop: 16, borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span>
+          <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.04em", color: RED }}>SCENEPATCH</span>
+        </div>
       </div>
     </div>
   );
