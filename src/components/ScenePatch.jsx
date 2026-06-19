@@ -70,7 +70,9 @@ export default function ScenePatch() {
   const shown = filter === "전체" ? articles : articles.filter(a => a.tag === filter);
   const HERO_MAX = 5; // 히어로 슬라이드 개수 (최신 N개)
   const heroSlides = shown.slice(0, Math.min(HERO_MAX, shown.length));
-  const rest = shown.slice(heroSlides.length);
+  // "오늘의 씬"엔 항상 전체 기사를 최신순으로 (히어로는 그 중 상단 N개를 헤드라인 슬라이드로 강조).
+  // → 기사가 적어도 밑 목록이 비지 않음. 뉴스앱처럼 상단 슬라이드와 일부 겹침.
+  const rest = shown;
 
   return (
     <div style={{ paddingTop: 6 }}>
