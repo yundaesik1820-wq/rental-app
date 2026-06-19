@@ -368,7 +368,7 @@ export default function Community({ onExit }) {
     const useRealNameFinal = canUseRealName && writeForm.useRealName && !isLecture;
     await addItem("communityPosts", {
       title:       isLecture ? writeForm.lectureName.trim() : isStaffPost ? (profile?.name || "") : writeForm.title.trim(),
-      content:     isLecture ? "" : writeForm.content.trim(),
+      content:     isLecture ? "" : writeForm.content,
       category:    writeForm.category,
       authorId:    profile?.uid || "",
       authorName:  profile?.name || "",
@@ -1154,7 +1154,7 @@ export default function Community({ onExit }) {
                 </div>
               )}
               {!isLecture && p.content && (
-                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.content || "").split("\n")[0]}</div>
               )}
               <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:CINEMA.muted, display:"flex", gap:8, alignItems:"center" }}>
                 <span style={{ color:CINEMA.gold }}>🏛️ {displayName(p)}</span>
@@ -1273,7 +1273,7 @@ export default function Community({ onExit }) {
               </div>
             ) : (
               p.content && (
-                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:7, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.content}</div>
+                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:7, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.content || "").split("\n")[0]}</div>
               )
             )}
             <div style={{ fontSize:10, color:CINEMA.muted, display:"flex", gap:10, alignItems:"center" }}>
