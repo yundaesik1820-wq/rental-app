@@ -856,7 +856,7 @@ export default function Community({ onExit }) {
                       <div style={{ fontSize:12.5, fontWeight:900, color:"#fafaf9", marginBottom:4 }}>{room.title}</div>
                       {room.id === "tools" ? (
                         <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {["슬레이터","스크립터","계산기","자료"].map(t => (
+                          {["슬레이터","스크립터","계산기"].map(t => (
                             <span key={t} style={{ background:room.colorBg, color:room.color, fontSize:8, padding:"1px 5px", borderRadius:3, fontWeight:700 }}>{t}</span>
                           ))}
                         </div>
