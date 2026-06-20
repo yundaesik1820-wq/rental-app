@@ -256,8 +256,8 @@ function ScenePatchHomeCard({ onOpen }) {
   const list = (articles || []).slice(0, 3);
   const RED = "#ED1B2F";
   return (
-    <div onClick={onOpen} role="button"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
+    <div onClick={() => { alert("씬스패치 박스 클릭됨!"); onOpen?.(); }} role="button"
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", position: "relative", zIndex: 5, WebkitTapHighlightColor: "transparent" }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: list.length ? 12 : 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
