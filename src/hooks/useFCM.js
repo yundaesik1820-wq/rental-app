@@ -77,7 +77,8 @@ async function initWebFCM(userId) {
 
   onMessage(msg, (payload) => {
     if (document.visibilityState === "visible") {
-      const { title, body } = payload.notification || {};
+      // 서버는 data 페이로드로 전송(notification 필드 없음) → data를 우선 폴백으로 읽는다
+      const { title, body } = payload.notification || payload.data || {};
       new Notification(title || "KBAS 알림", { body: body || "", icon: "/icons/icon-192x192.png" });
     }
   });
