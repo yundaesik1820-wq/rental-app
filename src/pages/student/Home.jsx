@@ -256,10 +256,10 @@ function ScenePatchHomeCard({ onOpen }) {
   const list = (articles || []).slice(0, 3);
   const RED = "#ED1B2F";
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14 }}>
+    <div onClick={onOpen} role="button"
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
       {/* 헤더 */}
-      <div onClick={onOpen}
-        style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: list.length ? 12 : 0 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: list.length ? 12 : 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
           <span style={{ fontSize: 16 }}>📡</span>
           <span style={{ fontSize: 15, fontWeight: 900, letterSpacing: "0.02em", color: C.text }}>
@@ -272,17 +272,16 @@ function ScenePatchHomeCard({ onOpen }) {
 
       {/* 기사 미리보기 (최신 3개) */}
       {list.length === 0 ? (
-        <div onClick={onOpen}
-          style={{ cursor: "pointer", textAlign: "center", color: C.muted, fontSize: 12.5, padding: "14px 0 6px" }}>
+        <div style={{ textAlign: "center", color: C.muted, fontSize: 12.5, padding: "14px 0 6px" }}>
           아직 올라온 소식이 없어요 · 둘러보기 ›
         </div>
       ) : (
         list.map((a, i) => (
-          <div key={a.id} onClick={onOpen}
-            style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none", cursor: "pointer" }}>
+          <div key={a.id}
+            style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none" }}>
             <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, padding: "2px 7px", borderRadius: 5, ...spTagStyle(a.tag) }}>{a.tag}</span>
             <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontWeight: 600, color: C.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
-            {a.thumbnail && <img src={a.thumbnail} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0 }} />}
+            {a.thumbnail && <img src={a.thumbnail} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, pointerEvents: "none" }} />}
           </div>
         ))
       )}
