@@ -188,7 +188,7 @@ function posLabel(pos) {
   return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
 }
 
-export default function Community({ onExit }) {
+export default function Community({ onExit, initialRoom, onRoomConsumed }) {
   const { profile } = useAuth();
 
   // 진입 인트로 - 세션당 한 번만 표시
@@ -204,7 +204,9 @@ export default function Community({ onExit }) {
   }, [showIntro]);
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(initialRoom || null);
+  // 홈 등 외부에서 특정 룸(예: scenepatch)으로 바로 진입 시 1회 적용 후 소비
+  useEffect(() => { if (initialRoom) onRoomConsumed?.(); }, []);
   const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)

@@ -256,8 +256,8 @@ function ScenePatchHomeCard({ onOpen }) {
   const list = (articles || []).slice(0, 3);
   const RED = "#ED1B2F";
   return (
-    <div onClick={() => { if (typeof onOpenRoom !== "function") { alert("⚠️ onOpenRoom 미전달: " + typeof onOpenRoom + " (App.jsx 확인 필요)"); return; } onOpenRoom("scenepatch"); }} role="button"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", position: "relative", zIndex: 5, WebkitTapHighlightColor: "transparent" }}>
+    <div onClick={onOpen} role="button"
+      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: list.length ? 12 : 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>

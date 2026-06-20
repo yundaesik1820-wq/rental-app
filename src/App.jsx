@@ -309,6 +309,8 @@ function AppContent() {
   const { user, profile, loading } = useAuth();
   useFCM(profile?.uid);
   const [tab,       setTab]       = useState("home");
+  const [communityRoom, setCommunityRoom] = useState(null);
+  const openCommunityRoom = (roomId) => { setCommunityRoom(roomId); setTab("community"); };
   const [themeMode, setThemeMode] = useState(getThemeMode());
 
   // 테마 변경 이벤트 구독 → 리렌더 트리거
@@ -519,15 +521,15 @@ function AppContent() {
       }
     } else {
       switch (tab) {
-        case "home":     return <StudentHome />;
+        case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
         case "equip":    return <StudentRentalList />;
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} />;
         case "notices":  return <Notices isAdmin={false} />;
         case "license":  return <License />;
-        case "community": return <Community onExit={() => setTab("home")} />;
+        case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} onRoomConsumed={() => setCommunityRoom(null)} />;
         case "mypage":   return <StudentMyPage />;
-        default:         return <StudentHome />;
+        default:         return <StudentHome onOpenRoom={openCommunityRoom} />;
       }
     }
   };
