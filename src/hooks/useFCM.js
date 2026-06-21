@@ -19,6 +19,20 @@ async function initNativeFCM(userId) {
   // 1. 권한 요청 (iOS는 시스템 팝업 뜸)
   const perm = await FirebaseMessaging.requestPermissions();
   console.log("네이티브 알림 권한:", perm.receive);
+
+  // 1-1. 안드로이드: 카메라 권한도 함께 요청 (폴스컬러 등 카메라 기능용)
+  //      iOS는 기존처럼 카메라 사용 시점에 자동으로 뜨므로 건드리지 않는다.
+  //      @capacitor/camera 미설치 시 import가 실패해도 catch로 조용히 넘어감.
+  if (Capacitor.getPlatform() === "android") {
+    try {
+      const { Camera } = await import("@capacitor/camera");
+      const camPerm = await Camera.requestPermissions({ permissions: ["camera"] });
+      console.log("네이티브 카메라 권한:", camPerm.camera);
+    } catch (e) {
+      console.log("카메라 권한 요청 건너뜀:", e.message);
+    }
+  }
+
   if (perm.receive !== "granted") return;
 
   // 2. FCM 토큰 발급 → 저장 (기존 백엔드와 동일한 fcmToken 필드)
