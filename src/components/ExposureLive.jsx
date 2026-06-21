@@ -139,7 +139,10 @@ export default function ExposureLive({ onBack }) {
         console.error("카메라 에러:", e);
         let msg = e.message || "카메라 접근 실패";
         if (e.name === "NotAllowedError" || e.name === "PermissionDeniedError") {
-          msg = "카메라 권한이 거부됐어요. 브라우저 설정에서 카메라 권한을 허용해주세요.";
+          const isAndroid = /android/i.test(navigator.userAgent);
+          msg = isAndroid
+            ? "카메라 권한이 꺼져 있어요. 휴대폰 설정 > 애플리케이션 > KBAS 장비대여 > 권한 > 카메라를 허용해주세요."
+            : "카메라 권한이 거부됐어요. 브라우저 설정에서 카메라 권한을 허용해주세요.";
         } else if (e.name === "NotFoundError") {
           msg = "사용 가능한 카메라가 없습니다.";
         } else if (e.name === "NotReadableError") {
