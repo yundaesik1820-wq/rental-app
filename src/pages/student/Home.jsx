@@ -101,7 +101,7 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
 
   return (
     <div>
-      <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 18 }}>
+      <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 18 }}>
         {initial ? "수업 수정" : "수업 추가"}
       </div>
 
@@ -200,7 +200,7 @@ function GpaCalculator() {
       <button onClick={() => setOpen(o=>!o)}
         style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:15 }}>🎓</span>
+          <span style={{ fontSize:14 }}>🎓</span>
           <span style={{ fontSize:12, fontWeight:700, color:C.text }}>학점 계산기</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -213,11 +213,11 @@ function GpaCalculator() {
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, background:C.bg, borderRadius:10, padding:"10px 14px" }}>
             <div>
               <div style={{ fontSize:11, color:C.muted }}>평점 평균 (4.5 기준)</div>
-              <div style={{ fontSize:21, fontWeight:900, color:gpaColor }}>{gpa}</div>
+              <div style={{ fontSize:20, fontWeight:900, color:gpaColor }}>{gpa}</div>
             </div>
             <div style={{ textAlign:"right" }}>
               <div style={{ fontSize:11, color:C.muted }}>총 이수학점</div>
-              <div style={{ fontSize:17, fontWeight:800, color:C.text }}>{totalCredit}학점</div>
+              <div style={{ fontSize:16, fontWeight:800, color:C.text }}>{totalCredit}학점</div>
             </div>
           </div>
           <div style={{ display:"flex", gap:4, marginBottom:6 }}>
@@ -240,7 +240,7 @@ function GpaCalculator() {
                 {GRADES.map(g=><option key={g} value={g}>{g}</option>)}
               </select>
               <button onClick={()=>delRow(i)}
-                style={{ width:24, height:28, background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:13, flexShrink:0 }}>✕</button>
+                style={{ width:24, height:28, background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:12, flexShrink:0 }}>✕</button>
             </div>
           ))}
           <button onClick={addRow}
@@ -270,8 +270,8 @@ function ScenePatchHomeCard({ onOpen }) {
       {/* 헤더 */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: list.length ? 12 : 0 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-          <span style={{ fontSize: 15 }}>📡</span>
-          <span style={{ fontSize: 14, fontWeight: 900, letterSpacing: "0.02em", color: C.text }}>
+          <span style={{ fontSize: 14 }}>📡</span>
+          <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.02em", color: C.text }}>
             SCENE<span style={{ color: RED }}>PATCH</span>
           </span>
           <span style={{ fontSize: 10.5, color: C.muted, fontWeight: 600 }}>영상계열 단독</span>
@@ -656,7 +656,7 @@ export default function StudentHome({ onOpenRoom }) {
       {/* PWA 설치 배너 */}
       {showInstall && (
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:14, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
-          <span style={{ fontSize:27 }}>📲</span>
+          <span style={{ fontSize:26 }}>📲</span>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:800, color:"#fff", marginBottom:2 }}>앱으로 설치하기</div>
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.8)" }}>홈 화면에 추가하면 더 빠르게 이용할 수 있어요!</div>
@@ -684,7 +684,7 @@ export default function StudentHome({ onOpenRoom }) {
         <div style={{ background:"linear-gradient(135deg,#0F172A,#1B2B6B)", borderRadius:14, padding:"14px 16px", marginBottom:12, border:"1px solid rgba(255,255,255,0.15)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:21 }}>📲</span>
+              <span style={{ fontSize:20 }}>📲</span>
               <div>
                 <div style={{ fontSize:12, fontWeight:800, color:"#fff" }}>앱으로 설치하기</div>
                 <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>홈 화면에서 바로 실행할 수 있어요!</div>
@@ -697,11 +697,11 @@ export default function StudentHome({ onOpenRoom }) {
             <div style={{ fontSize:11, color:"rgba(255,255,255,0.9)", lineHeight:1.8 }}>
               <div style={{ marginBottom:4 }}>
                 <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>1</span>
-                하단 Safari <span style={{ fontSize:13 }}>⬆️</span> <b style={{ color:"#93C5FD" }}>공유 버튼</b>을 눌러요
+                하단 Safari <span style={{ fontSize:12 }}>⬆️</span> <b style={{ color:"#93C5FD" }}>공유 버튼</b>을 눌러요
               </div>
               <div style={{ marginBottom:4 }}>
                 <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>2</span>
-                스크롤해서 <b style={{ color:"#93C5FD" }}>홈 화면에 추가</b> <span style={{ fontSize:13 }}>➕</span>를 눌러요
+                스크롤해서 <b style={{ color:"#93C5FD" }}>홈 화면에 추가</b> <span style={{ fontSize:12 }}>➕</span>를 눌러요
               </div>
               <div>
                 <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:4, padding:"1px 6px", marginRight:6, fontSize:11 }}>3</span>
@@ -746,10 +746,10 @@ export default function StudentHome({ onOpenRoom }) {
         </div>
 
         {/* 친해지기 버튼 + 공유 + Designed by */}
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div style={{ display:"flex", gap:6 }}>
+        <div>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             <button onClick={() => setShowRentory(true)}
-              style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+              style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
               렌토리랑 친해져보기 ♡
             </button>
             <button onClick={() => {
@@ -759,13 +759,15 @@ export default function StudentHome({ onOpenRoom }) {
               } else {
                 navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐어요! 친구에게 공유해보세요 😊"));
               }
-            }} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)" }}>
+            }} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
               📤 친구 초대
             </button>
           </div>
-          <span style={{ fontSize:10, color:"rgba(255,255,255,0.35)", fontStyle:"italic" }}>
-            Designed &amp; Developed by 윤대식
-          </span>
+          <div style={{ textAlign:"right", marginTop:8 }}>
+            <span style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontStyle:"italic", whiteSpace:"nowrap" }}>
+              Designed &amp; Developed by 윤대식
+            </span>
+          </div>
         </div>
       </div>
 
@@ -786,7 +788,7 @@ export default function StudentHome({ onOpenRoom }) {
           <div style={{ marginBottom:5 }}>
             <span style={{ background:C.blueLight, color:C.navy, borderRadius:6, padding:"2px 7px", fontSize:10, fontWeight:700 }}>{popupNotice.category || "공지"}</span>
           </div>
-          <div style={{ fontSize:13, fontWeight:800, color:C.text, marginBottom:8 }}>{popupNotice.title}</div>
+          <div style={{ fontSize:12, fontWeight:800, color:C.text, marginBottom:8 }}>{popupNotice.title}</div>
           <div style={{ fontSize:12, color:C.text, lineHeight:1.6, whiteSpace:"pre-wrap", background:C.bg, borderRadius:8, padding:"10px 12px", marginBottom:8, wordBreak:"break-word" }}>
             {popupNotice.content}
           </div>
@@ -847,7 +849,7 @@ export default function StudentHome({ onOpenRoom }) {
         <Modal onClose={() => setShowRentory(false)} width={420}>
           <div style={{ textAlign:"center", padding:"4px" }}>
             <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
-            <div style={{ fontSize:17, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
+            <div style={{ fontSize:16, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:12, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
               렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
               카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
@@ -859,7 +861,7 @@ export default function StudentHome({ onOpenRoom }) {
               <div style={{ fontWeight:700, color:C.teal, textAlign:"center" }}>오늘의 촬영도 렌토리와 함께 준비해볼까요?</div>
             </div>
             <button onClick={() => setShowRentory(false)}
-              style={{ background:`linear-gradient(135deg, ${C.teal}, ${C.navy})`, color:"#fff", border:"none", borderRadius:10, padding:"11px 24px", fontSize:13, fontWeight:700, cursor:"pointer", width:"100%" }}>
+              style={{ background:`linear-gradient(135deg, ${C.teal}, ${C.navy})`, color:"#fff", border:"none", borderRadius:10, padding:"11px 24px", fontSize:12, fontWeight:700, cursor:"pointer", width:"100%" }}>
               좋아, 친해질래 ♡
             </button>
           </div>
@@ -874,8 +876,8 @@ export default function StudentHome({ onOpenRoom }) {
         </div>
         {classes.length === 0 ? (
           <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
-            <div style={{ fontSize: 31, marginBottom: 8 }}>📚</div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
+            <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
+            <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
             <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>수업 추가하기</Btn>
           </div>
         ) : (
@@ -895,7 +897,7 @@ export default function StudentHome({ onOpenRoom }) {
         <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontSize:15 }}>👥</span>
+            <span style={{ fontSize:14 }}>👥</span>
             <span style={{ fontSize:12, fontWeight:700, color:C.text }}>친구 시간표</span>
             {receivedRequests.length > 0 && (
               <span style={{ background:C.red, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:10, fontWeight:700 }}>{receivedRequests.length}</span>
@@ -942,7 +944,7 @@ export default function StudentHome({ onOpenRoom }) {
               <div>
                 {receivedRequests.length === 0 && sentRequests.length === 0 ? (
                   <div style={{ textAlign:"center", padding:"24px 0", color:C.muted, fontSize:12 }}>
-                    <div style={{ fontSize:27, marginBottom:8 }}>📭</div>
+                    <div style={{ fontSize:26, marginBottom:8 }}>📭</div>
                     주고받은 친구 신청이 없어요
                   </div>
                 ) : (
@@ -1159,7 +1161,7 @@ export default function StudentHome({ onOpenRoom }) {
                     <Card onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:0, borderRadius: isExpanded ? "12px 12px 0 0" : 12 }}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                         <div>
-                          <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                          <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
                           <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>반납예정: {r.endDate} {r.endTime}</div>
                         </div>
                         <Badge label={r.status} />
@@ -1198,7 +1200,7 @@ export default function StudentHome({ onOpenRoom }) {
                                 {returnPhotoUploading
                                   ? <span style={{ fontSize:10, color:C.muted }}>{returnPhotoProgress}%</span>
                                   : <div style={{textAlign:"center"}}>
-                                    <div style={{ fontSize:19 }}>+</div>
+                                    <div style={{ fontSize:18 }}>+</div>
                                     <div style={{ fontSize:9, color:C.muted }}>사진 추가</div>
                                   </div>
                                 }
@@ -1224,7 +1226,7 @@ export default function StudentHome({ onOpenRoom }) {
                 <Card key={r.id} onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:8 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{getEquipLabel(r)}</div>
                       <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>{r.startDate} ~ {r.endDate}</div>
                     </div>
                     <Badge label={r.status} />
@@ -1250,7 +1252,7 @@ export default function StudentHome({ onOpenRoom }) {
                 <div style={{ display:"flex", alignItems:"flex-start", gap:10 }}>
                   <span style={{ background:cat.bg, color:cat.col, borderRadius:6, padding:"3px 8px", fontSize:11, fontWeight:700, flexShrink:0 }}>{n.category}</span>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
+                    <div style={{ fontSize:12, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{n.title}</div>
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:3 }}>
                       <span style={{ fontSize:11, color:C.muted }}>{n.date}</span>
                       {cmtCount > 0 && <span style={{ fontSize:11, color:C.blue, fontWeight:600 }}>💬 {cmtCount}</span>}
@@ -1277,7 +1279,7 @@ export default function StudentHome({ onOpenRoom }) {
                 <Card key={s.id} style={{ marginBottom:8 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{s.title || s.equipName}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{s.title || s.equipName}</div>
                       <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{s.date} {s.time} · {s.location}</div>
                       {s.licenseLevel && <div style={{ fontSize:11, color:C.purple, marginTop:2, fontWeight:600 }}>Lv.{s.licenseLevel} 수업</div>}
                     </div>
@@ -1313,11 +1315,11 @@ export default function StudentHome({ onOpenRoom }) {
               <span style={{ background: cat.bg, color: cat.col, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{selectedNotice.category}</span>
               {selectedNotice.pinned && <span style={{ fontSize: 12, color: C.orange, fontWeight: 700 }}>📌 고정</span>}
             </div>
-            <div style={{ fontSize: 19, fontWeight: 800, color: C.navy, marginBottom: 8, lineHeight: 1.4 }}>{selectedNotice.title}</div>
+            <div style={{ fontSize: 18, fontWeight: 800, color: C.navy, marginBottom: 8, lineHeight: 1.4 }}>{selectedNotice.title}</div>
             <div style={{ fontSize: 12, color: C.muted, marginBottom: 20 }}>{selectedNotice.date} · {selectedNotice.author}</div>
-            <div style={{ fontSize: 14, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 28 }}>{selectedNotice.content}</div>
+            <div style={{ fontSize: 13, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 28 }}>{selectedNotice.content}</div>
             <div style={{ borderTop: `2px solid ${C.border}`, paddingTop: 20 }}>
-              <div style={{ fontSize: 13, fontWeight: 800, color: C.navy, marginBottom: 16 }}>💬 댓글 {detailComments.length}</div>
+              <div style={{ fontSize: 12, fontWeight: 800, color: C.navy, marginBottom: 16 }}>💬 댓글 {detailComments.length}</div>
               {detailComments.length === 0 && (
                 <div style={{ textAlign: "center", padding: "16px 0", color: C.muted, fontSize: 12 }}>첫 댓글을 남겨보세요!</div>
               )}
@@ -1365,7 +1367,7 @@ export default function StudentHome({ onOpenRoom }) {
       {/* 대여 상세 모달 */}
       {selectedRequest && (
         <Modal onClose={() => setSelectedRequest(null)} width={480}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 16 }}>{getEquipLabel(selectedRequest)}</div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 16 }}>{getEquipLabel(selectedRequest)}</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 12 }}>
             {[
               ["상태", selectedRequest.status],
@@ -1408,8 +1410,8 @@ export default function StudentHome({ onOpenRoom }) {
               </div>
               {/* 내용 */}
               <div style={{ textAlign:"center", marginBottom:24 }}>
-                <div style={{ fontSize:47, marginBottom:12 }}>{step.emoji}</div>
-                <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:8 }}>{step.title}</div>
+                <div style={{ fontSize:46, marginBottom:12 }}>{step.emoji}</div>
+                <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:8 }}>{step.title}</div>
                 <div style={{ fontSize:12, color:C.muted, lineHeight:1.7 }}>{step.desc}</div>
               </div>
               {/* 버튼 */}
@@ -1446,7 +1448,7 @@ export default function StudentHome({ onOpenRoom }) {
           onClick={() => { setSwitchModal2(false); setSwitchErr2(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
             <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>비밀번호를 입력하면 바로 전환돼요</div>
             <div style={{ background:C.bg, borderRadius:9, padding:"9px 12px", marginBottom:12, fontSize:12, color:C.text }}>
               📧 {profile?.linkedEmail}
