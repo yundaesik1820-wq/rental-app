@@ -263,23 +263,59 @@ function StudentPropsList() {
   );
 }
 
-// 학생용 문의 + 내정보 통합
+// 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
 function StudentMyPage() {
-  const [view, setView] = React.useState("profile");
+  const { profile } = useAuth();
+  const [view, setView] = React.useState("menu"); // menu | profile | inquiry | license | notices
+
+  const Back = () => (
+    <button onClick={() => setView("menu")}
+      style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
+      ← 더보기
+    </button>
+  );
+
+  if (view === "profile") return (<div><Back /><Profile /></div>);
+  if (view === "inquiry") return (<div><Back /><StudentInquiry /></div>);
+  if (view === "license") return (<div><Back /><License /></div>);
+  if (view === "notices") return (<div><Back /><Notices isAdmin={false} /></div>);
+
+  const MenuRow = ({ icon, label, sub, onClick }) => (
+    <button onClick={onClick} style={{
+      width:"100%", textAlign:"left", cursor:"pointer",
+      background:"#1E293B", border:"1px solid #334155", borderRadius:12,
+      padding:"15px 16px", marginBottom:10,
+      display:"flex", alignItems:"center", justifyContent:"space-between",
+    }}>
+      <div style={{ display:"flex", alignItems:"center", gap:13 }}>
+        <span style={{ fontSize:20 }}>{icon}</span>
+        <div>
+          <div style={{ fontSize:15, fontWeight:700, color:"#F1F5F9" }}>{label}</div>
+          {sub && <div style={{ fontSize:11.5, color:"#64748B", marginTop:2 }}>{sub}</div>}
+        </div>
+      </div>
+      <span style={{ fontSize:18, color:"#475569" }}>›</span>
+    </button>
+  );
+
   return (
     <div>
-      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
-        {[["profile","👤 내 정보"],["inquiry","💬 문의"]].map(([v,l]) => (
-          <button key={v} onClick={() => setView(v)}
-            style={{ padding:"6px 18px", borderRadius:10, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
-              background: view===v ? "#1B2B6B" : "#1E293B",
-              color: view===v ? "#fff" : "#64748B" }}>
-            {l}
-          </button>
-        ))}
+      {/* 프로필 요약 카드 */}
+      <div style={{ background:"linear-gradient(135deg,#3d4370,#5b6191)", borderRadius:16, padding:"20px", marginBottom:18, display:"flex", alignItems:"center", gap:14 }}>
+        <div style={{ width:54, height:54, borderRadius:"50%", background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>👤</div>
+        <div style={{ minWidth:0 }}>
+          <div style={{ fontSize:18, fontWeight:800, color:"#fff" }}>{profile?.name || "학생"}</div>
+          <div style={{ fontSize:13, color:"rgba(255,255,255,0.82)", marginTop:3 }}>
+            {[profile?.studentId, profile?.dept].filter(Boolean).join(" · ")}
+          </div>
+        </div>
       </div>
-      {view === "profile" && <Profile />}
-      {view === "inquiry" && <StudentInquiry />}
+
+      {/* 메뉴 리스트 */}
+      <MenuRow icon="👤" label="내 정보" sub="프로필·계정 정보 확인" onClick={() => setView("profile")} />
+      <MenuRow icon="💬" label="문의하기" sub="궁금한 점을 물어봐요" onClick={() => setView("inquiry")} />
+      <MenuRow icon="🎓" label="라이센스" sub="내 장비 사용 등급" onClick={() => setView("license")} />
+      <MenuRow icon="📢" label="공지사항" sub="대여실 소식·안내" onClick={() => setView("notices")} />
     </div>
   );
 }
@@ -419,6 +455,22 @@ function AppContent() {
           <BannerCard onClick={() => setPage("facility")} mascot="object.png" gradient="#0D9488,#0891B2" title="🏢 시설 예약" desc="스튜디오, 편집실 등 시설을 예약해요" />
           <BannerCard onClick={() => setPage("props")} mascot="police.png" gradient="#7C3AED,#DB2777" title="🎭 소품 예약" desc="의상, 소도구, 대도구를 빌려요" dark={false} />
         </div>
+
+        {/* 대여이력 · 캘린더 바로가기 */}
+        <button onClick={() => setPage("history")} style={{
+          marginTop:18, width:"100%", textAlign:"left", cursor:"pointer",
+          background:"#1E293B", borderRadius:14, padding:"15px 18px", border:"1px solid #334155",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:13 }}>
+            <span style={{ fontSize:24 }}>📋</span>
+            <div>
+              <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:2 }}>대여이력 · 캘린더</div>
+              <div style={{ fontSize:12, color:"#64748B" }}>내 대여 기록과 예약 일정을 확인해요</div>
+            </div>
+          </div>
+          <span style={{ fontSize:20, color:"#475569" }}>›</span>
+        </button>
       </div>
     );
 
@@ -473,6 +525,14 @@ function AppContent() {
       <div>
         <Back />
         <FacilityReserve />
+      </div>
+    );
+
+    // 대여이력 · 캘린더
+    if (page === "history") return (
+      <div>
+        <Back />
+        <StudentCalendarHistory profile={profile} />
       </div>
     );
 
