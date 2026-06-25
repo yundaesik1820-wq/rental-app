@@ -60,9 +60,15 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         : ADMIN_NAV)
     : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
-  // 모바일 하단 2줄 그리드 (4x2 고정)
-  const row1 = nav.slice(0, 4);
-  const row2 = nav.slice(4);
+  // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
+  const NAV_ACCENT = "#5b6191"; // 홈과 통일한 슬레이트 포인트
+  const NAV_SHORT = { home: "홈", equip: "대여", reserve: "예약", community: "에타", mypage: "내정보" };
+  const MOBILE_STU_IDS = ["home", "equip", "reserve", "community", "mypage"];
+  const isStudentNav = profile?.role !== "admin";
+  const stuTabs = MOBILE_STU_IDS
+    .map(id => { const it = nav.find(n => n.id === id); return it ? { ...it, label: NAV_SHORT[id] || it.label } : null; })
+    .filter(Boolean);
+  const mobileRows = isStudentNav ? [stuTabs] : [nav.slice(0, 4), nav.slice(4)];
 
   const currentNav = nav.find(n => n.id === tab);
 
@@ -286,7 +292,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         zIndex: 100,
         paddingBottom: 8,
       }}>
-        {[row1, row2].map((row, rowIdx) => (
+        {mobileRows.map((row, rowIdx) => (
           <div key={rowIdx} className="bottom-nav-row" style={{
             display: "grid",
             gridTemplateColumns: `repeat(${row.length}, 1fr)`,
@@ -300,19 +306,28 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
                   key={n.id}
                   onClick={() => setTab(n.id)}
                   style={{
-                    background: active ? C.blueLight : "transparent",
+                    background: "transparent",
                     border: "none", cursor: "pointer",
-                    padding: "8px 2px",
+                    padding: "9px 2px 5px",
                     display: "flex", flexDirection: "column",
-                    alignItems: "center", justifyContent: "center", gap: 3,
-                    transition: "background 0.15s",
+                    alignItems: "center", justifyContent: "center", gap: 4,
+                    WebkitTapHighlightColor: "transparent",
                   }}
                 >
-                  <Icon size={20} color={active ? C.blue : C.muted} strokeWidth={active ? 2.5 : 1.8} />
+                  <Icon
+                    size={23}
+                    color={active ? NAV_ACCENT : C.muted}
+                    strokeWidth={active ? 2.4 : 1.9}
+                    style={{
+                      transform: active ? "translateY(-2px)" : "translateY(0)",
+                      transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1)",
+                    }}
+                  />
                   <span style={{
-                    fontSize: 9, fontWeight: active ? 800 : 500,
-                    color: active ? C.blue : C.muted,
+                    fontSize: 10, fontWeight: active ? 700 : 500,
+                    color: active ? NAV_ACCENT : C.muted,
                     whiteSpace: "nowrap", letterSpacing: "-0.3px",
+                    transition: "color 0.2s ease",
                   }}>{n.label}</span>
                 </button>
               );
