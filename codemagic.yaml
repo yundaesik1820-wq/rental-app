@@ -1,6 +1,12 @@
 workflows:
-  ios-kbas:
-    name: KBAS iOS Build
+
+  # ============================================================
+  # 개발용: server.url 주입 O
+  #  → 앱이 Vercel 웹을 직접 로드. 웹 배포만으로 바로 확인 가능.
+  #  → 앱 자체(네이티브)가 바뀔 때만 가끔 빌드하면 됨.
+  # ============================================================
+  ios-dev:
+    name: KBAS iOS (개발 · 빠른확인)
     instance_type: mac_mini_m2
     max_build_duration: 60
     integrations:
@@ -24,6 +30,86 @@ workflows:
       - name: Point iOS build at live web app (server.url)
         script: |
           node -e "const fs=require('fs');const p='capacitor.config.json';const c=JSON.parse(fs.readFileSync(p));c.server=Object.assign({},c.server,{url:'https://rental-app-delta-kohl.vercel.app'});fs.writeFileSync(p,JSON.stringify(c,null,2));console.log('[codemagic] iOS server.url =',c.server.url);"
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap sync ios
+      - name: Initialize keychain
+        script: |
+          keychain initialize
+      - name: Fetch signing files (create if missing)
+        script: |
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --certificate-key=@env:CERTIFICATE_PRIVATE_KEY \
+            --create
+      - name: Add certificates to keychain
+        script: |
+          keychain add-certificates
+      - name: Set up code signing
+        script: |
+          xcode-project use-profiles
+      - name: Resolve SPM packages
+        script: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$XCODE_PROJECT" \
+            -scheme "$XCODE_SCHEME"
+      - name: Bump iOS build number (must exceed last TestFlight upload)
+        script: |
+          cd ios/App
+          LATEST=""
+          if [ -n "$APP_STORE_APP_ID" ]; then
+            LATEST=$(app-store-connect get-latest-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo "")
+          fi
+          if [ -n "$LATEST" ]; then
+            NEW_BUILD=$((LATEST + 1))
+            echo "[codemagic] build number: $LATEST -> $NEW_BUILD (순차)"
+          else
+            NEW_BUILD=$(date +%s)
+            echo "[codemagic] APP_STORE_APP_ID 미설정 → 타임스탬프 사용: $NEW_BUILD"
+          fi
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = $NEW_BUILD;/g" App.xcodeproj/project.pbxproj
+          echo "[codemagic] CFBundleVersion = $NEW_BUILD"
+      - name: Build IPA
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+  # ============================================================
+  # 심사·출시용: server.url 주입 X
+  #  → 웹 자산(dist)을 앱 안에 번들. App Store 심사 통과용.
+  #  → 화면을 바꾸면 이 워크플로우로 다시 빌드해야 반영됨.
+  # ============================================================
+  ios-release:
+    name: KBAS iOS (심사 · 출시)
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: codemagic_kbas
+    environment:
+      groups:
+        - ios_signing
+      vars:
+        BUNDLE_ID: "com.kbas.rental"
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Install npm dependencies
+        script: |
+          npm install
+      - name: Build web assets (Vite)
+        script: |
+          npm run build
+      # ↑ server.url 주입 스텝 없음 → 로컬 dist 번들 사용 (심사용)
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
