@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, NOTICE_CAT } from "../../theme";
+import { C as BASE, NOTICE_CAT } from "../../theme";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -9,6 +9,23 @@ import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
+
+// ── 홈 전용 트로스트 톤 (다른 화면은 기존 theme 그대로 둠) ──
+// 본문에서 쓰는 C.* 이름만 여기서 덮어써서 홈만 색이 바뀐다.
+const C = {
+  ...BASE,
+  navy:      "#525782", // 메인 포인트 → 슬레이트 인디고
+  bg:        "#f5f6fc", // 배경 → 라벤더 틴트
+  surface:   "#ffffff",
+  card:      "#ffffff",
+  text:      "#222a37",
+  muted:     "#888fa0",
+  border:    "#edeef5",
+  blue:      "#525782",
+  blueLight: "#ecedf6",
+  teal:      "#5f9c86", // 보조 → 세이지
+  tealLight: "#e8f1ec",
+};
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -643,7 +660,7 @@ export default function StudentHome({ onOpenRoom }) {
   };
 
   return (
-    <div>
+    <div style={{ fontFamily: "'Pretendard', -apple-system, 'Malgun Gothic', sans-serif" }}>
       {/* PWA 설치 배너 */}
       {showInstall && (
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:14, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
