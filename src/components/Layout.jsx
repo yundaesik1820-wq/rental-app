@@ -5,7 +5,7 @@ import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal
 } from "lucide-react";
 
 const ADMIN_NAV = [
@@ -62,11 +62,17 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
   const NAV_ACCENT = "#5b6191"; // 홈과 통일한 슬레이트 포인트
-  const NAV_SHORT = { home: "홈", equip: "대여", reserve: "예약", community: "에타", mypage: "내정보" };
+  const NAV_SHORT = { home: "홈", equip: "대여", reserve: "예약", community: "커뮤니티", mypage: "더보기" };
   const MOBILE_STU_IDS = ["home", "equip", "reserve", "community", "mypage"];
   const isStudentNav = profile?.role !== "admin";
   const stuTabs = MOBILE_STU_IDS
-    .map(id => { const it = nav.find(n => n.id === id); return it ? { ...it, label: NAV_SHORT[id] || it.label } : null; })
+    .map(id => {
+      const it = nav.find(n => n.id === id);
+      if (!it) return null;
+      const o = { ...it, label: NAV_SHORT[id] || it.label };
+      if (id === "mypage") o.icon = MoreHorizontal; // 카톡식 더보기
+      return o;
+    })
     .filter(Boolean);
   const mobileRows = isStudentNav ? [stuTabs] : [nav.slice(0, 4), nav.slice(4)];
 
