@@ -18,6 +18,32 @@ import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
 import ScenePatch from "../../components/ScenePatch";
 
+// 🚫 욕설/혐오 표현 필터 (Apple App Store 가이드라인 1.2 — UGC 욕설 필터링 요건)
+// 학교 커뮤니티 운영 정책에 맞게 아래 목록을 자유롭게 추가/삭제하세요.
+const BAD_WORDS = [
+  // 욕설
+  "씨발", "시발", "씨빨", "시방새", "씨바", "좆", "좇", "존나", "개새끼", "개색끼", "개세끼",
+  "병신", "빙신", "븅신", "지랄", "니미", "느금", "엠창", "애미", "ㅄ", "ㅂㅅ", "ㅆㅂ", "ㅈㄴ",
+  // 비하/혐오
+  "게이새끼", "호모새끼", "게이년", "장애인새끼", "정신병자새끼",
+  // 영문
+  "fuck", "fucking", "shit", "bitch", "asshole",
+];
+// 원문 + 정규화(공백·일부 특수문자 제거)본을 함께 검사해 우회 입력을 잡는다.
+function containsBadWord(text) {
+  if (!text) return null;
+  const lower = String(text).toLowerCase();
+  const norm = lower.replace(/[\s.\-_*]/g, "");
+  for (const w of BAD_WORDS) {
+    if (!w) continue;
+    if (lower.includes(w) || norm.includes(w)) return w;
+  }
+  return null;
+}
+
+// 🚨 신고 누적 시 자동 숨김 임계값 (이 수 이상 신고되면 작성자·관리자 외에는 안 보임)
+const REPORT_HIDE_THRESHOLD = 5;
+
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
 const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집", "스탭프로필", "클래스"]; // 실명
@@ -188,7 +214,7 @@ function posLabel(pos) {
   return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
 }
 
-export default function Community({ onExit, initialRoom, onRoomConsumed }) {
+export default function Community({ onExit }) {
   const { profile } = useAuth();
 
   // 진입 인트로 - 세션당 한 번만 표시
@@ -204,9 +230,7 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
   }, [showIntro]);
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
-  const [selectedRoom, setSelectedRoom] = useState(initialRoom || null);
-  // 홈 등 외부에서 특정 룸(예: scenepatch)으로 바로 진입 시 1회 적용 후 소비
-  useEffect(() => { if (initialRoom) onRoomConsumed?.(); }, []);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
@@ -264,6 +288,9 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
 
   const [cat, setCat]           = useState("전체");
   const [selPost, setSelPost]   = useState(null); // 상세 모달
+  // 🚫 차단 목록: profile에서 초기화 후 로컬 state로 즉시 반영 (useAuth는 1회 로드라 실시간 아님)
+  const [blockedUsers, setBlockedUsers] = useState([]);
+  const [showBlockList, setShowBlockList] = useState(false);
   const [fsVideo,  setFsVideo]  = useState(null); // 가로 풀스크린 재생 (유튜브 ID)
   const [applyPosition, setApplyPosition] = useState(""); // 크루 지원 시 선택 포지션
   const [showWrite, setShowWrite] = useState(false);
@@ -328,6 +355,10 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
   const roomCategories = currentRoom?.categories || [];
   const allFiltered = posts
     .filter(p => {
+      // 🚫 차단한 사용자의 글 숨김
+      if (blockedUsers.some(b => b.uid === p.authorId)) return false;
+      // 🚨 신고 누적 자동 숨김 (작성자 본인·관리자는 계속 보임)
+      if ((p.reportCount || 0) >= REPORT_HIDE_THRESHOLD && p.authorId !== profile?.uid && !isSuper) return false;
       // 룸의 허용 카테고리에 속하지 않으면 제외
       if (currentRoom && roomCategories.length > 0 && !roomCategories.includes(p.category)) return false;
       // 카테고리 탭 필터
@@ -344,7 +375,9 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
   const filtered   = allFiltered.slice((page-1)*PAGE_SIZE, page*PAGE_SIZE);
 
   const postComments = (postId) =>
-    comments.filter(c => c.postId === postId)
+    comments.filter(c => c.postId === postId
+      && !blockedUsers.some(b => b.uid === c.authorId)
+      && !((c.reportCount || 0) >= REPORT_HIDE_THRESHOLD && c.authorId !== profile?.uid && !isSuper))
       .sort((a,b) => (a.createdAt?.seconds||0) - (b.createdAt?.seconds||0));
 
   // 게시글 작성
@@ -375,6 +408,17 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
     }
     if (writeForm.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
       alert(`새내기 게시판은 ${newbiePrefix}학번 신입생만 이용할 수 있어요!`);
+      return;
+    }
+    // 🚫 욕설/혐오 표현 필터
+    const badWordInPost =
+      containsBadWord(writeForm.title) ||
+      containsBadWord(writeForm.content) ||
+      containsBadWord(writeForm.oneLiner) ||
+      containsBadWord(writeForm.crewLogline) ||
+      containsBadWord(writeForm.classDesc);
+    if (badWordInPost) {
+      alert(`부적절한 표현이 포함되어 있어 등록할 수 없어요.\n(문제된 표현: "${badWordInPost}")\n\n수정한 뒤 다시 등록해주세요.`);
       return;
     }
     setSubmitting(true);
@@ -465,6 +509,12 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
   // 댓글 작성
   const submitComment = async (postId) => {
     if (!commentText.trim()) return;
+    // 🚫 욕설/혐오 표현 필터
+    const badWordInComment = containsBadWord(commentText);
+    if (badWordInComment) {
+      alert(`부적절한 표현이 포함되어 있어 등록할 수 없어요.\n(문제된 표현: "${badWordInComment}")`);
+      return;
+    }
     setSubmitting(true);
     // 강의 게시판 댓글은 완전 익명이므로 실명 모드 사용 안 함
     const postCategory = selPost?.category;
@@ -518,6 +568,57 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
     if (type === "post" && selPost?.id === item.id) {
       setSelPost({ ...selPost, dislikes: newDislikes, dislikedBy: newDislikedBy });
     }
+  };
+
+  // 🚨 신고 (게시글/댓글 공용)
+  const reportItem = async (type, item) => {
+    const uid = profile?.uid || "";
+    if (!uid) { alert("로그인이 필요해요."); return; }
+    if (item.authorId === uid) { alert("본인이 작성한 글은 신고할 수 없어요."); return; }
+    if ((item.reportedBy || []).includes(uid)) { alert("이미 신고한 콘텐츠예요."); return; }
+    if (!window.confirm("이 콘텐츠를 신고할까요?\n신고가 누적되면 자동으로 숨겨지고, 관리자가 확인 후 조치합니다.")) return;
+    const col = type === "post" ? "communityPosts" : "communityComments";
+    const newReportedBy = [...(item.reportedBy || []), uid];
+    await updateItem(col, item.id, { reportedBy: newReportedBy, reportCount: newReportedBy.length });
+    await addItem("communityReports", {
+      targetType:       type,
+      targetId:         item.id,
+      targetContent:    (item.title || item.content || "").slice(0, 200),
+      targetAuthorId:   item.authorId || "",
+      targetAuthorName: item.authorName || "",
+      reporterId:       uid,
+      reporterName:     profile?.name || "",
+      resolved:         false,
+      createdAt:        serverTimestamp(),
+    });
+    if (type === "post" && selPost?.id === item.id) {
+      setSelPost({ ...selPost, reportedBy: newReportedBy, reportCount: newReportedBy.length });
+    }
+    alert("신고가 접수되었어요. 관리자가 확인 후 조치할게요.");
+  };
+
+  // 🚫 차단 목록을 profile에서 동기화 (로그인/profile 변경 시)
+  useEffect(() => { setBlockedUsers(profile?.blockedUsers || []); }, [profile]);
+
+  // 🚫 사용자 차단 / 해제
+  const blockUser = async (targetId, targetName) => {
+    const uid = profile?.uid || "";
+    if (!uid || !targetId) return;
+    if (targetId === uid) { alert("본인은 차단할 수 없어요."); return; }
+    if (blockedUsers.some(b => b.uid === targetId)) { alert("이미 차단한 사용자예요."); return; }
+    if (!window.confirm("이 작성자를 차단할까요?\n차단하면 이 사용자의 모든 글과 댓글이 보이지 않게 됩니다.")) return;
+    const next = [...blockedUsers, { uid: targetId, name: targetName || "익명 사용자" }];
+    setBlockedUsers(next);
+    await updateItem("users", uid, { blockedUsers: next });
+    if (selPost?.authorId === targetId) setSelPost(null);
+    alert("차단했어요. 이 사용자의 글과 댓글이 더 이상 보이지 않아요.");
+  };
+  const unblockUser = async (targetId) => {
+    const uid = profile?.uid || "";
+    if (!uid) return;
+    const next = blockedUsers.filter(b => b.uid !== targetId);
+    setBlockedUsers(next);
+    await updateItem("users", uid, { blockedUsers: next });
   };
 
   // 조회수 증가 (쿨다운 없음 - 클릭할 때마다 +1)
@@ -815,6 +916,16 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
       {/* 공지 팝업 제거됨 */}
 
       {/* PageTitle 제거됨 (헤더의 "에브리타임"이 대체) - 글쓰기는 우하단 FAB으로 이동 */}
+
+      {/* 🚫 차단 관리 진입 (차단한 사용자가 있을 때만) */}
+      {blockedUsers.length > 0 && (
+        <div style={{ display:"flex", justifyContent:"flex-end", marginTop:8, marginBottom:4 }}>
+          <button onClick={() => setShowBlockList(true)}
+            style={{ background:"none", border:`1px solid ${CINEMA.border}`, borderRadius:14, color:CINEMA.mutedDim, fontSize:11, cursor:"pointer", padding:"4px 12px", fontFamily:"inherit" }}>
+            🚫 차단 관리 ({blockedUsers.length})
+          </button>
+        </div>
+      )}
 
       {/* 🎬 룸 분기 화면 (selectedRoom === null) */}
       {!selectedRoom && (
@@ -1342,6 +1453,27 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
       )} {/* /게시판 룸 조건부 끝 */}
 
       {/* 게시글 상세 모달 - 시네마 톤 */}
+      {/* 🚫 차단 관리 모달 */}
+      {showBlockList && (
+        <Modal onClose={() => setShowBlockList(false)} width={420} cinema>
+          <div style={{ fontSize:16, fontWeight:800, color:CINEMA.text, marginBottom:4 }}>차단한 사용자</div>
+          <div style={{ fontSize:12, color:CINEMA.mutedDim, marginBottom:16 }}>차단을 해제하면 이 사용자의 글과 댓글이 다시 보여요.</div>
+          {blockedUsers.length === 0 ? (
+            <div style={{ textAlign:"center", color:CINEMA.mutedDim, fontSize:13, padding:"24px 0" }}>차단한 사용자가 없어요.</div>
+          ) : (
+            blockedUsers.map(b => (
+              <div key={b.uid} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 4px", borderBottom:`1px solid ${CINEMA.border}` }}>
+                <span style={{ fontSize:13, color:CINEMA.text }}>{b.name || "익명 사용자"}</span>
+                <button onClick={() => unblockUser(b.uid)}
+                  style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:8, color:CINEMA.text, fontSize:12, fontWeight:700, cursor:"pointer", padding:"5px 12px" }}>
+                  차단 해제
+                </button>
+              </div>
+            ))
+          )}
+        </Modal>
+      )}
+
       {selPost && (
         <Modal onClose={() => setSelPost(null)} width={600} cinema>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
@@ -1711,6 +1843,20 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
           </div>
           )}
 
+          {/* 🚨 신고 / 🚫 차단 - 본인 글 제외, 모든 카테고리 노출 */}
+          {selPost.authorId !== profile?.uid && (
+            <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:16 }}>
+              <button onClick={() => reportItem("post", selPost)}
+                style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:"4px 8px", fontFamily:"inherit" }}>
+                🚨 신고
+              </button>
+              <button onClick={() => blockUser(selPost.authorId, displayName(selPost))}
+                style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:"4px 8px", fontFamily:"inherit" }}>
+                🚫 차단
+              </button>
+            </div>
+          )}
+
           {/* 댓글 영역 - 작품공유 제외 */}
           {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (<>
           {/* 댓글 헤더 - 시네마 톤 */}
@@ -1756,6 +1902,16 @@ export default function Community({ onExit, initialRoom, onRoomConsumed }) {
                         cursor:"pointer", fontWeight:500, padding:0 }}>
                       👎 {c.dislikes||0}
                     </button>
+                    {c.authorId !== profile?.uid && (<>
+                      <button onClick={() => reportItem("comment", c)}
+                        style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
+                        신고
+                      </button>
+                      <button onClick={() => blockUser(c.authorId, displayCommentName(c, selPost.category))}
+                        style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
+                        차단
+                      </button>
+                    </>)}
                     {isSuper && (
                       <button onClick={() => adminDeleteComment(c.id)}
                         style={{ background:"none", border:"none", color:CINEMA.red, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
