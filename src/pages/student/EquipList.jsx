@@ -4,6 +4,7 @@ import { Card, Badge, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
+import ExternalRentalView from "./ExternalRentalView";
 
 // ✏️ 히어로 슬라이드 — 여기 내용만 바꾸면 상단 배너가 바뀝니다.
 //    (title=제목, desc=설명, emoji=오른쪽 그림, grad=배경색 그라데이션)
@@ -173,6 +174,11 @@ export default function EquipList() {
         })}
       </div>
 
+      {/* 외부 렌탈샵 카테고리면 업체 목록, 그 외엔 장비 목록 */}
+      {filter === "외부 렌탈샵" && <ExternalRentalView />}
+
+      {filter !== "외부 렌탈샵" && (<>
+
       {/* 1.5행: 중분류 */}
       {minorList.length > 1 && (
         <div style={{ display:"flex", gap:5, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
@@ -327,6 +333,7 @@ export default function EquipList() {
           </div>
         </>
       )}
+      </>)}
 
       {/* 장비 설명 모달 */}
       {showDescModel && (
