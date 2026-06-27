@@ -187,7 +187,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
       <style>{`
         @media (max-width: 768px) {
           /* 폰: 노치/상태바 아래로 내림 (env 안 잡히는 환경 대비 최소 48px 보장) */
-          .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), 48px) !important; }
+          .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), 24px) !important; }
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
 
