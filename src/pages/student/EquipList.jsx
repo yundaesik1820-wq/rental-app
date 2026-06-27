@@ -15,20 +15,22 @@ const HERO_SLIDES = [
 ];
 
 // 🗂️ 카테고리 — 이름/아이콘/순서를 여기서 바꾸면 그리드가 바뀝니다. (4열로 자동 배치)
+//    👉 직접 만든 아이콘 이미지로 바꾸려면 각 항목에 img를 추가하세요.
+//       예: { name: "카메라", icon: "📷", img: "/cat-icons/camera.png" }
+//       img가 있으면 이미지를, 없으면 icon(이모지)을 표시합니다.
 const RENTAL_CATEGORIES = [
   { name: "외부 렌탈샵", icon: "🏬" },
-  { name: "NEW",         icon: "🆕" },
-  { name: "캠코더",       icon: "📹" },
-  { name: "카메라",       icon: "📷" },
-  { name: "렌즈",         icon: "🔭" },
-  { name: "ACC",         icon: "🔌" },
-  { name: "삼각대",       icon: "📐" },
-  { name: "그립",         icon: "🦾" },
-  { name: "모니터",       icon: "🖥️" },
-  { name: "조명",         icon: "💡" },
-  { name: "음향",         icon: "🎤" },
-  { name: "편집",         icon: "✂️" },
-  { name: "기타",         icon: "📦" },
+  { name: "NEW",          icon: "🆕" },
+  { name: "캠코더",        icon: "📹" },
+  { name: "카메라",        icon: "📷" },
+  { name: "렌즈",          icon: "🔭" },
+  { name: "ACC",          icon: "🔌" },
+  { name: "삼각대/그립",    icon: "📐" },
+  { name: "모니터",        icon: "🖥️" },
+  { name: "조명",          icon: "💡" },
+  { name: "음향",          icon: "🎤" },
+  { name: "편집",          icon: "✂️" },
+  { name: "기타",          icon: "📦" },
 ];
 import { groupEquipments } from "../../utils/groupEquipments";
 import { youtubeEmbedUrl } from "../../utils/youtube";
@@ -159,9 +161,11 @@ export default function EquipList() {
           return (
             <div key={c.name} onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
               style={{ textAlign:"center", cursor:"pointer" }}>
-              <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto",
+              <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto", overflow:"hidden",
                 background: on ? C.navy : C.surface, border:`1px solid ${on ? C.navy : C.border}`, transition:"all .15s", boxShadow: on ? `0 4px 12px ${C.navy}40` : "none" }}>
-                {c.icon}
+                {c.img
+                  ? <img src={c.img} alt={c.name} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                  : <span>{c.icon}</span>}
               </div>
               <div style={{ fontSize:11, color: on ? C.text : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
             </div>
