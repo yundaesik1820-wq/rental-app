@@ -194,7 +194,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           main { padding: 12px !important; padding-bottom: 130px !important; }
 
           /* 헤더 */
-          header { padding: 0 12px !important; height: 52px !important; }
+          header { padding: 0 12px !important; height: 46px !important; }
           header > div:last-child > div > div:last-child { display: none !important; }
 
           /* 카드 패딩 축소 */
