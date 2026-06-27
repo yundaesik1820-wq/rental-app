@@ -27,7 +27,7 @@ export default function ExternalRentalView() {
   };
   const goMap = (app) => {
     if (!navShop) return;
-    const q = encodeURIComponent(`${navShop.name} ${navShop.address || ""}`.trim());
+    const q = encodeURIComponent((navShop.address || navShop.name || "").trim());
     const url = app === "kakao"
       ? `https://map.kakao.com/?q=${q}`
       : `https://map.naver.com/p/search/${q}`;
@@ -58,6 +58,8 @@ export default function ExternalRentalView() {
             {s.address && <div style={{ fontSize: 12.5, color: C.text, marginTop: 6 }}>📍 {s.address}</div>}
             {s.phone && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>📞 {s.phone}</div>}
             {s.hours && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🕒 {s.hours}</div>}
+            {s.parking && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🅿️ {s.parking}</div>}
+            {s.transit && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🚇 {s.transit}</div>}
             <div style={{ display: "flex", gap: 8, marginTop: 11 }}>
               {s.phone && <button onClick={() => callPhone(s.phone)} style={btnStyle(C.navy, "#fff")}>전화</button>}
               {s.website && <button onClick={() => openWeb(s.website)} style={btnStyle(C.teal, "#fff")}>홈페이지</button>}
