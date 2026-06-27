@@ -1,10 +1,20 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { C, NOTICE_CAT } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, PageTitle, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-import { db } from "../../firebase";
+import { db, storage } from "../../firebase";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
+// PDF 등 첨부파일 업로드 (attachments 경로 — 기존 Storage 규칙 사용)
+async function uploadFile(file) {
+  return new Promise((resolve, reject) => {
+    const storageRef = ref(storage, `attachments/${Date.now()}_${file.name}`);
+    const task = uploadBytesResumable(storageRef, file);
+    task.on("state_changed", null, reject, async () => resolve(await getDownloadURL(task.snapshot.ref)));
+  });
+}
 
 export default function Notices({ isAdmin = true }) {
   const { profile } = useAuth();
@@ -13,7 +23,9 @@ export default function Notices({ isAdmin = true }) {
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
-  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false });
+  const pdfRef = useRef();
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false, pdfUrl: "", pdfName: "" });
   const [commentText, setCommentText] = useState("");
   const [submitting, setSubmitting]   = useState(false);
 
@@ -66,6 +78,23 @@ export default function Notices({ isAdmin = true }) {
     } catch (e) {}
   };
 
+  const handlePdf = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("PDF 파일만 올릴 수 있어요"); return;
+    }
+    setPdfUploading(true);
+    try {
+      const url = await uploadFile(file);
+      setForm(p => ({ ...p, pdfUrl: url, pdfName: file.name }));
+    } catch (err) {
+      alert("PDF 업로드 실패: " + err.message);
+    }
+    setPdfUploading(false);
+    if (pdfRef.current) pdfRef.current.value = "";
+  };
+
   const addNotice = async () => {
     if (!form.title || !form.content) return;
     const authorRole  = profile?.adminRole || "super";
@@ -73,7 +102,7 @@ export default function Notices({ isAdmin = true }) {
                         authorRole === "assistant" ? "조교" :
                         authorRole === "professor" ? "교수" : "관리자";
     await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
-    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false });
+    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false, pdfUrl: "", pdfName: "" });
     setShowAdd(false);
   };
 
@@ -300,6 +329,24 @@ export default function Notices({ isAdmin = true }) {
             <span style={{ fontSize: 13, color: C.text }}>📌 상단에 고정</span>
           </label>
 
+          {/* PDF 첨부 */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>📄 PDF 첨부 (선택)</div>
+            <input ref={pdfRef} type="file" accept="application/pdf,.pdf" onChange={handlePdf} style={{ display: "none" }} />
+            {form.pdfUrl ? (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px" }}>
+                <span style={{ fontSize: 13, color: C.text, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>📄 {form.pdfName}</span>
+                <button onClick={() => setForm(p => ({ ...p, pdfUrl: "", pdfName: "" }))}
+                  style={{ background: "transparent", color: C.red, border: "none", fontSize: 12, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>삭제</button>
+              </div>
+            ) : (
+              <button onClick={() => pdfRef.current?.click()} disabled={pdfUploading}
+                style={{ width: "100%", padding: "11px", border: `1px dashed ${C.border}`, borderRadius: 10, background: C.bg, color: C.muted, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+                {pdfUploading ? "업로드 중..." : "+ PDF 선택"}
+              </button>
+            )}
+          </div>
+
           {/* 알림/팝업 설정 */}
           <div style={{ background:C.bg, borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:10 }}>발송 설정</div>
@@ -355,7 +402,22 @@ export default function Notices({ isAdmin = true }) {
             <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{detail.date} · {detail.author}</div>
 
             {/* 본문 */}
-            <div style={{ fontSize: 15, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: 28 }}>{detail.content}</div>
+            <div style={{ fontSize: 15, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: detail.pdfUrl ? 16 : 28 }}>{detail.content}</div>
+
+            {/* PDF 첨부 미리보기 */}
+            {detail.pdfUrl && (
+              <div style={{ marginBottom: 28 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8 }}>📄 첨부 문서{detail.pdfName ? ` — ${detail.pdfName}` : ""}</div>
+                <div style={{ width: "100%", height: 460, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: "#fff" }}>
+                  <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(detail.pdfUrl)}&embedded=true`}
+                    title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
+                </div>
+                <button onClick={() => window.open(detail.pdfUrl, "_blank")}
+                  style={{ width: "100%", marginTop: 8, padding: "11px", background: C.navy, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  전체화면으로 보기 / 다운로드
+                </button>
+              </div>
+            )}
 
             {/* 댓글 섹션 */}
             <div style={{ borderTop: `2px solid ${C.border}`, paddingTop: 20 }}>
