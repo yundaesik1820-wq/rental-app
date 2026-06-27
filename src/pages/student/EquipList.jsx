@@ -159,7 +159,7 @@ export default function EquipList() {
         {RENTAL_CATEGORIES.map(c => {
           const on = filter === c.name;
           return (
-            <div key={c.name} onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
+            <div key={c.name} role="button" onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
               style={{ textAlign:"center", cursor:"pointer" }}>
               <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto", overflow:"hidden",
                 background: on ? C.navy : C.surface, border:`1px solid ${on ? C.navy : C.border}`, transition:"all .15s", boxShadow: on ? `0 4px 12px ${C.navy}40` : "none" }}>

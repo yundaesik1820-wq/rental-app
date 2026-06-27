@@ -21,6 +21,16 @@
       html, body, #root { height: 100%; }
       body { font-family: 'Noto Sans KR', sans-serif; background: #0F172A; overflow: hidden; overscroll-behavior: none; }
 
+      /* 버튼 탭 모션 (네이티브 앱 느낌) */
+      * { -webkit-tap-highlight-color: transparent; }
+      button, [role="button"], .tap {
+        touch-action: manipulation;
+        transition: transform 0.13s cubic-bezier(0.2, 0, 0.2, 1);
+      }
+      button:active, [role="button"]:active, .tap:active {
+        transform: scale(0.96);
+      }
+
       #splash {
         position: fixed;
         inset: 0;
