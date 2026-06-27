@@ -24,7 +24,7 @@ const ADMIN_NAV = [
 
 const STU_NAV = [
   { id: "home",      icon: Home,          label: "홈"       },
-  { id: "equip",     icon: Search,        label: "대여 목록" },
+  { id: "equip",     icon: Search,        label: "장비 목록" },
   { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
   { id: "license",   icon: GraduationCap, label: "라이센스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
@@ -62,7 +62,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
   const NAV_ACCENT = "#5b6191"; // 홈과 통일한 슬레이트 포인트
-  const NAV_SHORT = { home: "홈", equip: "대여", reserve: "예약", community: "커뮤니티", mypage: "더보기" };
+  const NAV_SHORT = { home: "홈", equip: "장비", reserve: "예약", community: "커뮤니티", mypage: "더보기" };
   const MOBILE_STU_IDS = ["home", "equip", "reserve", "community", "mypage"];
   const isStudentNav = profile?.role !== "admin";
   const stuTabs = MOBILE_STU_IDS

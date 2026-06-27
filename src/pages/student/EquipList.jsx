@@ -1,9 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
+
+// ✏️ 히어로 슬라이드 — 여기 내용만 바꾸면 상단 배너가 바뀝니다.
+//    (title=제목, desc=설명, emoji=오른쪽 그림, grad=배경색 그라데이션)
+//    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
+const HERO_SLIDES = [
+  { emoji: "📋", title: "장비 대여 규칙", desc: "평일 09:00–17:30 운영 · 최소 3일 전 신청", grad: "linear-gradient(120deg,#3d4370,#5b6191)" },
+  { emoji: "⏰", title: "연체 주의 안내", desc: "반납이 늦으면 일정 기간 대여가 제한돼요", grad: "linear-gradient(120deg,#7f1d2e,#be3144)" },
+  { emoji: "🎓", title: "장비 교육 안내", desc: "라이센스 이수 후 전문 장비 대여가 열려요", grad: "linear-gradient(120deg,#14532d,#1f9d57)" },
+];
+
+// 🗂️ 카테고리 — 이름/아이콘/순서를 여기서 바꾸면 그리드가 바뀝니다. (4열로 자동 배치)
+const RENTAL_CATEGORIES = [
+  { name: "외부 렌탈샵", icon: "🏬" },
+  { name: "NEW",         icon: "🆕" },
+  { name: "캠코더",       icon: "📹" },
+  { name: "카메라",       icon: "📷" },
+  { name: "렌즈",         icon: "🔭" },
+  { name: "ACC",         icon: "🔌" },
+  { name: "삼각대",       icon: "📐" },
+  { name: "그립",         icon: "🦾" },
+  { name: "모니터",       icon: "🖥️" },
+  { name: "조명",         icon: "💡" },
+  { name: "음향",         icon: "🎤" },
+  { name: "편집",         icon: "✂️" },
+  { name: "기타",         icon: "📦" },
+];
 import { groupEquipments } from "../../utils/groupEquipments";
 import { youtubeEmbedUrl } from "../../utils/youtube";
 
@@ -50,12 +76,19 @@ export default function EquipList() {
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
 
   const [search, setSearch]   = useState("");
-  const [filter, setFilter]   = useState("촬영");
+  const [filter, setFilter]   = useState("카메라");
   const [minorFilter, setMinorFilter] = useState("전체");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
   const [photoIdx, setPhotoIdx] = useState({});
+  // 🎞️ 히어로 자동 슬라이드 (3.5초마다)
+  const [heroIdx, setHeroIdx] = useState(0);
+  useEffect(() => {
+    if (HERO_SLIDES.length <= 1) return;
+    const t = setInterval(() => setHeroIdx(i => (i + 1) % HERO_SLIDES.length), 3500);
+    return () => clearInterval(t);
+  }, []);
 
   // 단품 / 세트 분리
   const unitEquips = equipments.filter(e => !e.isSet);
@@ -96,26 +129,44 @@ export default function EquipList() {
 
   return (
     <div>
-      {/* 장비목록 안내 배너 */}
-      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/equippp.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 장비 목록 페이지야!</div>
-            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>대여 가능한 장비를 미리 확인해봐.<br/>카테고리별로 필터링도 할 수 있어 📷</div>
-          </div>
+      {/* 🎞️ 자동 슬라이드 히어로 (내용은 상단 HERO_SLIDES에서 수정) */}
+      <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
+        <div style={{ display:"flex", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
+          {HERO_SLIDES.map((s, i) => (
+            <div key={i} style={{ minWidth:"100%", background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, minHeight:96 }}>
+              <div>
+                <div style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{s.title}</div>
+                <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.9)", marginTop:6, lineHeight:1.45 }}>{s.desc}</div>
+              </div>
+              <div style={{ fontSize:40, flexShrink:0 }}>{s.emoji}</div>
+            </div>
+          ))}
         </div>
+        {HERO_SLIDES.length > 1 && (
+          <div style={{ position:"absolute", bottom:10, left:0, right:0, display:"flex", gap:5, justifyContent:"center" }}>
+            {HERO_SLIDES.map((_, i) => (
+              <div key={i} onClick={() => setHeroIdx(i)}
+                style={{ width: i===heroIdx?16:6, height:6, borderRadius:99, background: i===heroIdx?"#fff":"rgba(255,255,255,0.45)", transition:"all .3s", cursor:"pointer" }} />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* 1행: 대분류 카테고리 (1행 스크롤) */}
-      <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
-        {allCats.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); setSearch(""); }}
-            style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {c}
-          </button>
-        ))}
+      {/* 카테고리 아이콘 그리드 (4열, 내용은 상단 RENTAL_CATEGORIES에서 수정) */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px 4px", marginBottom:18 }}>
+        {RENTAL_CATEGORIES.map(c => {
+          const on = filter === c.name;
+          return (
+            <div key={c.name} onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
+              style={{ textAlign:"center", cursor:"pointer" }}>
+              <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto",
+                background: on ? C.navy : C.surface, border:`1px solid ${on ? C.navy : C.border}`, transition:"all .15s", boxShadow: on ? `0 4px 12px ${C.navy}40` : "none" }}>
+                {c.icon}
+              </div>
+              <div style={{ fontSize:11, color: on ? C.text : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
+            </div>
+          );
+        })}
       </div>
 
       {/* 1.5행: 중분류 */}
