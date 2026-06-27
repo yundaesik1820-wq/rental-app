@@ -96,7 +96,8 @@ export default function Notices({ isAdmin = true }) {
   };
 
   const addNotice = async () => {
-    if (!form.title || !form.content) return;
+    if (!form.title.trim()) { alert("제목을 입력해줘"); return; }
+    if (!form.content.trim() && !form.pdfUrl) { alert("내용이나 PDF 중 하나는 넣어줘"); return; }
     const authorRole  = profile?.adminRole || "super";
     const authorLabel = authorRole === "teacher"   ? "교사" :
                         authorRole === "assistant" ? "조교" :
