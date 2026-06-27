@@ -19,7 +19,7 @@ async function uploadImage(file) {
   });
 }
 
-const EMPTY = { name: "", region: "", address: "", phone: "", website: "", hours: "", parking: "", transit: "", desc: "", photo: "" };
+const EMPTY = { name: "", region: "", address: "", phone: "", kakao: "", website: "", hours: "", parking: "", transit: "", desc: "", photo: "" };
 
 export default function ExternalRental() {
   const { data: shops, loading } = useCollection("externalRentals", "createdAt");
@@ -56,6 +56,7 @@ export default function ExternalRental() {
         region: form.region.trim(),
         address: form.address.trim(),
         phone: form.phone.trim(),
+        kakao: form.kakao.trim(),
         website: form.website.trim(),
         hours: form.hours.trim(),
         parking: form.parking.trim(),
@@ -108,6 +109,7 @@ export default function ExternalRental() {
             {s.desc && <div style={{ fontSize: 12, color: C.muted, marginTop: 5, lineHeight: 1.45 }}>{s.desc}</div>}
             {s.address && <div style={{ fontSize: 12.5, color: C.text, marginTop: 6 }}>📍 {s.address}</div>}
             {s.phone && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>📞 {s.phone}</div>}
+            {s.kakao && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4, wordBreak: "break-all" }}>💬 {s.kakao}</div>}
             {s.hours && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🕒 {s.hours}</div>}
             {s.parking && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🅿️ {s.parking}</div>}
             {s.transit && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🚇 {s.transit}</div>}
@@ -155,6 +157,7 @@ export default function ExternalRental() {
           <Inp label="지역 (배지)" placeholder="예: 마포구" value={form.region} onChange={(e) => setForm((p) => ({ ...p, region: e.target.value }))} />
           <Inp label="주소" placeholder="예: 서울 마포구 와우산로 00길 12, 2층" value={form.address} onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))} />
           <Inp label="전화번호" placeholder="예: 02-123-4567" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} />
+          <Inp label="카카오톡 채널" placeholder="예: http://pf.kakao.com/_xxxxx" value={form.kakao} onChange={(e) => setForm((p) => ({ ...p, kakao: e.target.value }))} />
           <Inp label="홈페이지 URL" placeholder="예: https://example.com" value={form.website} onChange={(e) => setForm((p) => ({ ...p, website: e.target.value }))} />
           <Inp label="영업시간" placeholder="예: 평일 10:00 – 19:00 / 주말 휴무" value={form.hours} onChange={(e) => setForm((p) => ({ ...p, hours: e.target.value }))} />
           <Inp label="주차" placeholder="예: 건물 주차장 / 2시간 무료" value={form.parking} onChange={(e) => setForm((p) => ({ ...p, parking: e.target.value }))} />
