@@ -1,14 +1,41 @@
 import { useState } from "react";
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from "firebase/auth";
+import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from "firebase/auth";
 import { auth } from "../../firebase";
 import { C, setTheme, getThemeMode } from "../../theme";
 import { Card, Avatar, PageTitle, Btn, Inp, Modal } from "../../components/UI";
-import { useCollection, updateItem } from "../../hooks/useFirestore";
+import { useCollection, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { Award } from "lucide-react";
 
 export default function Profile() {
   const { profile, logout } = useAuth();
+  // 🗑️ 회원 탈퇴(계정 삭제)
+  const [showDelete, setShowDelete] = useState(false);
+  const [delPw, setDelPw]   = useState("");
+  const [delErr, setDelErr] = useState("");
+  const [delBusy, setDelBusy] = useState(false);
+  const handleDeleteAccount = async () => {
+    if (!delPw) { setDelErr("비밀번호를 입력해주세요."); return; }
+    setDelBusy(true); setDelErr("");
+    try {
+      // 보안을 위해 재인증 후 삭제
+      const cred = EmailAuthProvider.credential(auth.currentUser.email, delPw);
+      await reauthenticateWithCredential(auth.currentUser, cred);
+      await deleteItem("users", profile.uid);   // Firestore 프로필 삭제
+      await deleteUser(auth.currentUser);        // Firebase 계정 삭제 → onAuthStateChanged가 자동 로그아웃
+      alert("회원 탈퇴가 완료되었어요. 그동안 이용해주셔서 감사합니다.");
+    } catch (e) {
+      setDelBusy(false);
+      if (e.code === "auth/wrong-password" || e.code === "auth/invalid-credential") {
+        setDelErr("비밀번호가 올바르지 않아요.");
+      } else if (e.code === "auth/requires-recent-login") {
+        setDelErr("보안을 위해 다시 로그인한 뒤 탈퇴를 진행해주세요.");
+        setTimeout(() => logout(), 1800);
+      } else {
+        setDelErr("탈퇴 처리 중 오류가 발생했어요. 잠시 후 다시 시도해주세요.");
+      }
+    }
+  };
   const [showPwModal,    setShowPwModal]    = useState(false);
   const [showPhoneModal, setShowPhoneModal] = useState(false);
   const [phoneForm,      setPhoneForm]      = useState("");
@@ -200,6 +227,11 @@ export default function Profile() {
         로그아웃
       </button>
 
+      <button onClick={() => { setShowDelete(true); setDelPw(""); setDelErr(""); }}
+        style={{ width: "100%", background: "none", color: C.muted, border: "none", padding: "14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", marginTop: 6, opacity: 0.85 }}>
+        회원 탈퇴
+      </button>
+
       {/* 전화번호 변경 모달 */}
       {showPhoneModal && (
         <Modal onClose={() => { setShowPhoneModal(false); setPhoneDone(false); }} width={400}>
@@ -255,6 +287,28 @@ export default function Profile() {
               </div>
             </>
           )}
+        </Modal>
+      )}
+
+      {/* 🗑️ 회원 탈퇴 모달 */}
+      {showDelete && (
+        <Modal onClose={() => { setShowDelete(false); setDelPw(""); setDelErr(""); }} width={420}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.red, marginBottom:12 }}>회원 탈퇴</div>
+          <div style={{ fontSize:13, color:C.muted, lineHeight:1.6, marginBottom:18 }}>
+            탈퇴하면 계정과 프로필 정보가 <b style={{ color:C.text }}>영구적으로 삭제</b>되며 복구할 수 없어요. 계속하려면 비밀번호를 입력해주세요.
+          </div>
+          {delErr && (
+            <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:16, border:`1px solid ${C.red}30` }}>
+              ⚠️ {delErr}
+            </div>
+          )}
+          <Inp label="비밀번호 확인" placeholder="비밀번호 입력" value={delPw} onChange={e => { setDelPw(e.target.value); setDelErr(""); }} type="password" />
+          <div style={{ display:"flex", gap:10, marginTop:8 }}>
+            <Btn onClick={() => { setShowDelete(false); setDelPw(""); setDelErr(""); }} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={handleDeleteAccount} color={C.red} full disabled={delBusy}>
+              {delBusy ? "처리 중..." : "탈퇴하기"}
+            </Btn>
+          </div>
         </Modal>
       )}
     </div>
