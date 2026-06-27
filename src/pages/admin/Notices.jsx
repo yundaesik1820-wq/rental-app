@@ -393,6 +393,19 @@ export default function Notices({ isAdmin = true }) {
         const detailComments = getComments(detail.id);
         return (
           <Modal onClose={() => setDetail(null)} width={580}>
+            {(detail.pdfUrl && !detail.content?.trim()) ? (
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 12, lineHeight: 1.4 }}>📄 {detail.title}</div>
+                <div style={{ width: "100%", height: "72vh", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: "#fff" }}>
+                  <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(detail.pdfUrl)}&embedded=true`}
+                    title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
+                </div>
+                <button onClick={() => window.open(detail.pdfUrl, "_blank")}
+                  style={{ width: "100%", marginTop: 10, padding: "12px", background: C.navy, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  전체화면으로 보기 / 다운로드
+                </button>
+              </div>
+            ) : (<>
             {/* 헤더 */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
               <span style={{ background: cat.bg, color: cat.col, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{detail.category}</span>
@@ -481,6 +494,7 @@ export default function Notices({ isAdmin = true }) {
                 </Btn>
               </div>
             </div>
+            </>)}
 
             <div style={{ marginTop: 20 }}>
               <Btn onClick={() => setDetail(null)} color={C.navy} full>닫기</Btn>
