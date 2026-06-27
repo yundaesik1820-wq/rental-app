@@ -24,6 +24,7 @@ import GuideReserve  from "./pages/student/GuideReserve.jsx";
 import FacilityAdmin  from "./pages/admin/FacilityAdmin.jsx";
 import Community     from "./pages/student/Community.jsx";
 import SNSManager    from "./pages/admin/SNSManager";
+import ExternalRental from "./pages/admin/ExternalRental";
 
 // Student pages
 import StudentHome    from "./pages/student/Home";
@@ -574,6 +575,7 @@ function AppContent() {
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
         case "sns":      return <SNSManager />;
+        case "external": return <ExternalRental />;
         case "community":
           // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
           return <Community onExit={() => setTab("home")} />;
