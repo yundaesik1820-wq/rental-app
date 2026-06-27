@@ -6,6 +6,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc } from "firebase/firestore";
 import { db, storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import PdfViewer from "../../components/PdfViewer";
 
 // PDF 등 첨부파일 업로드 (attachments 경로 — 기존 Storage 규칙 사용)
 async function uploadFile(file) {
@@ -23,6 +24,7 @@ export default function Notices({ isAdmin = true }) {
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
+  const [pdfView, setPdfView]   = useState(null); // 풀스크린 PDF 보기 {url, title}
   const pdfRef = useRef();
   const [pdfUploading, setPdfUploading] = useState(false);
   const [form, setForm]         = useState({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false, pdfUrl: "", pdfName: "" });
@@ -169,7 +171,10 @@ export default function Notices({ isAdmin = true }) {
     const cat = NOTICE_CAT[n.category] || { bg: C.bg, col: C.muted };
     const cmtCount = comments.filter(c => c.noticeId === n.id).length;
     return (
-      <Card onClick={() => { setDetail(n); setCommentText(""); }} style={{ cursor: "pointer" }}>
+      <Card onClick={() => {
+        if (n.pdfUrl && !n.content?.trim()) setPdfView({ url: n.pdfUrl, title: n.title });
+        else { setDetail(n); setCommentText(""); }
+      }} style={{ cursor: "pointer" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -503,6 +508,8 @@ export default function Notices({ isAdmin = true }) {
           </Modal>
         );
       })()}
+
+      {pdfView && <PdfViewer url={pdfView.url} title={pdfView.title} onClose={() => setPdfView(null)} />}
     </div>
   );
 }

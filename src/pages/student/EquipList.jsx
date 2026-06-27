@@ -5,12 +5,14 @@ import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
 import ExternalRentalView from "./ExternalRentalView";
+import PdfViewer from "../../components/PdfViewer";
 
 // ✏️ 히어로 슬라이드 — 여기 내용만 바꾸면 상단 배너가 바뀝니다.
 //    (title=제목, desc=설명, emoji=오른쪽 그림, grad=배경색 그라데이션)
+//    link: "notices" 를 넣으면 클릭 시 공지사항으로 이동합니다. (빼면 클릭 안 됨)
 //    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
 const HERO_SLIDES = [
-  { emoji: "📋", title: "장비 대여 규칙", desc: "평일 09:00–17:30 운영 · 최소 3일 전 신청", grad: "linear-gradient(120deg,#3d4370,#5b6191)" },
+  { emoji: "📋", title: "장비 대여 규칙", desc: "평일 09:00–17:30 운영 · 최소 3일 전 신청", grad: "linear-gradient(120deg,#3d4370,#5b6191)", link: "notices", pdfKeyword: "대여가이드" },
   { emoji: "⏰", title: "연체 주의 안내", desc: "반납이 늦으면 일정 기간 대여가 제한돼요", grad: "linear-gradient(120deg,#7f1d2e,#be3144)" },
   { emoji: "🎓", title: "장비 교육 안내", desc: "라이센스 이수 후 전문 장비 대여가 열려요", grad: "linear-gradient(120deg,#14532d,#1f9d57)" },
 ];
@@ -73,10 +75,12 @@ const licenseToNum = (lic) => {
   return isNaN(n) ? 0 : n;
 };
 
-export default function EquipList() {
+export default function EquipList({ setTab }) {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
+  const { data: notices }    = useCollection("notices", "createdAt");
+  const [pdfView, setPdfView] = useState(null); // 풀스크린 PDF {url, title}
 
   const [search, setSearch]   = useState("");
   const [filter, setFilter]   = useState("카메라");
@@ -136,7 +140,14 @@ export default function EquipList() {
       <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
         <div style={{ display:"flex", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
           {HERO_SLIDES.map((s, i) => (
-            <div key={i} style={{ minWidth:"100%", background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, minHeight:96 }}>
+            <div key={i} onClick={() => {
+                if (s.pdfKeyword) {
+                  const hit = notices.find(n => n.pdfUrl && n.title?.replace(/\s/g, "").includes(s.pdfKeyword));
+                  if (hit) { setPdfView({ url: hit.pdfUrl, title: hit.title }); return; }
+                }
+                if (s.link && setTab) setTab(s.link);
+              }}
+              style={{ minWidth:"100%", background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, minHeight:96, cursor: s.link ? "pointer" : "default" }}>
               <div>
                 <div style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{s.title}</div>
                 <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.9)", marginTop:6, lineHeight:1.45 }}>{s.desc}</div>
@@ -375,6 +386,8 @@ export default function EquipList() {
           </div>
         </Modal>
       )}
+
+      {pdfView && <PdfViewer url={pdfView.url} title={pdfView.title} onClose={() => setPdfView(null)} />}
     </div>
   );
 }
