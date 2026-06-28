@@ -62,7 +62,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
     : (hideEverytime ? STU_NAV.filter(n => n.id !== "community") : STU_NAV);
 
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
-  const NAV_ACCENT = "#5b6191"; // 홈과 통일한 슬레이트 포인트
+  const NAV_ACCENT = C.navy; // 네온 라임 포인트
   const NAV_SHORT = { home: "홈", equip: "장비", reserve: "예약", community: "커뮤니티", mypage: "더보기" };
   const MOBILE_STU_IDS = ["home", "equip", "reserve", "community", "mypage"];
   const isStudentNav = profile?.role !== "admin";
@@ -75,7 +75,23 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
       return o;
     })
     .filter(Boolean);
-  const mobileRows = isStudentNav ? [stuTabs] : [nav.slice(0, 4), nav.slice(4)];
+  // 관리자 모바일 하단: 그룹 탭 6개
+  const ADMIN_MOBILE_TABS = [
+    { id: "home",      icon: Home,           label: "홈" },
+    { id: "rental",    icon: ClipboardList,  label: "대여" },
+    { id: "g_equip",   icon: Wrench,         label: "장비" },
+    { id: "g_student", icon: Users,          label: "학생" },
+    { id: "g_sns",     icon: Share2,         label: "SNS" },
+    { id: "g_more",    icon: MoreHorizontal, label: "더보기" },
+  ];
+  // 그룹 탭 활성 판정 (그룹에 속한 기능 화면이면 해당 그룹 탭 활성)
+  const GROUP_MEMBERS = {
+    g_equip:   ["g_equip", "equip", "facility", "external"],
+    g_student: ["g_student", "students", "license"],
+    g_sns:     ["g_sns", "sns", "community"],
+    g_more:    ["g_more", "calendar", "stats", "notices", "inquiry", "settings"],
+  };
+  const mobileRows = isStudentNav ? [stuTabs] : [ADMIN_MOBILE_TABS];
 
   const currentNav = nav.find(n => n.id === tab);
 
@@ -306,7 +322,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
             borderTop: rowIdx === 1 ? `1px solid ${C.border}` : "none",
           }}>
             {row.map(n => {
-              const active = tab === n.id;
+              const active = GROUP_MEMBERS[n.id] ? GROUP_MEMBERS[n.id].includes(tab) : tab === n.id;
               const Icon = n.icon;
               return (
                 <button

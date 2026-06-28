@@ -14,6 +14,7 @@ import Rental     from "./pages/admin/Rental";
 import Students   from "./pages/admin/Students";
 import CalendarPage from "./pages/admin/Calendar";
 import Stats      from "./pages/admin/Stats";
+import GroupHub   from "./components/GroupHub";
 import Notices    from "./pages/admin/Notices";
 import Settings   from "./pages/admin/Settings";
 import AdminInquiry  from "./pages/admin/Inquiry";
@@ -155,7 +156,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
 }
 
 // 학생용 대여 목록 통합 (장비/시설/소품목록)
-function StudentRentalList() {
+function StudentRentalList({ setTab }) {
   const [view, setView] = React.useState("equip");
   return (
     <div>
@@ -169,7 +170,7 @@ function StudentRentalList() {
           </button>
         ))}
       </div>
-      {view === "equip"    && <EquipList />}
+      {view === "equip"    && <EquipList setTab={setTab} />}
       {view === "facility" && <StudentFacilityList />}
       {view === "props"    && <StudentPropsList />}
     </div>
@@ -566,10 +567,16 @@ function AppContent() {
     if (isAdmin) {
       switch (tab) {
         case "home":     return <Dashboard setTab={setTab} />;
-        case "equip":    return <Equipment />;
         case "rental":   return <Rental subAdmin={isTeacherProf} />;
+        case "g_equip":   return <GroupHub groupId="g_equip" setTab={setTab} />;
+        case "g_student": return <GroupHub groupId="g_student" setTab={setTab} />;
+        case "g_sns":     return <GroupHub groupId="g_sns" setTab={setTab} />;
+        case "g_more":    return <GroupHub groupId="g_more" setTab={setTab} />;
+        case "equip":    return <Equipment />;
+        case "facility": return <Equipment initialTab="facility" />;
         case "students": return <Students />;
         case "calendar": return <CalendarPage isAdmin={true} />;
+        case "stats":    return <Stats isAdmin={true} />;
         case "notices":  return <Notices isAdmin={true} />;
         case "settings": return <Settings />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
@@ -584,7 +591,7 @@ function AppContent() {
     } else {
       switch (tab) {
         case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
-        case "equip":    return <StudentRentalList />;
+        case "equip":    return <StudentRentalList setTab={setTab} />;
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} />;
         case "notices":  return <Notices isAdmin={false} />;

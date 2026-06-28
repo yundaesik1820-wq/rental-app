@@ -584,11 +584,11 @@ const LICENSE_LEVELS = [
 ];
 
 // ── 메인 ──────────────────────────────────────────────────
-export default function Equipment() {
+export default function Equipment({ initialTab = "equip" }) {
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: inspections } = useCollection("inspections", "createdAt");
 
-  const [activeTab, setActiveTab]     = useState("equip");
+  const [activeTab, setActiveTab]     = useState(initialTab);
   const [search, setSearch]           = useState("");
   const [filter, setFilter]           = useState("전체");
   const [minorFilter, setMinorFilter] = useState("전체");
