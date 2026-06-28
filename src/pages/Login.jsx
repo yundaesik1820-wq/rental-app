@@ -52,8 +52,8 @@ export default function Login() {
   };
 
   const handleSignup = async () => {
-    if (!form.name || !form.dept || !form.studentId || !form.phone || !form.pw) {
-      setSignupErr("모든 항목을 입력하세요"); return;
+    if (!form.name || !form.dept || !form.studentId || !form.pw) {
+      setSignupErr("필수 항목을 모두 입력하세요"); return;
     }
     if (form.pw !== form.pwConfirm) { setSignupErr("비밀번호가 일치하지 않습니다"); return; }
     if (form.pw.length < 6) { setSignupErr("비밀번호는 6자리 이상이어야 합니다"); return; }
@@ -185,7 +185,7 @@ export default function Login() {
                   </select>
                 </div>
                 <Inp label="학번 *" placeholder="25237001" value={form.studentId} onChange={e => setForm(p=>({...p,studentId:e.target.value}))} />
-                <Inp label="전화번호 *" placeholder="010-0000-0000" value={form.phone} onChange={e => setForm(p=>({...p,phone:e.target.value}))} />
+                <Inp label="전화번호 (선택)" placeholder="010-0000-0000 (선택)" value={form.phone} onChange={e => setForm(p=>({...p,phone:e.target.value}))} />
                 <Inp label="비밀번호 * (6자리 이상)" placeholder="비밀번호 입력" value={form.pw} onChange={e => setForm(p=>({...p,pw:e.target.value}))} type="password" />
                 <Inp label="비밀번호 확인 *" placeholder="비밀번호 재입력" value={form.pwConfirm} onChange={e => setForm(p=>({...p,pwConfirm:e.target.value}))} type="password" />
                 <div style={{ marginTop:4 }}>
