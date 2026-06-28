@@ -141,7 +141,7 @@ export function PetHomeCard({ uid, onOpen }) {
           <div style={{ fontSize:14, fontWeight:800, color:C.text }}>나만의 펫 키우기</div>
           <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>알을 받아 부화시켜보세요!</div>
         </div>
-        <div style={{ fontSize:12, color:"#fff", background:C.navy, borderRadius:8, padding:"7px 12px", fontWeight:700 }}>시작</div>
+        <div style={{ fontSize:12, color: C.bg, background:C.navy, borderRadius:8, padding:"7px 12px", fontWeight:700 }}>시작</div>
       </div>
     );
   }
@@ -409,7 +409,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
             어떤 등급의 알이 나올지 몰라요.<br/>밥을 주고 놀아주며 부화시켜보세요!
           </div>
           <button onClick={getEgg} disabled={busy}
-            style={{ background:C.navy, color:"#fff", border:"none", borderRadius:12, padding:"14px 40px", fontSize:15, fontWeight:800, cursor:"pointer" }}>
+            style={{ background:C.navy, color: C.bg, border:"none", borderRadius:12, padding:"14px 40px", fontSize:15, fontWeight:800, cursor:"pointer" }}>
             {busy ? "..." : "알 받기"}
           </button>
         </div>
@@ -487,7 +487,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
                   {quizResult.correct ? "정답이에요! 🎉" : "아쉬워요, 오답이에요"}
                 </div>
                 <button onClick={() => setQuizOpen(false)}
-                  style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"11px 30px", fontSize:14, fontWeight:800, cursor:"pointer" }}>
+                  style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"11px 30px", fontSize:14, fontWeight:800, cursor:"pointer" }}>
                   확인
                 </button>
               </div>
@@ -594,7 +594,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
                     <span style={{ fontSize:13, color: done[r.key] ? C.muted : C.text, flex:1 }}>{r.label}</span>
                     {r.btn && !done[r.key] ? (
                       <button onClick={doAttend} disabled={busy}
-                        style={{ background:C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:800, cursor:"pointer" }}>출석</button>
+                        style={{ background:C.navy, color: C.bg, border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:800, cursor:"pointer" }}>출석</button>
                     ) : (
                       <span style={{ fontSize:11, color: done[r.key] ? C.muted : C.navy, fontWeight:700 }}>+{r.exp}</span>
                     )}
@@ -1251,7 +1251,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
                 {received.map(r => (
                   <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
                     <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.fromName} <span style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</span></span>
-                    <button onClick={() => accept(r)} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
+                    <button onClick={() => accept(r)} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
                     <button onClick={() => reject(r)} style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:7, padding:"5px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>거절</button>
                   </div>
                 ))}
@@ -1265,7 +1265,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
             <div style={{ display:"flex", gap:6 }}>
               <input value={addSid} onChange={e => { setAddSid(e.target.value); setAddMsg(null); }} placeholder="학번 8자리"
                 style={{ flex:1, minWidth:0, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"8px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
-              <button onClick={addByStudentId} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:9, padding:"8px 16px", fontSize:13, fontWeight:800, cursor:"pointer", flexShrink:0 }}>신청</button>
+              <button onClick={addByStudentId} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:9, padding:"8px 16px", fontSize:13, fontWeight:800, cursor:"pointer", flexShrink:0 }}>신청</button>
             </div>
             {addMsg && <div style={{ fontSize:11, color: addMsg.ok ? C.teal : C.red, marginTop:5 }}>{addMsg.m}</div>}
           </div>

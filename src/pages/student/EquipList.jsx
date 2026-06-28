@@ -380,7 +380,7 @@ export default function EquipList({ setTab }) {
           )}
           <div style={{ marginTop:16, textAlign:"right" }}>
             <button onClick={() => setShowDescModel(null)}
-              style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"9px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"9px 20px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
               확인
             </button>
           </div>

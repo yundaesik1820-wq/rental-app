@@ -837,7 +837,7 @@ export default function StudentHome({ onOpenRoom }) {
               다시 보지 않기
             </button>
             <button onClick={() => setPopupNotice(null)}
-              style={{ flex:1, background:C.navy, border:"none", borderRadius:9, padding:"8px 0", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ flex:1, background:C.navy, border:"none", borderRadius:9, padding:"8px 0", fontSize:12, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit" }}>
               닫기
             </button>
           </div>
@@ -1123,7 +1123,7 @@ export default function StudentHome({ onOpenRoom }) {
                     placeholder="학번 입력"
                     style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                   <button onClick={sendFriendRequest} disabled={addFriendLoading}
-                    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
                     {addFriendLoading?"...":"신청"}
                   </button>
                 </div>
@@ -1429,7 +1429,7 @@ export default function StudentHome({ onOpenRoom }) {
                   } else {
                     setOnboardStep(s => s+1);
                   }
-                }} style={{ flex:2, background:C.navy, border:"none", borderRadius:10, padding:"11px 0", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+                }} style={{ flex:2, background:C.navy, border:"none", borderRadius:10, padding:"11px 0", fontSize:12, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit" }}>
                   {isLast ? "시작하기 🚀" : "다음 →"}
                 </button>
               </div>
@@ -1464,7 +1464,7 @@ export default function StudentHome({ onOpenRoom }) {
               <button onClick={() => { setSwitchModal2(false); setSetupPw2(""); setSwitchErr2(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
               <button onClick={handleSaveCreds2} disabled={switchLoading2}
-                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:12, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading2?0.7:1 }}>
+                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:12, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit", opacity:switchLoading2?0.7:1 }}>
                 {switchLoading2?"확인 중...":"계정 전환"}
               </button>
             </div>

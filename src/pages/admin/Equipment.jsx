@@ -198,7 +198,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
         {/* 1행: 모델명 + 호기 + 상태 */}
         <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
           <span style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{e.modelName}</span>
-          {e.unitNo && <span style={{ fontSize:10, background:C.navy, color:"#fff", borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>{e.unitNo}</span>}
+          {e.unitNo && <span style={{ fontSize:10, background:C.navy, color: C.bg, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>{e.unitNo}</span>}
           
           {e.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[e.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>Lv.{e.licenseLevel}</span> : null; })()}
           <span style={{ fontSize:10, background:statusBg, color:statusColor, borderRadius:4, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>{e.status||"대여가능"}</span>
@@ -784,10 +784,10 @@ export default function Equipment() {
             <button onClick={exportExcel}               style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📤 내보내기</button>
             <button onClick={() => setShowMigrator(true)} style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🗂️ 카테고리</button>
             <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 일괄등록</button>
-            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
+            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
           </>}
           {activeTab === "facility" && <>
-            <button onClick={() => setActiveTab("facility")} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }} id="facility-add-btn">+ 추가</button>
+            <button onClick={() => setActiveTab("facility")} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }} id="facility-add-btn">+ 추가</button>
           </>}
         </div>
       </div>
@@ -938,7 +938,7 @@ export default function Equipment() {
                   <button onClick={() => {
                     const input = document.getElementById("chargerCamInput");
                     if (input?.value.trim()) { f("chargerForCameras", [...(form.chargerForCameras||[]), input.value.trim()]); input.value = ""; }
-                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                  }} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
                 </div>
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>
@@ -1331,7 +1331,7 @@ export default function Equipment() {
                   <button onClick={() => {
                     const input = document.getElementById("chargerCamInputEdit");
                     if (input?.value.trim()) { f("chargerForCameras", [...(form.chargerForCameras||[]), input.value.trim()]); input.value = ""; }
-                  }} style={{ background:C.navy, color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
+                  }} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>추가</button>
                 </div>
                 <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Enter 또는 추가 버튼으로 입력</div>
               </div>

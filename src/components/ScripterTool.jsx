@@ -483,7 +483,7 @@ const PenPage = forwardRef(function PenPage({ C, initial, tool }, ref) {
                       setTexts(prev => prev.map(p => p.id === t.id ? { ...p, rx: nrx, ry: nry } : p));
                     }}
                     onPointerUp={() => { dragRef.current = null; }}
-                    style={{ background: C.navy || "#1A2B6B", color: "#fff", fontSize: 10, padding: "2px 6px", borderRadius: 4, cursor: "move", userSelect: "none" }}>✛ 이동</span>
+                    style={{ background: C.navy || "#1A2B6B", color: C.bg, fontSize: 10, padding: "2px 6px", borderRadius: 4, cursor: "move", userSelect: "none" }}>✛ 이동</span>
                   <span onClick={(e) => { e.stopPropagation();
                       const nid = Date.now() + "_" + Math.random().toString(36).slice(2, 6);
                       setTexts(prev => [...prev, { ...t, id: nid, rx: t.rx + 0.02, ry: t.ry + 0.02 }]);

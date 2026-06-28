@@ -100,7 +100,7 @@ export default function SignaturePad({ onSave, onCancel, title = "서명" }) {
 
       <div style={{ display:"flex", gap:10 }}>
         {onCancel && <button onClick={onCancel} style={{ flex:1, background:"none", border:`1.5px solid ${C.border}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:600, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>}
-        <button onClick={save} style={{ flex:2, background:C.navy, border:"none", borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit" }}>
+        <button onClick={save} style={{ flex:2, background:C.navy, border:"none", borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit" }}>
           서명 완료
         </button>
       </div>

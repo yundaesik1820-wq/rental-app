@@ -407,7 +407,7 @@ export default function Notices({ isAdmin = true }) {
                     title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
                 </div>
                 <button onClick={() => window.open(detail.pdfUrl, "_blank")}
-                  style={{ width: "100%", marginTop: 10, padding: "12px", background: C.navy, color: "#fff", border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ width: "100%", marginTop: 10, padding: "12px", background: C.navy, color: C.bg, border: "none", borderRadius: 10, fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
                   전체화면으로 보기 / 다운로드
                 </button>
               </div>
@@ -432,7 +432,7 @@ export default function Notices({ isAdmin = true }) {
                     title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
                 </div>
                 <button onClick={() => window.open(detail.pdfUrl, "_blank")}
-                  style={{ width: "100%", marginTop: 8, padding: "11px", background: C.navy, color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  style={{ width: "100%", marginTop: 8, padding: "11px", background: C.navy, color: C.bg, border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
                   전체화면으로 보기 / 다운로드
                 </button>
               </div>

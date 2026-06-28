@@ -423,7 +423,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
           />
           {qrInput && (
             <button onClick={() => { handleScan(qrInput); setQrInput(""); }}
-              style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:C.blue, color:"#fff", border:"none", borderRadius:8, padding:"5px 12px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
+              style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:C.blue, color: C.bg, border:"none", borderRadius:8, padding:"5px 12px", fontSize:13, fontWeight:700, cursor:"pointer" }}>
               확인
             </button>
           )}

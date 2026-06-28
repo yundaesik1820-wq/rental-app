@@ -537,7 +537,7 @@ function CafeTab({ cid, csec, isRestricted, onRestrict }) {
                     {aiContent && <CopyBtn tag="cbody" text={aiContent} copied={copied} onCopy={copy} />}
                     <button onClick={isRestricted ? onRestrict : generatePost} disabled={!isRestricted && generating}
                       style={{ padding:"2px 10px", fontSize:11, fontWeight:600, fontFamily:"inherit",
-                        background: C.navy, color:"#fff", border:"none", borderRadius:6, cursor:"pointer" }}>
+                        background: C.navy, color: C.bg, border:"none", borderRadius:6, cursor:"pointer" }}>
                       {generating ? "⏳..." : "✨ AI 작성"}
                     </button>
                   </div>

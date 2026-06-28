@@ -450,7 +450,7 @@ export default function Dashboard({ setTab }) {
               <button onClick={() => { setSwitchModal(false); setSetupPw(""); setSwitchErr(""); }}
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
               <button onClick={handleSaveCreds} disabled={switchLoading}
-                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color:"#fff", cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
+                style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
                 {switchLoading ? "확인 중..." : "💾 계정 저장"}
               </button>
             </div>
