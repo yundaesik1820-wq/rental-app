@@ -1234,7 +1234,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
     <div style={{ padding:"14px 18px 32px" }}>
       {/* 친구 추가 토글 */}
       <button onClick={() => addOpen ? setAddOpen(false) : openAdd()}
-        style={{ width:"100%", background: addOpen ? C.bg : C.navy, color: addOpen ? C.text : C.bg, border:`1px solid ${addOpen ? C.border : C.navy}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:800, cursor:"pointer", marginBottom:12 }}>
+        style={{ width:"100%", background: addOpen ? C.bg : C.navy, color: addOpen ? C.bg : C.bg, border:`1px solid ${addOpen ? C.border : C.navy}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:800, cursor:"pointer", marginBottom:12 }}>
         {addOpen ? "닫기" : "➕ 친구 추가"}
       </button>
 

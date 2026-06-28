@@ -1201,7 +1201,7 @@ export default function Equipment({ initialTab = "equip" }) {
               {["대여가능","수리중","대여불가","대여중"].map(s => (
                 <button key={s} onClick={() => f("status", s)} style={{ flex:1, padding:"8px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit",
                   background: form.status===s ? C.navy : C.bg,
-                  color:      form.status===s ? "#fff" : C.muted,
+                  color:      form.status===s ? C.bg : C.muted,
                   border:     `1.5px solid ${form.status===s ? C.navy : C.border}`,
                 }}>{s}</button>
               ))}

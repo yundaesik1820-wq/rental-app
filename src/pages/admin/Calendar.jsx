@@ -139,7 +139,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
             return (
               <button key={s} onClick={() => toggleStatus(s)} style={{
                 background: on ? m.color : C.surface,
-                color: on ? "#fff" : C.muted,
+                color: on ? C.bg : C.muted,
                 border: `1px solid ${on ? m.color : C.border}`,
                 borderRadius:12, padding:"3px 9px", fontSize:10,
                 fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,

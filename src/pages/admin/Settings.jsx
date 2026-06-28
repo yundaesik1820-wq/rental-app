@@ -78,7 +78,7 @@ export default function Settings() {
           {[1, 3, 5, 7, 14].map(d => (
             <button key={d} onClick={() => setForm(p => ({ ...p, maxDays: d }))} style={{
               flex: 1, background: form.maxDays === d ? C.navy : C.bg,
-              color: form.maxDays === d ? "#fff" : C.muted,
+              color: form.maxDays === d ? C.bg : C.muted,
               border: `1.5px solid ${form.maxDays === d ? C.navy : C.border}`,
               borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer",
             }}>{d}일</button>
@@ -93,7 +93,7 @@ export default function Settings() {
           {[1, 2, 3, 5].map(n => (
             <button key={n} onClick={() => setForm(p => ({ ...p, maxSimultaneous: n }))} style={{
               flex: 1, background: form.maxSimultaneous === n ? C.blue : C.bg,
-              color: form.maxSimultaneous === n ? "#fff" : C.muted,
+              color: form.maxSimultaneous === n ? C.bg : C.muted,
               border: `1.5px solid ${form.maxSimultaneous === n ? C.blue : C.border}`,
               borderRadius: 10, padding: "12px 0", fontSize: 14, fontWeight: 700, cursor: "pointer",
             }}>{n}개</button>

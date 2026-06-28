@@ -1095,7 +1095,7 @@ export default function StudentHome({ onOpenRoom }) {
                           </button>
                           {Array.from({length:totalPages}, (_,i) => i+1).map(p => (
                             <button key={p} onClick={() => setFriendPage(p)}
-                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?C.bg:C.text, fontWeight:friendPage===p?700:400, minWidth:32 }}>
+                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?C.bg:C.bg, fontWeight:friendPage===p?700:400, minWidth:32 }}>
                               {p}
                             </button>
                           ))}

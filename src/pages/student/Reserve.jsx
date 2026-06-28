@@ -1255,7 +1255,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 <button key={t} onClick={() => { f("locationType",t); f("location",""); }}
                   style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:13, cursor:"pointer", fontFamily:"inherit",
                     background: form.locationType===t ? C.navy : C.bg,
-                    color:      form.locationType===t ? "#fff"  : C.muted,
+                    color:      form.locationType===t ? C.bg  : C.muted,
                     border:    `1.5px solid ${form.locationType===t ? C.navy : C.border}` }}>
                   {t === "교내" ? "🏫 교내" : "🌍 교외"}
                 </button>
@@ -1281,7 +1281,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 const disabled = p === "강의" && !isProf;
                 return (
                   <button key={p} onClick={() => { if(disabled) return; f("purpose",p); f("club",""); f("clubDirect",""); f("courseName",""); f("professorName",""); f("eventName",""); f("eventProfessor",""); f("purposeDetail",""); f("attachments",[]); }}
-                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?C.bg:disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
+                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?C.bg:disabled?C.muted:C.bg, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
                     {p}{disabled?" (교수님 전용)":""}
                   </button>
                 );

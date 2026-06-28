@@ -551,7 +551,7 @@ export default function Students({ readOnly = false }) {
           {tabs.slice(0,3).map(t => (
             <button key={t.id}
               onClick={() => { if (t.id === "create") { setShowCreateMenu(true); } else { setTab(t.id); setSearch(""); } }}
-              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?C.bg:C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
               {t.label}
             </button>
           ))}
@@ -561,7 +561,7 @@ export default function Students({ readOnly = false }) {
           {tabs.slice(3).map(t => (
             <button key={t.id}
               onClick={() => { setTab(t.id); setSearch(""); }}
-              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?"#fff":C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
+              style={{ background:tab===t.id?t.color:C.surface, color:tab===t.id?C.bg:C.muted, border:`1px solid ${tab===t.id?t.color:C.border}`, borderRadius:10, padding:"5px 11px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>
               {t.label}
             </button>
           ))}

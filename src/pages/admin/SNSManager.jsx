@@ -94,7 +94,7 @@ const ChipGroup = ({ options, value, onChange }) => (
         padding:"5px 14px", borderRadius:20, fontSize:12, fontFamily:"inherit", cursor:"pointer",
         border:`1.5px solid ${value===opt ? C.navy : C.border}`,
         background: value===opt ? C.navy : C.bg,
-        color:      value===opt ? "#fff"  : C.muted,
+        color:      value===opt ? C.bg  : C.muted,
         fontWeight: value===opt ? 700 : 400,
         transition:"all .15s",
       }}>{opt}</button>
@@ -613,7 +613,7 @@ export default function SNSManager() {
             padding:"8px 20px", borderRadius:9, border:"none", fontSize:13, fontWeight:600,
             fontFamily:"inherit", cursor:"pointer", transition:"all .15s",
             background: tab===t.id ? C.navy : "transparent",
-            color:      tab===t.id ? "#fff"  : C.muted,
+            color:      tab===t.id ? C.bg  : C.muted,
           }}>{t.label}</button>
         ))}
       </div>

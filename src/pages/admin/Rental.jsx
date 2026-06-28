@@ -892,7 +892,7 @@ ${r.attachments?.length > 0 ? `
         {STATUS_TABS.map(s => (
           <button key={s} onClick={() => setTab(s)} style={{
             background: tab === s ? C.navy : C.surface,
-            color: tab === s ? "#fff" : C.muted,
+            color: tab === s ? C.bg : C.muted,
             border: `1px solid ${tab === s ? C.navy : C.border}`,
             borderRadius: 14, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer",
             whiteSpace: "nowrap", flexShrink: 0,
