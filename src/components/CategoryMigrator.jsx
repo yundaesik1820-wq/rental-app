@@ -8,40 +8,44 @@ const ASSIGNABLE = ["캠코더", "카메라", "렌즈", "ACC", "삼각대/그립
 
 export default function CategoryMigrator({ onClose }) {
   const { data: equipments } = useCollection("equipments", "createdAt");
+  const [mode, setMode] = useState("minor"); // minor(중분류 기준) | major(대분류 기준)
 
-  // 현재 장비에 쓰인 대분류별 개수 (많은 순)
+  // 기준에 따라 그룹 집계 (개수 + 현재 대분류 목록)
   const groups = useMemo(() => {
     const m = {};
     equipments.forEach((e) => {
-      const k = e.majorCategory || "(비어있음)";
-      m[k] = (m[k] || 0) + 1;
+      const key = (mode === "minor" ? e.minorCategory : e.majorCategory) || "(비어있음)";
+      if (!m[key]) m[key] = { count: 0, majors: new Set() };
+      m[key].count++;
+      if (e.majorCategory) m[key].majors.add(e.majorCategory);
     });
-    return Object.entries(m).sort((a, b) => b[1] - a[1]);
-  }, [equipments]);
+    return Object.entries(m).sort((a, b) => b[1].count - a[1].count);
+  }, [equipments, mode]);
 
-  const [mapping, setMapping]   = useState({}); // { 옛값: 새값 }
+  const [mapping, setMapping]   = useState({});
   const [running, setRunning]   = useState(false);
   const [done, setDone]         = useState(false);
   const [progress, setProgress] = useState({ cur: 0, total: 0 });
 
-  const changeCount = equipments.filter((e) => {
-    const k = e.majorCategory || "(비어있음)";
+  const switchMode = (m) => { if (running) return; setMode(m); setMapping({}); };
+
+  const matchKey = (e) => (mode === "minor" ? e.minorCategory : e.majorCategory) || "(비어있음)";
+
+  // 실제로 바뀔 장비 (선택했고, 현재 majorCategory와 다른 것)
+  const targets = equipments.filter((e) => {
+    const k = matchKey(e);
     return mapping[k] && mapping[k] !== (e.majorCategory || "");
-  }).length;
+  });
 
   const apply = async () => {
-    const targets = equipments.filter((e) => {
-      const k = e.majorCategory || "(비어있음)";
-      return mapping[k] && mapping[k] !== (e.majorCategory || "");
-    });
-    if (targets.length === 0) { alert("바꿀 카테고리를 하나 이상 선택해줘"); return; }
+    if (targets.length === 0) { alert("바꿀 항목을 하나 이상 선택해줘"); return; }
     setRunning(true);
     setProgress({ cur: 0, total: targets.length });
     let cur = 0;
     for (const e of targets) {
-      const k = e.majorCategory || "(비어있음)";
+      const k = matchKey(e);
       try { await updateItem("equipments", e.id, { majorCategory: mapping[k] }); }
-      catch (err) { console.error("카테고리 변경 실패:", e.id, err); }
+      catch (err) { console.error("변경 실패:", e.id, err); }
       cur++;
       setProgress({ cur, total: targets.length });
     }
@@ -50,46 +54,58 @@ export default function CategoryMigrator({ onClose }) {
   };
 
   return (
-    <Modal onClose={running ? () => {} : onClose} width={560}>
+    <Modal onClose={running ? () => {} : onClose} width={580}>
       <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 6 }}>🗂️ 카테고리 일괄 정리</div>
-      <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 16, lineHeight: 1.5 }}>
-        지금 장비에 쓰인 대분류를 새 카테고리로 바꿔. 학생 화면의 카테고리 그리드는 아래 새 이름으로만 매칭돼.
+      <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 14, lineHeight: 1.5 }}>
+        장비를 새 카테고리(대분류)로 분류해. 학생 화면 카테고리 그리드는 아래 새 이름으로 매칭돼.
       </div>
+
+      {!done && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 14, background: C.bg, padding: 4, borderRadius: 10 }}>
+          {[["minor", "중분류 기준"], ["major", "대분류 기준"]].map(([v, label]) => (
+            <button key={v} onClick={() => switchMode(v)} disabled={running}
+              style={{ flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 700,
+                background: mode === v ? C.navy : "transparent", color: mode === v ? "#fff" : C.muted }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
 
       {done ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
           <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>완료! 카테고리가 정리됐어</div>
-          <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 18 }}>학생 화면에서 카테고리 눌러서 장비가 뜨는지 확인해봐</div>
+          <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 18 }}>학생 화면에서 카테고리 눌러서 확인해봐</div>
           <Btn onClick={onClose} color={C.navy} full>닫기</Btn>
         </div>
       ) : groups.length === 0 ? (
         <div style={{ textAlign: "center", padding: "30px 0", color: C.muted, fontSize: 13 }}>등록된 장비가 없어</div>
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "48vh", overflowY: "auto" }}>
-            {groups.map(([oldCat, count]) => {
-              const already = ASSIGNABLE.includes(oldCat); // 이미 새 이름과 일치
-              return (
-                <div key={oldCat} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", background: C.bg, borderRadius: 9, border: `1px solid ${already ? C.tealLight : C.border}` }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {oldCat} {already && <span style={{ fontSize: 10, color: C.teal, fontWeight: 700 }}>✓ 일치</span>}
-                    </div>
-                    <div style={{ fontSize: 11, color: C.muted }}>{count}개</div>
+          <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>
+            {mode === "minor" ? "중분류별로 새 카테고리 지정" : "대분류별로 새 카테고리 지정"} · 총 {groups.length}개 항목
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: "42vh", overflowY: "auto" }}>
+            {groups.map(([key, info]) => (
+              <div key={key} style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 11px", background: C.bg, borderRadius: 9, border: `1px solid ${C.border}` }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{key}</div>
+                  <div style={{ fontSize: 11, color: C.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {info.count}개{mode === "minor" && info.majors.size > 0 ? ` · 현재 대분류: ${[...info.majors].join(", ")}` : ""}
                   </div>
-                  <div style={{ fontSize: 13, color: C.muted }}>→</div>
-                  <select
-                    value={mapping[oldCat] || ""}
-                    onChange={(e) => setMapping((p) => ({ ...p, [oldCat]: e.target.value }))}
-                    disabled={running}
-                    style={{ flex: 1, maxWidth: 160, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 8, color: mapping[oldCat] ? C.text : C.muted, padding: "8px 10px", fontSize: 13, outline: "none", cursor: "pointer" }}>
-                    <option value="">{already ? "그대로 둠" : "변경 안 함"}</option>
-                    {ASSIGNABLE.map((c) => <option key={c} value={c}>{c}</option>)}
-                  </select>
                 </div>
-              );
-            })}
+                <div style={{ fontSize: 13, color: C.muted }}>→</div>
+                <select
+                  value={mapping[key] || ""}
+                  onChange={(e) => setMapping((p) => ({ ...p, [key]: e.target.value }))}
+                  disabled={running}
+                  style={{ flex: 1, maxWidth: 150, background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 8, color: mapping[key] ? C.text : C.muted, padding: "8px 10px", fontSize: 13, outline: "none", cursor: "pointer" }}>
+                  <option value="">변경 안 함</option>
+                  {ASSIGNABLE.map((c) => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+            ))}
           </div>
 
           {running && (
@@ -103,7 +119,7 @@ export default function CategoryMigrator({ onClose }) {
 
           <div style={{ display: "flex", gap: 8, marginTop: 18 }}>
             <Btn onClick={onClose} color={C.muted} outline full disabled={running}>취소</Btn>
-            <Btn onClick={apply} color={C.teal} full disabled={running}>{running ? "변경 중..." : changeCount > 0 ? `${changeCount}개 적용` : "적용"}</Btn>
+            <Btn onClick={apply} color={C.teal} full disabled={running}>{running ? "변경 중..." : targets.length > 0 ? `${targets.length}개 적용` : "적용"}</Btn>
           </div>
         </>
       )}
