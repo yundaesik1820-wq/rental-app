@@ -115,7 +115,7 @@ export default function Login() {
         <div style={{ display:"flex", background:C.bg, borderRadius:12, padding:4, marginBottom:24 }}>
           {[["login","로그인"],["signup","회원가입"]].map(([v,l]) => (
             <button key={v} onClick={() => { setTab(v); setLoginErr(""); setSignupErr(""); setSignupDone(false); }}
-              style={{ flex:1, background:tab===v?C.navy:"transparent", color:tab===v?"#fff":C.muted, border:"none", borderRadius:9, padding:"9px 0", fontSize:14, fontWeight:700, cursor:"pointer", transition:"all 0.2s" }}>{l}</button>
+              style={{ flex:1, background:tab===v?C.navy:"transparent", color:tab===v?C.bg:C.muted, border:"none", borderRadius:9, padding:"9px 0", fontSize:14, fontWeight:700, cursor:"pointer", transition:"all 0.2s" }}>{l}</button>
           ))}
         </div>
 

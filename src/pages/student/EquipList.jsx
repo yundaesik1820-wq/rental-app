@@ -210,7 +210,7 @@ export default function EquipList({ setTab }) {
       <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${C.border}`, width: "fit-content" }}>
         {[["단품", "🔧"], ["세트", "📦"]].map(([v, icon]) => (
           <button key={v} onClick={() => setTabView(v)}
-            style={{ background: tabView === v ? C.navy : "transparent", color: tabView === v ? "#fff" : C.muted, border: "none", borderRadius: 9, padding: "8px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
+            style={{ background: tabView === v ? C.navy : "transparent", color: tabView === v ? C.bg : C.muted, border: "none", borderRadius: 9, padding: "8px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", display: "flex", alignItems: "center", gap: 6 }}>
             {icon} {v}
             <span style={{ background: tabView === v ? "rgba(255,255,255,0.25)" : C.bg, borderRadius: 20, padding: "1px 8px", fontSize: 11, fontWeight: 700 }}>
               {v === "단품" ? filteredUnits.length : filteredSets.length}
@@ -319,7 +319,7 @@ export default function EquipList({ setTab }) {
                     <>
                       <button
                         onClick={() => setExpandedSet(isExpand ? null : e.modelName)}
-                        style={{ display: "flex", alignItems: "center", gap: 6, background: isExpand ? C.navy : C.bg, color: isExpand ? "#fff" : C.navy, border: `1px solid ${isExpand ? C.navy : C.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", width: "100%", justifyContent: "center", marginBottom: isExpand ? 12 : 0 }}>
+                        style={{ display: "flex", alignItems: "center", gap: 6, background: isExpand ? C.navy : C.bg, color: isExpand ? C.bg : C.navy, border: `1px solid ${isExpand ? C.navy : C.border}`, borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", width: "100%", justifyContent: "center", marginBottom: isExpand ? 12 : 0 }}>
                         📋 구성품 보기 ({setList.length}개) {isExpand ? "▲" : "▼"}
                       </button>
 

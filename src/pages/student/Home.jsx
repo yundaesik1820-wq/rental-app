@@ -110,7 +110,7 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
         <div style={{ display: "flex", gap: 6 }}>
           {DAYS.map(d => (
             <button key={d} onClick={() => f("day", d)}
-              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${form.day === d ? C.navy : C.border}`, background: form.day === d ? C.navy : C.bg, color: form.day === d ? "#fff" : C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${form.day === d ? C.navy : C.border}`, background: form.day === d ? C.navy : C.bg, color: form.day === d ? C.bg : C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               {d}
             </button>
           ))}
@@ -823,7 +823,7 @@ export default function StudentHome({ onOpenRoom }) {
               style={{ width:"100%", background:"none", border:"none", color:C.text, fontSize:12, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
             <div style={{ display:"flex", justifyContent:"flex-end" }}>
               <button onClick={submitPopupComment} disabled={popupSubmitting || !popupComment.trim()}
-                style={{ background:popupComment.trim()?C.navy:C.border, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer" }}>
+                style={{ background:popupComment.trim()?C.navy:C.border, color:C.bg, border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor:"pointer" }}>
                 {popupSubmitting ? "..." : "등록"}
               </button>
             </div>
@@ -932,7 +932,7 @@ export default function StudentHome({ onOpenRoom }) {
                 ["add","친구 추가",0],
               ].map(([v,l,cnt]) => (
                 <button key={v} onClick={() => { setFriendSubTab(v); setViewFriend(null); setAddFriendMsg(""); }}
-                  style={{ position:"relative", padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?"#fff":C.muted }}>
+                  style={{ position:"relative", padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?C.bg:C.muted }}>
                   {l}
                   {cnt > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:10, padding:"0 5px", fontSize:9, fontWeight:700 }}>{cnt}</span>}
                 </button>
@@ -1036,7 +1036,7 @@ export default function StudentHome({ onOpenRoom }) {
                           style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                         {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
                           <button key={v} onClick={() => { setFriendSort(v); setFriendPage(1); }}
-                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?"#fff":C.muted }}>
+                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?C.bg:C.muted }}>
                             {l}
                           </button>
                         ))}
@@ -1095,7 +1095,7 @@ export default function StudentHome({ onOpenRoom }) {
                           </button>
                           {Array.from({length:totalPages}, (_,i) => i+1).map(p => (
                             <button key={p} onClick={() => setFriendPage(p)}
-                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?"#fff":C.text, fontWeight:friendPage===p?700:400, minWidth:32 }}>
+                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?C.bg:C.text, fontWeight:friendPage===p?700:400, minWidth:32 }}>
                               {p}
                             </button>
                           ))}
@@ -1334,7 +1334,7 @@ export default function StudentHome({ onOpenRoom }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: C.navy }}>{c.authorName}</span>
                             {["super","teacher","assistant","professor","admin"].includes(c.authorRole) && (
-                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: C.bg, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
                                 {c.authorRole === "professor" ? "교수" : c.authorRole === "teacher" ? "교사" : c.authorRole === "assistant" ? "조교" : "관리자"}
                               </span>
                             )}

@@ -444,7 +444,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
             <input value={nameInput} onChange={e=>setNameInput(e.target.value)} maxLength={12} placeholder="펫 이름"
               style={{ width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"11px 14px", fontSize:15, textAlign:"center", outline:"none", boxSizing:"border-box", marginBottom:14, fontFamily:"inherit" }} />
             <button onClick={saveName} disabled={!nameInput.trim()}
-              style={{ width:"100%", background:nameInput.trim()?C.navy:C.border, color:"#fff", border:"none", borderRadius:10, padding:"12px 0", fontSize:14, fontWeight:800, cursor:nameInput.trim()?"pointer":"default" }}>
+              style={{ width:"100%", background:nameInput.trim()?C.navy:C.border, color:C.bg, border:"none", borderRadius:10, padding:"12px 0", fontSize:14, fontWeight:800, cursor:nameInput.trim()?"pointer":"default" }}>
               결정!
             </button>
           </div>
@@ -501,7 +501,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
         {[["mine","내 펫"],["friends","친구 펫"],["rank","순위"]].map(([k,label]) => (
           <button key={k}
             onClick={() => { setTab(k); setFriendView(null); if (k==="rank") loadRank(); }}
-            style={{ flex:1, maxWidth:110, background: tab===k ? C.navy : C.bg, color: tab===k ? "#fff" : C.muted, border:`1px solid ${tab===k ? C.navy : C.border}`, borderRadius:10, padding:"9px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>
+            style={{ flex:1, maxWidth:110, background: tab===k ? C.navy : C.bg, color: tab===k ? C.bg : C.muted, border:`1px solid ${tab===k ? C.navy : C.border}`, borderRadius:10, padding:"9px 0", fontSize:13, fontWeight:800, cursor:"pointer" }}>
             {label}
           </button>
         ))}
@@ -658,7 +658,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
 
       {/* 토스트 */}
       {toast && (
-        <div style={{ position:"absolute", bottom:40, left:"50%", transform:"translateX(-50%)", background:toast.good?C.navy:C.red, color:"#fff", borderRadius:10, padding:"10px 20px", fontSize:14, fontWeight:700, zIndex:30, whiteSpace:"nowrap" }}>
+        <div style={{ position:"absolute", bottom:40, left:"50%", transform:"translateX(-50%)", background:toast.good?C.navy:C.red, color:C.bg, borderRadius:10, padding:"10px 20px", fontSize:14, fontWeight:700, zIndex:30, whiteSpace:"nowrap" }}>
           {toast.msg}
         </div>
       )}
@@ -1234,7 +1234,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
     <div style={{ padding:"14px 18px 32px" }}>
       {/* 친구 추가 토글 */}
       <button onClick={() => addOpen ? setAddOpen(false) : openAdd()}
-        style={{ width:"100%", background: addOpen ? C.bg : C.navy, color: addOpen ? C.text : "#fff", border:`1px solid ${addOpen ? C.border : C.navy}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:800, cursor:"pointer", marginBottom:12 }}>
+        style={{ width:"100%", background: addOpen ? C.bg : C.navy, color: addOpen ? C.text : C.bg, border:`1px solid ${addOpen ? C.border : C.navy}`, borderRadius:10, padding:"11px 0", fontSize:14, fontWeight:800, cursor:"pointer", marginBottom:12 }}>
         {addOpen ? "닫기" : "➕ 친구 추가"}
       </button>
 
@@ -1289,7 +1289,7 @@ function FriendsTab({ uid, me, friends, friendView, setFriendView, showToast }) 
                     <div key={r.uid} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"8px 12px" }}>
                       <span style={{ fontSize:13, fontWeight:700, color:C.text, flex:1 }}>{r.name} <span style={{ fontSize:11, color:C.muted }}>{r.sid}</span></span>
                       <button onClick={() => !sent && sendRequest(r)} disabled={sent}
-                        style={{ background: sent ? C.border : C.navy, color:"#fff", border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor: sent ? "default" : "pointer" }}>
+                        style={{ background: sent ? C.border : C.navy, color:C.bg, border:"none", borderRadius:7, padding:"5px 12px", fontSize:11, fontWeight:700, cursor: sent ? "default" : "pointer" }}>
                         {sent ? "신청함" : "친구 신청"}
                       </button>
                     </div>
@@ -1499,7 +1499,7 @@ function RankTab({ uid, rankData, rankKind, setRankKind, me, myPet, friendUids, 
                   </div>
                   {!isFriend && (
                     <button onClick={() => !sent && sendReq(r)} disabled={sent}
-                      style={{ width:"100%", marginTop:8, background: sent ? C.border : C.navy, color:"#fff", border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor: sent ? "default" : "pointer" }}>
+                      style={{ width:"100%", marginTop:8, background: sent ? C.border : C.navy, color:C.bg, border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor: sent ? "default" : "pointer" }}>
                       {sent ? "신청함" : "➕ 친구 추가"}
                     </button>
                   )}

@@ -65,7 +65,7 @@ export default function CategoryMigrator({ onClose }) {
           {[["minor", "중분류 기준"], ["major", "대분류 기준"]].map(([v, label]) => (
             <button key={v} onClick={() => switchMode(v)} disabled={running}
               style={{ flex: 1, padding: "8px 0", borderRadius: 7, border: "none", cursor: "pointer", fontSize: 12.5, fontWeight: 700,
-                background: mode === v ? C.navy : "transparent", color: mode === v ? "#fff" : C.muted }}>
+                background: mode === v ? C.navy : "transparent", color: mode === v ? C.bg : C.muted }}>
               {label}
             </button>
           ))}

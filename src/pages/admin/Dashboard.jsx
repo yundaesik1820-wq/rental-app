@@ -207,7 +207,7 @@ export default function Dashboard({ setTab }) {
             <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
               {["장비","시설"].map(t => (
                 <button key={t} onClick={() => setEqTab(t)}
-                  style={{ flex:1, padding:"8px 0", border:"none", background: eqTab===t ? C.navy : C.bg, color: eqTab===t ? "#fff" : C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
+                  style={{ flex:1, padding:"8px 0", border:"none", background: eqTab===t ? C.navy : C.bg, color: eqTab===t ? C.bg : C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
                   {t}
                 </button>
               ))}

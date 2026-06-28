@@ -115,7 +115,7 @@ function InspModal({ item, inspections, onClose }) {
       <div style={{ background: C.bg, borderRadius: 12, padding: 14, marginBottom: 14 }}>
         <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
           {["정기점검","수리","파손확인"].map(t => (
-            <button key={t} onClick={() => setForm(p => ({ ...p, type: t }))} style={{ flex: 1, background: form.type === t ? C.navy : C.surface, color: form.type === t ? "#fff" : C.muted, border: `1px solid ${form.type === t ? C.navy : C.border}`, borderRadius: 8, padding: "6px 0", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t}</button>
+            <button key={t} onClick={() => setForm(p => ({ ...p, type: t }))} style={{ flex: 1, background: form.type === t ? C.navy : C.surface, color: form.type === t ? C.bg : C.muted, border: `1px solid ${form.type === t ? C.navy : C.border}`, borderRadius: 8, padding: "6px 0", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>{t}</button>
           ))}
         </div>
         <Inp placeholder="점검 내용" value={form.note} onChange={e => setForm(p => ({ ...p, note: e.target.value }))} />
@@ -773,7 +773,7 @@ export default function Equipment({ initialTab = "equip" }) {
         <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, gap:2 }}>
           {[["equip","🔧 장비"],["facility","🏢 시설"]].map(([v,l]) => (
             <button key={v} onClick={() => setActiveTab(v)}
-              style={{ padding:"6px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:activeTab===v?C.navy:"transparent", color:activeTab===v?"#fff":C.muted }}>
+              style={{ padding:"6px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:activeTab===v?C.navy:"transparent", color:activeTab===v?C.bg:C.muted }}>
               {l}
             </button>
           ))}
@@ -1424,7 +1424,7 @@ export default function Equipment({ initialTab = "equip" }) {
           style={{ flex:1, minWidth:200, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
           {majorCats.map(c => (
-            <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+            <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?C.bg:C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
           ))}
         </div>
       </div>

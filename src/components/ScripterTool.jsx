@@ -215,24 +215,24 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         <button onClick={back} style={{ ...iconBtn(C), fontSize: 13 }}>← 목록</button>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <button onClick={() => setTool("pen")}
-            style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? "#fff" : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            style={{ background: tool === "pen" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "pen" ? C.bg : C.muted, border: `1px solid ${tool === "pen" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             ✏️
           </button>
           <button onClick={() => setTool("text")}
-            style={{ background: tool === "text" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "text" ? "#fff" : C.muted, border: `1px solid ${tool === "text" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            style={{ background: tool === "text" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "text" ? C.bg : C.muted, border: `1px solid ${tool === "text" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🅣
           </button>
           <button onClick={() => setTool("eraser")}
-            style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? "#fff" : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            style={{ background: tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "eraser" ? C.bg : C.muted, border: `1px solid ${tool === "eraser" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             🧽
           </button>
           <button onClick={() => setTool("scroll")}
-            style={{ background: tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "scroll" ? "#fff" : C.muted, border: `1px solid ${tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+            style={{ background: tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : "transparent", color: tool === "scroll" ? C.bg : C.muted, border: `1px solid ${tool === "scroll" ? (C.navy||C.red||"#1A2B6B") : C.border}`, borderRadius: 8, padding: "6px 10px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
             ✋
           </button>
         </div>
         <button onClick={save} disabled={saving}
-          style={{ background: (C.navy||C.red||"#1A2B6B"), color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+          style={{ background: (C.navy||C.red||"#1A2B6B"), color: C.bg, border: "none", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
           {saving ? "저장 중..." : "저장"}
         </button>
       </div>

@@ -81,7 +81,7 @@ export default function LicenseAdmin() {
       {/* 탭 */}
       <div style={{ display:"flex", background:C.surface, borderRadius:12, padding:4, marginBottom:20, border:`1px solid ${C.border}`, width:"fit-content" }}>
         {[["schedules","수업 일정"],["applications","신청 현황"],["completed","종료된 수업"]].map(([id, label]) => (
-          <button key={id} onClick={() => setTab(id)} style={{ padding:"8px 20px", borderRadius:9, border:"none", fontSize:13, fontWeight:700, cursor:"pointer", background:tab===id?C.navy:"transparent", color:tab===id?"#fff":C.muted }}>
+          <button key={id} onClick={() => setTab(id)} style={{ padding:"8px 20px", borderRadius:9, border:"none", fontSize:13, fontWeight:700, cursor:"pointer", background:tab===id?C.navy:"transparent", color:tab===id?C.bg:C.muted }}>
             {label}
           </button>
         ))}

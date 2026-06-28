@@ -440,7 +440,7 @@ export default function Students({ readOnly = false }) {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
               {[["super","관리자"],["professor","교수"],["teacher","교사"],["assistant","조교"]].map(([val, label]) => (
                 <button key={val} onClick={() => setAdminForm(p=>({...p, adminRole:val}))}
-                  style={{ padding:"10px 0", borderRadius:10, border:`2px solid ${adminForm.adminRole===val ? C.navy : C.border}`, background: adminForm.adminRole===val ? C.navy : C.bg, color: adminForm.adminRole===val ? "#fff" : C.muted, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  style={{ padding:"10px 0", borderRadius:10, border:`2px solid ${adminForm.adminRole===val ? C.navy : C.border}`, background: adminForm.adminRole===val ? C.navy : C.bg, color: adminForm.adminRole===val ? C.bg : C.muted, fontSize:14, fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
                   {label}
                 </button>
               ))}
@@ -534,7 +534,7 @@ export default function Students({ readOnly = false }) {
           <div style={{ display:"flex", gap:10, marginBottom:20 }}>
             {LICENSES.map(l => (
               <button key={l} onClick={() => setLicense(l)} style={{ flex:1, padding:"12px 0", borderRadius:10, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit",
-                background: license===l ? C.navy : C.bg, color: license===l ? "#fff" : C.muted, border:`1.5px solid ${license===l ? C.navy : C.border}` }}>{l}</button>
+                background: license===l ? C.navy : C.bg, color: license===l ? C.bg : C.muted, border:`1.5px solid ${license===l ? C.navy : C.border}` }}>{l}</button>
             ))}
           </div>
           <div style={{ display:"flex", gap:10 }}>

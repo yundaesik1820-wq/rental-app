@@ -99,7 +99,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
       <div style={{ display:"flex", gap:4, marginBottom:12 }}>
         {(isAdmin ? [["calendar","📅 캘린더"],["stats","📊 통계"]] : [["calendar","📅 캘린더"]]).map(([v,l]) => (
           <button key={v} onClick={() => setCalView(v)}
-            style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?"#fff":C.muted }}>
+            style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?C.bg:C.muted }}>
             {l}
           </button>
         ))}

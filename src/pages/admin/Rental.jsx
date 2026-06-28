@@ -122,7 +122,7 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper }) {
       <div style={{ display:"flex", gap:4, marginBottom:16, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
         {tabs.map(t => (
           <button key={t} onClick={() => setTab(t)}
-            style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?"#fff":C.muted, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
+            style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?C.bg:C.muted, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
             {t} ({requests.filter(r=>r.status===t).length})
           </button>
         ))}
@@ -370,7 +370,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
         {[["camera","📷 카메라"],["reader","🔫 리더기"]].map(([m, label]) => (
           <button key={m} onClick={() => setScanMode(m)} style={{
             flex:1, padding:"7px 0", borderRadius:8, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
-            background: mode===m ? C.navy : "transparent", color: mode===m ? "#fff" : C.muted,
+            background: mode===m ? C.navy : "transparent", color: mode===m ? C.bg : C.muted,
           }}>{label}</button>
         ))}
       </div>
@@ -856,7 +856,7 @@ ${r.attachments?.length > 0 ? `
       <div style={{ display:"flex", background:C.bg, borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:`1px solid ${C.border}` }}>
         {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
           <button key={v} onClick={() => setMainTab(v)}
-            style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:mainTab===v?C.navy:"transparent", color:mainTab===v?"#fff":C.muted, transition:"all 0.2s" }}>{l}</button>
+            style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:mainTab===v?C.navy:"transparent", color:mainTab===v?C.bg:C.muted, transition:"all 0.2s" }}>{l}</button>
         ))}
       </div>
 

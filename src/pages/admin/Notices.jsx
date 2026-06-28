@@ -235,7 +235,7 @@ export default function Notices({ isAdmin = true }) {
               <div style={{ display: "flex", background: C.bg, borderRadius: 10, padding: 4, marginBottom: 12 }}>
                 {[["all", "전체 학생"], ["one", "특정 학번"]].map(([v, l]) => (
                   <button key={v} onClick={() => { setAlertForm(p => ({ ...p, target: v })); setSendResult(null); }}
-                    style={{ flex: 1, background: alertForm.target === v ? C.navy : "transparent", color: alertForm.target === v ? "#fff" : C.muted, border: "none", borderRadius: 7, padding: "8px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{l}</button>
+                    style={{ flex: 1, background: alertForm.target === v ? C.navy : "transparent", color: alertForm.target === v ? C.bg : C.muted, border: "none", borderRadius: 7, padding: "8px 0", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>{l}</button>
                 ))}
               </div>
               {alertForm.target === "one" && (
@@ -462,7 +462,7 @@ export default function Notices({ isAdmin = true }) {
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{c.authorName}</span>
                             {["super","teacher","assistant","professor","admin"].includes(c.authorRole) && (
-                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: "#fff", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: C.bg, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
                                 {c.authorRole === "professor" ? "교수" : c.authorRole === "teacher" ? "교사" : c.authorRole === "assistant" ? "조교" : "관리자"}
                               </span>
                             )}

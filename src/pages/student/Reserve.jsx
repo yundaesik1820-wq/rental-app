@@ -617,7 +617,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
       {/* 1차: 대분류 카테고리 */}
       <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap" }}>
         {allCats.map(c => (
-          <button key={c} onClick={() => { setFilter(c); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?"#fff":C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
+          <button key={c} onClick={() => { setFilter(c); setSearch(""); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?C.bg:C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
         ))}
       </div>
 
@@ -632,7 +632,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             ? filteredSets.length
             : filteredUnits.length;
           return (
-            <button key={t} onClick={() => setTabView(t)} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?"#fff":C.muted, transition:"all 0.2s" }}>
+            <button key={t} onClick={() => setTabView(t)} style={{ padding:"8px 28px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:tabView===t?C.navy:"transparent", color:tabView===t?C.bg:C.muted, transition:"all 0.2s" }}>
               {t} ({cnt})
             </button>
           );
@@ -1281,7 +1281,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                 const disabled = p === "강의" && !isProf;
                 return (
                   <button key={p} onClick={() => { if(disabled) return; f("purpose",p); f("club",""); f("clubDirect",""); f("courseName",""); f("professorName",""); f("eventName",""); f("eventProfessor",""); f("purposeDetail",""); f("attachments",[]); }}
-                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?"#fff":disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
+                    style={{ background:form.purpose===p?C.navy:disabled?"#F3F4F6":C.bg, color:form.purpose===p?C.bg:disabled?C.muted:C.text, border:`1.5px solid ${form.purpose===p?C.navy:C.border}`, borderRadius:10, padding:"10px 0", fontSize:13, fontWeight:600, cursor:disabled?"not-allowed":"pointer", fontFamily:"inherit", opacity:disabled?0.5:1 }}>
                     {p}{disabled?" (교수님 전용)":""}
                   </button>
                 );
@@ -1313,7 +1313,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
                   <div style={{ display:"flex", flexWrap:"wrap", gap:8, marginBottom:8 }}>
                     {CLUBS.map(c => (
                       <button key={c} onClick={() => { f("club",c); if(c!=="직접입력") f("clubDirect",""); }}
-                        style={{ background:form.club===c?C.navy:C.bg, color:form.club===c?"#fff":C.muted, border:`1.5px solid ${form.club===c?C.navy:C.border}`, borderRadius:8, padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                        style={{ background:form.club===c?C.navy:C.bg, color:form.club===c?C.bg:C.muted, border:`1.5px solid ${form.club===c?C.navy:C.border}`, borderRadius:8, padding:"7px 14px", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
                         {c}
                       </button>
                     ))}
