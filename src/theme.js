@@ -1,20 +1,20 @@
-// 다크 테마
+// 다크 테마 (딥다크 + 네온 라임)
 const DARK = {
-  bg:      "#0F172A",
-  surface: "#1E293B",
-  card:    "#1E293B",
-  navy:    "#60A5FA",
-  blue:    "#60A5FA",   blueLight:   "#1E3A5F",
-  teal:    "#2DD4BF",   tealLight:   "#0F3D38",
-  red:     "#F87171",   redLight:    "#3B1515",
-  yellow:  "#FBBF24",   yellowLight: "#3B2A00",
-  green:   "#34D399",   greenLight:  "#0F3028",
-  purple:  "#A78BFA",   purpleLight: "#2D1F5E",
-  orange:  "#FB923C",   orangeLight: "#3B1F00",
-  text:    "#F1F5F9",
-  muted:   "#64748B",
-  border:  "#334155",
-  shadow:  "0 2px 12px rgba(0,0,0,0.4)",
+  bg:      "#0B0B0E",
+  surface: "#17171C",
+  card:    "#17171C",
+  navy:    "#C6F24E",
+  blue:    "#C6F24E",   blueLight:   "#23280F",
+  teal:    "#2DD4BF",   tealLight:   "#0E342F",
+  red:     "#FF6B6B",   redLight:    "#2E1414",
+  yellow:  "#FBBF24",   yellowLight: "#2E2200",
+  green:   "#34D399",   greenLight:  "#0E2E22",
+  purple:  "#A78BFA",   purpleLight: "#241B45",
+  orange:  "#FB923C",   orangeLight: "#2E1A08",
+  text:    "#ECECEE",
+  muted:   "#8A8A92",
+  border:  "#2A2A31",
+  shadow:  "0 2px 16px rgba(0,0,0,0.55)",
 };
 
 // 라이트 테마
