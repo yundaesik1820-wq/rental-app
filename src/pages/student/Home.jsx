@@ -745,25 +745,9 @@ export default function StudentHome({ onOpenRoom }) {
           </div>
         </div>
 
-        {/* 친해지기 버튼 + 공유 + Designed by */}
+        {/* Designed by */}
         <div>
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-            <button onClick={() => setShowRentory(true)}
-              style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
-              렌토리랑 친해져보기 ♡
-            </button>
-            <button onClick={() => {
-              const url = "https://rental-app-delta-kohl.vercel.app";
-              if (navigator.share) {
-                navigator.share({ title:"KBAS 장비대여실", text:"장비 대여 신청을 앱으로 편하게!", url });
-              } else {
-                navigator.clipboard.writeText(url).then(() => alert("링크가 복사됐어요! 친구에게 공유해보세요 😊"));
-              }
-            }} style={{ background:"rgba(255,255,255,0.2)", border:"1px solid rgba(255,255,255,0.3)", borderRadius:14, padding:"4px 10px", fontSize:10, color:"#fff", fontWeight:600, cursor:"pointer", backdropFilter:"blur(8px)", whiteSpace:"nowrap" }}>
-              📤 친구 초대
-            </button>
-          </div>
-          <div style={{ textAlign:"right", marginTop:8 }}>
+          <div style={{ textAlign:"right" }}>
             <span style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontStyle:"italic", whiteSpace:"nowrap" }}>
               Designed &amp; Developed by 윤대식
             </span>
