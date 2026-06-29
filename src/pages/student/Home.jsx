@@ -713,7 +713,7 @@ export default function StudentHome({ onOpenRoom }) {
       )}
 
       {/* Welcome banner */}
-      <div style={{ background: "linear-gradient(135deg,#3d4370,#5b6191)", borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
+      <div style={{ background: "linear-gradient(135deg,#3d4370,#5b6191)", borderRadius: 20, padding: "16px 20px 8px", marginBottom: 20, position: "relative" }}>
         {/* 버튼들 - 배너 우측 상단 */}
         <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
           {profile?.linkedEmail && (
@@ -727,12 +727,12 @@ export default function StudentHome({ onOpenRoom }) {
           </button>
         </div>
         {/* 학번/계열만 표시 */}
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight:600, marginBottom: 14 }}>
+        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight:600, marginBottom: 10 }}>
           {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
         </div>
 
         {/* 마스코트 + 말풍선 */}
-        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:2 }}>
           <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", flex:1, boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
