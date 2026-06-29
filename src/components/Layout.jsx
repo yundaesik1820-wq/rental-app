@@ -207,7 +207,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
 
-          main { padding: 12px !important; padding-bottom: 130px !important; }
+          main { padding: 12px !important; padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important; }
 
           /* 헤더 */
           header { padding: 0 12px !important; height: 46px !important; }
@@ -313,7 +313,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         borderTop: `1px solid ${C.border}`,
         boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
         zIndex: 100,
-        paddingBottom: 8,
+        paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))",
       }}>
         {mobileRows.map((row, rowIdx) => (
           <div key={rowIdx} className="bottom-nav-row" style={{
