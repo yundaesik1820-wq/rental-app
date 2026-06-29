@@ -19,7 +19,7 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body, #root { height: 100%; }
-      body { font-family: 'Noto Sans KR', sans-serif; background: #0B0B0E; overflow: hidden; overscroll-behavior: none; }
+      body { font-family: 'Noto Sans KR', sans-serif; background: #0B0B0E; color: #ECECEE; overflow: hidden; overscroll-behavior: none; }
 
       /* 버튼 탭 모션 (네이티브 앱 느낌) */
       * { -webkit-tap-highlight-color: transparent; }
@@ -48,6 +48,7 @@
         object-fit: cover;
         display: block;
       }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     </style>
   </head>
   <body>

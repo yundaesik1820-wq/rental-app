@@ -101,9 +101,9 @@ export default function Dashboard({ setTab }) {
               } else {
                 setSwitchModal(true);
               }
-            }} disabled={switchLoading}
-              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading?0.7:1 }}>
-              <RefreshCw size={14} /> {switchLoading?"전환 중...":"계정 전환"}
+            }} disabled={switchLoading} title="계정 전환"
+              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"7px 9px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:switchLoading?0.7:1 }}>
+              <RefreshCw size={16} style={{ animation: switchLoading?"spin 1s linear infinite":"none" }} />
             </button>
           )}
           <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>

@@ -10,7 +10,7 @@ export function Badge({ label }) {
 
 export function Card({ children, style = {}, onClick }) {
   return (
-    <div onClick={onClick} style={{ background: C.card, borderRadius: 16, padding: "16px 20px", marginBottom: 12, border: `1px solid ${C.border}`, boxShadow: C.shadow, cursor: onClick ? "pointer" : "default", transition: "box-shadow 0.2s", ...style }}>
+    <div onClick={onClick} style={{ background: C.card, color: C.text, borderRadius: 16, padding: "16px 20px", marginBottom: 12, border: `1px solid ${C.border}`, boxShadow: C.shadow, cursor: onClick ? "pointer" : "default", transition: "box-shadow 0.2s", ...style }}>
       {children}
     </div>
   );
