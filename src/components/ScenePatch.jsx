@@ -555,7 +555,7 @@ function Article({ article, canManage, onClose }) {
         <span style={{ display: "inline-block", fontSize: 11, fontWeight: 800, padding: "4px 10px", borderRadius: 6, ...tagStyle(a.tag) }}>{a.tag}</span>
         <h1 style={{ fontSize: 22, fontWeight: 900, color: TEXT, lineHeight: 1.4, margin: "12px 0 0" }}>{a.title}</h1>
         <div style={{ display: "flex", gap: 8, marginTop: 11, fontSize: 12, color: DIM, fontWeight: 600, flexWrap: "wrap" }}>
-          <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span><span>{ds}</span><span>·</span><span>👁 {a.views || 0}</span>
+          <span>{ds}</span><span>·</span><span>👁 {a.views || 0}</span>
         </div>
         <div style={{ height: 1, background: LINE, margin: "16px 0 4px" }} />
 
