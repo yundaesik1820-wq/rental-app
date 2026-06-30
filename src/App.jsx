@@ -68,7 +68,6 @@ function buildAlerts(isAdmin, profile, data) {
   } else {
     const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
     const myFacility = facilityRequests.filter(r=>r.studentId===myId);
-    const recentNotices = notices; // 공지는 30일 윈도우 예외 — 지금까지의 공지 모두 표시
     const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
       ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
@@ -77,10 +76,13 @@ function buildAlerts(isAdmin, profile, data) {
       ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt })),
       ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
       ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-      ...recentNotices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt })),
       ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
     ];
   }
+  // 공지 알림 (공통) — 관리자·학생 모두 표시, 30일 윈도우 예외(아래 필터에서 제외)
+  alerts.push(
+    ...notices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt||n.date })),
+  );
   // SNS 알림 (공통) — 새 씬스패치 기사 + 내 글에 달린 댓글
   const myPostIds = new Set(communityPosts.filter(p=>p.authorId===uid).map(p=>p.id));
   alerts.push(
