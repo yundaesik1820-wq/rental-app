@@ -275,11 +275,16 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
 
-  // 🔔 알림 딥링크 — 댓글 달린 글 상세 자동 열기 (posts 로드 후)
+  // 🔔 알림 딥링크 — 글이 속한 룸 진입 후 글 상세 열기 (posts 로드 후)
   useEffect(() => {
     if (!deepPostId || !posts.length) return;
     const p = posts.find(x => x.id === deepPostId);
-    if (p) { openPost(p); setDeepPostId(null); }
+    if (p) {
+      const room = ROOMS.find(r => (r.categories || []).includes(p.category));
+      if (room) setSelectedRoom(room.id);
+      openPost(p);
+      setDeepPostId(null);
+    }
   }, [deepPostId, posts]);
 
   const adminRole  = profile?.adminRole || "super";
