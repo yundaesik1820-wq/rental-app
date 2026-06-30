@@ -648,9 +648,9 @@ function AppContent() {
           profile={profile}
           onNavigate={(t) => {
             setShowNotif(false);
-            setNotifTarget(t);
-            setCommunityRoom(t.room || null);
             if (t.tab) setTab(t.tab);
+            // 페이지 먼저 전환 → 살짝 텀 두고 대상(글/공지/기사/상태 카드) 등장 (모든 알림 공통)
+            setTimeout(() => { setCommunityRoom(t.room || null); setNotifTarget(t); }, 450);
           }}
           rentalRequests={rentalRequests}
           facilityRequests={facilityRequests}
