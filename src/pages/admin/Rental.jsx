@@ -467,7 +467,7 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
   );
 }
 
-export default function Rental({ subAdmin = false }) {
+export default function Rental({ subAdmin = false, focusId, onConsumed }) {
   const { profile } = useAuth();
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments }       = useCollection("equipments", "createdAt");
@@ -490,6 +490,23 @@ export default function Rental({ subAdmin = false }) {
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
   const [photoModal, setPhotoModal]   = useState(null);   // 반납사진 라이트박스 { photos, idx }
   const [swapReason, setSwapReason]   = useState("");      // 교체 사유
+
+  // 🔔 알림 딥링크 — 해당 대여 건으로 이동 + 스크롤 + 하이라이트
+  const [flashId, setFlashId] = useState(null);
+  useEffect(() => {
+    if (!focusId || !requests.length) return;
+    const r = requests.find(x => x.id === focusId);
+    if (r) { setMainTab("equip"); setTab(r.status); setFlashId(focusId); }
+    onConsumed?.();
+  }, [focusId, requests]);
+  useEffect(() => {
+    if (!flashId) return;
+    const t1 = setTimeout(() => {
+      document.getElementById(`rental-card-${flashId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    const t2 = setTimeout(() => setFlashId(null), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [flashId]);
 
   // 신청서 출력
   const printRequest = (r) => {
@@ -906,8 +923,9 @@ ${r.attachments?.length > 0 ? `
       {sorted.length === 0 && <Empty icon="📋" text="대여 신청이 없습니다" />}
 
       {sorted.map(r => (
-        <Card key={r.id} style={{
+        <Card key={r.id} id={`rental-card-${r.id}`} style={{
           border: `2px solid ${
+            flashId === r.id      ? C.teal :
             r.status === "승인대기" ? C.yellow + "50" :
             r.status === "보류"    ? C.orange + "50" :
             r.status === "거절됨"  ? C.red    + "40" :
@@ -915,7 +933,8 @@ ${r.attachments?.length > 0 ? `
             r.status === "교사서명대기" ? C.purple + "50" :
             r.status === "대여중"        ? C.blue   + "50" :
             r.status === "연체"    ? C.red    + "50" : C.border
-          }`
+          }`,
+          ...(flashId === r.id ? { boxShadow: `0 0 0 3px ${C.teal}66`, transform: "scale(1.01)" } : {})
         }}>
           {/* 신청자 정보 */}
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 14 }}>
