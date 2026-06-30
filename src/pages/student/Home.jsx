@@ -466,9 +466,15 @@ export default function StudentHome({ onOpenRoom }) {
       const { data } = await fn({ imageBase64, mediaType });
       const got = (data?.classes || []).filter(c => c && c.name && c.day && c.startTime && c.endTime);
       if (got.length === 0) { alert("시간표를 못 읽었어요. 더 선명한 사진으로 다시 시도해줘."); return; }
+      // 교수명만 들어온 경우 "교수님" 자동 붙이기
+      const withProf = (p) => {
+        const v = (p || "").trim();
+        if (!v) return "";
+        return /교수|쌤|선생|강사/.test(v) ? v : `${v} 교수님`;
+      };
       // 색상 배정 후 미리보기
       setImportPreview(got.map((c, i) => ({
-        day: c.day, name: c.name, location: c.location || "", professor: c.professor || "",
+        day: c.day, name: c.name, location: c.location || "", professor: withProf(c.professor),
         startTime: c.startTime, endTime: c.endTime, color: COLORS[(classes.length + i) % COLORS.length],
       })));
     } catch (e) {
@@ -483,6 +489,12 @@ export default function StudentHome({ onOpenRoom }) {
     if (!importPreview) return;
     await saveTimetable([...classes, ...importPreview]);
     setImportPreview(null);
+  };
+
+  const handleClearAll = async () => {
+    if (classes.length === 0) return;
+    if (!window.confirm("시간표 전체를 삭제할까요?")) return;
+    await saveTimetable([]);
   };
 
   const myId = profile?.studentId || profile?.email || "";
@@ -893,14 +905,16 @@ export default function StudentHome({ onOpenRoom }) {
 
       {/* 시간표 */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
           <SectionTitle>📅 내 시간표</SectionTitle>
-          <div style={{ display: "flex", gap: 6 }}>
-            <Btn onClick={() => document.getElementById("tt-import-input")?.click()} color={C.teal} small disabled={importing}>
-              {importing ? "인식 중…" : "📷 사진으로"}
-            </Btn>
-            <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>+ 수업 추가</Btn>
-          </div>
+          {classes.length > 0 && (
+            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+              <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
+                style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 11, fontWeight: 700, padding: "4px 9px", cursor: "pointer", fontFamily: "inherit" }}>+ 수업 추가</button>
+              <button onClick={handleClearAll}
+                style={{ background: "none", border: `1px solid ${C.red}55`, borderRadius: 8, color: C.red, fontSize: 11, fontWeight: 700, padding: "4px 9px", cursor: "pointer", fontFamily: "inherit" }}>전체삭제</button>
+            </div>
+          )}
         </div>
         <input id="tt-import-input" type="file" accept="image/*" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; handleImportImage(f); }} />
@@ -908,7 +922,12 @@ export default function StudentHome({ onOpenRoom }) {
           <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
             <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
-            <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>수업 추가하기</Btn>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+              <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>직접추가</Btn>
+              <Btn onClick={() => document.getElementById("tt-import-input")?.click()} color={C.teal} small disabled={importing}>
+                {importing ? "인식 중…" : "📷 AI 추가"}
+              </Btn>
+            </div>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
