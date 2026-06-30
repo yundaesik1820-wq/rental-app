@@ -86,7 +86,7 @@ function buildAlerts(isAdmin, profile, data) {
   // SNS 알림 (공통) — 새 씬스패치 기사 + 내 글에 달린 댓글
   const myPostIds = new Set(communityPosts.filter(p=>p.authorId===uid).map(p=>p.id));
   alerts.push(
-    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:`${a.authorName||"작성자"} 기자${a.tag?` · ${a.tag}`:""}`, time:a.createdAt, room:"scenepatch", articleId:a.id })),
+    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:a.tag||"씬스패치", time:a.createdAt, room:"scenepatch", articleId:a.id })),
     ...communityComments.filter(c=>myPostIds.has(c.postId) && c.authorId!==uid).map(c=>({ id:`댓글_${c.id}`, cat:"SNS", color:CC.teal, bg:CC.tealLight, icon:"💬", title:"내 글에 새 댓글이 달렸어요", desc:(c.content||"").slice(0,40), time:c.createdAt, tab:"community", postId:c.postId })),
   );
   // 30일 윈도우 + 최신순 정렬
