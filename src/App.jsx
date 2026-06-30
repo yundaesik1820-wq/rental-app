@@ -38,8 +38,52 @@ import StudentInquiry from "./pages/student/Inquiry";
 // Shared
 import { useCollection } from "./hooks/useFirestore";
 
+const NOTIF_CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
+
+function notifLabel(r) {
+  if (!r.items || r.items.length === 0) return r.equipName || "-";
+  const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
+  return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
+}
+
+// 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
+function buildAlerts(isAdmin, profile, data) {
+  const { rentalRequests=[], facilityRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[] } = data || {};
+  const CC = NOTIF_CC, L = notifLabel;
+  const today    = new Date().toISOString().slice(0,10);
+  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
+  const myId     = profile?.studentId || "";
+  let alerts;
+  if (isAdmin) {
+    alerts = [
+      ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 발생: ${L(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt })),
+      ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${L(r)}`, desc:`${r.studentName}`, time:r.createdAt })),
+      ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt })),
+      ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt })),
+      ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt })),
+    ];
+  } else {
+    const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
+    const myFacility = facilityRequests.filter(r=>r.studentId===myId);
+    const recentNotices = notices.filter(n => n.date >= new Date(Date.now()-3*86400000).toISOString().slice(0,10));
+    const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
+    alerts = [
+      ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
+      ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${L(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
+      ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt })),
+      ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt })),
+      ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
+      ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
+      ...recentNotices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt })),
+      ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
+    ];
+  }
+  const ts = (t) => t?.seconds ? t.seconds*1000 : (t ? new Date(t).getTime() : 0);
+  return alerts.sort((a,b) => ts(b.time) - ts(a.time));
+}
+
 function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }) {
-  const CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
+  const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
 
   // 읽은 알림 관리 (localStorage)
@@ -67,43 +111,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
     return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
-  const getLabel = (r) => {
-    if (!r.items || r.items.length === 0) return r.equipName || "-";
-    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
-    return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
-  };
-
-  const today    = new Date().toISOString().slice(0,10);
-  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
-  const myId     = profile?.studentId || "";
-
-  // ── 관리자 알림 ──
-  const adminAlerts = isAdmin ? [
-    ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red,    bg:CC.redLight,    icon:"⚠️", title:`연체 발생: ${getLabel(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt })),
-    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${getLabel(r)}`, desc:`${r.studentName}`, time:r.createdAt })),
-    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt })),
-    ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt })),
-    ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt })),
-  ] : [];
-
-  // ── 학생 알림 ──
-  const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
-  const myFacility = facilityRequests.filter(r=>r.studentId===myId);
-  const recentNotices = [...notices].sort((a,b)=>b.date>a.date?1:-1).slice(0,3);
-  const upcoming = licenseSchedules.filter(s=>s.date>=today&&s.status!=="완료").slice(0,3);
-
-  const studentAlerts = !isAdmin ? [
-    ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${getLabel(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
-    ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${getLabel(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${getLabel(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt })),
-    ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${getLabel(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt })),
-    ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
-    ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-    ...recentNotices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt })),
-    ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
-  ] : [];
-
-  const allAlerts = (isAdmin ? adminAlerts : studentAlerts).filter(a => !seenIds.has(a.id));
+  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }).filter(a => !seenIds.has(a.id));
   const cats = ["전체", ...new Set(allAlerts.map(a=>a.cat))];
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a=>a.cat===selCat);
 
@@ -375,9 +383,6 @@ function AppContent() {
   const isTeacherProf = isAdmin && (adminRole === "teacher" || adminRole === "professor"); // 교사+교수: 제한됨
   const isSubAdmin    = isTeacherProf; // 하위 호환
 
-  const today    = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const myId     = profile?.studentId || "";
 
   // 읽은 알림 ID 목록 (useMemo 대신 직접 계산 - hooks 규칙 준수)
   const seenNotifIds = (() => {
@@ -387,34 +392,8 @@ function AppContent() {
 
   const notSeen = (id) => !seenNotifIds.has(id);
 
-  // 학생용 대여/시설 데이터
-  const myRentals  = rentalRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
-  const myFacility = facilityRequests.filter(r => r.studentId === myId);
-  const recentNotices    = notices.filter(n => n.date >= new Date(Date.now() - 3*86400000).toISOString().slice(0,10));
-  const upcomingLicense  = licenseSchedules.filter(s => s.date >= today && s.status !== "완료");
-
-  // 관리자 notifCount (seenIds 반영)
-  const adminNotifCount = isAdmin ? [
-    ...rentalRequests.filter(r=>r.status==="연체").map(r=>`연체_${r.id}`),
-    ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>`승인대기_${r.id}`),
-    ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>`시설대기_${r.id}`),
-    ...allUsers.filter(u=>u.status==="pending").map(u=>`가입_${u.id}`),
-    ...pwResets.filter(r=>r.status==="pending").map(r=>`비번_${r.id}`),
-  ].filter(notSeen).length : 0;
-
-  // 학생 notifCount (seenIds 반영)
-  const studentNotifCount = !isAdmin ? [
-    ...myRentals.filter(r=>r.status==="승인됨").map(r=>`승인됨_${r.id}`),
-    ...myRentals.filter(r=>r.status==="거절됨").map(r=>`거절됨_${r.id}`),
-    ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>`반납D1_${r.id}`),
-    ...myRentals.filter(r=>r.status==="연체").map(r=>`연체_${r.id}`),
-    ...myFacility.filter(r=>r.status==="승인됨").map(r=>`시설승인_${r.id}`),
-    ...myFacility.filter(r=>r.status==="거절됨").map(r=>`시설거절_${r.id}`),
-    ...recentNotices.map(n=>`공지_${n.id}`),
-    ...upcomingLicense.map(s=>`라이센스_${s.id}`),
-  ].filter(notSeen).length : 0;
-
-  const notifCount = isAdmin ? adminNotifCount : studentNotifCount;
+  // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
+  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }).filter(a => notSeen(a.id)).length;
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
