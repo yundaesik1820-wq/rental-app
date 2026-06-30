@@ -50,11 +50,12 @@ function notifLabel(r) {
 
 // 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
 function buildAlerts(isAdmin, profile, data) {
-  const { rentalRequests=[], facilityRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[] } = data || {};
+  const { rentalRequests=[], facilityRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[] } = data || {};
   const CC = NOTIF_CC, L = notifLabel;
   const today    = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
   const myId     = profile?.studentId || "";
+  const uid      = profile?.uid || "";
   let alerts;
   if (isAdmin) {
     alerts = [
@@ -67,7 +68,7 @@ function buildAlerts(isAdmin, profile, data) {
   } else {
     const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
     const myFacility = facilityRequests.filter(r=>r.studentId===myId);
-    const recentNotices = notices.filter(n => n.date >= new Date(Date.now()-3*86400000).toISOString().slice(0,10));
+    const recentNotices = notices.filter(n => n.date >= new Date(Date.now()-30*86400000).toISOString().slice(0,10));
     const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
       ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
@@ -80,11 +81,19 @@ function buildAlerts(isAdmin, profile, data) {
       ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
     ];
   }
+  // SNS 알림 (공통) — 새 씬스패치 기사 + 내 글에 달린 댓글
+  const myPostIds = new Set(communityPosts.filter(p=>p.authorId===uid).map(p=>p.id));
+  alerts.push(
+    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:`${a.authorName||"작성자"} 기자${a.tag?` · ${a.tag}`:""}`, time:a.createdAt, room:"scenepatch" })),
+    ...communityComments.filter(c=>myPostIds.has(c.postId) && c.authorId!==uid).map(c=>({ id:`댓글_${c.id}`, cat:"SNS", color:CC.teal, bg:CC.tealLight, icon:"💬", title:"내 글에 새 댓글이 달렸어요", desc:(c.content||"").slice(0,40), time:c.createdAt, tab:"community" })),
+  );
+  // 30일 윈도우 + 최신순 정렬
   const ts = (t) => t?.seconds ? t.seconds*1000 : (t ? new Date(t).getTime() : 0);
-  return alerts.sort((a,b) => ts(b.time) - ts(a.time));
+  const cutoff = Date.now() - 30*86400000;
+  return alerts.filter(a => { const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
-function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }) {
+function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
 
@@ -96,6 +105,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
     return new Set([...local, ...(profile?.seenNotifs || [])]);
   });
   const markSeen = (id) => {
+    if (seenIds.has(id)) return;
     const next = new Set([...seenIds, id]);
     setSeenIds(next);
     localStorage.setItem(SEEN_KEY, JSON.stringify([...next]));
@@ -118,9 +128,25 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
     return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
-  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }).filter(a => !seenIds.has(a.id));
-  const cats = ["전체", ...new Set(allAlerts.map(a=>a.cat))];
-  const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a=>a.cat===selCat);
+  // 당근식 4탭 묶음 — 대여/반납·시설·라이센스·회원 → "상태"
+  const groupOf = (a) => (a.cat === "공지" || a.cat === "SNS") ? a.cat : "상태";
+  const TABS = ["전체", "상태", "공지", "SNS"];
+
+  // 클릭 시 이동할 페이지 (학생/관리자 탭 차이 반영)
+  const navTarget = (a) => {
+    if (a.room) return { room: a.room };
+    if (a.tab)  return { tab: a.tab };
+    if (a.cat === "공지")     return { tab: "notices" };
+    if (a.cat === "회원")     return { tab: "students" };
+    if (a.cat === "라이센스") return { tab: "license" };
+    if (a.cat === "시설")     return { tab: isAdmin ? "facility" : "calendar" };
+    return { tab: isAdmin ? "rental" : "calendar" }; // 대여/반납
+  };
+  const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
+
+  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments });
+  const unreadIn = (g) => allAlerts.filter(a => !seenIds.has(a.id) && (g === "전체" || groupOf(a) === g)).length;
+  const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
   return (
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }}>
@@ -128,42 +154,52 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
         {/* 헤더 */}
         <div style={{ padding:"20px 20px 12px", borderBottom:`1px solid ${CC.border}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-            <div style={{ fontSize:18, fontWeight:800, color:CC.navy }}>🔔 알림 {allAlerts.length > 0 && <span style={{ background:CC.red, color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:12, marginLeft:6 }}>{allAlerts.length}</span>}</div>
+            <div style={{ fontSize:18, fontWeight:800, color:CC.navy }}>🔔 알림 {unreadIn("전체") > 0 && <span style={{ background:CC.red, color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:12, marginLeft:6 }}>{unreadIn("전체")}</span>}</div>
             <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:CC.muted }}>✕</button>
           </div>
-          {/* 카테고리 탭 */}
+          {/* 카테고리 탭 (당근식 4탭) */}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-            {cats.map(c=>(
-              <button key={c} onClick={()=>setSelCat(c)}
-                style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${selCat===c?CC.navy:CC.border}`, background:selCat===c?CC.navy:"transparent", color:selCat===c?"#fff":CC.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
-                {c} {c!=="전체" && `(${allAlerts.filter(a=>a.cat===c).length})`}
-              </button>
-            ))}
+            {TABS.map(c=>{
+              const n = unreadIn(c);
+              return (
+                <button key={c} onClick={()=>setSelCat(c)}
+                  style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${selCat===c?CC.navy:CC.border}`, background:selCat===c?CC.navy:"transparent", color:selCat===c?"#fff":CC.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                  {c}{n>0 && <span style={{ marginLeft:4, color:selCat===c?"#fff":CC.red, fontWeight:800 }}>{n}</span>}
+                </button>
+              );
+            })}
           </div>
         </div>
         {/* 알림 목록 */}
         <div style={{ flex:1, overflowY:"auto", padding:16 }}>
           {filtered.length === 0 && (
             <div style={{ textAlign:"center", padding:"60px 0", color:CC.muted }}>
-              <div style={{ fontSize:40, marginBottom:12 }}>✅</div>
-              새 알림 없음
+              <div style={{ fontSize:40, marginBottom:12 }}>📭</div>
+              알림이 없어요
             </div>
           )}
-          {filtered.map((a,i) => (
-            <div key={i} onClick={() => markSeen(a.id)}
-              style={{ background:a.bg, borderRadius:12, padding:"12px 14px", marginBottom:8, borderLeft:`4px solid ${a.color}`, cursor:"pointer", transition:"opacity 0.2s" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                  <span style={{ fontSize:16 }}>{a.icon}</span>
-                  <span style={{ fontSize:11, background:a.color+"20", color:a.color, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>{a.cat}</span>
+          {filtered.map((a) => {
+            const read = seenIds.has(a.id);
+            const skin = read
+              ? { background:"#fff", border:`1px solid ${CC.border}`, opacity:0.6 }
+              : { background:a.bg, borderLeft:`4px solid ${a.color}` };
+            return (
+              <div key={a.id} onClick={() => handleClick(a)}
+                style={{ ...skin, borderRadius:12, padding:"12px 14px", marginBottom:8, cursor:"pointer", transition:"all 0.2s" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                    {!read && <span style={{ width:7, height:7, borderRadius:"50%", background:a.color, flexShrink:0 }} />}
+                    <span style={{ fontSize:16 }}>{a.icon}</span>
+                    <span style={{ fontSize:11, background:(read?CC.muted:a.color)+"20", color:read?CC.muted:a.color, borderRadius:4, padding:"1px 6px", fontWeight:700 }}>{a.cat}</span>
+                  </div>
+                  <span style={{ fontSize:10, color:CC.muted, flexShrink:0, marginLeft:8, marginTop:2 }}>{read ? "읽음" : "새 알림 ›"}</span>
                 </div>
-                <span style={{ fontSize:10, color:CC.muted, flexShrink:0, marginLeft:8, marginTop:2 }}>탭하여 닫기</span>
+                <div style={{ fontSize:13, fontWeight:700, color:read?CC.muted:CC.text, marginBottom:2 }}>{a.title}</div>
+                {a.desc && <div style={{ fontSize:11, color:CC.muted, marginBottom:4 }}>{a.desc}</div>}
+                {a.time && <div style={{ fontSize:10, color:CC.muted+"aa" }}>{fmtTime(a.time)}</div>}
               </div>
-              <div style={{ fontSize:13, fontWeight:700, color:CC.text, marginBottom:2 }}>{a.title}</div>
-              {a.desc && <div style={{ fontSize:11, color:CC.muted, marginBottom:4 }}>{a.desc}</div>}
-              {a.time && <div style={{ fontSize:10, color:CC.muted+"aa" }}>{fmtTime(a.time)}</div>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>
@@ -380,6 +416,9 @@ function AppContent() {
   const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
   const { data: notices }          = useCollection("notices",          "createdAt");
   const { data: licenseSchedules } = useCollection("licenseSchedules", "date");
+  const { data: articles }          = useCollection("scenepatchArticles", "createdAt");
+  const { data: communityPosts }    = useCollection("communityPosts",     "createdAt");
+  const { data: communityComments } = useCollection("communityComments",  "createdAt");
 
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
@@ -401,7 +440,7 @@ function AppContent() {
   const notSeen = (id) => !seenNotifIds.has(id);
 
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
-  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules }).filter(a => notSeen(a.id)).length;
+  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }).filter(a => notSeen(a.id)).length;
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
@@ -600,12 +639,16 @@ function AppContent() {
           onClose={() => setShowNotif(false)}
           isAdmin={isAdmin}
           profile={profile}
+          onNavigate={({ tab, room }) => { setShowNotif(false); if (room) openCommunityRoom(room); else if (tab) setTab(tab); }}
           rentalRequests={rentalRequests}
           facilityRequests={facilityRequests}
           allUsers={allUsers}
           pwResets={pwResets}
           notices={notices}
           licenseSchedules={licenseSchedules}
+          articles={articles}
+          communityPosts={communityPosts}
+          communityComments={communityComments}
         />
       )}
     </>
