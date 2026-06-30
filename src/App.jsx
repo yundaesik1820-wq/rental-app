@@ -6,6 +6,8 @@ import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import { Spinner } from "./components/UI";
+import { db } from "./firebase";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 // Admin pages
 import Dashboard  from "./pages/admin/Dashboard";
@@ -89,13 +91,18 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
   // 읽은 알림 관리 (localStorage)
   const SEEN_KEY = `seen_notifs_${profile?.uid || "guest"}`;
   const [seenIds, setSeenIds] = React.useState(() => {
-    try { return new Set(JSON.parse(localStorage.getItem(SEEN_KEY) || "[]")); }
-    catch { return new Set(); }
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem(SEEN_KEY) || "[]"); } catch {}
+    return new Set([...local, ...(profile?.seenNotifs || [])]);
   });
   const markSeen = (id) => {
     const next = new Set([...seenIds, id]);
     setSeenIds(next);
     localStorage.setItem(SEEN_KEY, JSON.stringify([...next]));
+    // 서버 동기화 — 기기 간 읽음 공유 (실패해도 로컬은 유지)
+    if (profile?.uid) {
+      updateDoc(doc(db, "users", profile.uid), { seenNotifs: arrayUnion(id) }).catch(() => {});
+    }
   };
 
   // 시간 포맷
@@ -386,8 +393,9 @@ function AppContent() {
 
   // 읽은 알림 ID 목록 (useMemo 대신 직접 계산 - hooks 규칙 준수)
   const seenNotifIds = (() => {
-    try { return new Set(JSON.parse(localStorage.getItem(`seen_notifs_${profile?.uid}`) || "[]")); }
-    catch { return new Set(); }
+    let local = [];
+    try { local = JSON.parse(localStorage.getItem(`seen_notifs_${profile?.uid}`) || "[]"); } catch {}
+    return new Set([...local, ...(profile?.seenNotifs || [])]);
   })();
 
   const notSeen = (id) => !seenNotifIds.has(id);
