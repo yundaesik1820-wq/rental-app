@@ -68,7 +68,7 @@ function buildAlerts(isAdmin, profile, data) {
   } else {
     const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
     const myFacility = facilityRequests.filter(r=>r.studentId===myId);
-    const recentNotices = notices.filter(n => n.date >= new Date(Date.now()-30*86400000).toISOString().slice(0,10));
+    const recentNotices = notices; // 공지는 30일 윈도우 예외 — 지금까지의 공지 모두 표시
     const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
       ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
@@ -90,7 +90,7 @@ function buildAlerts(isAdmin, profile, data) {
   // 30일 윈도우 + 최신순 정렬
   const ts = (t) => t?.seconds ? t.seconds*1000 : (t ? new Date(t).getTime() : 0);
   const cutoff = Date.now() - 30*86400000;
-  return alerts.filter(a => { const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
+  return alerts.filter(a => { if (a.cat === "공지") return true; const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
 function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
