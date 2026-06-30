@@ -32,12 +32,15 @@
         transform: scale(0.96);
       }
 
-      /* 스프링 누름 모션 (알림 아이콘·항목 등 — 통통 튀는 자연스러운 탭감) */
+      /* 스무스한 통통 누름 모션 (알림 아이콘·항목 등) */
+      /* 뗄 때: 부드럽게 오버슈트하며 통 튀어오름 */
       .tap-spring {
-        transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+        transition: transform 0.45s cubic-bezier(0.22, 1.2, 0.36, 1);
       }
+      /* 누를 때: 빠르고 부드럽게 살짝 눌림 */
       .tap-spring:active {
-        transform: scale(0.9);
+        transform: scale(0.93);
+        transition: transform 0.12s cubic-bezier(0.33, 0, 0.3, 1);
       }
 
       #splash {
