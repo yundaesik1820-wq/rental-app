@@ -1,5 +1,6 @@
 const functions = require("firebase-functions");
 const admin     = require("firebase-admin");
+const Anthropic = require("@anthropic-ai/sdk");
 
 admin.initializeApp();
 
@@ -302,3 +303,74 @@ exports.sendCustomAlert = functions.https.onCall(async (data, context) => {
   }
   return { success: true, sent, notFound };
 });
+
+// ── 시간표 이미지 → AI 파싱 (Claude 비전) ──────────────────
+// 학생이 시간표 스크린샷을 올리면 수업 목록(요일/수업명/강의실/교수/시간)으로 추출.
+const TIMETABLE_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    classes: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        properties: {
+          day:       { type: "string", enum: ["월", "화", "수", "목", "금"] },
+          name:      { type: "string" },
+          location:  { type: "string" },
+          professor: { type: "string" },
+          startTime: { type: "string", description: "HH:MM 24시간 형식" },
+          endTime:   { type: "string", description: "HH:MM 24시간 형식" },
+        },
+        required: ["day", "name", "location", "professor", "startTime", "endTime"],
+      },
+    },
+  },
+  required: ["classes"],
+};
+
+exports.parseTimetableImage = functions
+  .runWith({ secrets: ["ANTHROPIC_API_KEY"], timeoutSeconds: 120, memory: "512MB" })
+  .https.onCall(async (data, context) => {
+    if (!context.auth)
+      throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
+
+    const { imageBase64, mediaType } = data || {};
+    if (!imageBase64)
+      throw new functions.https.HttpsError("invalid-argument", "이미지가 없습니다.");
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    const media = allowed.includes(mediaType) ? mediaType : "image/jpeg";
+
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const prompt =
+      "이 이미지는 대학교 주간 시간표야. 표에 있는 모든 수업을 추출해줘.\n" +
+      "- 요일은 월/화/수/목/금 중 하나로.\n" +
+      "- 시간은 24시간 HH:MM 형식(예: 09:00, 13:30). 교시만 있으면 1교시=09:00 기준으로 합리적으로 환산.\n" +
+      "- 강의실/교수명이 안 보이면 빈 문자열로.\n" +
+      "- 표에 실제로 있는 수업만, 빈 칸은 무시.";
+
+    let parsed;
+    try {
+      const resp = await client.messages.create({
+        model: "claude-opus-4-8",
+        max_tokens: 4000,
+        output_config: { format: { type: "json_schema", schema: TIMETABLE_SCHEMA } },
+        messages: [{
+          role: "user",
+          content: [
+            { type: "image", source: { type: "base64", media_type: media, data: imageBase64 } },
+            { type: "text", text: prompt },
+          ],
+        }],
+      });
+      const textBlock = (resp.content || []).find((b) => b.type === "text");
+      parsed = JSON.parse(textBlock.text);
+    } catch (e) {
+      console.error("시간표 파싱 실패:", e);
+      throw new functions.https.HttpsError("internal", "시간표 인식에 실패했어요. 더 선명한 사진으로 다시 시도해줘.");
+    }
+
+    const classes = Array.isArray(parsed.classes) ? parsed.classes : [];
+    return { classes };
+  });

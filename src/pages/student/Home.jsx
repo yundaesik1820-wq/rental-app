@@ -407,6 +407,8 @@ export default function StudentHome({ onOpenRoom }) {
   }, [notices]);
   const [editClass,     setEditClass]     = useState(null);  // null=추가, obj=수정
   const [showClassForm, setShowClassForm] = useState(false);
+  const [importing,     setImporting]     = useState(false); // 사진 인식 중
+  const [importPreview, setImportPreview] = useState(null);  // 인식 결과 확인 모달 [{...}]
 
   const uid = profile?.uid;
 
@@ -442,6 +444,45 @@ export default function StudentHome({ onOpenRoom }) {
     await saveTimetable(updated);
     setShowClassForm(false);
     setEditClass(null);
+  };
+
+  // 📷 시간표 사진 → AI 인식 → 확인 모달
+  const handleImportImage = async (file) => {
+    if (!file) return;
+    setImporting(true);
+    try {
+      const dataUrl = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+      const m = /^data:(image\/\w+);base64,(.+)$/.exec(dataUrl || "");
+      if (!m) throw new Error("이미지 형식 오류");
+      const [, mediaType, imageBase64] = m;
+
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const fn = httpsCallable(getFunctions(undefined, "us-central1"), "parseTimetableImage");
+      const { data } = await fn({ imageBase64, mediaType });
+      const got = (data?.classes || []).filter(c => c && c.name && c.day && c.startTime && c.endTime);
+      if (got.length === 0) { alert("시간표를 못 읽었어요. 더 선명한 사진으로 다시 시도해줘."); return; }
+      // 색상 배정 후 미리보기
+      setImportPreview(got.map((c, i) => ({
+        day: c.day, name: c.name, location: c.location || "", professor: c.professor || "",
+        startTime: c.startTime, endTime: c.endTime, color: COLORS[(classes.length + i) % COLORS.length],
+      })));
+    } catch (e) {
+      console.error(e);
+      alert("인식에 실패했어요. 잠시 후 다시 시도해줘.");
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!importPreview) return;
+    await saveTimetable([...classes, ...importPreview]);
+    setImportPreview(null);
   };
 
   const myId = profile?.studentId || profile?.email || "";
@@ -854,8 +895,15 @@ export default function StudentHome({ onOpenRoom }) {
       <div style={{ marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
           <SectionTitle>📅 내 시간표</SectionTitle>
-          <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>+ 수업 추가</Btn>
+          <div style={{ display: "flex", gap: 6 }}>
+            <Btn onClick={() => document.getElementById("tt-import-input")?.click()} color={C.teal} small disabled={importing}>
+              {importing ? "인식 중…" : "📷 사진으로"}
+            </Btn>
+            <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>+ 수업 추가</Btn>
+          </div>
         </div>
+        <input id="tt-import-input" type="file" accept="image/*" style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; handleImportImage(f); }} />
         {classes.length === 0 ? (
           <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
@@ -1284,6 +1332,29 @@ export default function StudentHome({ onOpenRoom }) {
             onDelete={handleDeleteClass}
             onClose={() => { setShowClassForm(false); setEditClass(null); }}
           />
+        </Modal>
+      )}
+
+      {/* 📷 사진 인식 결과 확인 모달 */}
+      {importPreview && (
+        <Modal onClose={() => setImportPreview(null)} width={420}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 6 }}>인식된 수업 {importPreview.length}개</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>맞으면 추가하고, 틀린 건 추가 후 수업을 눌러 수정/삭제하면 돼.</div>
+          <div style={{ maxHeight: "45vh", overflowY: "auto", marginBottom: 14 }}>
+            {importPreview.map((c, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: `1px solid ${C.border}` }}>
+                <span style={{ width: 10, height: 10, borderRadius: "50%", background: c.color, flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{c.day} · {c.name}</div>
+                  <div style={{ fontSize: 11, color: C.muted }}>{c.startTime}~{c.endTime}{c.location ? ` · ${c.location}` : ""}{c.professor ? ` · ${c.professor}` : ""}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <Btn onClick={() => setImportPreview(null)} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={confirmImport} color={C.navy} full>{importPreview.length}개 추가</Btn>
+          </div>
         </Modal>
       )}
 
