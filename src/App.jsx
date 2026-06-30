@@ -187,8 +187,8 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
               ? { background:"#fff", border:`1px solid ${CC.border}`, opacity:0.6 }
               : { background:a.bg, borderLeft:`4px solid ${a.color}` };
             return (
-              <div key={a.id} onClick={() => handleClick(a)}
-                style={{ ...skin, borderRadius:12, padding:"12px 14px", marginBottom:8, cursor:"pointer", transition:"all 0.2s" }}>
+              <div key={a.id} onClick={() => handleClick(a)} className="tap-spring"
+                style={{ ...skin, borderRadius:12, padding:"12px 14px", marginBottom:8, cursor:"pointer", transition:"background 0.2s, opacity 0.2s, box-shadow 0.2s" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
                     {!read && <span style={{ width:7, height:7, borderRadius:"50%", background:a.color, flexShrink:0 }} />}

@@ -173,7 +173,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
             {currentNav?.label}
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: "env(safe-area-inset-right, 0px)" }}>
-            <button onClick={onNotif} style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", alignItems: "center", color: C.muted }}>
+            <button onClick={onNotif} className="tap-spring" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", alignItems: "center", color: C.muted }}>
               <Bell size={22} />
               {notifCount > 0 && (
                 <span style={{ position: "absolute", top: 0, right: 0, background: C.red, color: "#fff", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{notifCount}</span>

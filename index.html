@@ -32,6 +32,14 @@
         transform: scale(0.96);
       }
 
+      /* 스프링 누름 모션 (알림 아이콘·항목 등 — 통통 튀는 자연스러운 탭감) */
+      .tap-spring {
+        transition: transform 0.16s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+      .tap-spring:active {
+        transform: scale(0.9);
+      }
+
       #splash {
         position: fixed;
         inset: 0;
