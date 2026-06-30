@@ -214,13 +214,14 @@ function posLabel(pos) {
   return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
 }
 
-export default function Community({ onExit }) {
+export default function Community({ onExit, initialRoom, initialPostId, initialArticleId, onRoomConsumed }) {
   const { profile } = useAuth();
 
-  // 진입 인트로 - 세션당 한 번만 표시
+  // 진입 인트로 - 세션당 한 번만 표시 (알림 딥링크로 진입하면 인트로 건너뜀)
   const INTRO_KEY = "everytime_intro_shown_session";
   const [showIntro, setShowIntro] = useState(() => {
     if (typeof window === "undefined") return false;
+    if (initialRoom || initialPostId || initialArticleId) return false;
     return sessionStorage.getItem(INTRO_KEY) !== "1";
   });
   useEffect(() => {
@@ -235,6 +236,17 @@ export default function Community({ onExit }) {
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
   const [selectedTool, setSelectedTool] = useState(null);
+
+  // 🔔 알림 딥링크 — 룸/기사/글 진입 (App에서 받은 타깃을 로컬로 복사 후 즉시 소비)
+  const [deepArticleId, setDeepArticleId] = useState(null);
+  const [deepPostId, setDeepPostId] = useState(null);
+  useEffect(() => {
+    if (!initialRoom && !initialArticleId && !initialPostId) return;
+    if (initialRoom)      setSelectedRoom(initialRoom);
+    if (initialArticleId) setDeepArticleId(initialArticleId);
+    if (initialPostId)    setDeepPostId(initialPostId);
+    onRoomConsumed?.();
+  }, [initialRoom, initialArticleId, initialPostId]);
 
   // 🔧 상태바(노치) 높이를 JS로 직접 측정해서 px로 적용
   //    일부 WebView(특히 구형 안드로이드)는 calc() 안에 중첩된 max()+env()를
@@ -262,6 +274,13 @@ export default function Community({ onExit }) {
 
   const { data: posts }    = useCollection("communityPosts",    "createdAt");
   const { data: comments } = useCollection("communityComments", "createdAt");
+
+  // 🔔 알림 딥링크 — 댓글 달린 글 상세 자동 열기 (posts 로드 후)
+  useEffect(() => {
+    if (!deepPostId || !posts.length) return;
+    const p = posts.find(x => x.id === deepPostId);
+    if (p) { openPost(p); setDeepPostId(null); }
+  }, [deepPostId, posts]);
 
   const adminRole  = profile?.adminRole || "super";
   // 학생 전용 룸 차단 대상: 교수·교사 (조교/슈퍼관리자/학생은 제외)
@@ -1115,7 +1134,7 @@ export default function Community({ onExit }) {
       )}
 
       {/* 📡 씬스패치 피드 */}
-      {selectedRoom === "scenepatch" && <ScenePatch />}
+      {selectedRoom === "scenepatch" && <ScenePatch initialArticleId={deepArticleId} onConsumed={() => setDeepArticleId(null)} />}
 
       {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
       {selectedRoom && selectedRoom !== "tools" && selectedRoom !== "scenepatch" && (

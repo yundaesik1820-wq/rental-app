@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { C, NOTICE_CAT } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, PageTitle, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
@@ -17,13 +17,21 @@ async function uploadFile(file) {
   });
 }
 
-export default function Notices({ isAdmin = true }) {
+export default function Notices({ isAdmin = true, initialNoticeId, onConsumed }) {
   const { profile } = useAuth();
   const { data: notices }  = useCollection("notices", "createdAt");
   const { data: comments } = useCollection("noticeComments", "createdAt");
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
+
+  // 알림 딥링크 — 특정 공지 상세 자동 열기
+  useEffect(() => {
+    if (!initialNoticeId || !notices.length) return;
+    const n = notices.find(x => x.id === initialNoticeId);
+    if (n) { setDetail(n); setCommentText(""); }
+    onConsumed?.();
+  }, [initialNoticeId, notices]);
   const [pdfView, setPdfView]   = useState(null); // 풀스크린 PDF 보기 {url, title}
   const pdfRef = useRef();
   const [pdfUploading, setPdfUploading] = useState(false);

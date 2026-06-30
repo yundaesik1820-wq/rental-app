@@ -81,13 +81,13 @@ function buildAlerts(isAdmin, profile, data) {
   }
   // 공지 알림 (공통) — 관리자·학생 모두 표시, 30일 윈도우 예외(아래 필터에서 제외)
   alerts.push(
-    ...notices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt||n.date })),
+    ...notices.map(n=>({ id:`공지_${n.id}`, cat:"공지", color:CC.blue, bg:CC.blueLight, icon:"📌", title:n.title, desc:n.date, time:n.createdAt||n.date, noticeId:n.id })),
   );
   // SNS 알림 (공통) — 새 씬스패치 기사 + 내 글에 달린 댓글
   const myPostIds = new Set(communityPosts.filter(p=>p.authorId===uid).map(p=>p.id));
   alerts.push(
-    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:`${a.authorName||"작성자"} 기자${a.tag?` · ${a.tag}`:""}`, time:a.createdAt, room:"scenepatch" })),
-    ...communityComments.filter(c=>myPostIds.has(c.postId) && c.authorId!==uid).map(c=>({ id:`댓글_${c.id}`, cat:"SNS", color:CC.teal, bg:CC.tealLight, icon:"💬", title:"내 글에 새 댓글이 달렸어요", desc:(c.content||"").slice(0,40), time:c.createdAt, tab:"community" })),
+    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:`${a.authorName||"작성자"} 기자${a.tag?` · ${a.tag}`:""}`, time:a.createdAt, room:"scenepatch", articleId:a.id })),
+    ...communityComments.filter(c=>myPostIds.has(c.postId) && c.authorId!==uid).map(c=>({ id:`댓글_${c.id}`, cat:"SNS", color:CC.teal, bg:CC.tealLight, icon:"💬", title:"내 글에 새 댓글이 달렸어요", desc:(c.content||"").slice(0,40), time:c.createdAt, tab:"community", postId:c.postId })),
   );
   // 30일 윈도우 + 최신순 정렬
   const ts = (t) => t?.seconds ? t.seconds*1000 : (t ? new Date(t).getTime() : 0);
@@ -134,11 +134,12 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
   const groupOf = (a) => (a.cat === "공지" || a.cat === "SNS") ? a.cat : "상태";
   const TABS = ["전체", "상태", "공지", "SNS"];
 
-  // 클릭 시 이동할 페이지 (학생/관리자 탭 차이 반영)
+  // 클릭 시 이동할 페이지 + 실제 글까지 여는 딥링크 타깃
   const navTarget = (a) => {
-    if (a.room) return { room: a.room };
-    if (a.tab)  return { tab: a.tab };
-    if (a.cat === "공지")     return { tab: "notices" };
+    if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
+    if (a.cat === "SNS" && a.articleId) return { tab: "community", room: "scenepatch", articleId: a.articleId };
+    if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
+    if (a.cat === "SNS")      return { tab: "community" };
     if (a.cat === "회원")     return { tab: "students" };
     if (a.cat === "라이센스") return { tab: "license" };
     if (a.cat === "시설")     return { tab: isAdmin ? "facility" : "calendar" };
@@ -402,6 +403,8 @@ function AppContent() {
   const [tab,       setTab]       = useState("home");
   const [communityRoom, setCommunityRoom] = useState(null);
   const openCommunityRoom = (roomId) => { setCommunityRoom(roomId); setTab("community"); };
+  // 알림 클릭 시 실제 글까지 여는 딥링크 타깃 { postId?, articleId?, noticeId? }
+  const [notifTarget, setNotifTarget] = useState(null);
   const [themeMode, setThemeMode] = useState(getThemeMode());
 
   // 테마 변경 이벤트 구독 → 리렌더 트리거
@@ -605,7 +608,7 @@ function AppContent() {
         case "students": return <Students />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats isAdmin={true} />;
-        case "notices":  return <Notices isAdmin={true} />;
+        case "notices":  return <Notices isAdmin={true} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "settings": return <Settings />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
@@ -613,7 +616,7 @@ function AppContent() {
         case "external": return <ExternalRental />;
         case "community":
           // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
-          return <Community onExit={() => setTab("home")} />;
+          return <Community onExit={() => setTab("home")} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
         default:         return <Dashboard setTab={setTab} />;
       }
     } else {
@@ -622,9 +625,9 @@ function AppContent() {
         case "equip":    return <StudentRentalList setTab={setTab} />;
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} />;
-        case "notices":  return <Notices isAdmin={false} />;
+        case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License />;
-        case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} onRoomConsumed={() => setCommunityRoom(null)} />;
+        case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
         case "mypage":   return <StudentMyPage />;
         default:         return <StudentHome onOpenRoom={openCommunityRoom} />;
       }
@@ -641,7 +644,12 @@ function AppContent() {
           onClose={() => setShowNotif(false)}
           isAdmin={isAdmin}
           profile={profile}
-          onNavigate={({ tab, room }) => { setShowNotif(false); if (room) openCommunityRoom(room); else if (tab) setTab(tab); }}
+          onNavigate={({ tab, room, postId, articleId, noticeId }) => {
+            setShowNotif(false);
+            setNotifTarget({ postId, articleId, noticeId });
+            setCommunityRoom(room || null);
+            if (tab) setTab(tab);
+          }}
           rentalRequests={rentalRequests}
           facilityRequests={facilityRequests}
           allUsers={allUsers}

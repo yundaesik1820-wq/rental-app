@@ -46,7 +46,7 @@ const newBlock = (type) => {
 };
 
 /* ════════════════════════ 메인 ════════════════════════ */
-export default function ScenePatch() {
+export default function ScenePatch({ initialArticleId, onConsumed }) {
   const { user, profile } = useAuth();
   const { data: articles, loading } = useCollection("scenepatchArticles");
 
@@ -66,6 +66,14 @@ export default function ScenePatch() {
     // 조회수 +1 (비원자적, 단순 증가)
     updateItem("scenepatchArticles", a.id, { views: (a.views || 0) + 1 }).catch(() => {});
   };
+
+  // 알림 딥링크 — 특정 기사 자동 열기
+  useEffect(() => {
+    if (!initialArticleId || !articles.length) return;
+    const a = articles.find(x => x.id === initialArticleId);
+    if (a) openArticle(a);
+    onConsumed?.();
+  }, [initialArticleId, articles]);
 
   const shown = filter === "전체" ? articles : articles.filter(a => a.tag === filter);
   const HERO_MAX = 5; // 히어로 슬라이드 개수 (최신 N개)
