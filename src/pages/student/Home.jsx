@@ -931,10 +931,10 @@ export default function StudentHome({ onOpenRoom }) {
 
       {/* 시간표 */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
           <SectionTitle>📅 내 시간표</SectionTitle>
           {classes.length > 0 && (
-            <div style={{ display: "flex", gap: 6, marginLeft: "auto" }}>
+            <div style={{ display: "flex", gap: 6, marginLeft: "auto", marginTop: 12 }}>
               <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
                 style={{ background: "none", border: `1px solid ${C.border}`, borderRadius: 8, color: C.text, fontSize: 11, fontWeight: 700, padding: "4px 9px", cursor: "pointer", fontFamily: "inherit" }}>+ 수업 추가</button>
               <button onClick={handleClearAll}
@@ -1108,7 +1108,7 @@ export default function StudentHome({ onOpenRoom }) {
                       <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
                         <input value={friendSearch} onChange={e => { setFriendSearch(e.target.value); setFriendPage(1); }}
                           placeholder="이름 또는 학번 검색"
-                          style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+                          style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                         {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
                           <button key={v} onClick={() => { setFriendSort(v); setFriendPage(1); }}
                             style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?C.bg:C.muted }}>
@@ -1170,7 +1170,7 @@ export default function StudentHome({ onOpenRoom }) {
                           </button>
                           {Array.from({length:totalPages}, (_,i) => i+1).map(p => (
                             <button key={p} onClick={() => setFriendPage(p)}
-                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?C.bg:C.bg, fontWeight:friendPage===p?700:400, minWidth:32 }}>
+                              style={{ background:friendPage===p?C.navy:C.bg, border:`1px solid ${friendPage===p?C.navy:C.border}`, borderRadius:7, padding:"4px 10px", fontSize:12, cursor:"pointer", color:friendPage===p?"#fff":C.text, fontWeight:friendPage===p?700:400, minWidth:32 }}>
                               {p}
                             </button>
                           ))}
@@ -1196,7 +1196,7 @@ export default function StudentHome({ onOpenRoom }) {
                   <input value={addFriendId} onChange={e => { setAddFriendId(e.target.value); setAddFriendMsg(""); }}
                     onKeyDown={e => e.key==="Enter" && sendFriendRequest()}
                     placeholder="학번 입력"
-                    style={{ flex:1, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+                    style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                   <button onClick={sendFriendRequest} disabled={addFriendLoading}
                     style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
                     {addFriendLoading?"...":"신청"}

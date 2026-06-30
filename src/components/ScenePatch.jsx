@@ -231,8 +231,7 @@ function HeroCarousel({ slides, onOpen }) {
               <div style={{ fontSize: 17, fontWeight: 900, color: "#fff", lineHeight: 1.32,
                 display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{a.title}</div>
               <div style={{ display: "flex", gap: 7, marginTop: 8, fontSize: 11, color: "rgba(255,255,255,0.82)", fontWeight: 600, flexWrap: "wrap" }}>
-                <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span>
-                <span>{fmtDate(a)}</span><span>·</span>
+                                <span>{fmtDate(a)}</span><span>·</span>
                 <span>👁 {a.views || 0}</span>
               </div>
             </div>
@@ -258,8 +257,7 @@ function Meta({ a, hot }) {
   return (
     <div style={{ display: "flex", gap: 8, marginTop: 9, fontSize: 11, color: DIM, fontWeight: 600, flexWrap: "wrap" }}>
       {hot && <><span style={{ color: GOLD, fontWeight: 800 }}>HOT</span><span>·</span></>}
-      <span>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span><span>·</span>
-      <span>{ds}</span><span>·</span>
+            <span>{ds}</span><span>·</span>
       <span>👁 {a.views || 0}</span>
     </div>
   );
@@ -566,8 +564,7 @@ function Article({ article, canManage, onClose }) {
         {a.isRecruit && <ApplySection article={a} />}
 
         {/* 바이라인 */}
-        <div style={{ marginTop: 30, paddingTop: 16, borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <span style={{ fontSize: 13.5, fontWeight: 800, color: TEXT }}>{a.byline?.trim() || `${a.authorName || "작성자"} 기자`}</span>
+        <div style={{ marginTop: 30, paddingTop: 16, borderTop: `1px solid ${LINE}`, display: "flex", alignItems: "center", justifyContent: "flex-end" }}>
           <span style={{ fontSize: 12, fontWeight: 900, letterSpacing: "0.04em", color: RED }}>SCENEPATCH</span>
         </div>
       </div>
