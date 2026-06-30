@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import * as XLSX from "xlsx";
 import { createUserWithEmailAndPassword, updatePassword as fbUpdatePassword } from "firebase/auth";
 import { doc, setDoc, serverTimestamp, updateDoc } from "firebase/firestore";
@@ -11,7 +11,7 @@ const DEPTS    = ["영상계열","성우계열","엔터테인먼트계열","음�
 const LICENSES = ["없음","1단계","2단계","3단계"];
 const admYear  = id => id ? `${id.slice(0,2)}학번` : "";
 
-export default function Students({ readOnly = false }) {
+export default function Students({ readOnly = false, focusId, onConsumed }) {
   const { data: allUsers }    = useCollection("users", "createdAt");
   const { data: allRequests }   = useCollection("rentalRequests", "createdAt");
   const { data: resetRequests } = useCollection("pwResetRequests", "createdAt");
@@ -40,6 +40,31 @@ export default function Students({ readOnly = false }) {
   const [showCreateMenu, setShowCreateMenu] = useState(false);
   const [showArchive,    setShowArchive]    = useState(false); // 거절됨/탈퇴 모달
   const [search, setSearch] = useState("");
+
+  // 🔔 알림 딥링크 — 해당 사용자/요청으로 이동 + 스크롤 + 하이라이트
+  const [flashId, setFlashId] = useState(null);
+  useEffect(() => {
+    if (!focusId) return;
+    const pr = resetRequests.find(r => r.id === focusId);
+    if (pr) { setTab("pwreset"); setFlashId(focusId); onConsumed?.(); return; }
+    const u = allUsers.find(x => x.id === focusId);
+    if (u) {
+      const t = u.status === "pending" ? "pending"
+              : u.role === "admin" ? "admin"
+              : u.role === "professor" ? "professor"
+              : "approved";
+      setTab(t); setSearch(""); setFlashId(focusId);
+    }
+    onConsumed?.();
+  }, [focusId, allUsers, resetRequests]);
+  useEffect(() => {
+    if (!flashId) return;
+    const t1 = setTimeout(() => {
+      document.getElementById(`user-row-${flashId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    const t2 = setTimeout(() => setFlashId(null), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [flashId]);
 
   // ── 학생 직접 추가 ──────────────────────────────────────
   const [showAdd, setShowAdd] = useState(false);
@@ -585,7 +610,7 @@ export default function Students({ readOnly = false }) {
           {pendingResets.length === 0 && <Empty icon="🔑" text="비밀번호 초기화 요청이 없습니다" />}
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {pendingResets.map(req => (
-              <Card key={req.id}>
+              <Card key={req.id} id={`user-row-${req.id}`} style={flashId===req.id ? { border:`2px solid ${C.teal}`, boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:2 }}>{req.studentName}</div>
@@ -609,7 +634,7 @@ export default function Students({ readOnly = false }) {
         <>
           {filtered.length === 0 && <Empty icon="⏳" text="승인 대기 중인 학생이 없습니다" />}
           {filtered.map(s => (
-            <Card key={s.id} style={{ border:`2px solid ${C.yellow}40` }}>
+            <Card key={s.id} id={`user-row-${s.id}`} style={{ border:`2px solid ${flashId===s.id ? C.teal : C.yellow+"40"}`, ...(flashId===s.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
               <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                 <Avatar name={s.name||"?"} size={46} />
                 <div style={{ flex:1 }}>
@@ -637,7 +662,7 @@ export default function Students({ readOnly = false }) {
           {filtered.length === 0 && <Empty icon="👥" text="승인된 학생이 없습니다" />}
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:16 }}>
             {filtered.map(s => (
-              <Card key={s.id}>
+              <Card key={s.id} id={`user-row-${s.id}`} style={flashId===s.id ? { border:`2px solid ${C.teal}`, boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}}>
                 <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                   <Avatar name={s.name||"?"} size={46} />
                   <div style={{ flex:1 }}>

@@ -1,16 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C } from "../../theme";
 import { Card, Btn, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 
-export default function License() {
+export default function License({ focusId, onConsumed }) {
   const { profile } = useAuth();
   const { data: schedules }    = useCollection("licenseSchedules", "date");
   const { data: applications } = useCollection("licenseApplications", "createdAt");
 
   const [showConfirm, setShowConfirm] = useState(null);
   const [applying, setApplying]       = useState(false);
+
+  // 🔔 알림 딥링크 — 해당 라이센스 일정으로 스크롤 + 하이라이트
+  const [flashId, setFlashId] = useState(null);
+  useEffect(() => {
+    if (!focusId || !schedules.length) return;
+    if (schedules.find(s => s.id === focusId)) setFlashId(focusId);
+    onConsumed?.();
+  }, [focusId, schedules]);
+  useEffect(() => {
+    if (!flashId) return;
+    const t1 = setTimeout(() => {
+      document.getElementById(`license-card-${flashId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    const t2 = setTimeout(() => setFlashId(null), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [flashId]);
 
   const licenseToNum = (lic) => {
     if (!lic || lic === "없음") return 0;
@@ -134,7 +150,7 @@ export default function License() {
             const appCount = applications.filter(a => a.scheduleId === s.id).length;
             const myApp = myApps.find(a => a.scheduleId === s.id);
             return (
-              <Card key={s.id} style={{ border:`2px solid ${myApp ? C.teal : ok ? lc.col+"40" : C.border}` }}>
+              <Card key={s.id} id={`license-card-${s.id}`} style={{ border:`2px solid ${flashId===s.id ? C.teal : myApp ? C.teal : ok ? lc.col+"40" : C.border}`, ...(flashId===s.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
                 <div style={{ display:"flex", gap:6, marginBottom:8 }}>
                   <span style={{ background:lc.bg, color:lc.col, borderRadius:6, padding:"2px 10px", fontSize:12, fontWeight:700 }}>{s.level}단계</span>
                   <span style={{ background: s.status==="모집중"?C.greenLight:C.redLight, color: s.status==="모집중"?C.green:C.red, borderRadius:6, padding:"2px 10px", fontSize:12, fontWeight:700 }}>{s.status}</span>

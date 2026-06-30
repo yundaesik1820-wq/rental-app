@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C } from "../../theme";
 import { Card, Badge, Empty, PageTitle, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
@@ -7,7 +7,7 @@ import { FileText } from "lucide-react";
 
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 보류: "⏸", 거절됨: "❌", 반납완료: "📦", 대여중: "🚀" };
 
-export default function History() {
+export default function History({ focusId, onConsumed }) {
   const { profile } = useAuth();
   const { data: requests } = useCollection("rentalRequests", "createdAt");
 
@@ -162,6 +162,23 @@ ${r.attachments?.length > 0 ? `
   const [photoLightbox, setPhotoLightbox] = useState(null);
   const [showPrint, setShowPrint]   = useState(null);
 
+  // 🔔 알림 딥링크 — 해당 대여 건으로 필터 전환 + 스크롤 + 하이라이트
+  const [flashId, setFlashId] = useState(null);
+  useEffect(() => {
+    if (!focusId || !mine.length) return;
+    const r = mine.find(x => x.id === focusId);
+    if (r) { setTabFilter(r.status); setExpandedId(focusId); setFlashId(focusId); }
+    onConsumed?.();
+  }, [focusId, mine]);
+  useEffect(() => {
+    if (!flashId) return;
+    const t1 = setTimeout(() => {
+      document.getElementById(`history-card-${flashId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+    const t2 = setTimeout(() => setFlashId(null), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [flashId]);
+
   const overdue  = mine.filter(r => r.status === "연체").length;
   const renting  = mine.filter(r => r.status === "대여중").length;
 
@@ -283,7 +300,7 @@ ${r.attachments?.length > 0 ? `
         }[r.status] || C.muted;
 
         return (
-          <Card key={r.id} style={{ marginBottom:8, border:`1.5px solid ${statusColor}30`, padding:"12px 14px" }}>
+          <Card key={r.id} id={`history-card-${r.id}`} style={{ marginBottom:8, border:`1.5px solid ${flashId===r.id ? C.teal : statusColor+"30"}`, padding:"12px 14px", ...(flashId===r.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
             {/* 카드 헤더 - 항상 보임 */}
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
               <div style={{ flex:1, minWidth:0 }}>

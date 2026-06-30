@@ -61,22 +61,22 @@ function buildAlerts(isAdmin, profile, data) {
     alerts = [
       ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 발생: ${L(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${L(r)}`, desc:`${r.studentName}`, time:r.createdAt, rentalId:r.id })),
-      ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt })),
-      ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt })),
-      ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt })),
+      ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt, facilityReqId:r.id })),
+      ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt, userId:u.id })),
+      ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt, userId:r.id })),
     ];
   } else {
     const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
     const myFacility = facilityRequests.filter(r=>r.studentId===myId);
     const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
-      ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt })),
-      ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${L(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-      ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt })),
-      ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt })),
+      ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
+      ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${L(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt, rentalId:r.id })),
+      ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
+      ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
       ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-      ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt })),
+      ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
     ];
   }
   // 공지 알림 (공통) — 관리자·학생 모두 표시, 30일 윈도우 예외(아래 필터에서 제외)
@@ -140,9 +140,9 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
     if (a.cat === "SNS" && a.articleId) return { tab: "community", room: "scenepatch", articleId: a.articleId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
     if (a.cat === "SNS")      return { tab: "community" };
-    if (a.cat === "회원")     return { tab: "students" };
-    if (a.cat === "라이센스") return { tab: "license" };
-    if (a.cat === "시설")     return { tab: isAdmin ? "facility" : "calendar" };
+    if (a.cat === "회원")     return { tab: "students", userId: a.userId };
+    if (a.cat === "라이센스") return { tab: "license", licenseId: a.licenseId };
+    if (a.cat === "시설")     return { tab: isAdmin ? "rental" : "calendar", facilityReqId: a.facilityReqId };
     return { tab: isAdmin ? "rental" : "calendar", rentalId: a.rentalId }; // 대여/반납
   };
   const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
@@ -377,8 +377,10 @@ function StudentMyPage() {
 }
 
 // 학생용 대여이력 + 캘린더 통합
-function StudentCalendarHistory({ profile }) {
+function StudentCalendarHistory({ profile, focusId, onConsumed }) {
   const [view, setView] = React.useState("history");
+  // 🔔 알림 딥링크 — 대여이력 뷰로 강제 전환 후 History에 위임
+  React.useEffect(() => { if (focusId) setView("history"); }, [focusId]);
   return (
     <div>
       <div style={{ display:"flex", gap:4, marginBottom:16 }}>
@@ -391,7 +393,7 @@ function StudentCalendarHistory({ profile }) {
           </button>
         ))}
       </div>
-      {view === "history"  && <History />}
+      {view === "history"  && <History focusId={focusId} onConsumed={onConsumed} />}
       {view === "calendar" && <CalendarPage isAdmin={false} userId={profile?.studentId} userEmail={profile?.email} userName={profile?.name} />}
     </div>
   );
@@ -598,14 +600,14 @@ function AppContent() {
     if (isAdmin) {
       switch (tab) {
         case "home":     return <Dashboard setTab={setTab} />;
-        case "rental":   return <Rental subAdmin={isTeacherProf} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
+        case "rental":   return <Rental subAdmin={isTeacherProf} focusId={notifTarget?.rentalId} facilityFocusId={notifTarget?.facilityReqId} onConsumed={() => setNotifTarget(null)} />;
         case "g_equip":   return <GroupHub groupId="g_equip" setTab={setTab} />;
         case "g_student": return <GroupHub groupId="g_student" setTab={setTab} />;
         case "g_sns":     return <GroupHub groupId="g_sns" setTab={setTab} />;
         case "g_more":    return <GroupHub groupId="g_more" setTab={setTab} />;
         case "equip":    return <Equipment />;
         case "facility": return <Equipment initialTab="facility" />;
-        case "students": return <Students />;
+        case "students": return <Students focusId={notifTarget?.userId} onConsumed={() => setNotifTarget(null)} />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats isAdmin={true} />;
         case "notices":  return <Notices isAdmin={true} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
@@ -624,9 +626,9 @@ function AppContent() {
         case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
         case "equip":    return <StudentRentalList setTab={setTab} />;
         case "reserve":  return <ReserveWrapper />;
-        case "calendar": return <StudentCalendarHistory profile={profile} />;
+        case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
-        case "license":  return <License />;
+        case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
         case "mypage":   return <StudentMyPage />;
         default:         return <StudentHome onOpenRoom={openCommunityRoom} />;
