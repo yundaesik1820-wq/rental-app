@@ -182,13 +182,31 @@ const GRADE_MAP = {
 };
 const GRADES = Object.keys(GRADE_MAP);
 
-function GpaCalculator() {
+function GpaCalculator({ classes = [] }) {
   const [open, setOpen]  = useState(false);
   const [rows, setRows]  = useState([{ name:"", credit:"3", grade:"A+" }]);
 
   const addRow = () => setRows(p => [...p, { name:"", credit:"3", grade:"A+" }]);
   const delRow = (i) => setRows(p => p.filter((_,j)=>j!==i));
   const setRow = (i,k,v) => setRows(p => p.map((r,j)=>j===i?{...r,[k]:v}:r));
+
+  // 시간표 과목명 가져오기 — 이미 있는 건 빼고 추가(성적 보존)
+  const loadFromTimetable = () => {
+    const names = [...new Set((classes || []).map(c => c.name).filter(Boolean))];
+    if (!names.length) return;
+    setRows(prev => {
+      const filled = prev.filter(r => r.name.trim());
+      const exist  = new Set(filled.map(r => r.name.trim()));
+      const adds   = names.filter(n => !exist.has(n)).map(n => ({ name:n, credit:"3", grade:"A+" }));
+      const merged = [...filled, ...adds];
+      return merged.length ? merged : [{ name:"", credit:"3", grade:"A+" }];
+    });
+  };
+  // 처음 펼칠 때(아직 입력 전) 시간표 과목명 자동 입력
+  useEffect(() => {
+    if (open && rows.length === 1 && !rows[0].name) loadFromTimetable();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   const totalCredit = rows.reduce((s,r) => s+(parseFloat(r.credit)||0), 0);
   const totalPoint  = rows.reduce((s,r) => s+(parseFloat(r.credit)||0)*(GRADE_MAP[r.grade]??0), 0);
@@ -243,10 +261,18 @@ function GpaCalculator() {
                 style={{ width:24, height:28, background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:12, flexShrink:0 }}>✕</button>
             </div>
           ))}
-          <button onClick={addRow}
-            style={{ width:"100%", background:"none", border:`1px dashed ${C.border}`, borderRadius:8, padding:"6px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit", marginTop:4 }}>
-            + 과목 추가
-          </button>
+          <div style={{ display:"flex", gap:6, marginTop:4 }}>
+            <button onClick={addRow}
+              style={{ flex:1, background:"none", border:`1px dashed ${C.border}`, borderRadius:8, padding:"6px 0", fontSize:12, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>
+              + 과목 추가
+            </button>
+            {classes.length > 0 && (
+              <button onClick={loadFromTimetable}
+                style={{ flex:1, background:"none", border:`1px solid ${C.teal}66`, borderRadius:8, padding:"6px 0", fontSize:12, color:C.teal, cursor:"pointer", fontFamily:"inherit", fontWeight:700 }}>
+                📅 시간표 불러오기
+              </button>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -1193,7 +1219,7 @@ export default function StudentHome({ onOpenRoom }) {
       </div>
 
       {/* 학점 계산기 */}
-      <GpaCalculator />
+      <GpaCalculator classes={classes} />
 
       <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
         <section>
