@@ -120,7 +120,7 @@ function NotifPanel({ onClose, isAdmin, profile, rentalRequests, facilityRequest
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {cats.map(c=>(
               <button key={c} onClick={()=>setSelCat(c)}
-                style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${selCat===c?CC.navy:CC.border}`, background:selCat===c?CC.navy:"transparent", color:selCat===c?C.bg:CC.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
+                style={{ padding:"4px 12px", borderRadius:20, border:`1px solid ${selCat===c?CC.navy:CC.border}`, background:selCat===c?CC.navy:"transparent", color:selCat===c?"#fff":CC.muted, fontSize:12, fontWeight:600, cursor:"pointer" }}>
                 {c} {c!=="전체" && `(${allAlerts.filter(a=>a.cat===c).length})`}
               </button>
             ))}
