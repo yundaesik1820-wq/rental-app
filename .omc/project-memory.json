@@ -1,0 +1,359 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1782782869933,
+  "projectRoot": "C:\\Users\\yunda\\Desktop\\rental-app",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "react",
+        "version": "18.3.1",
+        "category": "frontend"
+      },
+      {
+        "name": "react-dom",
+        "version": "18.3.1",
+        "category": "frontend"
+      },
+      {
+        "name": "vite",
+        "version": "5.2.11",
+        "category": "build"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": "npm run build 2>&1 | tail -25",
+    "testCommand": null,
+    "lintCommand": null,
+    "devCommand": "npm run dev",
+    "scripts": {
+      "dev": "vite",
+      "build": "vite build",
+      "preview": "vite preview"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": "ES modules",
+    "testPattern": null,
+    "fileOrganization": "type-based"
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "assets",
+      "public",
+      "src"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "android": {
+      "path": "android",
+      "purpose": null,
+      "fileCount": 9,
+      "lastAccessed": 1782782869910,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.settings.gradle",
+        "gradle.properties",
+        "gradlew",
+        "gradlew.bat"
+      ]
+    },
+    "api": {
+      "path": "api",
+      "purpose": "API routes",
+      "fileCount": 3,
+      "lastAccessed": 1782782869910,
+      "keyFiles": [
+        "claude.js",
+        "naver.js",
+        "scrape.js"
+      ]
+    },
+    "assets": {
+      "path": "assets",
+      "purpose": "Static assets",
+      "fileCount": 3,
+      "lastAccessed": 1782782869910,
+      "keyFiles": [
+        "icon.png",
+        "splash-dark.png",
+        "splash.png"
+      ]
+    },
+    "dist": {
+      "path": "dist",
+      "purpose": "Distribution/build output",
+      "fileCount": 8,
+      "lastAccessed": 1782782869916,
+      "keyFiles": [
+        "firebase-messaging-sw.js",
+        "index.html",
+        "logo.png",
+        "manifest.json",
+        "onboarding.png"
+      ]
+    },
+    "functions": {
+      "path": "functions",
+      "purpose": null,
+      "fileCount": 4,
+      "lastAccessed": 1782782869916,
+      "keyFiles": [
+        "index.js",
+        "package-lock.json",
+        "package.json"
+      ]
+    },
+    "ios": {
+      "path": "ios",
+      "purpose": null,
+      "fileCount": 2,
+      "lastAccessed": 1782782869916,
+      "keyFiles": [
+        "debug.xcconfig"
+      ]
+    },
+    "public": {
+      "path": "public",
+      "purpose": "Public files",
+      "fileCount": 7,
+      "lastAccessed": 1782782869916,
+      "keyFiles": [
+        "firebase-messaging-sw.js",
+        "logo.png",
+        "manifest.json",
+        "onboarding.png",
+        "privacy.html"
+      ]
+    },
+    "src": {
+      "path": "src",
+      "purpose": "Source code",
+      "fileCount": 4,
+      "lastAccessed": 1782782869917,
+      "keyFiles": [
+        "App.jsx",
+        "firebase.js",
+        "main.jsx",
+        "theme.js"
+      ]
+    },
+    "android\\app": {
+      "path": "android\\app",
+      "purpose": "Application code",
+      "fileCount": 5,
+      "lastAccessed": 1782782869917,
+      "keyFiles": [
+        "build.gradle",
+        "capacitor.build.gradle",
+        "google-services.json"
+      ]
+    },
+    "android\\build": {
+      "path": "android\\build",
+      "purpose": "Build output",
+      "fileCount": 0,
+      "lastAccessed": 1782782869918,
+      "keyFiles": []
+    },
+    "dist\\assets": {
+      "path": "dist\\assets",
+      "purpose": "Static assets",
+      "fileCount": 8,
+      "lastAccessed": 1782782869920,
+      "keyFiles": [
+        "FacilityAdmin-Cxy2mnva.js",
+        "index-Bt8OTXvJ.js",
+        "index-DegHnlvj.js"
+      ]
+    },
+    "functions\\node_modules": {
+      "path": "functions\\node_modules",
+      "purpose": "Dependencies",
+      "fileCount": 1,
+      "lastAccessed": 1782782869928,
+      "keyFiles": []
+    },
+    "ios\\App": {
+      "path": "ios\\App",
+      "purpose": "Application code",
+      "fileCount": 0,
+      "lastAccessed": 1782782869929,
+      "keyFiles": []
+    },
+    "src\\components": {
+      "path": "src\\components",
+      "purpose": "UI components",
+      "fileCount": 21,
+      "lastAccessed": 1782782869932,
+      "keyFiles": [
+        "ARDistance.jsx",
+        "CategoryMigrator.jsx",
+        "CinemaSlate.jsx"
+      ]
+    },
+    "src\\pages": {
+      "path": "src\\pages",
+      "purpose": "Page components",
+      "fileCount": 1,
+      "lastAccessed": 1782782869932,
+      "keyFiles": [
+        "Login.jsx"
+      ]
+    },
+    "src\\utils": {
+      "path": "src\\utils",
+      "purpose": "Utility functions",
+      "fileCount": 3,
+      "lastAccessed": 1782782869933,
+      "keyFiles": [
+        "groupEquipments.js",
+        "koreanHolidays.js",
+        "youtube.js"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "src\\App.jsx",
+      "accessCount": 55,
+      "lastAccessed": 1782802364822,
+      "type": "directory"
+    },
+    {
+      "path": "src\\pages\\student\\Home.jsx",
+      "accessCount": 27,
+      "lastAccessed": 1782800648844,
+      "type": "file"
+    },
+    {
+      "path": "src\\pages\\student\\Community.jsx",
+      "accessCount": 19,
+      "lastAccessed": 1782790836938,
+      "type": "directory"
+    },
+    {
+      "path": "src\\pages\\admin\\Rental.jsx",
+      "accessCount": 17,
+      "lastAccessed": 1782787239905,
+      "type": "directory"
+    },
+    {
+      "path": "src\\components\\ScenePatch.jsx",
+      "accessCount": 14,
+      "lastAccessed": 1782801343998,
+      "type": "directory"
+    },
+    {
+      "path": "src\\pages\\admin\\Notices.jsx",
+      "accessCount": 12,
+      "lastAccessed": 1782865273337,
+      "type": "directory"
+    },
+    {
+      "path": "src\\pages\\admin\\Students.jsx",
+      "accessCount": 7,
+      "lastAccessed": 1782787284587,
+      "type": "file"
+    },
+    {
+      "path": "src\\components\\UI.jsx",
+      "accessCount": 6,
+      "lastAccessed": 1782789286605,
+      "type": "directory"
+    },
+    {
+      "path": "src\\components\\PetGame.jsx",
+      "accessCount": 5,
+      "lastAccessed": 1782865192528,
+      "type": "directory"
+    },
+    {
+      "path": "functions\\index.js",
+      "accessCount": 5,
+      "lastAccessed": 1782865276508,
+      "type": "file"
+    },
+    {
+      "path": "src\\pages\\student\\History.jsx",
+      "accessCount": 4,
+      "lastAccessed": 1782787306529,
+      "type": "file"
+    },
+    {
+      "path": "src",
+      "accessCount": 3,
+      "lastAccessed": 1782784049809,
+      "type": "directory"
+    },
+    {
+      "path": "src\\pages\\student\\License.jsx",
+      "accessCount": 3,
+      "lastAccessed": 1782787322555,
+      "type": "file"
+    },
+    {
+      "path": "index.html",
+      "accessCount": 3,
+      "lastAccessed": 1782789769308,
+      "type": "file"
+    },
+    {
+      "path": "functions\\package.json",
+      "accessCount": 3,
+      "lastAccessed": 1782865026283,
+      "type": "file"
+    },
+    {
+      "path": "src\\pages\\student",
+      "accessCount": 2,
+      "lastAccessed": 1782787066627,
+      "type": "directory"
+    },
+    {
+      "path": "src\\components\\Layout.jsx",
+      "accessCount": 2,
+      "lastAccessed": 1782789251813,
+      "type": "file"
+    },
+    {
+      "path": "CLAUDE.md",
+      "accessCount": 1,
+      "lastAccessed": 1782783147322,
+      "type": "file"
+    },
+    {
+      "path": "src\\pages\\student\\FacilityReserve.jsx",
+      "accessCount": 1,
+      "lastAccessed": 1782787060569,
+      "type": "file"
+    },
+    {
+      "path": "firebase.json",
+      "accessCount": 1,
+      "lastAccessed": 1782865027210,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

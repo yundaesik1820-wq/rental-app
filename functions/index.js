@@ -374,3 +374,42 @@ exports.parseTimetableImage = functions
     const classes = Array.isArray(parsed.classes) ? parsed.classes : [];
     return { classes };
   });
+
+// ── 매일 오전 9시(KST) 오늘의 퀴즈 자동 등록 ────────────────
+// quizPool에서 아직 안 쓴 문제 하나를 꺼내 quizzes/{오늘날짜}에 등록하고 used 처리.
+exports.postDailyQuiz = functions.pubsub
+  .schedule("every day 09:00")
+  .timeZone("Asia/Seoul")
+  .onRun(async () => {
+    const db = admin.firestore();
+    // 클라이언트 todayStr()과 동일한 KST YYYY-MM-DD 포맷
+    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+
+    const existing = await db.collection("quizzes").doc(today).get();
+    if (existing.exists) {
+      console.log(`[quiz] ${today} 이미 등록돼 있음 - 건너뜀`);
+      return null;
+    }
+
+    const snap = await db.collection("quizPool")
+      .where("used", "==", false)
+      .orderBy("createdAt")
+      .limit(1)
+      .get();
+    if (snap.empty) {
+      console.log("[quiz] quizPool에 남은 문제 없음 - 오늘은 자동 출제 못 함");
+      return null;
+    }
+
+    const picked = snap.docs[0];
+    const q = picked.data();
+    await db.collection("quizzes").doc(today).set({
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      date: today,
+    });
+    await picked.ref.update({ used: true, usedDate: today });
+    console.log(`[quiz] ${today} 자동 출제 완료: ${q.question}`);
+    return null;
+  });

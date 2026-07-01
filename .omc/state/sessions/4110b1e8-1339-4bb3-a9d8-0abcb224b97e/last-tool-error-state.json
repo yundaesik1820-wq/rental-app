@@ -1,0 +1,7 @@
+{
+  "tool_name": "PowerShell",
+  "tool_input_preview": "{\"command\":\"cd C:\\\\Users\\\\yunda\\\\Desktop\\\\rental-app; git diff src/App.jsx | Select-String -Pattern \\\"navTarget|return \\\\{|case \\\\\\\"|focusId|facilityFocusId|userId|licenseId|facilityReqId\\\" -Context 0...",
+  "error": "Exit code 1\nThe string is missing the terminator: \".\r\n    + CategoryInfo          : ParserError: (:) [], ParentContainsErrorRecordException\r\n    + FullyQualifiedErrorId : TerminatorExpectedAtEndOfString",
+  "timestamp": "2026-06-30T02:46:04.802Z",
+  "retry_count": 1
+}

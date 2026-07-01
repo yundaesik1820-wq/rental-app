@@ -3,7 +3,7 @@ import { C, NOTICE_CAT } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, PageTitle, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { doc, setDoc, getDoc } from "firebase/firestore";
+import { doc, setDoc, getDoc, collection, getDocs, writeBatch, query, where, serverTimestamp } from "firebase/firestore";
 import { db, storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import PdfViewer from "../../components/PdfViewer";
@@ -15,6 +15,31 @@ async function uploadFile(file) {
     const task = uploadBytesResumable(storageRef, file);
     task.on("state_changed", null, reject, async () => resolve(await getDownloadURL(task.snapshot.ref)));
   });
+}
+
+// 대량 퀴즈 텍스트 파싱: 빈 줄로 문제 구분, 각 블록 = 문제 1줄 + 보기 5줄(정답 보기 앞에 *)
+function parseBulkQuizzes(text) {
+  const blocks = text.split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  const quizzes = [];
+  const errors  = [];
+  blocks.forEach((block, bi) => {
+    const lines = block.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length !== 6) {
+      errors.push(`${bi + 1}번: 6줄(문제1 + 보기5)이어야 해요 (현재 ${lines.length}줄)`);
+      return;
+    }
+    const question = lines[0];
+    let answer = -1;
+    const options = lines.slice(1).map((l, i) => {
+      if (l.startsWith("*")) { answer = i; return l.slice(1).trim(); }
+      return l;
+    });
+    if (answer === -1) { errors.push(`${bi + 1}번: 정답 표시(*)가 없어요`); return; }
+    if (!question)      { errors.push(`${bi + 1}번: 문제가 비었어요`); return; }
+    if (options.some(o => !o)) { errors.push(`${bi + 1}번: 빈 보기가 있어요`); return; }
+    quizzes.push({ question, options, answer });
+  });
+  return { quizzes, errors };
 }
 
 export default function Notices({ isAdmin = true, initialNoticeId, onConsumed }) {
@@ -55,6 +80,39 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
   const [quizAns, setQuizAns]     = useState(0);
   const [quizSaving, setQuizSaving] = useState(false);
   const [quizMsg, setQuizMsg]     = useState(null);
+
+  // 대량 등록 (quizPool) — 매일 오전 9시 자동 소진
+  const [bulkText, setBulkText]   = useState("");
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkMsg, setBulkMsg]     = useState(null);
+  const [poolCount, setPoolCount] = useState(null); // 남은(미사용) 문제 수
+  useEffect(() => {
+    if (!showQuiz) return;
+    getDocs(query(collection(db, "quizPool"), where("used", "==", false)))
+      .then(s => setPoolCount(s.size)).catch(() => setPoolCount(null));
+  }, [showQuiz, bulkMsg]);
+
+  const saveBulk = async () => {
+    const { quizzes, errors } = parseBulkQuizzes(bulkText);
+    if (errors.length) { setBulkMsg({ ok: false, m: "형식 오류: " + errors.join(" / ") }); return; }
+    if (!quizzes.length) { setBulkMsg({ ok: false, m: "등록할 문제가 없어요" }); return; }
+    setBulkSaving(true); setBulkMsg(null);
+    try {
+      const batch = writeBatch(db);
+      quizzes.forEach(q => {
+        batch.set(doc(collection(db, "quizPool")), {
+          question: q.question, options: q.options, answer: q.answer,
+          used: false, usedDate: null, createdAt: serverTimestamp(),
+        });
+      });
+      await batch.commit();
+      setBulkMsg({ ok: true, m: `✅ ${quizzes.length}개 등록 완료! 매일 오전 9시에 하나씩 자동 출제돼요` });
+      setBulkText("");
+    } catch (e) {
+      setBulkMsg({ ok: false, m: "등록 실패: " + (e.message || "오류") });
+    }
+    setBulkSaving(false);
+  };
 
   const saveQuiz = async () => {
     if (!quizQ.trim()) { setQuizMsg({ ok:false, m:"문제를 입력하세요" }); return; }
@@ -308,9 +366,29 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
                 ))}
               </div>
 
-              <Btn onClick={saveQuiz} color={C.navy} full disabled={quizSaving}>{quizSaving ? "저장 중..." : "오늘의 퀴즈 등록"}</Btn>
+              <Btn onClick={saveQuiz} color={C.navy} full disabled={quizSaving}>{quizSaving ? "저장 중..." : "이 날짜에 퀴즈 등록"}</Btn>
               {quizMsg && (
                 <div style={{ fontSize: 12, color: quizMsg.ok ? C.teal : C.red, textAlign: "center", marginTop: 10 }}>{quizMsg.m}</div>
+              )}
+
+              {/* ── 대량 등록 (풀) ── */}
+              <div style={{ borderTop: `1px solid ${C.border}`, margin: "18px 0 14px" }} />
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>📦 여러 문제 한 번에 등록</div>
+                <span style={{ fontSize: 11, color: poolCount === 0 ? C.red : C.teal }}>
+                  {poolCount == null ? "" : `남은 문제 ${poolCount}개`}
+                </span>
+              </div>
+              <div style={{ fontSize: 11, color: C.muted, lineHeight: 1.6, marginBottom: 8 }}>
+                아래에 붙여넣으면 풀(pool)에 쌓이고, <b>매일 오전 9시</b>에 자동으로 하나씩 출제돼요.<br />
+                문제끼리는 <b>빈 줄</b>로 구분 · 각 문제는 <b>문제 1줄 + 보기 5줄</b> · <b>정답 보기 앞에 *</b>
+              </div>
+              <textarea value={bulkText} onChange={e => setBulkText(e.target.value)}
+                placeholder={"다음 중 클로즈업 샷이 아닌 것은?\n익스트림 클로즈업\n바스트 샷\n*롱 샷\n미디엄 클로즈업\n빅 클로즈업\n\n조리개 F값이 작을수록 나타나는 현상은?\n심도가 깊어진다\n*배경이 흐려진다\n노출이 어두워진다\n화각이 넓어진다\n초점이 안 맞는다"}
+                style={{ width: "100%", minHeight: 160, background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 12px", fontSize: 13, outline: "none", fontFamily: "inherit", boxSizing: "border-box", resize: "vertical", lineHeight: 1.6, marginBottom: 10 }} />
+              <Btn onClick={saveBulk} color={C.teal} full disabled={bulkSaving}>{bulkSaving ? "등록 중..." : "풀에 대량 등록"}</Btn>
+              {bulkMsg && (
+                <div style={{ fontSize: 12, color: bulkMsg.ok ? C.teal : C.red, textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>{bulkMsg.m}</div>
               )}
             </div>
           )}
