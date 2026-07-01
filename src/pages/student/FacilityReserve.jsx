@@ -90,8 +90,8 @@ export default function FacilityReserve() {
           <img src="/mascot/object.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 시설 대여 신청 페이지야!</div>
-            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>아래에서 예약할 시설을 골라봐.<br/>스튜디오, 편집실 등을 예약할 수 있어 🏢</div>
+            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 시설 대여 신청 페이지예요!</div>
+            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>아래에서 예약할 시설을 골라보세요.<br/>스튜디오, 편집실 등을 예약할 수 있어요 🏢</div>
           </div>
         </div>
       </div>

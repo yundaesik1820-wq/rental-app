@@ -48,7 +48,7 @@ export default function ExternalRental() {
   };
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert("업체명을 입력해줘"); return; }
+    if (!form.name.trim()) { alert("업체명을 입력해 주세요"); return; }
     setSaving(true);
     try {
       const payload = {
@@ -74,7 +74,7 @@ export default function ExternalRental() {
   };
 
   const handleDelete = async (s) => {
-    if (!window.confirm(`'${s.name}' 업체를 삭제할까?`)) return;
+    if (!window.confirm(`'${s.name}' 업체를 삭제할까요?`)) return;
     try {
       await deleteItem("externalRentals", s.id);
     } catch (err) {
@@ -90,7 +90,7 @@ export default function ExternalRental() {
       </div>
 
       {loading && <Empty icon="⏳" text="불러오는 중..." />}
-      {!loading && shops.length === 0 && <Empty icon="🏬" text="등록된 외부 렌탈샵이 없어" />}
+      {!loading && shops.length === 0 && <Empty icon="🏬" text="등록된 외부 렌탈샵이 없어요" />}
 
       {shops.map((s) => (
         <Card key={s.id} style={{ padding: 0, overflow: "hidden", marginBottom: 10 }}>

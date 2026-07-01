@@ -38,7 +38,7 @@ export default function CategoryMigrator({ onClose }) {
   });
 
   const apply = async () => {
-    if (targets.length === 0) { alert("바꿀 항목을 하나 이상 선택해줘"); return; }
+    if (targets.length === 0) { alert("바꿀 항목을 하나 이상 선택해 주세요"); return; }
     setRunning(true);
     setProgress({ cur: 0, total: targets.length });
     let cur = 0;
@@ -57,7 +57,7 @@ export default function CategoryMigrator({ onClose }) {
     <Modal onClose={running ? () => {} : onClose} width={580}>
       <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 6 }}>🗂️ 카테고리 일괄 정리</div>
       <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 14, lineHeight: 1.5 }}>
-        장비를 새 카테고리(대분류)로 분류해. 학생 화면 카테고리 그리드는 아래 새 이름으로 매칭돼.
+        장비를 새 카테고리(대분류)로 분류해요. 학생 화면 카테고리 그리드는 아래 새 이름으로 매칭돼요.
       </div>
 
       {!done && (
@@ -75,12 +75,12 @@ export default function CategoryMigrator({ onClose }) {
       {done ? (
         <div style={{ textAlign: "center", padding: "20px 0" }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>✅</div>
-          <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>완료! 카테고리가 정리됐어</div>
-          <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 18 }}>학생 화면에서 카테고리 눌러서 확인해봐</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: C.text, marginBottom: 6 }}>완료! 카테고리가 정리됐어요</div>
+          <div style={{ fontSize: 12.5, color: C.muted, marginBottom: 18 }}>학생 화면에서 카테고리 눌러서 확인해 보세요</div>
           <Btn onClick={onClose} color={C.navy} full>닫기</Btn>
         </div>
       ) : groups.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "30px 0", color: C.muted, fontSize: 13 }}>등록된 장비가 없어</div>
+        <div style={{ textAlign: "center", padding: "30px 0", color: C.muted, fontSize: 13 }}>등록된 장비가 없어요</div>
       ) : (
         <>
           <div style={{ fontSize: 11, color: C.muted, marginBottom: 8 }}>

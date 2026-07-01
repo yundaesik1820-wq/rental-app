@@ -57,8 +57,8 @@ export default function RepairManager() {
   const clearEquip = () => setForm((p) => ({ ...p, equipId: "", equipName: "", unitNo: "", itemNo: "" }));
 
   const handleSave = async () => {
-    if (!form.equipId) { alert("연결할 장비를 선택해줘 (장비 관리에 등록된 장비만 가능)"); return; }
-    if (!form.issue.trim()) { alert("증상/고장 내용을 입력해줘"); return; }
+    if (!form.equipId) { alert("연결할 장비를 선택해 주세요 (장비 관리에 등록된 장비만 가능)"); return; }
+    if (!form.issue.trim()) { alert("증상/고장 내용을 입력해 주세요"); return; }
     setSaving(true);
     try {
       const doneDate = DONE_STATES.includes(form.status) ? (form.doneDate || todayStr()) : (form.doneDate || "");
@@ -98,7 +98,7 @@ export default function RepairManager() {
   };
 
   const handleDelete = async (r) => {
-    if (!window.confirm(`'${r.equipName}' 수리 기록을 삭제할까?\n(장비 상태는 그대로 유지돼. 필요하면 장비 관리에서 직접 바꿔줘)`)) return;
+    if (!window.confirm(`'${r.equipName}' 수리 기록을 삭제할까요?\n(장비 상태는 그대로 유지돼요. 필요하면 장비 관리에서 직접 바꿔 주세요)`)) return;
     try { await deleteItem("repairs", r.id); } catch (err) { alert("삭제 실패: " + err.message); }
   };
 
@@ -136,7 +136,7 @@ export default function RepairManager() {
       </div>
 
       {loading && <Empty icon="⏳" text="불러오는 중..." />}
-      {!loading && shown.length === 0 && <Empty icon="🔧" text={filter === "전체" ? "등록된 수리 기록이 없어" : `'${filter}' 상태인 기록이 없어`} />}
+      {!loading && shown.length === 0 && <Empty icon="🔧" text={filter === "전체" ? "등록된 수리 기록이 없어요" : `'${filter}' 상태인 기록이 없어요`} />}
 
       {shown.map((r) => {
         const sc = ST_COLOR[r.status] || { c: C.muted, bg: C.bg };
@@ -192,7 +192,7 @@ export default function RepairManager() {
                 style={{ width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }} />
               <div style={{ maxHeight: 180, overflowY: "auto", border: `1px solid ${C.border}`, borderRadius: 10 }}>
                 {eqList.length === 0 ? (
-                  <div style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>일치하는 장비가 없어</div>
+                  <div style={{ fontSize: 12, color: C.muted, textAlign: "center", padding: "16px 0" }}>일치하는 장비가 없어요</div>
                 ) : eqList.map((e) => {
                   const sc = { 대여가능: C.green, 대여중: C.blue, 수리중: C.yellow, 대여불가: C.red }[e.status] || C.muted;
                   return (

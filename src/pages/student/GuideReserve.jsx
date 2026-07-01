@@ -479,8 +479,8 @@ export default function GuideReserve({ onComplete }) {
           <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:16 }}>
             <img src="/mascot/camera.png" alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0 }} />
             <div>
-              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>어떤 촬영 장비가 필요해?</div>
-              <div style={{ fontSize:12, color:C.muted }}>촬영 방식에 따라 골라봐!</div>
+              <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:2 }}>어떤 촬영 장비가 필요하세요?</div>
+              <div style={{ fontSize:12, color:C.muted }}>촬영 방식에 따라 골라보세요!</div>
             </div>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>

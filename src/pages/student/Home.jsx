@@ -492,7 +492,7 @@ export default function StudentHome({ onOpenRoom }) {
       const fn = httpsCallable(getFunctions(undefined, "us-central1"), "parseTimetableImage");
       const { data } = await fn({ imageBase64, mediaType });
       const got = (data?.classes || []).filter(c => c && c.name && c.day && c.startTime && c.endTime);
-      if (got.length === 0) { alert("시간표를 못 읽었어요. 더 선명한 사진으로 다시 시도해줘."); return; }
+      if (got.length === 0) { alert("시간표를 못 읽었어요. 더 선명한 사진으로 다시 시도해 주세요."); return; }
       // 교수명만 들어온 경우 "교수님" 자동 붙이기
       const withProf = (p) => {
         const v = (p || "").trim();
@@ -506,7 +506,7 @@ export default function StudentHome({ onOpenRoom }) {
       })));
     } catch (e) {
       console.error(e);
-      alert("인식에 실패했어요. 잠시 후 다시 시도해줘.");
+      alert("인식에 실패했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setImporting(false);
     }
@@ -818,10 +818,10 @@ export default function StudentHome({ onOpenRoom }) {
             <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
-                난 장비대여실 마스코트 렌토리야!
+                난 장비대여실 마스코트 렌토리예요!
               </div>
               <div style={{ fontSize:12, color:"#475569", lineHeight:1.4 }}>
-                오늘도 잘 부탁해, {profile?.name}님!
+                오늘도 잘 부탁해요, {profile?.name}님!
               </div>
             </div>
             <div style={{ textAlign:"right", marginTop:6 }}>
@@ -924,7 +924,7 @@ export default function StudentHome({ onOpenRoom }) {
             </div>
             <button onClick={() => setShowRentory(false)}
               style={{ background:`linear-gradient(135deg, ${C.teal}, ${C.navy})`, color:"#fff", border:"none", borderRadius:10, padding:"11px 24px", fontSize:12, fontWeight:700, cursor:"pointer", width:"100%" }}>
-              좋아, 친해질래 ♡
+              좋아요, 친해질래요 ♡
             </button>
           </div>
         </Modal>
@@ -1387,7 +1387,7 @@ export default function StudentHome({ onOpenRoom }) {
       {importPreview && (
         <Modal onClose={() => setImportPreview(null)} width={420}>
           <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 6 }}>인식된 수업 {importPreview.length}개</div>
-          <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>맞으면 추가하고, 틀린 건 추가 후 수업을 눌러 수정/삭제하면 돼.</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 14 }}>맞으면 추가하고, 틀린 건 추가 후 수업을 눌러 수정/삭제하면 돼요.</div>
           <div style={{ maxHeight: "45vh", overflowY: "auto", marginBottom: 14 }}>
             {importPreview.map((c, i) => (
               <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 4px", borderBottom: `1px solid ${C.border}` }}>
