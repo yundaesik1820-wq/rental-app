@@ -175,7 +175,7 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper, focusId, onCo
           {r.studentSignature && (
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>신청자 서명</div>
-              <img src={r.studentSignature} alt="서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
+              <img src={r.studentSignature} alt="서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
             </div>
           )}
 
@@ -189,14 +189,14 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper, focusId, onCo
           {r.adminSignature && (
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>조교 서명</div>
-              <img src={r.adminSignature} alt="관리자서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
+              <img src={r.adminSignature} alt="관리자서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
             </div>
           )}
           {/* 교사 서명 표시 */}
           {r.teacherSignature && (
             <div style={{ marginBottom:10 }}>
               <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>교사 서명</div>
-              <img src={r.teacherSignature} alt="교사서명" style={{ height:50, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
+              <img src={r.teacherSignature} alt="교사서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
             </div>
           )}
 

@@ -944,14 +944,19 @@ export default function StudentHome({ onOpenRoom }) {
         </div>
         <input id="tt-import-input" type="file" accept="image/*" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; handleImportImage(f); }} />
+        <input id="tt-import-camera" type="file" accept="image/*" capture="environment" style={{ display: "none" }}
+          onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; handleImportImage(f); }} />
         {classes.length === 0 ? (
           <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
             <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
               <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>직접추가</Btn>
+              <Btn onClick={() => document.getElementById("tt-import-camera")?.click()} color={C.teal} small disabled={importing}>
+                {importing ? "인식 중…" : "📷 촬영"}
+              </Btn>
               <Btn onClick={() => document.getElementById("tt-import-input")?.click()} color={C.teal} small disabled={importing}>
-                {importing ? "인식 중…" : "📷 AI 추가"}
+                {importing ? "인식 중…" : "🖼️ 갤러리"}
               </Btn>
             </div>
           </div>
