@@ -435,6 +435,7 @@ export default function StudentHome({ onOpenRoom }) {
   const [showClassForm, setShowClassForm] = useState(false);
   const [importing,     setImporting]     = useState(false); // 사진 인식 중
   const [importPreview, setImportPreview] = useState(null);  // 인식 결과 확인 모달 [{...}]
+  const [showTtSource,  setShowTtSource]  = useState(false); // AI 추가 소스 선택(촬영/갤러리) 팝업
 
   const uid = profile?.uid;
 
@@ -950,13 +951,10 @@ export default function StudentHome({ onOpenRoom }) {
           <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
             <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
             <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
               <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>직접추가</Btn>
-              <Btn onClick={() => document.getElementById("tt-import-camera")?.click()} color={C.teal} small disabled={importing}>
-                {importing ? "인식 중…" : "📷 촬영"}
-              </Btn>
-              <Btn onClick={() => document.getElementById("tt-import-input")?.click()} color={C.teal} small disabled={importing}>
-                {importing ? "인식 중…" : "🖼️ 갤러리"}
+              <Btn onClick={() => setShowTtSource(true)} color={C.teal} small disabled={importing}>
+                {importing ? "인식 중…" : "📷 AI 추가"}
               </Btn>
             </div>
           </div>
@@ -1404,6 +1402,18 @@ export default function StudentHome({ onOpenRoom }) {
           <div style={{ display: "flex", gap: 8 }}>
             <Btn onClick={() => setImportPreview(null)} color={C.muted} outline full>취소</Btn>
             <Btn onClick={confirmImport} color={C.navy} full>{importPreview.length}개 추가</Btn>
+          </div>
+        </Modal>
+      )}
+
+      {/* 시간표 AI 추가 — 촬영 / 갤러리 선택 */}
+      {showTtSource && (
+        <Modal onClose={() => setShowTtSource(false)} width={360}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>📷 시간표 AI 추가</div>
+          <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>사진으로 시간표를 자동 인식해요.</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <Btn onClick={() => { setShowTtSource(false); document.getElementById("tt-import-camera")?.click(); }} color={C.teal} full>📷 시간표를 촬영할래요</Btn>
+            <Btn onClick={() => { setShowTtSource(false); document.getElementById("tt-import-input")?.click(); }} color={C.navy} full>🖼️ 시간표를 캡쳐했어요</Btn>
           </div>
         </Modal>
       )}
