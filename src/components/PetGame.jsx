@@ -545,7 +545,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
 
         {/* 퀘스트 버튼 */}
         <div style={{ display:"flex", gap:12, justifyContent:"center", marginTop:28 }}>
-          <QuestBtn label="🍖 밥주기" used={feedUsed} max={QUEST_MAX} onClick={()=>doQuest("feed")} disabled={busy} color={C.navy} />
+          <QuestBtn label="🍖 밥주기" used={feedUsed} max={QUEST_MAX} onClick={()=>doQuest("feed")} disabled={busy} color={C.navy} text="#111" />
           <QuestBtn label="🎾 놀아주기" used={playUsed} max={QUEST_MAX} onClick={()=>doQuest("play")} disabled={busy} color={C.teal} />
         </div>
         <div style={{ fontSize:11, color:C.muted, marginTop:14, lineHeight:1.6 }}>
@@ -737,11 +737,11 @@ function Overlay({ children, onClose }) {
   );
 }
 
-function QuestBtn({ label, used, max, onClick, disabled, color }) {
+function QuestBtn({ label, used, max, onClick, disabled, color, text = "#fff" }) {
   const done = used >= max;
   return (
     <button onClick={onClick} disabled={disabled || done}
-      style={{ background: done ? C.border : color, color:"#fff", border:"none", borderRadius:14, padding:"14px 20px", fontSize:14, fontWeight:800, cursor: done?"default":"pointer", opacity: done?0.5:1, minWidth:120 }}>
+      style={{ background: done ? C.border : color, color: done ? "#fff" : text, border:"none", borderRadius:14, padding:"14px 20px", fontSize:14, fontWeight:800, cursor: done?"default":"pointer", opacity: done?0.5:1, minWidth:120 }}>
       <div>{label}</div>
       <div style={{ fontSize:11, fontWeight:600, marginTop:4, opacity:0.9 }}>{max - used} / {max} 남음</div>
     </button>
