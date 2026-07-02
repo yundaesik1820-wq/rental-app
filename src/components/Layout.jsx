@@ -298,8 +298,10 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         }
 
         @media (min-width: 769px) {
-          .mobile-nav { display: none !important; }
-          .mobile-logout-btn { display: none !important; }
+          /* 데스크톱/전체화면에서도 사이드바 대신 하단 네비 사용 */
+          aside { display: none !important; }
+          .mobile-nav { display: block !important; }
+          main { padding-bottom: 70px !important; }
         }
       `}</style>
 
