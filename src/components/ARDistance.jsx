@@ -252,7 +252,7 @@ export default function ARDistance({ onBack }) {
       <div style={{
         flexShrink: 0,
         background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)",
-        padding: "10px 14px",
+        padding: "calc(10px + env(safe-area-inset-top, 0px)) 14px 10px",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         borderBottom: "1px solid rgba(251,191,36,0.2)",
       }}>

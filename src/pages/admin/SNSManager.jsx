@@ -587,7 +587,7 @@ export default function SNSManager() {
     <div>
       {/* 접근 제한 토스트 */}
       {restrictMsg && (
-        <div style={{ position:"fixed", top:24, left:"50%", transform:"translateX(-50%)", zIndex:9999,
+        <div style={{ position:"fixed", top:"calc(24px + env(safe-area-inset-top, 0px))", left:"50%", transform:"translateX(-50%)", zIndex:9999,
           background:C.red, color:"#fff", borderRadius:12, padding:"12px 24px",
           fontSize:14, fontWeight:700, boxShadow:"0 4px 20px rgba(0,0,0,0.3)" }}>
           🔒 접근 권한이 제한되어있습니다

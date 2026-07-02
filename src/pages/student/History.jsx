@@ -392,7 +392,7 @@ ${r.attachments?.length > 0 ? `
             onClick={e => e.stopPropagation()}
             style={{ maxWidth:"90vw", maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
           <button onClick={() => setPhotoLightbox(null)}
-            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
+            style={{ position:"absolute", top:"calc(20px + env(safe-area-inset-top, 0px))", right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
           {photoLightbox.photos.length > 1 && (
             <div>
               <button onClick={e => { e.stopPropagation(); setPhotoLightbox(p => ({...p, idx:(p.idx-1+p.photos.length)%p.photos.length})); }}

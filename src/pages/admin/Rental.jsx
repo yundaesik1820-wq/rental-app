@@ -1263,7 +1263,7 @@ ${r.attachments?.length > 0 ? `
             style={{ maxWidth:"90vw", maxHeight:"80vh", objectFit:"contain", borderRadius:12 }} />
           {/* 닫기 */}
           <button onClick={() => setPhotoModal(null)}
-            style={{ position:"absolute", top:20, right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
+            style={{ position:"absolute", top:"calc(20px + env(safe-area-inset-top, 0px))", right:20, background:"rgba(255,255,255,0.15)", border:"none", color:"#fff", borderRadius:"50%", width:40, height:40, fontSize:20, cursor:"pointer" }}>✕</button>
           {/* 이전/다음 */}
           {photoModal.photos.length > 1 && (<>
             <button onClick={e => { e.stopPropagation(); setPhotoModal(p => ({...p, idx:(p.idx-1+p.photos.length)%p.photos.length})); }}
