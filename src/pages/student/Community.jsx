@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { Capacitor } from "@capacitor/core";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -252,7 +253,9 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
   //    일부 WebView(특히 구형 안드로이드)는 calc() 안에 중첩된 max()+env()를
   //    무효 처리해서 padding이 통째로 0이 되는 버그가 있음 → 헤더가 상태바에 겹침.
   //    probe 엘리먼트의 실제 렌더 높이를 읽어 픽셀 값으로 박으면 파싱 이슈를 완전히 우회.
-  const [safeTop, setSafeTop] = useState(48);
+  //    최소 48px 바닥값은 네이티브 앱에서만 — 웹/PWA는 상태바가 없으니 0부터 시작.
+  const SAFE_FLOOR = Capacitor.isNativePlatform() ? 48 : 0;
+  const [safeTop, setSafeTop] = useState(SAFE_FLOOR);
   useEffect(() => {
     const measure = () => {
       const probe = document.createElement("div");
@@ -261,7 +264,7 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
       document.documentElement.appendChild(probe);
       const measured = probe.getBoundingClientRect().height || 0;
       probe.remove();
-      setSafeTop(Math.max(measured, 48)); // 48px = 상태바 최소 확보 높이(바닥값)
+      setSafeTop(Math.max(measured, SAFE_FLOOR)); // 상태바 최소 확보 높이(바닥값, 네이티브 전용)
     };
     measure();
     window.addEventListener("resize", measure);

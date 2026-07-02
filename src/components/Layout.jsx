@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { C } from "../theme";
 import {
@@ -202,8 +203,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
       {/* ── 모바일 2줄 하단 네비 ── */}
       <style>{`
         @media (max-width: 768px) {
-          /* 폰: 노치/상태바 아래로 내림 (env 안 잡히는 환경 대비 최소 48px 보장) */
-          .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), 24px) !important; }
+          /* 노치/상태바 아래로 내림 — 최소 24px 바닥값은 네이티브 앱에서만 (웹/PWA는 상단 틈 없이 딱 붙게) */
+          .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), ${Capacitor.isNativePlatform() ? 24 : 0}px) !important; }
           aside { display: none !important; }
           .mobile-nav { display: block !important; }
 
