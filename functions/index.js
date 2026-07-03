@@ -377,39 +377,43 @@ exports.parseTimetableImage = functions
 
 // ── 매일 오전 9시(KST) 오늘의 퀴즈 자동 등록 ────────────────
 // quizPool에서 아직 안 쓴 문제 하나를 꺼내 quizzes/{오늘날짜}에 등록하고 used 처리.
+async function runDailyQuizPost() {
+  const db = admin.firestore();
+  // 클라이언트 todayStr()과 동일한 KST YYYY-MM-DD 포맷
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+
+  const existing = await db.collection("quizzes").doc(today).get();
+  if (existing.exists) {
+    console.log(`[quiz] ${today} 이미 등록돼 있음 - 건너뜀`);
+    return { status: "already-exists", date: today };
+  }
+
+  // where+orderBy 복합 인덱스가 필요 없도록 안 쓴 문제 전부 받아 메모리에서 오래된 순 정렬 (풀 최대 수백 개 수준)
+  const snap = await db.collection("quizPool").where("used", "==", false).get();
+  if (snap.empty) {
+    console.log("[quiz] quizPool에 남은 문제 없음 - 오늘은 자동 출제 못 함");
+    return { status: "empty-pool", date: today, remaining: 0 };
+  }
+
+  const picked = snap.docs.slice().sort((a, b) =>
+    (a.data().createdAt?.toMillis?.() || 0) - (b.data().createdAt?.toMillis?.() || 0)
+  )[0];
+  const q = picked.data();
+  await db.collection("quizzes").doc(today).set({
+    question: q.question,
+    options: q.options,
+    answer: q.answer,
+    date: today,
+  });
+  await picked.ref.update({ used: true, usedDate: today });
+  console.log(`[quiz] ${today} 자동 출제 완료: ${q.question}`);
+  return { status: "posted", date: today, question: q.question, remaining: snap.size - 1 };
+}
+
 exports.postDailyQuiz = functions.pubsub
   .schedule("every day 09:00")
   .timeZone("Asia/Seoul")
   .onRun(async () => {
-    const db = admin.firestore();
-    // 클라이언트 todayStr()과 동일한 KST YYYY-MM-DD 포맷
-    const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
-
-    const existing = await db.collection("quizzes").doc(today).get();
-    if (existing.exists) {
-      console.log(`[quiz] ${today} 이미 등록돼 있음 - 건너뜀`);
-      return null;
-    }
-
-    const snap = await db.collection("quizPool")
-      .where("used", "==", false)
-      .orderBy("createdAt")
-      .limit(1)
-      .get();
-    if (snap.empty) {
-      console.log("[quiz] quizPool에 남은 문제 없음 - 오늘은 자동 출제 못 함");
-      return null;
-    }
-
-    const picked = snap.docs[0];
-    const q = picked.data();
-    await db.collection("quizzes").doc(today).set({
-      question: q.question,
-      options: q.options,
-      answer: q.answer,
-      date: today,
-    });
-    await picked.ref.update({ used: true, usedDate: today });
-    console.log(`[quiz] ${today} 자동 출제 완료: ${q.question}`);
+    await runDailyQuizPost();
     return null;
   });
