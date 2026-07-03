@@ -2,3 +2,8 @@ node_modules/
 dist/
 .env
 .env.local
+
+# OMC 운영 상태/세션 파일 (skills만 커밋)
+.omc/
+!.omc/skills/
+!.omc/skills/**
