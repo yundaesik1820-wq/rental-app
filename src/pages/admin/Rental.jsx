@@ -924,7 +924,7 @@ ${r.attachments?.length > 0 ? `
       )}
 
       {/* 탭 */}
-      <div style={{ display:"flex", gap:4, marginBottom:16, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
+      <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap", paddingBottom:2 }}>
         {STATUS_TABS.map(s => (
           <button key={s} onClick={() => setTab(s)} style={{
             background: tab === s ? C.navy : C.surface,
