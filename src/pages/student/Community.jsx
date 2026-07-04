@@ -545,8 +545,10 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
     // 강의 게시판 댓글은 완전 익명이므로 실명 모드 사용 안 함
     const postCategory = selPost?.category;
     const useRealNameFinal = canUseRealName && commentUseRealName && postCategory !== LECTURE_CAT;
+    const postAuthorId = selPost?.authorId || posts.find(p => p.id === postId)?.authorId || "";
     await addItem("communityComments", {
       postId,
+      postAuthorId,  // 알림용: 글 작성자 uid (내 글 댓글만 구독하기 위함)
       content:    commentText.trim(),
       authorId:   profile?.uid || "",
       authorName: profile?.name || "",

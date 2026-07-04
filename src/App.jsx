@@ -425,8 +425,11 @@ function AppContent() {
   const { data: notices }          = useCollection("notices",          "createdAt");
   const { data: licenseSchedules } = useCollection("licenseSchedules", "date");
   const { data: articles }          = useCollection("scenepatchArticles", "createdAt");
-  const { data: communityPosts }    = useCollection("communityPosts",     "createdAt");
-  const { data: communityComments } = useCollection("communityComments",  "createdAt");
+  // 알림용: 커뮤니티 전체가 아니라 "내 글 / 내 글에 달린 댓글"만 구독 (데이터·비용 절감)
+  // orderBy 생략 + where 단독 → 복합 인덱스 불필요. buildAlerts가 자체 정렬함.
+  const _uid = profile?.uid || "";
+  const { data: communityPosts }    = useCollection("communityPosts",    null, _uid ? { where: [["authorId", "==", _uid]] }     : { enabled: false });
+  const { data: communityComments } = useCollection("communityComments", null, _uid ? { where: [["postAuthorId", "==", _uid]] } : { enabled: false });
 
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
