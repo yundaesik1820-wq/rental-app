@@ -20,6 +20,14 @@
             </intent-filter>
         </activity>
 
+        <!-- 푸시 알림 상태바 아이콘 (흰색 실루엣) + 브랜드 색 -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_notify" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_color" />
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
