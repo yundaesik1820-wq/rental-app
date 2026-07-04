@@ -7,10 +7,61 @@ import { useCollection, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
-const STATUS_TABS_SUPER   = ["전체", "승인대기", "교사서명대기", "승인됨", "대여중", "연체", "보류", "거절됨", "반납완료"];
-const STATUS_TABS_ASSIST  = ["전체", "승인대기", "교사서명대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
+const STATUS_TABS_SUPER   = ["승인대기", "교사서명대기", "승인됨", "대여중", "연체", "보류", "거절됨", "반납완료"];
+const STATUS_TABS_ASSIST  = ["승인대기", "교사서명대기", "승인됨", "대여중", "보류", "거절됨", "반납완료"]; // 조교: 슈퍼와 동일
 const STATUS_TABS_TEACHER = ["교사서명대기", "승인됨", "대여중", "반납완료", "연체"]; // 교사: 제한됨
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 교사서명대기: "✍️", 대여중: "🚀", 보류: null, 거절됨: "❌", 반납완료: "📦" };
+
+// ── 상태 선택 드롭다운 (눌러서 세로로 펼침) ────────────────
+function StatusDropdown({ options, value, onChange, counts, newStatus = "승인대기" }) {
+  const [open, setOpen] = useState(false);
+  const newCount = counts?.[newStatus] || 0;
+  const showNew = newCount > 0 && value !== newStatus;
+  return (
+    <div style={{ position:"relative", marginBottom:16 }}>
+      <button onClick={() => setOpen(o => !o)} style={{
+        width:"100%", display:"flex", justifyContent:"space-between", alignItems:"center",
+        background:C.surface, color:C.text, border:`1px solid ${showNew ? C.red : C.border}`,
+        borderRadius:12, padding:"12px 16px", fontSize:14, fontWeight:700, cursor:"pointer",
+      }}>
+        <span>{value}{counts?.[value] > 0 && <span style={{ color:C.muted, fontWeight:600 }}> ({counts[value]})</span>}</span>
+        <span style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {showNew && (
+            <span
+              onClick={(e) => { e.stopPropagation(); onChange(newStatus); setOpen(false); }}
+              style={{ display:"inline-flex", alignItems:"center", gap:5, background:C.red, color:"#fff", fontSize:11, fontWeight:800, padding:"3px 9px", borderRadius:999 }}>
+              <span style={{ width:6, height:6, borderRadius:999, background:"#fff" }} />
+              신규 {newCount}
+            </span>
+          )}
+          <span style={{ color:C.muted, fontSize:12, transition:"transform .2s", transform: open ? "rotate(180deg)" : "none" }}>▼</span>
+        </span>
+      </button>
+      {open && (
+        <div style={{ display:"flex", flexDirection:"column", gap:4, marginTop:6, background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:6 }}>
+          {options.map(o => {
+            const isNew = o === newStatus && (counts?.[o] || 0) > 0;
+            return (
+              <button key={o} onClick={() => { onChange(o); setOpen(false); }} style={{
+                display:"flex", justifyContent:"space-between", alignItems:"center",
+                background: value===o ? C.navy : "transparent",
+                color: value===o ? C.bg : C.text,
+                border:"none", borderRadius:8, padding:"11px 12px",
+                fontSize:13, fontWeight:600, cursor:"pointer", textAlign:"left",
+              }}>
+                <span style={{ display:"inline-flex", alignItems:"center", gap:7 }}>
+                  {isNew && <span style={{ width:7, height:7, borderRadius:999, background:C.red, flexShrink:0 }} />}
+                  {o}
+                </span>
+                {counts?.[o] > 0 && <span style={{ opacity:0.7 }}>({counts[o]})</span>}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── 시설 대여 관리 컴포넌트 ────────────────────────────────
 function FacilityManager({ requests, subAdmin, isTeacher, isSuper, focusId, onConsumed }) {
@@ -135,15 +186,13 @@ function FacilityManager({ requests, subAdmin, isTeacher, isSuper, focusId, onCo
     <div>
       <PageTitle>시설 대여 관리</PageTitle>
 
-      {/* 탭 */}
-      <div style={{ display:"flex", gap:4, marginBottom:16, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
-        {tabs.map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            style={{ padding:"5px 10px", borderRadius:14, border:`1px solid ${tab===t?C.navy:C.border}`, background:tab===t?C.navy:C.bg, color:tab===t?C.bg:C.muted, fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {t} ({requests.filter(r=>r.status===t).length})
-          </button>
-        ))}
-      </div>
+      {/* 상태 선택 */}
+      <StatusDropdown
+        options={tabs}
+        value={tab}
+        onChange={setTab}
+        counts={tabs.reduce((a,t) => ({ ...a, [t]: requests.filter(r => r.status===t).length }), {})}
+      />
 
       {filtered.length === 0 && <Empty icon="🏢" text="신청 내역이 없습니다" />}
 
@@ -923,20 +972,8 @@ ${r.attachments?.length > 0 ? `
         </div>
       )}
 
-      {/* 탭 */}
-      <div style={{ display:"flex", gap:6, marginBottom:16, flexWrap:"wrap", paddingBottom:2 }}>
-        {STATUS_TABS.map(s => (
-          <button key={s} onClick={() => setTab(s)} style={{
-            background: tab === s ? C.navy : C.surface,
-            color: tab === s ? C.bg : C.muted,
-            border: `1px solid ${tab === s ? C.navy : C.border}`,
-            borderRadius: 14, padding: "5px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer",
-            whiteSpace: "nowrap", flexShrink: 0,
-          }}>
-            {s} {counts[s] > 0 && <span style={{ opacity: 0.7 }}>({counts[s]})</span>}
-          </button>
-        ))}
-      </div>
+      {/* 상태 선택 */}
+      <StatusDropdown options={STATUS_TABS} value={tab} onChange={setTab} counts={counts} />
 
       {/* 신청 목록 */}
       {sorted.length === 0 && <Empty icon="📋" text="대여 신청이 없습니다" />}
