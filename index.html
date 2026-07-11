@@ -19,7 +19,7 @@
           // 3) 모바일 브라우저만 스토어로 (데스크톱은 그대로 웹 사용)
           var url = null;
           if (/Android/i.test(ua)) url = 'https://play.google.com/store/apps/details?id=com.kbas.rental';
-          else if (/iPhone|iPad|iPod/i.test(ua)) url = 'https://apps.apple.com/app/id6779502423';
+          else if (/iPhone|iPad|iPod/i.test(ua)) url = 'https://apps.apple.com/kr/app/id6779502423';
           if (url) location.replace(url);
         } catch (e) {}
       })();
