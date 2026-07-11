@@ -1,4 +1,39 @@
+import { useRef, useLayoutEffect } from "react";
 import { C } from "../theme";
+
+// 한줄 소개: 폭에 맞춰 글자 크기를 자동 축소해 무조건 한 줄로.
+function FitHeadline({ emoji, text }) {
+  const wrapRef = useRef(null);
+  const elRef = useRef(null);
+  const MAX = 15, MIN = 7;
+
+  useLayoutEffect(() => {
+    const wrap = wrapRef.current, el = elRef.current;
+    if (!wrap || !el) return;
+    const fit = () => {
+      el.style.fontSize = MAX + "px";
+      const avail = wrap.clientWidth;
+      const need = el.scrollWidth;
+      let size = MAX;
+      if (need > avail && avail > 0) size = Math.max(MIN, Math.floor(MAX * avail / need * 0.98));
+      el.style.fontSize = size + "px";
+    };
+    fit();
+    let ro;
+    if (typeof ResizeObserver !== "undefined") { ro = new ResizeObserver(fit); ro.observe(wrap); }
+    return () => ro && ro.disconnect();
+  }, [emoji, text]);
+
+  return (
+    <div ref={wrapRef} style={{ width: "100%", overflow: "hidden", textAlign: "center", margin: "2px 0 6px" }}>
+      <span ref={elRef} style={{ display: "inline-block", whiteSpace: "nowrap", fontWeight: 900, color: C.text, letterSpacing: "-.01em", lineHeight: 1.3 }}>
+        <span style={{ margin: "0 0.4em" }}>{emoji}</span>
+        {text}
+        <span style={{ margin: "0 0.4em" }}>{emoji}</span>
+      </span>
+    </div>
+  );
+}
 
 // 장비 설명글을 "사양표"로 파싱해서 보여주는 컴포넌트
 // 입력 형식(관리자 설명글):
@@ -102,14 +137,8 @@ export default function SpecTable({ text }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-      {/* 한줄 소개 (굵은 고딕 + 양옆 이모지) */}
-      {headline && (
-        <div style={{ textAlign: "center", fontWeight: 900, fontSize: 14.5, color: C.text, lineHeight: 1.4, letterSpacing: "-.01em", margin: "2px 2px 6px", wordBreak: "keep-all" }}>
-          <span style={{ margin: "0 6px" }}>{headline.emoji}</span>
-          {headline.text}
-          <span style={{ margin: "0 6px" }}>{headline.emoji}</span>
-        </div>
-      )}
+      {/* 한줄 소개 (굵은 고딕 + 양옆 이모지, 폭 맞춰 자동 축소) */}
+      {headline && <FitHeadline emoji={headline.emoji} text={headline.text} />}
 
       {sections.map((sec, i) => (
         <div key={i} style={{ border: `1px solid ${C.border}`, borderRadius: 10, overflow: "hidden", background: C.card }}>
