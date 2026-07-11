@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import jsQR from "jsqr";
 import { C } from "../../theme";
+import { REQUIRE_RETURN_PHOTOS } from "../../config";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
@@ -1177,7 +1178,7 @@ ${r.attachments?.length > 0 ? `
               {/* 반납 처리 - 사진 3장 업로드 여부 체크 */}
               {(() => {
                 const photos = r.returnPhotos || [];
-                const ready = photos.length >= 3;
+                const ready = !REQUIRE_RETURN_PHOTOS || photos.length >= 3;
                 return (
                   <div>
                     {/* 사진 미리보기 */}
@@ -1191,7 +1192,9 @@ ${r.attachments?.length > 0 ? `
                     )}
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                       <span style={{ fontSize:11, color: ready ? C.green : C.muted }}>
-                        {ready ? "✅ 사진 3장 확인됨 - 반납 처리 가능" : `📸 학생 사진 업로드 대기 중 (${photos.length}/3)`}
+                        {!REQUIRE_RETURN_PHOTOS
+                          ? (photos.length > 0 ? `📸 사진 ${photos.length}장 · 반납 처리 가능` : "📦 반납 처리 가능")
+                          : ready ? "✅ 사진 3장 확인됨 - 반납 처리 가능" : `📸 학생 사진 업로드 대기 중 (${photos.length}/3)`}
                       </span>
                     </div>
                     <div style={{ display:"flex", gap:8 }}>

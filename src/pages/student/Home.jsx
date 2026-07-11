@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { C as BASE, NOTICE_CAT } from "../../theme";
+import { REQUIRE_RETURN_PHOTOS } from "../../config";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
@@ -1233,7 +1234,7 @@ export default function StudentHome({ onOpenRoom }) {
               {myRentals.map(r => {
                 const photos = r.returnPhotos || [];
                 const isExpanded = expandedReturnId === r.id;
-                const photosDone = photos.length >= 3;
+                const photosDone = !REQUIRE_RETURN_PHOTOS || photos.length >= 3;
                 return (
                   <div key={r.id} style={{ marginBottom:8 }}>
                     <Card onClick={() => setSelectedRequest(r)} style={{ cursor:"pointer", marginBottom:0, borderRadius: isExpanded ? "12px 12px 0 0" : 12 }}>
