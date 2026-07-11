@@ -15,6 +15,7 @@ export function groupEquipments(equipments) {
         subCategory:     e.subCategory     || "",
         manufacturer:    e.manufacturer    || "",
         description:     e.description     || "",
+        guideVideoUrl:   e.guideVideoUrl   || "",
         subCategory:     e.subCategory     || "",
         img:             e.img             || "📦",
         photoUrls:       [],
@@ -37,6 +38,9 @@ export function groupEquipments(equipments) {
     }
     if (!map[key].description && e.description) {
       map[key].description = e.description;
+    }
+    if (!map[key].guideVideoUrl && e.guideVideoUrl) {
+      map[key].guideVideoUrl = e.guideVideoUrl;
     }
     // itemNo가 01인 장비 사진 우선 사용
     const ePhotos = e.photoUrls?.length > 0 ? e.photoUrls : (e.photoUrl ? [e.photoUrl] : []);

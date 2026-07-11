@@ -53,6 +53,7 @@ function groupSets(equipments) {
         manufacturer:  e.manufacturer  || "",
         setItems:      e.setItems      || "",
         description:   e.description   || "",
+        guideVideoUrl: e.guideVideoUrl || "",
         photoUrls:       e.photoUrls     || [],
         displayPhotoUrl: e.displayPhotoUrl || "",
         units: [], total: 0, available: 0,
@@ -65,6 +66,7 @@ function groupSets(equipments) {
     if (map[key].photoUrls.length === 0 && e.photoUrls?.length > 0) map[key].photoUrls = e.photoUrls;
     if (!map[key].displayPhotoUrl && e.displayPhotoUrl) map[key].displayPhotoUrl = e.displayPhotoUrl;
     if (!map[key].description && e.description) map[key].description = e.description;
+    if (!map[key].guideVideoUrl && e.guideVideoUrl) map[key].guideVideoUrl = e.guideVideoUrl;
   });
   return Object.values(map);
 }
