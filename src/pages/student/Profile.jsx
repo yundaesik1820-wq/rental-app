@@ -136,11 +136,11 @@ export default function Profile() {
         </div>
       </Card>
 
-      {/* 라이센스 카드 - 교수님은 숨김 */}
+      {/* 라이선스 카드 - 교수님은 숨김 */}
       {profile.role !== "professor" && <Card style={{ marginBottom: 16, border: `2px solid ${lc.col}30` }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><Award size={14} /> 장비 사용 라이센스</div>
+            <div style={{ fontSize: 13, color: C.muted, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}><Award size={14} /> 장비 사용 라이선스</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <span style={{ background: lc.bg, color: lc.col, borderRadius: 8, padding: "6px 16px", fontSize: 16, fontWeight: 800 }}>
                 {profile.license || "없음"}

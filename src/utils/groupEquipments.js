@@ -29,7 +29,7 @@ export function groupEquipments(equipments) {
     map[key].units.push(e);
     map[key].total++;
     if ((e.status || "대여가능") === "대여가능") map[key].available++;
-    // 같은 모델 중 가장 높은 라이센스 단계로 설정
+    // 같은 모델 중 가장 높은 라이선스 단계로 설정
     if ((e.licenseLevel || 0) > map[key].licenseLevel) {
       map[key].licenseLevel = e.licenseLevel || 0;
     }

@@ -16,7 +16,7 @@ import PdfViewer from "../../components/PdfViewer";
 //    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
 const HERO_SLIDES = [
   { img: "/hero/hero1.png", link: "notices", pdfKeyword: "대여가이드" },
-  { img: "/hero/hero2.png" },
+  { img: "/hero/hero2.png", link: "license" },
   { img: "/hero/hero3.png" },
 ];
 

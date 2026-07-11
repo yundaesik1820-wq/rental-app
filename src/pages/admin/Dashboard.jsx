@@ -307,7 +307,7 @@ export default function Dashboard({ setTab }) {
         );
       })()}
 
-      {/* 라이센스 관리 */}
+      {/* 라이선스 관리 */}
       {(() => {
         const today = new Date().toISOString().slice(0,10);
         const upcoming = schedules
@@ -357,7 +357,7 @@ export default function Dashboard({ setTab }) {
             <div onClick={() => setTab?.("license")}
               style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
               <span style={{ fontSize:20 }}>🎖️</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>라이센스 관리</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>라이선스 관리</span>
               <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
             </div>
 
@@ -374,7 +374,7 @@ export default function Dashboard({ setTab }) {
               </div>
             )}
 
-            {/* 계열별 라이센스 현황 */}
+            {/* 계열별 라이선스 현황 */}
             {DEPTS.map(dept => <LicBar key={dept} dept={dept} />)}
           </div>
         );

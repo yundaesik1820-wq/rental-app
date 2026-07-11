@@ -77,7 +77,7 @@ function buildAlerts(isAdmin, profile, data) {
       ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
       ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
-      ...upcoming.map(s=>({ id:`라이센스_${s.id}`, cat:"라이센스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이센스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
+      ...upcoming.map(s=>({ id:`라이선스_${s.id}`, cat:"라이선스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이선스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
     ];
   }
   // 공지 알림 (공통) — 관리자·학생 모두 표시, 30일 윈도우 예외(아래 필터에서 제외)
@@ -131,7 +131,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
     return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
-  // 당근식 4탭 묶음 — 대여/반납·시설·라이센스·회원 → "상태"
+  // 당근식 4탭 묶음 — 대여/반납·시설·라이선스·회원 → "상태"
   const groupOf = (a) => (a.cat === "공지" || a.cat === "SNS") ? a.cat : "상태";
   const TABS = ["전체", "상태", "공지", "SNS"];
 
@@ -142,7 +142,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
     if (a.cat === "SNS")      return { tab: "community" };
     if (a.cat === "회원")     return { tab: "students", userId: a.userId };
-    if (a.cat === "라이센스") return { tab: "license", licenseId: a.licenseId };
+    if (a.cat === "라이선스") return { tab: "license", licenseId: a.licenseId };
     if (a.cat === "시설")     return { tab: isAdmin ? "rental" : "calendar", facilityReqId: a.facilityReqId };
     return { tab: isAdmin ? "rental" : "calendar", rentalId: a.rentalId }; // 대여/반납
   };
@@ -371,7 +371,7 @@ function StudentMyPage() {
       {/* 메뉴 리스트 */}
       <MenuRow icon="👤" label="내 정보" sub="프로필·계정 정보 확인" onClick={() => setView("profile")} />
       <MenuRow icon="💬" label="문의하기" sub="궁금한 점을 물어봐요" onClick={() => setView("inquiry")} />
-      <MenuRow icon="🎓" label="라이센스" sub="내 장비 사용 등급" onClick={() => setView("license")} />
+      <MenuRow icon="🎓" label="라이선스" sub="내 장비 사용 등급" onClick={() => setView("license")} />
       <MenuRow icon="📢" label="공지사항" sub="대여실 소식·안내" onClick={() => setView("notices")} />
     </div>
   );

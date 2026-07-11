@@ -20,7 +20,7 @@ const GROUPS = {
     title: "학생",
     items: [
       { id: "students", icon: Users,         label: "학생 관리",     desc: "학생 정보·권한" },
-      { id: "license",  icon: GraduationCap, label: "라이센스 관리", desc: "장비 자격 인증" },
+      { id: "license",  icon: GraduationCap, label: "라이선스 관리", desc: "장비 자격 인증" },
     ],
   },
   g_sns: {

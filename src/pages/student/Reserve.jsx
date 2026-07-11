@@ -17,7 +17,7 @@ const CLUBS = ["라온", "올드보이", "행가레", "클리퍼", "마스터보
 const CLOUD_NAME    = "dnotsiasc";
 const UPLOAD_PRESET = "equipment_photos";
 
-// 라이센스 문자열 → 숫자
+// 라이선스 문자열 → 숫자
 const licenseToNum = (lic) => {
   if (!lic || lic === "없음") return 0;
   const n = parseInt(lic);
@@ -252,7 +252,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     const myLicNum = licenseToNum(profile?.license);
     const rawEquip = equipments.find(eq => (eq.modelName || eq.name) === modelName);
     const eqLic    = rawEquip?.licenseLevel || 0;
-    if (!isProf && myLicNum < eqLic) return; // 라이센스 부족 시 차단
+    if (!isProf && myLicNum < eqLic) return; // 라이선스 부족 시 차단
     setCartSets(p => ({ ...p, [modelName]: !p[modelName] }));
   };
 
@@ -391,7 +391,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     }
     // ──────────────────────────────────────────────────────────
     if (cartTotal === 0)          errs.cart = "장비를 1개 이상 선택하세요";
-    // 라이센스 체크 - 원본 equipments 데이터 기반
+    // 라이선스 체크 - 원본 equipments 데이터 기반
     const myLicNum = licenseToNum(profile?.license);
     const isProf   = profile?.role === "professor";
     if (!isProf) {
@@ -401,14 +401,14 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
         const eqLic = raw?.licenseLevel || 0;
         if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
       });
-      // 세트 라이센스 체크
+      // 세트 라이선스 체크
       cartSetItems.forEach(item => {
         const raw = equipments.find(e => (e.modelName || e.name) === item.modelName);
         const eqLic = raw?.licenseLevel || 0;
         if (eqLic > myLicNum) lockedNames.push(`${item.modelName}(${eqLic}단계 필요)`);
       });
       if (lockedNames.length > 0) {
-        errs.cart = `라이센스 부족: ${lockedNames.join(", ")}`;
+        errs.cart = `라이선스 부족: ${lockedNames.join(", ")}`;
       }
     }
     // ── 기간 겹침 기반 재고 체크 ────────────────────────────

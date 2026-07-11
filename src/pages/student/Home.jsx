@@ -1343,7 +1343,7 @@ export default function StudentHome({ onOpenRoom }) {
           })}
         </section>
 
-        {/* 라이센스 수업 */}
+        {/* 라이선스 수업 */}
         {(() => {
           const today = new Date().toISOString().slice(0,10);
           const upcoming = licenseSchedules
@@ -1353,7 +1353,7 @@ export default function StudentHome({ onOpenRoom }) {
           if (upcoming.length === 0) return null;
           return (
             <section>
-              <SectionTitle>🎖️ 라이센스 신청 가능한 수업</SectionTitle>
+              <SectionTitle>🎖️ 라이선스 신청 가능한 수업</SectionTitle>
               {upcoming.map(s => (
                 <Card key={s.id} style={{ marginBottom:8 }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>

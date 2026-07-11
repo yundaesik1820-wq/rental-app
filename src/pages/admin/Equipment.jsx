@@ -324,7 +324,8 @@ function ExcelImportModal({ onClose, onImport }) {
   const COL_MAP = {
     "대분류":"majorCategory","중분류":"minorCategory","소분류":"subCategory",
     "제조사":"manufacturer","모델명":"modelName",
-    "장비설명":"description","라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel","라이센스제한":"licenseLevel",
+    "장비설명":"description","라이선스단계":"licenseLevel","라이선스단계(0~3)":"licenseLevel","라이선스제한":"licenseLevel",
+    "라이센스단계":"licenseLevel","라이센스단계(0~3)":"licenseLevel","라이센스제한":"licenseLevel", // 옛 표기 CSV 호환
     "호기":"unitNo","물품번호":"itemNo",
     "보관위치":"location","S/N":"serialNo","상태":"status","특이사항":"note",
     "마운트":"mount","마운트(E-mount/EF-mount)":"mount",
@@ -407,7 +408,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "대분류": "촬영", "중분류": "카메라", "소분류": "", "제조사": "Sony",
               "모델명": "Sony FX3", "호기": "1호기", "물품번호": "EQ-001",
               "상태": "대여가능", "보관위치": "장비실 A-1", "S/N": "",
-              "라이센스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
+              "라이선스제한": "1단계", "장비설명": "4K 풀프레임 시네마 카메라",
               "키워드": "4K 120fps, S-Cinetone, 풀프레임",
               "구성품": "본체, 마운트 어댑터",
               "매뉴얼영상(유튜브)": "https://youtu.be/예시영상ID",
@@ -420,7 +421,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "대분류": "촬영", "중분류": "배터리", "소분류": "", "제조사": "Sony",
               "모델명": "NP-FZ100", "호기": "1호기", "물품번호": "EQ-002",
               "상태": "대여가능", "보관위치": "장비실 B-1", "S/N": "",
-              "라이센스제한": "0단계", "장비설명": "",
+              "라이선스제한": "0단계", "장비설명": "",
               "키워드": "", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "Sony FX3, Sony A7S3",
@@ -431,7 +432,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "대분류": "촬영", "중분류": "충전기/전원", "소분류": "", "제조사": "Sony",
               "모델명": "BC-QZ1", "호기": "1호기", "물품번호": "EQ-003",
               "상태": "대여가능", "보관위치": "장비실 B-2", "S/N": "",
-              "라이센스제한": "0단계", "장비설명": "",
+              "라이선스제한": "0단계", "장비설명": "",
               "키워드": "", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "",
@@ -443,7 +444,7 @@ function ExcelImportModal({ onClose, onImport }) {
               "대분류": "촬영", "중분류": "저장매체", "소분류": "", "제조사": "ProGrade",
               "모델명": "CFexpress Type A 320GB", "호기": "1호기", "물품번호": "EQ-004",
               "상태": "대여가능", "보관위치": "장비실 C-1", "S/N": "",
-              "라이센스제한": "0단계", "장비설명": "고속 CFexpress 카드",
+              "라이선스제한": "0단계", "장비설명": "고속 CFexpress 카드",
               "키워드": "CFexpress Type A, 320GB", "구성품": "", "매뉴얼영상(유튜브)": "", "마운트": "",
               "호환배터리모델명": "",
               "호환카메라(배터리)": "Sony FX3, Sony A7S3",
@@ -740,7 +741,7 @@ export default function Equipment({ initialTab = "equip" }) {
       "상태":     e.status        || "대여가능",
       "보관위치": e.location      || "",
       "S/N":      e.serialNo      || "",
-      "라이센스제한": `${e.licenseLevel || 0}단계`,
+      "라이선스제한": `${e.licenseLevel || 0}단계`,
       "장비설명": e.description   || "",
       "키워드":   e.keywords      || "",
       "구성품":   e.bundledItems  || "",
@@ -844,9 +845,9 @@ export default function Equipment({ initialTab = "equip" }) {
                 style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:80, boxSizing:"border-box" }} />
             </div>
 
-          {/* 라이센스 제한 */}
+          {/* 라이선스 제한 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이센스 제한 단계</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이선스 제한 단계</div>
             <div style={{ display:"flex", gap:8 }}>
               {LICENSE_LEVELS.map(lv => (
                 <button key={lv.val} onClick={() => f("licenseLevel", lv.val)} style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", textAlign:"center",
@@ -1177,9 +1178,9 @@ export default function Equipment({ initialTab = "equip" }) {
             <Inp label="물품번호" value={form.itemNo} onChange={e => f("itemNo", e.target.value)} />
           </div>
 
-          {/* 라이센스 제한 */}
+          {/* 라이선스 제한 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이센스 제한 단계</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이선스 제한 단계</div>
             <div style={{ display:"flex", gap:8 }}>
               {LICENSE_LEVELS.map(lv => (
                 <button key={lv.val} onClick={() => f("licenseLevel", lv.val)} style={{ flex:1, padding:"10px 0", borderRadius:10, fontWeight:700, fontSize:12, cursor:"pointer", fontFamily:"inherit", textAlign:"center",

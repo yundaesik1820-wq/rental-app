@@ -12,7 +12,7 @@ export default function License({ focusId, onConsumed }) {
   const [showConfirm, setShowConfirm] = useState(null);
   const [applying, setApplying]       = useState(false);
 
-  // 🔔 알림 딥링크 — 해당 라이센스 일정으로 스크롤 + 하이라이트
+  // 🔔 알림 딥링크 — 해당 라이선스 일정으로 스크롤 + 하이라이트
   const [flashId, setFlashId] = useState(null);
   useEffect(() => {
     if (!focusId || !schedules.length) return;
@@ -96,18 +96,18 @@ export default function License({ focusId, onConsumed }) {
           <img src="/mascot/study.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
           <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
             <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 라이센스 페이지예요!</div>
-            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>단계별 라이센스 교육 일정을 확인하고
+            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 라이선스 페이지예요!</div>
+            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>단계별 라이선스 교육 일정을 확인하고
 신청할 수 있어요. 단계가 높을수록 더 좋은 장비를 쓸 수 있어요 🎖️</div>
           </div>
         </div>
       </div>
 
-      <PageTitle>라이센스 신청</PageTitle>
+      <PageTitle>라이선스 신청</PageTitle>
 
-      {/* 내 라이센스 현황 */}
+      {/* 내 라이선스 현황 */}
       <Card style={{ marginBottom:24, background:`linear-gradient(135deg,${C.navy},#2D4A9B)` }}>
-        <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", marginBottom:6 }}>내 현재 라이센스</div>
+        <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", marginBottom:6 }}>내 현재 라이선스</div>
         <div style={{ display:"flex", alignItems:"center", gap:16 }}>
           <div style={{ fontSize:36, fontWeight:900, color:"#fff" }}>
             {myLevel === 0 ? "없음" : `${myLevel}단계`}
@@ -167,7 +167,7 @@ export default function License({ focusId, onConsumed }) {
                 {myApp ? (
                   <div style={{ background: myApp.attended ? C.greenLight : C.blueLight, borderRadius:10, padding:"10px 14px", textAlign:"center" }}>
                     <div style={{ fontSize:13, fontWeight:700, color: myApp.attended ? C.green : C.blue }}>
-                      {myApp.attended ? "✅ 출석 완료 → 라이센스 부여됨" : "📋 신청 완료 — 수업 대기중"}
+                      {myApp.attended ? "✅ 출석 완료 → 라이선스 부여됨" : "📋 신청 완료 — 수업 대기중"}
                     </div>
                   </div>
                 ) : ok ? (
@@ -209,7 +209,7 @@ export default function License({ focusId, onConsumed }) {
       {/* 신청 확인 모달 */}
       {showConfirm && (
         <Modal onClose={() => setShowConfirm(null)} width={440}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>라이센스 수업 신청</div>
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>라이선스 수업 신청</div>
           <div style={{ background:C.bg, borderRadius:12, padding:"16px", marginBottom:20 }}>
             {[
               ["수업명", showConfirm.title],
@@ -224,7 +224,7 @@ export default function License({ focusId, onConsumed }) {
             ))}
           </div>
           <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:13, color:"#92400E", marginBottom:20 }}>
-            수업 당일 반드시 참석해야 라이센스가 부여됩니다.
+            수업 당일 반드시 참석해야 라이선스가 부여됩니다.
           </div>
           <div style={{ display:"flex", gap:10 }}>
             <Btn onClick={() => setShowConfirm(null)} color={C.muted} outline full>취소</Btn>

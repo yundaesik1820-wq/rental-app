@@ -3,8 +3,10 @@ import { C } from "../../theme";
 import { Card, Btn, PageTitle, Empty, Modal } from "../../components/UI";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
 
-const CATEGORIES = ["전체", "일반 문의", "라이센스 문의", "기타 문의"];
-const CAT_ICON   = { "일반 문의": "💬", "라이센스 문의": "🎖️", "기타 문의": "📝" };
+const CATEGORIES = ["전체", "일반 문의", "라이선스 문의", "기타 문의"];
+const CAT_ICON   = { "일반 문의": "💬", "라이선스 문의": "🎖️", "라이센스 문의": "🎖️", "기타 문의": "📝" };
+// 옛 표기("라이센스 문의")로 저장된 문의도 새 카테고리로 매칭
+const normCat = (c) => (c === "라이센스 문의" ? "라이선스 문의" : c);
 const STATUS_COL = { "답변대기": C.yellow, "처리중": C.blue, "답변완료": C.green };
 const STATUS_BG  = { "답변대기": C.yellowLight, "처리중": C.blueLight, "답변완료": C.greenLight };
 
@@ -18,7 +20,7 @@ export default function AdminInquiry() {
   const [selected, setSelected] = useState(null); // 상세보기
 
   const filtered = [...inquiries]
-    .filter(i => filter === "전체" || i.category === filter)
+    .filter(i => filter === "전체" || normCat(i.category) === filter)
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
   const pending = inquiries.filter(i => i.status === "답변대기").length;

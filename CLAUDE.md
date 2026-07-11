@@ -69,7 +69,7 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
 - `role`: `"student"` | `"admin"`
 - `adminRole`: `super` / `assistant` (전체 권한) | `teacher` / `professor` (제한 — 문의 열람 등, 에브리타임 X)
 - `status`: `pending` / `approved` / `rejected` / `withdrawn`
-- `license`: 라이센스 레벨 (LV0~LV3, 대여 가능 등급)
+- `license`: 라이선스 레벨 (LV0~LV3, 대여 가능 등급)
 - `reporterStatus`: `approved`면 씬스패치 기자(기사 작성 가능)
 - 에브리타임은 영상계열 학생만.
 

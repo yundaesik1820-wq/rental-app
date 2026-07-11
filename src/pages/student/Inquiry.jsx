@@ -6,7 +6,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 
 const CATEGORIES = [
   { id: "일반 문의",     icon: "💬", desc: "대여 방법, 운영시간 등 일반적인 질문" },
-  { id: "라이센스 문의", icon: "🎖️", desc: "라이센스 취득, 단계 변경 관련 문의"  },
+  { id: "라이선스 문의", icon: "🎖️", desc: "라이선스 취득, 단계 변경 관련 문의"  },
   { id: "기타 문의",     icon: "📝", desc: "위 항목에 해당하지 않는 기타 문의"    },
 ];
 

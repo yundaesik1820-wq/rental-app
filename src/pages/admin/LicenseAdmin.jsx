@@ -38,14 +38,14 @@ export default function LicenseAdmin() {
     setSaving(false);
   };
 
-  // 출석 체크 → 라이센스 업그레이드
+  // 출석 체크 → 라이선스 업그레이드
   const checkAttendance = async (app) => {
     if (app.attended) return;
     setSaving(true);
     try {
       // 1. 신청 상태 출석 처리
       await updateItem("licenseApplications", app.id, { attended: true });
-      // 2. users 컬렉션에서 학생 찾아 라이센스 업그레이드
+      // 2. users 컬렉션에서 학생 찾아 라이선스 업그레이드
       const user = users.find(u => u.studentId === app.studentId || u.uid === app.userId);
       if (user) {
         const newLevel = (licenseToNum(user.license) + 1);
@@ -74,7 +74,7 @@ export default function LicenseAdmin() {
   return (
     <div>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-        <PageTitle>라이센스 관리</PageTitle>
+        <PageTitle>라이선스 관리</PageTitle>
         <Btn onClick={() => setShowAdd(true)}>+ 수업 일정 등록</Btn>
       </div>
 
@@ -198,8 +198,8 @@ export default function LicenseAdmin() {
       {/* 일정 등록 모달 */}
       {showAdd && (
         <Modal onClose={() => setShowAdd(false)} width={500}>
-          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>라이센스 수업 일정 등록</div>
-          <Inp label="수업명 *" placeholder="예: 카메라 기초 라이센스 1단계" value={form.title} onChange={e => setForm(p=>({...p,title:e.target.value}))} />
+          <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:20 }}>라이선스 수업 일정 등록</div>
+          <Inp label="수업명 *" placeholder="예: 카메라 기초 라이선스 1단계" value={form.title} onChange={e => setForm(p=>({...p,title:e.target.value}))} />
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:12 }}>
             <div>
               <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>날짜 *</div>
@@ -213,7 +213,7 @@ export default function LicenseAdmin() {
             </div>
           </div>
           <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이센스 단계 *</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:8 }}>라이선스 단계 *</div>
             <div style={{ display:"flex", gap:8 }}>
               {LEVELS.map(lv => {
                 const lc = levelColor(lv);

@@ -532,7 +532,7 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
           <Inp label="이메일 *" value={addForm.email} onChange={e => setAddForm(p=>({...p,email:e.target.value}))} type="email" />
           <Inp label="초기 비밀번호 *" placeholder="6자리 이상" value={addForm.pw} onChange={e => setAddForm(p=>({...p,pw:e.target.value}))} type="password" />
           <div style={{ marginBottom:12 }}>
-            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>라이센스</div>
+            <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>라이선스</div>
             <select value={addForm.license} onChange={e => setAddForm(p=>({...p,license:e.target.value}))}
               style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:14, fontFamily:"inherit", outline:"none" }}>
               {LICENSES.map(l => <option key={l} value={l}>{l}</option>)}
@@ -545,17 +545,17 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
         </Modal>
       )}
 
-      {/* ── 승인+라이센스 모달 ── */}
+      {/* ── 승인+라이선스 모달 ── */}
       {approveTarget && (
         <Modal onClose={() => { setApproveTarget(null); setLicense("없음"); }}>
           <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:6 }}>✅ 승인 처리</div>
-          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>승인 전 라이센스 단계를 선택해주세요</div>
+          <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>승인 전 라이선스 단계를 선택해주세요</div>
           <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:20 }}>
             <div style={{ fontSize:14, fontWeight:700, color:C.text }}>{approveTarget.name}</div>
             <div style={{ fontSize:12, color:C.muted, marginTop:4 }}>{admYear(approveTarget.studentId)} · {approveTarget.dept}</div>
             <div style={{ fontSize:12, color:C.muted }}>{approveTarget.phone} · {approveTarget.email}</div>
           </div>
-          <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>라이센스 단계</div>
+          <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:10 }}>라이선스 단계</div>
           <div style={{ display:"flex", gap:10, marginBottom:20 }}>
             {LICENSES.map(l => (
               <button key={l} onClick={() => setLicense(l)} style={{ flex:1, padding:"12px 0", borderRadius:10, fontWeight:700, fontSize:14, cursor:"pointer", fontFamily:"inherit",
@@ -670,7 +670,7 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
                     <div style={{ fontSize:12, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
                     <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.phone}</div>
                     <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
-                      <span style={{ fontSize:11, color:C.muted }}>라이센스:</span>
+                      <span style={{ fontSize:11, color:C.muted }}>라이선스:</span>
                       <span style={{ background:s.license&&s.license!=="없음"?C.blueLight:C.bg, color:s.license&&s.license!=="없음"?C.blue:C.muted, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{s.license||"없음"}</span>
                       {!readOnly && <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>변경</button>}
                     </div>

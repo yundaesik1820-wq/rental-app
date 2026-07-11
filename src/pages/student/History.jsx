@@ -66,7 +66,7 @@ export default function History({ focusId, onConsumed }) {
     <td class="label">연락처</td><td>${r.phone || ""}</td>
   </tr>
   <tr>
-    <td class="label">라이센스</td><td>${r.license || "없음"}</td>
+    <td class="label">라이선스</td><td>${r.license || "없음"}</td>
     <td class="label">신청일</td><td>${r.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || ""}</td>
   </tr>
 </table>
