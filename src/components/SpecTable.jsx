@@ -4,7 +4,7 @@ import { C } from "../theme";
 // 입력 형식(관리자 설명글):
 //   - #텍스트  → 표 위 굵은 한줄 소개(헤드라인). 맨 앞에 이모지를 넣으면 양옆에 붙음
 //                (예: "#🎬 5축 손떨방 탑재! 소니 초경량 시네마라인")
-//   - 항목은 줄바꿈 또는 " / " 로 구분
+//   - 항목은 줄바꿈 또는 / 로 구분 (둘 다 됨)
 //   - [xxx]  → 섹션 헤더
 //   - 키:값   → 사양 행 (왼쪽 라벨 / 오른쪽 값). 같은 키는 " · "로 합침
 //   - 나머지  → 라벨 없는 특징 (칩으로 표시)
@@ -18,11 +18,13 @@ function splitHeadline(line) {
 
 export function parseSpec(raw) {
   if (!raw || typeof raw !== "string") return null;
+
+  // 줄바꿈 또는 / 로 항목 분리. 셔터속도·렌즈 등 "숫자/숫자"(1/8000초)는 보호.
   const items = raw
-    .split("\n")
-    .flatMap(line => line.split(/\s+\/\s+/))
-    .map(s => s.trim())
-    .filter(s => s && s !== "/");
+    .replace(/(\d)\/(\d)/g, "$1\x01$2")
+    .split(/[\n\/]+/)
+    .map(s => s.replace(/\x01/g, "/").trim())
+    .filter(Boolean);
 
   let headline = null;
   const rest = [];
