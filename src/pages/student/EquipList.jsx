@@ -15,9 +15,9 @@ import PdfViewer from "../../components/PdfViewer";
 //    link: "notices" 를 넣으면 클릭 시 공지사항으로 이동합니다. (빼면 클릭 안 됨)
 //    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
 const HERO_SLIDES = [
-  { emoji: "📋", title: "장비 대여 규칙", desc: "평일 09:00–17:30 운영 · 최소 3일 전 신청", grad: "linear-gradient(120deg,#3d4370,#5b6191)", link: "notices", pdfKeyword: "대여가이드" },
-  { emoji: "⏰", title: "연체 주의 안내", desc: "반납이 늦으면 일정 기간 대여가 제한돼요", grad: "linear-gradient(120deg,#7f1d2e,#be3144)" },
-  { emoji: "🎓", title: "장비 교육 안내", desc: "라이센스 이수 후 전문 장비 대여가 열려요", grad: "linear-gradient(120deg,#14532d,#1f9d57)" },
+  { img: "/hero/hero1.png", link: "notices", pdfKeyword: "대여가이드" },
+  { img: "/hero/hero2.png" },
+  { img: "/hero/hero3.png" },
 ];
 
 // 🗂️ 카테고리 — 이름/아이콘/순서를 여기서 바꾸면 그리드가 바뀝니다. (4열로 자동 배치)
