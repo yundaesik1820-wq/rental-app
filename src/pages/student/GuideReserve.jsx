@@ -4,6 +4,7 @@ import { Card, Btn, Modal } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import SignaturePad from "../../components/SignaturePad";
+import SpecTable from "../../components/SpecTable";
 import { serverTimestamp } from "firebase/firestore";
 import { youtubeEmbedUrl } from "../../utils/youtube";
 
@@ -1230,11 +1231,7 @@ export default function GuideReserve({ onComplete }) {
                 <span style={{ color:C.text, fontWeight:600, wordBreak:"break-word" }}>{equipDetail.mount}</span>
               </div>
             )}
-            {equipDetail.description && (
-              <div style={{ fontSize:12, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px", whiteSpace:"pre-wrap", wordBreak:"break-word" }}>
-                📝 {equipDetail.description}
-              </div>
-            )}
+            {equipDetail.description && <SpecTable text={equipDetail.description} />}
             {equipDetail.available !== undefined && (
               <div style={{ display:"flex", fontSize:12, alignItems:"baseline" }}>
                 <span style={{ color:C.muted, width:74, flexShrink:0 }}>📦 재고</span>

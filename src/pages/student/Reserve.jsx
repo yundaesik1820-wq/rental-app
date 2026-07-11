@@ -3,6 +3,7 @@ import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem } from "../../hooks/useFirestore";
 import SignaturePad from "../../components/SignaturePad";
+import SpecTable from "../../components/SpecTable";
 import { storage, db } from "../../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -844,11 +845,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
               {equipDetail.itemName && (
                 <div style={{ fontSize:13, color:C.muted }}>📌 품명 <span style={{ color:C.text, fontWeight:600, marginLeft:8 }}>{equipDetail.itemName}</span></div>
               )}
-              {equipDetail.description && (
-                <div style={{ fontSize:13, color:C.text, lineHeight:1.7, background:C.bg, borderRadius:8, padding:"10px 12px" }}>
-                  📝 {equipDetail.description}
-                </div>
-              )}
+              {equipDetail.description && <SpecTable text={equipDetail.description} />}
               <div style={{ fontSize:13, color:C.muted }}>📦 재고 <span style={{ color:equipDetail.available===0?C.red:C.green, fontWeight:700, marginLeft:8 }}>{equipDetail.available}대 대여 가능</span></div>
             </div>
           </div>

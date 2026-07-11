@@ -37,6 +37,7 @@ const RENTAL_CATEGORIES = [
 ];
 import { groupEquipments } from "../../utils/groupEquipments";
 import { youtubeEmbedUrl } from "../../utils/youtube";
+import SpecTable from "../../components/SpecTable";
 
 // 세트 그룹화
 function groupSets(equipments) {
@@ -360,12 +361,12 @@ export default function EquipList({ setTab }) {
               {showDescModel.manufacturer && <div style={{ fontSize:12, color:C.muted }}>{showDescModel.manufacturer}</div>}
             </div>
           </div>
-          <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", fontSize:13, lineHeight:1.7, whiteSpace:"pre-wrap" }}>
-            {showDescModel.description
-              ? <span style={{ color:C.text }}>{showDescModel.description}</span>
-              : <span style={{ color:C.muted }}>아직 장비 설명이 등록되지 않았어요.<br/>관리자에게 문의해주세요.</span>
-            }
-          </div>
+          {showDescModel.description
+            ? <SpecTable text={showDescModel.description} />
+            : <div style={{ background:C.bg, borderRadius:12, padding:"14px 16px", fontSize:13, lineHeight:1.7 }}>
+                <span style={{ color:C.muted }}>아직 장비 설명이 등록되지 않았어요.<br/>관리자에게 문의해주세요.</span>
+              </div>
+          }
           {youtubeEmbedUrl(showDescModel.guideVideoUrl) && (
             <div style={{ marginTop:14 }}>
               <div style={{ fontSize:12, fontWeight:700, color:C.navy, marginBottom:6 }}>🎬 사용 매뉴얼 영상</div>
