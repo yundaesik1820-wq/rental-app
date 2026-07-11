@@ -9,6 +9,9 @@ import PdfViewer from "../../components/PdfViewer";
 
 // ✏️ 히어로 슬라이드 — 여기 내용만 바꾸면 상단 배너가 바뀝니다.
 //    (title=제목, desc=설명, emoji=오른쪽 그림, grad=배경색 그라데이션)
+//    🖼️ img: "/hero/xxx.png" 를 넣으면 직접 디자인한 통이미지로 카드를 꽉 채웁니다.
+//       (img가 있으면 grad/title/desc/emoji 는 무시됨. 카드 비율은 3:1 고정 — 1080x360px 권장)
+//       이미지 파일은 public/hero/ 폴더에 넣으세요.
 //    link: "notices" 를 넣으면 클릭 시 공지사항으로 이동합니다. (빼면 클릭 안 됨)
 //    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
 const HERO_SLIDES = [
@@ -140,8 +143,8 @@ export default function EquipList({ setTab }) {
   return (
     <div>
       {/* 🎞️ 자동 슬라이드 히어로 (내용은 상단 HERO_SLIDES에서 수정) */}
-      <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18 }}>
-        <div style={{ display:"flex", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
+      <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18, aspectRatio:"3 / 1", minHeight:96 }}>
+        <div style={{ display:"flex", height:"100%", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
           {HERO_SLIDES.map((s, i) => (
             <div key={i} onClick={() => {
                 if (s.pdfKeyword) {
@@ -150,12 +153,17 @@ export default function EquipList({ setTab }) {
                 }
                 if (s.link && setTab) setTab(s.link);
               }}
-              style={{ minWidth:"100%", background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14, minHeight:96, cursor: s.link ? "pointer" : "default" }}>
-              <div>
-                <div style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{s.title}</div>
-                <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.9)", marginTop:6, lineHeight:1.45 }}>{s.desc}</div>
-              </div>
-              <div style={{ fontSize:40, flexShrink:0 }}>{s.emoji}</div>
+              style={{ minWidth:"100%", height:"100%", cursor: (s.link||s.pdfKeyword) ? "pointer" : "default",
+                ...(s.img ? {} : { background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14 }) }}>
+              {s.img ? (
+                <img src={s.img} alt={s.title||""} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              ) : (<>
+                <div>
+                  <div style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{s.title}</div>
+                  <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.9)", marginTop:6, lineHeight:1.45 }}>{s.desc}</div>
+                </div>
+                <div style={{ fontSize:40, flexShrink:0 }}>{s.emoji}</div>
+              </>)}
             </div>
           ))}
         </div>
