@@ -20,11 +20,41 @@ export function parseSpec(raw) {
   if (!raw || typeof raw !== "string") return null;
 
   // 줄바꿈 또는 / 로 항목 분리. 셔터속도·렌즈 등 "숫자/숫자"(1/8000초)는 보호.
-  const items = raw
+  const rawItems = raw
     .replace(/(\d)\/(\d)/g, "$1\x01$2")
     .split(/[\n\/]+/)
     .map(s => s.replace(/\x01/g, "/").trim())
     .filter(Boolean);
+
+  // 콜론이 딴 줄로 떨어진 경우 복원: "유효화소" / ":" / "1020만화소" → "유효화소:1020만화소"
+  const items = [];
+  for (let i = 0; i < rawItems.length; i++) {
+    let it = rawItems[i];
+    if (it === ":") {                                   // 콜론만 덜렁
+      const prev = items.length ? items.pop() : "";
+      const next = (i + 1 < rawItems.length) ? rawItems[++i] : "";
+      items.push(prev + ":" + next);
+      continue;
+    }
+    if (it.endsWith(":") && i + 1 < rawItems.length) {  // "키:" + "값"
+      items.push(it + rawItems[++i]);
+      continue;
+    }
+    if (it.startsWith(":") && items.length) {           // ":값" → 앞 키에 붙임
+      items.push(items.pop() + it);
+      continue;
+    }
+    items.push(it);
+  }
+
+  // 키:값 스펙 판정 — 키에 글자(한글/영문)가 있어야 함 (4:2:2, 16:9 등은 특징으로)
+  const isSpec = (it) => {
+    const ci = it.indexOf(":");
+    if (ci <= 0) return false;
+    const k = it.slice(0, ci).trim();
+    const v = it.slice(ci + 1).trim();
+    return k && v && /[A-Za-z가-힣ㄱ-ㅎㅏ-ㅣ]/.test(k);
+  };
 
   let headline = null;
   const rest = [];
@@ -34,7 +64,7 @@ export function parseSpec(raw) {
   }
 
   const hasSection = rest.some(it => /^\[.+\]$/.test(it));
-  const hasSpec = rest.some(it => { const i = it.indexOf(":"); return i > 0 && it.slice(i + 1).trim(); });
+  const hasSpec = rest.some(isSpec);
   if (!hasSection && !hasSpec && !headline) return null; // 구조 없음 → 폴백
 
   const sections = [];
@@ -44,15 +74,13 @@ export function parseSpec(raw) {
   for (const it of rest) {
     const sm = it.match(/^\[(.+)\]$/);
     if (sm) { flush(); cur = { title: sm[1].trim(), specs: [], features: [] }; continue; }
-    const ci = it.indexOf(":");
-    if (ci > 0) {
+    if (isSpec(it)) {
+      const ci = it.indexOf(":");
       const k = it.slice(0, ci).trim();
       const v = it.slice(ci + 1).trim();
-      if (k && v) {
-        const ex = cur.specs.find(s => s.k === k);
-        if (ex) ex.v += " · " + v; else cur.specs.push({ k, v });
-        continue;
-      }
+      const ex = cur.specs.find(s => s.k === k);
+      if (ex) ex.v += " · " + v; else cur.specs.push({ k, v });
+      continue;
     }
     cur.features.push(it);
   }
