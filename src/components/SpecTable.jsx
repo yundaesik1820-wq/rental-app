@@ -79,6 +79,19 @@ export function parseSpec(raw) {
       items.push(items.pop() + it);
       continue;
     }
+    if (/^,+$/.test(it)) {                              // 쉼표만 덜렁 → 앞 값에 목록으로 붙임
+      if (items.length && i + 1 < rawItems.length) items.push(items.pop() + ", " + rawItems[++i]);
+      continue;                                          // 못 붙이면 그냥 버림(찌꺼기 쉼표 방지)
+    }
+    if (it.startsWith(",") && items.length) {           // ",값" → 앞 값에 붙임
+      const tail = it.replace(/^,\s*/, "");
+      items.push(items.pop() + (tail ? ", " + tail : ""));
+      continue;
+    }
+    if (it.endsWith(",") && i + 1 < rawItems.length) {  // "값," + 다음값
+      items.push(it.replace(/,\s*$/, "") + ", " + rawItems[++i]);
+      continue;
+    }
     items.push(it);
   }
 
