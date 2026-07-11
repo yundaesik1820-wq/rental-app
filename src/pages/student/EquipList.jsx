@@ -13,11 +13,12 @@ import PdfViewer from "../../components/PdfViewer";
 //       (img가 있으면 grad/title/desc/emoji 는 무시됨. 카드 비율은 3:1 고정 — 1080x360px 권장)
 //       이미지 파일은 public/hero/ 폴더에 넣으세요.
 //    link: "notices" 를 넣으면 클릭 시 공지사항으로 이동합니다. (빼면 클릭 안 됨)
+//    url: "https://..." 를 넣으면 클릭 시 외부 링크(유튜브 채널 등)를 새 탭/앱으로 엽니다.
 //    슬라이드를 더하거나 빼려면 { } 블록을 추가/삭제하면 됩니다.
 const HERO_SLIDES = [
   { img: "/hero/hero1.png", link: "notices", pdfKeyword: "대여가이드" },
   { img: "/hero/hero2.png", link: "license" },
-  { img: "/hero/hero3.png" },
+  { img: "/hero/hero3.png", url: "https://www.youtube.com/@%ED%95%9C%EA%B5%AD%EB%B0%A9%EC%86%A1%EC%98%88%EC%88%A0%EC%A7%84%ED%9D%A5%EC%9B%90%EC%98%81" },
 ];
 
 // 🗂️ 카테고리 — 이름/아이콘/순서를 여기서 바꾸면 그리드가 바뀝니다. (4열로 자동 배치)
@@ -147,13 +148,14 @@ export default function EquipList({ setTab }) {
         <div style={{ display:"flex", height:"100%", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
           {HERO_SLIDES.map((s, i) => (
             <div key={i} onClick={() => {
+                if (s.url) { window.open(s.url, "_blank", "noopener,noreferrer"); return; }
                 if (s.pdfKeyword) {
                   const hit = notices.find(n => n.pdfUrl && n.title?.replace(/\s/g, "").includes(s.pdfKeyword));
                   if (hit) { setPdfView({ url: hit.pdfUrl, title: hit.title }); return; }
                 }
                 if (s.link && setTab) setTab(s.link);
               }}
-              style={{ minWidth:"100%", height:"100%", cursor: (s.link||s.pdfKeyword) ? "pointer" : "default",
+              style={{ minWidth:"100%", height:"100%", cursor: (s.link||s.pdfKeyword||s.url) ? "pointer" : "default",
                 ...(s.img ? {} : { background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14 }) }}>
               {s.img ? (
                 <img src={s.img} alt={s.title||""} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
