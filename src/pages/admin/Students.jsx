@@ -6,10 +6,23 @@ import { auth, db } from "../../firebase";
 import { C } from "../../theme";
 import { Card, Avatar, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, updateItem } from "../../hooks/useFirestore";
+import { APP_VERSION } from "../../appVersion";
 
 const DEPTS    = ["영상계열","성우계열","엔터테인먼트계열","음향계열","실용음악계열"];
 const LICENSES = ["없음","1단계","2단계","3단계"];
 const admYear  = id => id ? `${id.slice(0,2)}학번` : "";
+
+// 마지막 접속 시각 → "3일 전" 같은 표시
+const fmtSeen = (ts) => {
+  const d = ts?.toDate?.();
+  if (!d) return "";
+  const diff = Date.now() - d.getTime();
+  const day = Math.floor(diff / 86400000);
+  if (day <= 0) return "오늘";
+  if (day === 1) return "어제";
+  if (day < 30) return `${day}일 전`;
+  return d.toLocaleDateString("ko-KR");
+};
 
 export default function Students({ readOnly = false, focusId, onConsumed }) {
   const { data: allUsers }    = useCollection("users", "createdAt");
@@ -673,6 +686,22 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
                       <span style={{ fontSize:11, color:C.muted }}>라이선스:</span>
                       <span style={{ background:s.license&&s.license!=="없음"?C.blueLight:C.bg, color:s.license&&s.license!=="없음"?C.blue:C.muted, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{s.license||"없음"}</span>
                       {!readOnly && <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>변경</button>}
+                    </div>
+                    {/* 앱 버전 (업데이트 여부 확인용) */}
+                    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
+                      <span style={{ fontSize:11, color:C.muted }}>앱버전:</span>
+                      {(() => {
+                        const v = s.appVersion;
+                        const isCurrent = v === APP_VERSION || v === "web";
+                        const bg = !v ? C.bg : isCurrent ? C.greenLight : C.redLight;
+                        const col = !v ? C.muted : isCurrent ? C.green : C.red;
+                        return (
+                          <span style={{ background:bg, color:col, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>
+                            {!v ? "미확인" : v === "web" ? "웹" : `v${v}`}
+                          </span>
+                        );
+                      })()}
+                      {s.lastSeenAt && <span style={{ fontSize:10, color:C.muted }}>· {fmtSeen(s.lastSeenAt)}</span>}
                     </div>
                   </div>
                   <div style={{ textAlign:"center" }}>

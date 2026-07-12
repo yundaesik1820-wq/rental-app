@@ -4,10 +4,31 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase";
+import { APP_VERSION } from "../appVersion";
 
 const AuthContext = createContext(null);
+
+// 현재 플랫폼 ('ios' | 'android' | 'web')
+function currentPlatform() {
+  try {
+    if (window.Capacitor && typeof window.Capacitor.getPlatform === "function") {
+      return window.Capacitor.getPlatform();
+    }
+  } catch (e) {}
+  return "web";
+}
+
+// 이용자별 업데이트 여부 확인용 — 앱 열 때 버전/플랫폼/접속시각 기록 (실패해도 무시)
+function reportAppVersion(ref) {
+  const platform = currentPlatform();
+  updateDoc(ref, {
+    appVersion: platform === "web" ? "web" : APP_VERSION,
+    platform,
+    lastSeenAt: serverTimestamp(),
+  }).catch(() => {});
+}
 
 export function AuthProvider({ children }) {
   const [user,    setUser]    = useState(null);
@@ -52,6 +73,7 @@ export function AuthProvider({ children }) {
             }
             setPendingError("");
             setProfile({ uid: firebaseUser.uid, email: firebaseUser.email, ...p });
+            reportAppVersion(ref); // 버전/접속 기록 (비차단)
           }
           setUser(firebaseUser);
         } else {
