@@ -94,7 +94,7 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
 - **Firestore 보안 규칙 강화**(`firestore.rules`, Firebase 콘솔에 게시): 본인이 자기 문서의 권한 필드(`role/adminRole/status/reporterStatus/license`)를 못 바꾸게 잠금(관리자 예외). 가입 시 admin 역할·자동 승인(approved) 차단.
 
 ### 출시 상태
-- ✅ **iOS App Store 승인 완료**
+- ✅ **iOS App Store 승인 완료** (마케팅 버전 1.0.6 = "1.6" 업데이트 2026-07-12 승인)
 - 🔜 **Google Play Store 출시 남음** (AAB 빌드, 데이터 보안 폼, 개인정보처리방침, 콘텐츠 등급)
 
 ### 다음 점검 후보

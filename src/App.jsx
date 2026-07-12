@@ -5,6 +5,7 @@ import { useCollection as useCollectionHook } from "./hooks/useFirestore";
 import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
+import UpdateGate from "./components/UpdateGate";
 import { Spinner } from "./components/UI";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
@@ -674,8 +675,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <UpdateGate>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </UpdateGate>
   );
 }
