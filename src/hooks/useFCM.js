@@ -1,15 +1,18 @@
 import { useEffect } from "react";
-import { doc, updateDoc } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { db } from "../firebase";
 import { Capacitor } from "@capacitor/core";
 
 const VAPID_KEY = "BLPGJBCYMn5hajgFcqpus-4noZQwFtpD4pZOV93yWk2cO1dCWEd_iS7m-9qMV2Dr_MtcAlMHjF7EPdY1z8BzNds";
 
 /* ───────── 토큰 저장 (웹·네이티브 공통) ───────── */
-async function saveToken(userId, token) {
+// 플랫폼별 배열에 arrayUnion으로 누적 → 웹(크롬)과 앱을 같은 계정으로 동시에 써도
+// 토큰이 서로 덮어써지지 않고 둘 다 보관됨. 서버는 두 배열에 각각 발송한다.
+async function saveToken(userId, token, native) {
   if (!token) return;
-  await updateDoc(doc(db, "users", userId), { fcmToken: token });
-  console.log("FCM 토큰 Firestore 저장 완료");
+  const field = native ? "nativeTokens" : "webTokens";
+  await updateDoc(doc(db, "users", userId), { [field]: arrayUnion(token) });
+  console.log(`FCM 토큰 Firestore 저장 완료 (${field})`);
 }
 
 /* ───────── iOS / Android 네이티브 푸시 ───────── */
@@ -35,14 +38,14 @@ async function initNativeFCM(userId) {
 
   if (perm.receive !== "granted") return;
 
-  // 2. FCM 토큰 발급 → 저장 (기존 백엔드와 동일한 fcmToken 필드)
+  // 2. FCM 토큰 발급 → 네이티브 토큰 배열에 저장
   const { token } = await FirebaseMessaging.getToken();
   console.log("네이티브 FCM 토큰:", token ? "발급 완료" : "발급 실패");
-  await saveToken(userId, token);
+  await saveToken(userId, token, true);
 
   // 3. 토큰 갱신 대응
   await FirebaseMessaging.addListener("tokenReceived", async (e) => {
-    await saveToken(userId, e.token);
+    await saveToken(userId, e.token, true);
   });
 
   // 4. 포그라운드 수신 로그 (표시는 presentationOptions가 처리)
@@ -87,7 +90,7 @@ async function initWebFCM(userId) {
   const msg = getMessaging(getApp());
 
   const token = await getToken(msg, { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-  await saveToken(userId, token);
+  await saveToken(userId, token, false);
 
   onMessage(msg, (payload) => {
     if (document.visibilityState === "visible") {
@@ -99,8 +102,8 @@ async function initWebFCM(userId) {
 }
 
 /* ───────── 1회용 토큰 발급 (회원가입 시 사전 등록용) ─────────
-   권한 요청 + 토큰 발급만 수행하고 토큰 문자열을 반환.
-   저장은 호출하는 쪽(가입 문서 setDoc)에서 처리한다. */
+   권한 요청 + 토큰 발급만 수행하고 { token, native } 를 반환.
+   저장은 호출하는 쪽(가입 문서 setDoc)에서 플랫폼별 배열로 처리한다. */
 export async function getFcmTokenOnce() {
   try {
     if (Capacitor.isNativePlatform()) {
@@ -108,7 +111,7 @@ export async function getFcmTokenOnce() {
       const perm = await FirebaseMessaging.requestPermissions();
       if (perm.receive !== "granted") return null;
       const { token } = await FirebaseMessaging.getToken();
-      return token || null;
+      return token ? { token, native: true } : null;
     }
     if (!("Notification" in window) || !("serviceWorker" in navigator)) return null;
     const permission = await Notification.requestPermission();
@@ -118,7 +121,7 @@ export async function getFcmTokenOnce() {
     const { getMessaging, getToken } = await import("firebase/messaging");
     const { getApp } = await import("firebase/app");
     const token = await getToken(getMessaging(getApp()), { vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-    return token || null;
+    return token ? { token, native: false } : null;
   } catch (e) {
     console.error("FCM 사전 토큰 발급 실패:", e.message);
     return null;

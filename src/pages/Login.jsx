@@ -60,8 +60,8 @@ export default function Login() {
     setSignupLoading(true); setSignupErr("");
     try {
       // 가입 승인 알림 수신을 위해 알림 권한/토큰을 미리 확보 (거부·실패해도 가입은 계속)
-      let fcmToken = null;
-      try { fcmToken = await getFcmTokenOnce(); } catch (e) { console.log("FCM 사전 등록 건너뜀:", e?.message); }
+      let fcm = null;
+      try { fcm = await getFcmTokenOnce(); } catch (e) { console.log("FCM 사전 등록 건너뜀:", e?.message); }
       const email = toEmail(form.studentId);
       const cred  = await createUserWithEmailAndPassword(auth, email, form.pw);
       await setDoc(doc(db, "users", cred.user.uid), {
@@ -69,7 +69,7 @@ export default function Login() {
         phone: form.phone, email,
         admissionYear: form.studentId.slice(0, 2),
         license: "", role: "student", status: "pending", rentals: 0,
-        ...(fcmToken ? { fcmToken } : {}),
+        ...(fcm?.token ? { [fcm.native ? "nativeTokens" : "webTokens"]: [fcm.token] } : {}),
         createdAt: serverTimestamp(),
       });
       setSignupDone(true);

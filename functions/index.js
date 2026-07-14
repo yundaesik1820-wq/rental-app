@@ -27,22 +27,75 @@ exports.resetStudentPassword = functions.https.onCall(async (data, context) => {
 });
 
 // ── FCM 알림 전송 헬퍼 ────────────────────────────────────
+// 한 계정이 웹(크롬)+앱을 동시에 써도 모두 수신하도록 플랫폼별 토큰 배열에 각각 발송:
+//   웹 토큰      → data-only 페이로드 (서비스워커가 직접 표시 → 중복 방지)
+//   네이티브 토큰 → notification 페이로드 (iOS/Android 백그라운드에서 시스템 자동 표시)
+// 죽은 토큰은 응답을 보고 배열에서 자동 정리한다.
+const LINK = "https://rental-app-delta-kohl.vercel.app";
+
+function isDeadToken(err) {
+  const code = err?.code || "";
+  return code === "messaging/registration-token-not-registered"
+      || code === "messaging/invalid-registration-token"
+      || code === "messaging/invalid-argument";
+}
+
+// users 문서에 발송 가능한 토큰이 하나라도 있는지 (대상 필터용)
+function hasToken(d) {
+  return !!(d?.fcmToken
+    || (Array.isArray(d?.webTokens)    && d.webTokens.length)
+    || (Array.isArray(d?.nativeTokens) && d.nativeTokens.length));
+}
+
 async function sendFCM(userId, title, body) {
   try {
-    const userDoc = await admin.firestore().collection("users").doc(userId).get();
-    const token   = userDoc.data()?.fcmToken;
-    console.log(`FCM 전송 시도 - userId: ${userId}, token: ${token ? token.slice(0,20)+"..." : "없음"}`);
-    if (!token) { console.log("토큰 없음 - 전송 취소"); return; }
-    // notification 필드 제거 → iOS 자동 표시 방지
-    // 서비스워커가 data를 받아 직접 표시 (중복 방지)
-    const result = await admin.messaging().send({
-      token,
-      data: { title, body },
-      webpush: {
-        fcm_options: { link: "https://rental-app-delta-kohl.vercel.app" },
-      },
-    });
-    console.log("FCM 전송 성공:", result);
+    const ref  = admin.firestore().collection("users").doc(userId);
+    const data = (await ref.get()).data() || {};
+
+    const webTokens    = Array.isArray(data.webTokens)    ? [...data.webTokens]    : [];
+    const nativeTokens = Array.isArray(data.nativeTokens) ? [...data.nativeTokens] : [];
+    // 하위호환: 구 단일 fcmToken(플랫폼 미상)은 웹으로 간주 (재로그인 시 새 배열로 이전됨)
+    if (data.fcmToken && !webTokens.includes(data.fcmToken) && !nativeTokens.includes(data.fcmToken)) {
+      webTokens.push(data.fcmToken);
+    }
+    if (!webTokens.length && !nativeTokens.length) {
+      console.log(`토큰 없음 - 전송 취소 (userId: ${userId})`); return;
+    }
+
+    const dead = [];
+
+    if (webTokens.length) {
+      const res = await admin.messaging().sendEachForMulticast({
+        tokens: webTokens,
+        data: { title, body },
+        webpush: { fcm_options: { link: LINK } },
+      });
+      res.responses.forEach((r, i) => { if (!r.success && isDeadToken(r.error)) dead.push(webTokens[i]); });
+    }
+
+    if (nativeTokens.length) {
+      const res = await admin.messaging().sendEachForMulticast({
+        tokens: nativeTokens,
+        notification: { title, body },
+        android: { priority: "high", notification: { sound: "default" } },
+        apns:    { payload: { aps: { sound: "default" } } },
+      });
+      res.responses.forEach((r, i) => { if (!r.success && isDeadToken(r.error)) dead.push(nativeTokens[i]); });
+    }
+
+    console.log(`FCM 전송 - userId: ${userId}, 웹 ${webTokens.length} / 앱 ${nativeTokens.length}, 무효 ${dead.length}`);
+
+    if (dead.length) {
+      const update = {
+        webTokens:    admin.firestore.FieldValue.arrayRemove(...dead),
+        nativeTokens: admin.firestore.FieldValue.arrayRemove(...dead),
+      };
+      // 구 단일 필드가 죽었으면 함께 제거 (배열엔 없으므로 별도 처리)
+      if (data.fcmToken && dead.includes(data.fcmToken)) {
+        update.fcmToken = admin.firestore.FieldValue.delete();
+      }
+      await ref.update(update).catch((e) => console.error("무효 토큰 정리 실패:", e.message));
+    }
   } catch (e) {
     console.error("FCM 전송 실패:", e.code, e.message);
   }
@@ -128,7 +181,7 @@ exports.onNewNotice = functions.firestore
     const usersSnap = await admin.firestore().collection("users")
       .where("status", "==", "approved").where("role", "==", "student").get();
     const sends = usersSnap.docs
-      .filter(d => d.data().fcmToken)
+      .filter(d => hasToken(d.data()))
       .map(d => sendFCM(d.id, "새 공지사항이 있어요", notice.title || ""));
     await Promise.allSettled(sends);
   });
@@ -282,7 +335,7 @@ exports.sendCustomAlert = functions.https.onCall(async (data, context) => {
   if (target === "all") {
     const usersSnap = await admin.firestore().collection("users")
       .where("status", "==", "approved").where("role", "==", "student").get();
-    const targets = usersSnap.docs.filter(d => d.data().fcmToken);
+    const targets = usersSnap.docs.filter(d => hasToken(d.data()));
     await Promise.allSettled(targets.map(d => sendFCM(d.id, title, body || "")));
     return { success: true, sent: targets.length };
   }
