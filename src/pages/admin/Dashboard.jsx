@@ -29,9 +29,7 @@ function DashRow({ icon, label, onClick, alerts = [] }) {
 
 export default function Dashboard({ setTab }) {
   const { profile, logout } = useAuth();
-  const [eqTab, setEqTab] = useState("장비");
   const { data: requests }         = useCollection("rentalRequests",    "createdAt");
-  const { data: facilityRequests } = useCollection("facilityRequests",  "createdAt");
   const { data: equipments }       = useCollection("equipments",        "createdAt");
   const { data: users }            = useCollection("users",             "createdAt");
   const { data: notices }          = useCollection("notices",           "createdAt");
@@ -40,13 +38,11 @@ export default function Dashboard({ setTab }) {
   const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",   "createdAt");
   const { data: schedules }        = useCollection("licenseSchedules",   "date");
-  const { data: facilities }       = useCollection("facilities",          "createdAt");
 
   // 통계
   const pending       = requests.filter(r => r.status === "승인대기").length;
   const overdue       = requests.filter(r => r.status === "연체").length;
   const held          = requests.filter(r => r.status === "보류").length;
-  const facilityPend  = facilityRequests.filter(r => r.status === "승인대기").length;
   const pendingUsers  = users.filter(u => u.status === "pending").length;
   const pwResetPend   = pwResets.filter(r => r.status === "pending").length;
   const lowStock      = equipments.filter(e => (e.available || 0) === 0).length;
@@ -199,84 +195,46 @@ export default function Dashboard({ setTab }) {
             {/* 헤더 + 바로가기 */}
             <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px" }}>
               <span style={{ fontSize:20 }}>📦</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 관리</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비 관리</span>
               <span onClick={() => setTab?.("equip")} style={{ fontSize:12, color:C.blue, fontWeight:600, cursor:"pointer" }}>바로가기 →</span>
             </div>
 
-            {/* 1행: 장비/시설 탭 전환 */}
-            <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
-              {["장비","시설"].map(t => (
-                <button key={t} onClick={() => setEqTab(t)}
-                  style={{ flex:1, padding:"8px 0", border:"none", background: eqTab===t ? C.navy : C.bg, color: eqTab===t ? C.bg : C.muted, fontSize:13, fontWeight:700, cursor:"pointer" }}>
-                  {t}
-                </button>
-              ))}
-            </div>
-
-            {/* 2행: 장비 카테고리별 현황 */}
-            {eqTab === "장비" && (
-              <div style={{ display:"grid", gridTemplateColumns:`repeat(${catStats.length}, 1fr)`, gap:0, borderTop:`1px solid ${C.border}` }}>
-                {catStats.map(({ cat, totalModels, availModels }, idx) => {
-                  const isLow   = availModels < totalModels;
-                  const baseCol = isLow ? "#D97706" : "#059669";
-                  const dimCol  = isLow ? "#FCD34D" : "#6EE7B7";
-                  return (
-                    <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? C.yellowLight : C.greenLight, borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
-                      <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:0 }}>
-                        <span style={{ fontSize:18, fontWeight:800, color:baseCol }}>{availModels}</span>
-                        <span style={{ fontSize:18, fontWeight:400, color:dimCol }}>/{totalModels}</span>
-                      </div>
-                      <div style={{ fontSize:9, color:C.muted, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", padding:"0 2px" }}>{cat}</div>
+            {/* 장비 카테고리별 현황 */}
+            <div style={{ display:"grid", gridTemplateColumns:`repeat(${catStats.length}, 1fr)`, gap:0, borderTop:`1px solid ${C.border}` }}>
+              {catStats.map(({ cat, totalModels, availModels }, idx) => {
+                const isLow   = availModels < totalModels;
+                const baseCol = isLow ? "#D97706" : "#059669";
+                const dimCol  = isLow ? "#FCD34D" : "#6EE7B7";
+                return (
+                  <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? C.yellowLight : C.greenLight, borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
+                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:0 }}>
+                      <span style={{ fontSize:18, fontWeight:800, color:baseCol }}>{availModels}</span>
+                      <span style={{ fontSize:18, fontWeight:400, color:dimCol }}>/{totalModels}</span>
                     </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* 2행: 시설 현황 */}
-            {eqTab === "시설" && (
-              <div style={{ borderTop:`1px solid ${C.border}` }}>
-                {facilities.length === 0 ? (
-                  <div style={{ padding:"12px 14px", fontSize:12, color:C.muted }}>등록된 시설이 없습니다</div>
-                ) : facilities.map(f => (
-                  <div key={f.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 14px", borderBottom:`1px solid ${C.border}` }}>
-                    <div>
-                      <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{f.name}</div>
-                      <div style={{ fontSize:11, color:C.muted }}>{f.location}</div>
-                    </div>
-                    <span style={{ background: f.available!==false ? C.greenLight : C.redLight, color: f.available!==false ? C.green : C.red, borderRadius:6, padding:"3px 10px", fontSize:11, fontWeight:700 }}>
-                      {f.available!==false ? "정상" : "대여불가"}
-                    </span>
+                    <div style={{ fontSize:9, color:C.muted, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", padding:"0 2px" }}>{cat}</div>
                   </div>
-                ))}
-              </div>
-            )}
+                );
+              })}
+            </div>
           </div>
         );
       })()}
 
-      {/* 장비/시설 대여관리 */}
+      {/* 장비 대여관리 */}
       {(() => {
         const today    = new Date().toISOString().slice(0,10);
         const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
 
         const retStatus = ["승인됨", "대여중"];
         const todayRentEquip  = requests.filter(r => r.startDate === today     && r.status === "승인됨").length;
-        const todayRentFac    = facilityRequests.filter(r => r.date === today     && r.status === "승인됨").length;
         const todayRetEquip   = requests.filter(r => r.endDate === today          && retStatus.includes(r.status)).length;
-        const todayRetFac     = facilityRequests.filter(r => r.date === today     && retStatus.includes(r.status)).length;
         const tmrRentEquip    = requests.filter(r => r.startDate === tomorrow     && r.status === "승인됨").length;
-        const tmrRentFac      = facilityRequests.filter(r => r.date === tomorrow  && r.status === "승인됨").length;
         const tmrRetEquip     = requests.filter(r => r.endDate === tomorrow       && retStatus.includes(r.status)).length;
-        const tmrRetFac       = facilityRequests.filter(r => r.date === tomorrow  && retStatus.includes(r.status)).length;
-        const totalPend       = pending + facilityPend;
 
-        const Row = ({label, equip, fac}) => (
+        const Row = ({label, equip}) => (
           <div style={{ display:"flex", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:8 }}>
             <span style={{ fontSize:12, color:C.muted, minWidth:80 }}>{label}</span>
             <span style={{ fontSize:12, fontWeight:700, color:equip>0?C.navy:C.muted }}>장비 {equip}건</span>
-            <span style={{ fontSize:12, color:C.border }}>·</span>
-            <span style={{ fontSize:12, fontWeight:700, color:fac>0?C.teal:C.muted }}>시설 {fac}건</span>
           </div>
         );
 
@@ -285,24 +243,20 @@ export default function Dashboard({ setTab }) {
             <div onClick={() => setTab?.("rental")}
               style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
               <span style={{ fontSize:20 }}>📅</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비/시설 대여관리</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비 대여관리</span>
               <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
             </div>
             {/* 승인 대기 - 항상 표시 */}
             <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
-              <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center", background: pending>0 ? C.yellowLight : C.bg }}>
+              <div style={{ flex:1, padding:"10px 14px", textAlign:"center", background: pending>0 ? C.yellowLight : C.bg }}>
                 <div style={{ fontSize:18, fontWeight:900, color: pending>0 ? C.orange : C.green }}>{pending}</div>
                 <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>장비대여 승인대기</div>
               </div>
-              <div style={{ flex:1, padding:"10px 14px", textAlign:"center", background: facilityPend>0 ? C.tealLight : C.bg }}>
-                <div style={{ fontSize:18, fontWeight:900, color: facilityPend>0 ? C.teal : C.green }}>{facilityPend}</div>
-                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>시설대여 승인대기</div>
-              </div>
             </div>
-            <Row label="오늘 대여" equip={todayRentEquip} fac={todayRentFac} />
-            <Row label="오늘 반납" equip={todayRetEquip}  fac={todayRetFac} />
-            <Row label="내일 대여" equip={tmrRentEquip}   fac={tmrRentFac} />
-            <Row label="내일 반납" equip={tmrRetEquip}    fac={tmrRetFac} />
+            <Row label="오늘 대여" equip={todayRentEquip} />
+            <Row label="오늘 반납" equip={todayRetEquip} />
+            <Row label="내일 대여" equip={tmrRentEquip} />
+            <Row label="내일 반납" equip={tmrRetEquip} />
           </div>
         );
       })()}

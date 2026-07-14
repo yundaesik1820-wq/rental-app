@@ -1,7 +1,5 @@
 import { useState, useRef } from "react";
 import { C } from "../../theme";
-import { lazy, Suspense } from "react";
-const FacilityAdmin = lazy(() => import("./FacilityAdmin.jsx"));
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import CategoryMigrator from "../../components/CategoryMigrator";
@@ -772,7 +770,7 @@ export default function Equipment({ initialTab = "equip" }) {
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
         {/* 탭 */}
         <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, gap:2 }}>
-          {[["equip","🔧 장비"],["facility","🏢 시설"]].map(([v,l]) => (
+          {[["equip","🔧 장비"]].map(([v,l]) => (
             <button key={v} onClick={() => setActiveTab(v)}
               style={{ padding:"6px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:activeTab===v?C.navy:"transparent", color:activeTab===v?C.bg:C.muted }}>
               {l}
@@ -786,9 +784,6 @@ export default function Equipment({ initialTab = "equip" }) {
             <button onClick={() => setShowMigrator(true)} style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🗂️ 카테고리</button>
             <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 일괄등록</button>
             <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
-          </>}
-          {activeTab === "facility" && <>
-            <button onClick={() => setActiveTab("facility")} style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }} id="facility-add-btn">+ 추가</button>
           </>}
         </div>
       </div>
@@ -1467,8 +1462,6 @@ export default function Equipment({ initialTab = "equip" }) {
       })()}
       </>)}
 
-      {/* 시설 탭 */}
-      {activeTab === "facility" && <Suspense fallback={<div style={{padding:20,color:C.muted}}>로딩 중...</div>}><FacilityAdmin /></Suspense>}
 
       {inspItem   && <InspModal   item={inspItem}   inspections={inspections} onClose={() => setInspItem(null)} />}
       {detailItem && <DetailModal item={detailItem} onClose={() => setDetailItem(null)} onSave={(id, data) => updateItem("equipments", id, data)} />}

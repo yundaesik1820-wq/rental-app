@@ -11,7 +11,7 @@ import {
 
 const ADMIN_NAV = [
   { id: "home",     icon: Home,          label: "대시보드" },
-  { id: "equip",    icon: Wrench,        label: "장비/시설" },
+  { id: "equip",    icon: Wrench,        label: "장비 관리" },
   { id: "rental",   icon: ClipboardList, label: "대여/반납" },
   { id: "students", icon: Users,         label: "학생 관리" },
   { id: "calendar", icon: Calendar,      label: "캘린더/통계" },
@@ -87,7 +87,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
   ];
   // 그룹 탭 활성 판정 (그룹에 속한 기능 화면이면 해당 그룹 탭 활성)
   const GROUP_MEMBERS = {
-    g_equip:   ["g_equip", "equip", "facility", "external"],
+    g_equip:   ["g_equip", "equip", "external"],
     g_student: ["g_student", "students", "license"],
     g_sns:     ["g_sns", "sns", "community"],
     g_more:    ["g_more", "calendar", "stats", "notices", "inquiry", "settings"],

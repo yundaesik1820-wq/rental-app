@@ -147,30 +147,6 @@ exports.onRentalStatusChange = functions.firestore
     if (msg) await sendFCM(uid, msg.title, msg.body);
   });
 
-// ── 시설 대여 상태 변경 알림 ──────────────────────────────
-exports.onFacilityStatusChange = functions.firestore
-  .document("facilityRequests/{reqId}")
-  .onUpdate(async (change) => {
-    const before = change.before.data();
-    const after  = change.after.data();
-    if (before.status === after.status) return;
-    const usersSnap = await admin.firestore().collection("users")
-      .where("studentId", "==", after.studentId)
-      .where("status", "==", "approved")
-      .limit(1).get();
-    if (usersSnap.empty) return;
-    const uid      = usersSnap.docs[0].id;
-    const name2    = after.studentName || usersSnap.docs[0].data().name || "학생";
-    const facility = after.facilityName || "시설";
-    const messages = {
-      "승인됨":   { title: "시설 예약이 확정됐어요",   body: `${facility} 예약이 승인됐어요. 예약 시간에 맞춰 방문해주세요!` },
-      "거절됨":   { title: "시설 예약이 거절됐어요",   body: `${name2}님, ${facility} 예약이 승인되지 않았어요. 앱에서 사유를 확인해주세요!` },
-      "반납완료": { title: "시설 이용이 완료됐어요",   body: `${facility} 이용이 확인됐어요. 다음에 또 이용해주세요!` },
-    };
-    const msg = messages[after.status];
-    if (msg) await sendFCM(uid, msg.title, msg.body);
-  });
-
 // ── 새 공지사항 알림 ──────────────────────────────────────
 exports.onNewNotice = functions.firestore
   .document("notices/{noticeId}")

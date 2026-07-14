@@ -1505,7 +1505,7 @@ export default function StudentHome({ onOpenRoom }) {
       {showOnboarding && (() => {
         const steps = [
     { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 나의 예약현황을 한눈에 볼 수 있어요!" },
-    { emoji:"🎬", title:"대여 목록", desc:"장비·시설·소품 목록을 미리 확인할 수 있어요!" },
+    { emoji:"🎬", title:"대여 목록", desc:"장비·소품 목록을 미리 확인할 수 있어요!" },
     { emoji:"📋", title:"예약 신청", desc:"초보자 가이드와 함께 장비를 골라보거나, 직접 선택할 수 있어요!" },
     { emoji:"📅", title:"대여이력/캘린더", desc:"내 대여 기록과 전체 대여 일정을 캘린더로 확인해요!" },
     { emoji:"💬", title:"에브리타임", desc:"자유·강의·장터 등 다양한 게시판으로 소통해요!" },

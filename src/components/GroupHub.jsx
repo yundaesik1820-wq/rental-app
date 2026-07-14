@@ -1,18 +1,17 @@
 import { C } from "../theme";
 import { useAuth } from "../hooks/useAuth.jsx";
 import {
-  Wrench, Hammer, Building2, Store, Users, GraduationCap, Share2,
+  Wrench, Hammer, Store, Users, GraduationCap, Share2,
   MessageSquare, Calendar, BarChart3, Megaphone, MessageCircle, Settings,
 } from "lucide-react";
 
 // 그룹별 업무 카드 정의
 const GROUPS = {
   g_equip: {
-    title: "장비 / 시설",
+    title: "장비",
     items: [
       { id: "equip",    icon: Wrench,    label: "장비 관리",   desc: "장비 등록·수정·재고" },
       { id: "repair",   icon: Hammer,    label: "장비 수리",   desc: "수리 접수·이력 관리" },
-      { id: "facility", icon: Building2, label: "시설 관리",   desc: "스튜디오·공간 예약" },
       { id: "external", icon: Store,     label: "외부 렌탈샵", desc: "제휴 업체 관리" },
     ],
   },

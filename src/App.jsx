@@ -23,9 +23,7 @@ import Settings   from "./pages/admin/Settings";
 import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
-import FacilityReserve from "./pages/student/FacilityReserve.jsx";
 import GuideReserve  from "./pages/student/GuideReserve.jsx";
-import FacilityAdmin  from "./pages/admin/FacilityAdmin.jsx";
 import Community     from "./pages/student/Community.jsx";
 import SNSManager    from "./pages/admin/SNSManager";
 import ExternalRental from "./pages/admin/ExternalRental";
@@ -52,7 +50,7 @@ function notifLabel(r) {
 
 // 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
 function buildAlerts(isAdmin, profile, data) {
-  const { rentalRequests=[], facilityRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[] } = data || {};
+  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[] } = data || {};
   const CC = NOTIF_CC, L = notifLabel;
   const today    = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
@@ -63,21 +61,17 @@ function buildAlerts(isAdmin, profile, data) {
     alerts = [
       ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 발생: ${L(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${L(r)}`, desc:`${r.studentName}`, time:r.createdAt, rentalId:r.id })),
-      ...facilityRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`시설대기_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인 대기: ${r.facilityName}`, desc:`${r.studentName} · ${r.date}`, time:r.createdAt, facilityReqId:r.id })),
       ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt, userId:u.id })),
       ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt, userId:r.id })),
     ];
   } else {
     const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
-    const myFacility = facilityRequests.filter(r=>r.studentId===myId);
     const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
       ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${L(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...myFacility.filter(r=>r.status==="승인됨").map(r=>({ id:`시설승인_${r.id}`, cat:"시설", color:CC.teal, bg:CC.tealLight, icon:"🏢", title:`시설 대여 승인됨: ${r.facilityName}`, desc:`${r.date} ${r.startTime}~${r.endTime}`, time:r.updatedAt||r.createdAt })),
-      ...myFacility.filter(r=>r.status==="거절됨").map(r=>({ id:`시설거절_${r.id}`, cat:"시설", color:CC.red, bg:CC.redLight, icon:"❌", title:`시설 대여 거절됨: ${r.facilityName}`, desc:r.reason||"", time:r.updatedAt||r.createdAt })),
       ...upcoming.map(s=>({ id:`라이선스_${s.id}`, cat:"라이선스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이선스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
     ];
   }
@@ -97,7 +91,7 @@ function buildAlerts(isAdmin, profile, data) {
   return alerts.filter(a => { if (a.cat === "공지") return true; const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
-function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
+function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
 
@@ -144,12 +138,11 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
     if (a.cat === "SNS")      return { tab: "community" };
     if (a.cat === "회원")     return { tab: "students", userId: a.userId };
     if (a.cat === "라이선스") return { tab: "license", licenseId: a.licenseId };
-    if (a.cat === "시설")     return { tab: isAdmin ? "rental" : "calendar", facilityReqId: a.facilityReqId };
     return { tab: isAdmin ? "rental" : "calendar", rentalId: a.rentalId }; // 대여/반납
   };
   const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
 
-  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments });
+  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments });
   const unreadIn = (g) => allAlerts.filter(a => !seenIds.has(a.id) && (g === "전체" || groupOf(a) === g)).length;
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
@@ -211,13 +204,13 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, fac
   );
 }
 
-// 학생용 대여 목록 통합 (장비/시설/소품목록)
+// 학생용 대여 목록 통합 (장비/소품목록)
 function StudentRentalList({ setTab }) {
   const [view, setView] = React.useState("equip");
   return (
     <div>
       <div style={{ display:"flex", gap:4, marginBottom:16 }}>
-        {[["equip","🎬 장비 목록"],["facility","🏢 시설 목록"],["props","🎭 소품목록"]].map(([v,l]) => (
+        {[["equip","🎬 장비 목록"],["props","🎭 소품목록"]].map(([v,l]) => (
           <button key={v} onClick={() => setView(v)}
             style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer",
               background: view===v ? "#1B2B6B" : "#1E293B",
@@ -227,46 +220,7 @@ function StudentRentalList({ setTab }) {
         ))}
       </div>
       {view === "equip"    && <EquipList setTab={setTab} />}
-      {view === "facility" && <StudentFacilityList />}
       {view === "props"    && <StudentPropsList />}
-    </div>
-  );
-}
-
-// 학생용 시설 목록
-function StudentFacilityList() {
-  const { data: facilities } = useCollectionHook("facilities", "createdAt");
-  return (
-    <div>
-      {/* 시설 목록 배너 */}
-      <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/object.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 시설 목록 페이지예요!</div>
-            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>대여 가능한 시설을 미리 확인해봐요.<br/>촬영 스튜디오, 편집실 등을 예약할 수 있어요 🏢</div>
-          </div>
-        </div>
-      </div>
-      {facilities.length === 0
-        ? <div style={{ textAlign:"center", padding:"40px 0", color:"#64748B" }}>등록된 시설이 없습니다</div>
-        : facilities.map(f => (
-          <div key={f.id} style={{ background:"#1E293B", borderRadius:12, overflow:"hidden", marginBottom:10, border:"1px solid #334155" }}>
-            {f.displayPhotoUrl && (
-              <div style={{ height:160, overflow:"hidden" }}>
-                <img src={f.displayPhotoUrl} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-              </div>
-            )}
-            <div style={{ padding:"12px 14px" }}>
-              <div style={{ fontSize:11, color:"#64748B", marginBottom:3 }}>{f.location}</div>
-              <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{f.name}</div>
-              {f.capacity && <div style={{ fontSize:12, color:"#64748B" }}>수용 {f.capacity}명</div>}
-              {f.desc && <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>{f.desc}</div>}
-            </div>
-          </div>
-        ))
-      }
     </div>
   );
 }
@@ -420,7 +374,6 @@ function AppContent() {
   const [showNotif, setShowNotif] = useState(false);
 
   const { data: rentalRequests }   = useCollection("rentalRequests",   "createdAt");
-  const { data: facilityRequests } = useCollection("facilityRequests", "createdAt");
   const { data: allUsers }         = useCollection("users",            "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
   const { data: notices }          = useCollection("notices",          "createdAt");
@@ -452,7 +405,7 @@ function AppContent() {
   const notSeen = (id) => !seenNotifIds.has(id);
 
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
-  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, facilityRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }).filter(a => notSeen(a.id)).length;
+  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }).filter(a => notSeen(a.id)).length;
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
@@ -486,13 +439,12 @@ function AppContent() {
             <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
               <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
               <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>무엇을 예약할까요?</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비, 시설, 소품 중에서 선택해봐요!<br/>필요한 걸 골라서 신청하면 돼요 📋</div>
+              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비, 소품 중에서 선택해봐요!<br/>필요한 걸 골라서 신청하면 돼요 📋</div>
             </div>
           </div>
         </div>
         <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
           <BannerCard onClick={() => setPage("equip")} mascot="camera.png" gradient="#1B2B6B,#3B6CF8" title="🎬 장비 예약" desc="카메라, 렌즈, 조명 등 장비를 빌려요" />
-          <BannerCard onClick={() => setPage("facility")} mascot="object.png" gradient="#0D9488,#0891B2" title="🏢 시설 예약" desc="스튜디오, 편집실 등 시설을 예약해요" />
           <BannerCard onClick={() => setPage("props")} mascot="police.png" gradient="#7C3AED,#DB2777" title="🎭 소품 예약" desc="의상, 소도구, 대도구를 빌려요" dark={false} />
         </div>
 
@@ -560,14 +512,6 @@ function AppContent() {
       </div>
     );
 
-    // 시설 예약
-    if (page === "facility") return (
-      <div>
-        <Back />
-        <FacilityReserve />
-      </div>
-    );
-
     // 대여이력 · 캘린더
     if (page === "history") return (
       <div>
@@ -605,13 +549,12 @@ function AppContent() {
     if (isAdmin) {
       switch (tab) {
         case "home":     return <Dashboard setTab={setTab} />;
-        case "rental":   return <Rental subAdmin={isTeacherProf} focusId={notifTarget?.rentalId} facilityFocusId={notifTarget?.facilityReqId} onConsumed={() => setNotifTarget(null)} />;
+        case "rental":   return <Rental subAdmin={isTeacherProf} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "g_equip":   return <GroupHub groupId="g_equip" setTab={setTab} />;
         case "g_student": return <GroupHub groupId="g_student" setTab={setTab} />;
         case "g_sns":     return <GroupHub groupId="g_sns" setTab={setTab} />;
         case "g_more":    return <GroupHub groupId="g_more" setTab={setTab} />;
         case "equip":    return <Equipment />;
-        case "facility": return <Equipment initialTab="facility" />;
         case "students": return <Students focusId={notifTarget?.userId} onConsumed={() => setNotifTarget(null)} />;
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats isAdmin={true} />;
@@ -659,7 +602,6 @@ function AppContent() {
             setTimeout(() => { setCommunityRoom(t.room || null); setNotifTarget(t); }, 450);
           }}
           rentalRequests={rentalRequests}
-          facilityRequests={facilityRequests}
           allUsers={allUsers}
           pwResets={pwResets}
           notices={notices}

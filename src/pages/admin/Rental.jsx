@@ -107,239 +107,6 @@ function CardCarousel({ active, children }) {
   );
 }
 
-// ── 시설 대여 관리 컴포넌트 ────────────────────────────────
-function FacilityManager({ requests, subAdmin, isTeacher, isSuper, focusId, onConsumed }) {
-  const [tab, setTab]         = useState("승인대기");
-  const [selReq, setSelReq]   = useState(null);
-  const [reason, setReason]   = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [sigTarget, setSigTarget]   = useState(null); // 서명 대상
-  const [adminSig, setAdminSig]     = useState("");
-
-  // 🔔 알림 딥링크 — 해당 시설 대여 건으로 이동 + 스크롤 + 하이라이트
-  const [flashId, setFlashId] = useState(null);
-  useEffect(() => {
-    if (!focusId || !requests.length) return;
-    const r = requests.find(x => x.id === focusId);
-    if (r) { setTab(r.status); setFlashId(focusId); }
-    onConsumed?.();
-  }, [focusId, requests]);
-  useEffect(() => {
-    if (!flashId) return;
-    const t1 = setTimeout(() => {
-      document.getElementById(`facility-card-${flashId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 200);
-    const t2 = setTimeout(() => setFlashId(null), 3200);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [flashId]);
-
-  const printFacility = (r) => {
-    const html = `<!DOCTYPE html>
-<html lang="ko">
-<head>
-<meta charset="UTF-8"/>
-<title>시설 대여 신청서</title>
-<style>
-  body { font-family: "Malgun Gothic","Apple SD Gothic Neo",sans-serif; font-size:13px; padding:30px; color:#111; }
-  h2 { text-align:center; font-size:20px; margin-bottom:4px; }
-  .sub { text-align:center; color:#666; margin-bottom:24px; font-size:12px; }
-  table { width:100%; border-collapse:collapse; margin-bottom:18px; }
-  th,td { border:1px solid #bbb; padding:7px 10px; }
-  th { background:#2C3E6B; color:#fff; text-align:center; font-size:12px; }
-  .label { color:#555; font-size:12px; width:110px; }
-  .section { background:#f0f4ff; font-weight:bold; color:#2C3E6B; font-size:13px; padding:6px 10px; border-left:4px solid #2C3E6B; margin:16px 0 8px; }
-  .sign-area { display:flex; justify-content:flex-end; gap:40px; margin-top:30px; font-size:13px; }
-  .sign-box { text-align:center; }
-  .sign-line { width:80px; border-bottom:1px solid #111; margin:30px auto 4px; }
-  @media print { button { display:none; } }
-</style>
-</head>
-<body>
-<h2>시설 대여 신청서</h2>
-<p class="sub">한국방송예술진흥원 미디어센터 장비대여실</p>
-<div class="section">시설 정보</div>
-<table>
-  <tr><td class="label">시설명</td><td>${r.facilityName}</td><td class="label">위치</td><td>${r.location}</td></tr>
-</table>
-<div class="section">대여자 정보</div>
-<table>
-  <tr><td class="label">이름</td><td>${r.studentName}</td><td class="label">학번</td><td>${r.studentId}</td></tr>
-  <tr><td class="label">계열</td><td>${r.dept}</td><td class="label">연락처</td><td>${r.phone}</td></tr>
-</table>
-<div class="section">대여 일시</div>
-<table>
-  <tr><td class="label">날짜</td><td>${r.date}</td><td class="label">시간</td><td>${r.startTime} ~ ${r.endTime}</td></tr>
-</table>
-<div class="section">목적 및 참여인원</div>
-<table>
-  <tr><td class="label">목적</td><td colspan="3">${r.purpose} - ${r.purposeDetail}</td></tr>
-  <tr><td class="label">참여인원</td><td colspan="3" style="white-space:pre-line">${r.participants}</td></tr>
-</table>
-<div class="sign-area">
-  <div class="sign-box">
-    ${r.studentSignature ? '<img src="' + r.studentSignature + '" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>' : '<div class="sign-line"></div>'}
-    신청자 서명
-  </div>
-  <div class="sign-box">
-    ${r.adminSignature ? '<img src="' + r.adminSignature + '" style="width:120px;height:60px;object-fit:contain;display:block;margin:0 auto 4px"/>' : '<div class="sign-line"></div>'}
-    담당자 확인
-  </div>
-</div>
-<div style="text-align:center;margin-top:30px">
-  <button onclick="window.print()" style="padding:10px 30px;background:#2C3E6B;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit">🖨️ 인쇄 / PDF 저장</button>
-</div>
-</body></html>`;
-    const w = window.open("","_blank");
-    w.document.write(html);
-    w.document.close();
-  };
-
-  const tabs = isTeacher
-    ? ["승인됨", "반납완료"]
-    : ["승인대기", "승인됨", "반납완료", "거절됨"];
-
-  const filtered = requests.filter(r => tab === "전체" || r.status === tab)
-    .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
-
-  const approve = async (r) => {
-    setSubmitting(true);
-    await updateItem("facilityRequests", r.id, { status: "승인됨" });
-    setSubmitting(false);
-  };
-  const reject = async (r) => {
-    if (!reason.trim()) { alert("거절 사유를 입력하세요"); return; }
-    setSubmitting(true);
-    await updateItem("facilityRequests", r.id, { status: "거절됨", reason });
-    setReason(""); setSelReq(null);
-    setSubmitting(false);
-  };
-  const returnDone = async (r) => {
-    setSubmitting(true);
-    await updateItem("facilityRequests", r.id, { status: "반납완료" });
-    setSubmitting(false);
-  };
-
-  const formatDate = (ts) => {
-    if (!ts?.seconds) return "";
-    return new Date(ts.seconds * 1000).toLocaleDateString("ko-KR");
-  };
-
-  const statusColor = { 승인대기:C.yellow, 승인됨:C.teal, 반납완료:C.green, 거절됨:C.red };
-
-  return (
-    <div>
-      <PageTitle>시설 대여 관리</PageTitle>
-
-      {/* 상태 선택 */}
-      <StatusDropdown
-        options={tabs}
-        value={tab}
-        onChange={setTab}
-        counts={tabs.reduce((a,t) => ({ ...a, [t]: requests.filter(r => r.status===t).length }), {})}
-      />
-
-      {filtered.length === 0 && <Empty icon="🏢" text="신청 내역이 없습니다" />}
-
-      <CardCarousel active={filtered.length > 1}>
-      {filtered.map(r => (
-        <Card key={r.id} id={`facility-card-${r.id}`} style={{ marginBottom:12, border:`2px solid ${flashId===r.id ? C.teal : (statusColor[r.status]||C.border)+"30"}`, ...(flashId===r.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-            <div>
-              <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:2 }}>{r.facilityName}</div>
-              <div style={{ fontSize:12, color:C.muted }}>{r.location}</div>
-            </div>
-            <span style={{ background:`${statusColor[r.status]||C.border}20`, color:statusColor[r.status]||C.muted, borderRadius:8, padding:"4px 12px", fontSize:12, fontWeight:700 }}>{r.status}</span>
-          </div>
-
-          <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:13 }}>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-              <div><span style={{ color:C.muted }}>신청자: </span><strong>{r.studentName}</strong> ({r.studentId})</div>
-              <div><span style={{ color:C.muted }}>계열: </span>{r.dept}</div>
-              <div><span style={{ color:C.muted }}>연락처: </span>{r.phone}</div>
-              <div><span style={{ color:C.muted }}>신청일: </span>{formatDate(r.createdAt)}</div>
-            </div>
-          </div>
-
-          <div style={{ background:C.bg, borderRadius:10, padding:"10px 14px", marginBottom:10, fontSize:13 }}>
-            <div style={{ marginBottom:4 }}><span style={{ color:C.muted }}>대여 일시: </span><strong>{r.date} {r.startTime}~{r.endTime}</strong></div>
-            <div style={{ marginBottom:4 }}><span style={{ color:C.muted }}>목적: </span>{r.purpose} - {r.purposeDetail}</div>
-            <div><span style={{ color:C.muted }}>참여인원: </span><span style={{ whiteSpace:"pre-line" }}>{r.participants}</span></div>
-          </div>
-
-          {r.studentSignature && (
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>신청자 서명</div>
-              <img src={r.studentSignature} alt="서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
-            </div>
-          )}
-
-          {r.reason && (
-            <div style={{ background:C.redLight, borderRadius:8, padding:"8px 12px", marginBottom:10, fontSize:12, color:C.red }}>
-              거절 사유: {r.reason}
-            </div>
-          )}
-
-          {/* 관리자 서명 표시 */}
-          {r.adminSignature && (
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>조교 서명</div>
-              <img src={r.adminSignature} alt="관리자서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
-            </div>
-          )}
-          {/* 교사 서명 표시 */}
-          {r.teacherSignature && (
-            <div style={{ marginBottom:10 }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>교사 서명</div>
-              <img src={r.teacherSignature} alt="교사서명" style={{ height:50, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:6, padding:4 }} />
-            </div>
-          )}
-
-          <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-            {!isTeacher && r.status === "승인대기" && (<>
-              <Btn onClick={() => approve(r)} color={C.green} full disabled={submitting}>✅ 승인</Btn>
-              <Btn onClick={() => { setSelReq(r); setReason(""); }} color={C.red} outline full>❌ 거절</Btn>
-            </>)}
-            {r.status === "승인됨" && (
-              <Btn onClick={() => returnDone(r)} color={C.teal} full disabled={submitting}>📦 반납 완료</Btn>
-            )}
-            {(isSuper || (!isTeacher)) && (
-              <Btn onClick={() => { setSigTarget(r); setAdminSig(""); }} color={C.purple} outline full>✍️ 담당자 서명</Btn>
-            )}
-            <Btn onClick={() => printFacility(r)} color={C.muted} outline full>🖨️ 신청서 출력</Btn>
-          </div>
-        </Card>
-      ))}
-      </CardCarousel>
-
-      {/* 거절 모달 */}
-      {selReq && (
-        <Modal onClose={() => setSelReq(null)} width={440}>
-          <div style={{ fontSize:16, fontWeight:800, color:C.navy, marginBottom:16 }}>거절 사유 입력</div>
-          <textarea placeholder="거절 사유를 입력하세요" value={reason} onChange={e => setReason(e.target.value)}
-            style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:100, boxSizing:"border-box", marginBottom:16 }} />
-          <div style={{ display:"flex", gap:10 }}>
-            <Btn onClick={() => setSelReq(null)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={() => reject(selReq)} color={C.red} full disabled={submitting}>거절</Btn>
-          </div>
-        </Modal>
-      )}
-      {/* 담당자 서명 모달 */}
-      {sigTarget && (
-        <Modal onClose={() => setSigTarget(null)} width={500}>
-          <SignaturePad
-            title="✍️ 담당자 서명"
-            onSave={async (sig) => {
-              await updateItem("facilityRequests", sigTarget.id, { adminSignature: sig });
-              setSigTarget(null);
-            }}
-            onCancel={() => setSigTarget(null)}
-          />
-        </Modal>
-      )}
-    </div>
-  );
-}
-
 // ── QR 체크리스트 컴포넌트 (카메라 + 리더기 겸용) ─────────
 function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode = "rental" }) {
   // mode = "rental" | "return" (대여/반납 구분 prop)
@@ -579,11 +346,10 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
   );
 }
 
-export default function Rental({ subAdmin = false, focusId, facilityFocusId, onConsumed }) {
+export default function Rental({ subAdmin = false, focusId, onConsumed }) {
   const { profile } = useAuth();
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments }       = useCollection("equipments", "createdAt");
-  const { data: facilityRequests } = useCollection("facilityRequests", "createdAt");
 
   const adminRole   = profile?.adminRole || "super";
   const isTeacher   = subAdmin && (adminRole === "teacher" || adminRole === "professor");
@@ -596,7 +362,6 @@ export default function Rental({ subAdmin = false, focusId, facilityFocusId, onC
   const [teacherSignTarget, setTeacherSignTarget] = useState(null); // 교사 서명 대상
   const [reason, setReason]       = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [mainTab, setMainTab]       = useState("equip"); // "equip" | "facility"
   const [assignModal, setAssignModal] = useState(null);   // 배치 선택 모달 { request, assignments }
   const [returnModal, setReturnModal] = useState(null);   // 반납 QR 체크 모달 { request, checklist }
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
@@ -619,8 +384,6 @@ export default function Rental({ subAdmin = false, focusId, facilityFocusId, onC
     const t2 = setTimeout(() => setFlashId(null), 3200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [flashId]);
-  // 🔔 알림 딥링크 — 시설 대여 건이면 시설 탭으로 전환 (포커스 처리는 FacilityManager가 담당)
-  useEffect(() => { if (facilityFocusId) setMainTab("facility"); }, [facilityFocusId]);
 
   // 신청서 출력
   const printRequest = (r) => {
@@ -983,18 +746,6 @@ ${r.attachments?.length > 0 ? `
 
   return (
     <div>
-      {/* 장비 / 시설 탭 전환 */}
-      <div style={{ display:"flex", background:C.bg, borderRadius:12, padding:4, marginBottom:20, width:"fit-content", border:`1px solid ${C.border}` }}>
-        {[["equip","장비 대여"],["facility","시설 대여"]].map(([v,l]) => (
-          <button key={v} onClick={() => setMainTab(v)}
-            style={{ padding:"8px 24px", borderRadius:9, border:"none", fontSize:14, fontWeight:700, cursor:"pointer", background:mainTab===v?C.navy:"transparent", color:mainTab===v?C.bg:C.muted, transition:"all 0.2s" }}>{l}</button>
-        ))}
-      </div>
-
-      {mainTab === "facility" ? (
-        <FacilityManager requests={facilityRequests} subAdmin={subAdmin} isTeacher={isTeacher} isSuper={isSuper} focusId={facilityFocusId} onConsumed={onConsumed} />
-      ) : (
-      <div>
       <PageTitle>📋 대여 신청 관리</PageTitle>
 
       {/* 승인대기 알림 */}
@@ -1504,8 +1255,6 @@ ${r.attachments?.length > 0 ? `
         </Modal>
       )}
 
-    </div>
-      )}
     </div>
   );
 }
