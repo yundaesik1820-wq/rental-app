@@ -646,26 +646,28 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
       {tab === "pending" && (
         <>
           {filtered.length === 0 && <Empty icon="⏳" text="승인 대기 중인 학생이 없습니다" />}
-          {filtered.map(s => (
-            <Card key={s.id} id={`user-row-${s.id}`} style={{ border:`2px solid ${flashId===s.id ? C.teal : C.yellow+"40"}`, ...(flashId===s.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <Avatar name={s.name||"?"} size={46} />
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                    <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</span>
-                    <span style={{ background:C.yellowLight, color:C.yellow, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>승인 대기</span>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {filtered.map(s => (
+              <Card key={s.id} id={`user-row-${s.id}`} style={{ padding:14, border:`2px solid ${flashId===s.id ? C.teal : C.yellow+"40"}`, ...(flashId===s.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <Avatar name={s.name||"?"} size={48} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name}</span>
+                      <span style={{ flexShrink:0, background:C.yellowLight, color:C.yellow, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>승인 대기</span>
+                    </div>
+                    <div style={{ fontSize:12.5, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
+                    <div style={{ fontSize:12.5, color:C.muted, marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.dept} · {s.phone}</div>
+                    <div style={{ fontSize:12, color:C.muted, marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.email}</div>
                   </div>
-                  <div style={{ fontSize:12, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
-                  <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.phone}</div>
-                  <div style={{ fontSize:12, color:C.muted }}>{s.email}</div>
+                  <div style={{ flexShrink:0, display:"flex", flexDirection:"column", gap:8 }}>
+                    <Btn onClick={() => { setApproveTarget(s); setLicense("없음"); }} color={C.green} small>✓ 승인</Btn>
+                    <Btn onClick={() => reject(s.id)} color={C.red} small>✕ 거절</Btn>
+                  </div>
                 </div>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  <Btn onClick={() => { setApproveTarget(s); setLicense("없음"); }} color={C.green} small>✓ 승인</Btn>
-                  <Btn onClick={() => reject(s.id)} color={C.red} small>✕ 거절</Btn>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </>
       )}
 
@@ -673,44 +675,49 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
       {tab === "approved" && (
         <>
           {filtered.length === 0 && <Empty icon="👥" text="승인된 학생이 없습니다" />}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(300px,1fr))", gap:16 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {filtered.map(s => (
-              <Card key={s.id} id={`user-row-${s.id}`} style={flashId===s.id ? { border:`2px solid ${C.teal}`, boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}}>
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  <Avatar name={s.name||"?"} size={46} />
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:4 }}>{s.name}</div>
-                    <div style={{ fontSize:12, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
-                    <div style={{ fontSize:12, color:C.muted }}>{s.dept} · {s.phone}</div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
-                      <span style={{ fontSize:11, color:C.muted }}>라이선스:</span>
-                      <span style={{ background:s.license&&s.license!=="없음"?C.blueLight:C.bg, color:s.license&&s.license!=="없음"?C.blue:C.muted, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{s.license||"없음"}</span>
-                      {!readOnly && <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>변경</button>}
-                    </div>
-                    {/* 앱 버전 (업데이트 여부 확인용) */}
-                    <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:5 }}>
-                      <span style={{ fontSize:11, color:C.muted }}>앱버전:</span>
-                      {(() => {
-                        const v = s.appVersion;
-                        const isCurrent = v === APP_VERSION || v === "web";
-                        const bg = !v ? C.bg : isCurrent ? C.greenLight : C.redLight;
-                        const col = !v ? C.muted : isCurrent ? C.green : C.red;
-                        return (
-                          <span style={{ background:bg, color:col, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>
-                            {!v ? "미확인" : v === "web" ? "웹" : `v${v}`}
-                          </span>
-                        );
-                      })()}
-                      {s.lastSeenAt && <span style={{ fontSize:10, color:C.muted }}>· {fmtSeen(s.lastSeenAt)}</span>}
-                    </div>
+              <Card key={s.id} id={`user-row-${s.id}`} style={{ padding:14, ...(flashId===s.id ? { border:`2px solid ${C.teal}`, boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
+                {/* 상단: 프로필 + 누적 대여 */}
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <Avatar name={s.name||"?"} size={48} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name}</div>
+                    <div style={{ fontSize:12.5, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
+                    <div style={{ fontSize:12.5, color:C.muted, marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.dept} · {s.phone}</div>
                   </div>
-                  <div style={{ textAlign:"center" }}>
-                    <div style={{ fontSize:22, fontWeight:900, color:C.navy }}>{getRentalCount(s.studentId)}</div>
-                    <div style={{ fontSize:9, color:C.muted }}>누적 대여</div>
+                  <div style={{ flexShrink:0, textAlign:"center", background:C.bg, borderRadius:12, padding:"8px 14px", minWidth:64 }}>
+                    <div style={{ fontSize:22, fontWeight:900, color:C.navy, lineHeight:1 }}>{getRentalCount(s.studentId)}</div>
+                    <div style={{ fontSize:9, color:C.muted, marginTop:3 }}>누적 대여</div>
                   </div>
                 </div>
+
+                {/* 하단: 라이선스 · 앱버전 배지 */}
+                <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:"6px 14px", marginTop:12 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:11, color:C.muted }}>라이선스</span>
+                    <span style={{ background:s.license&&s.license!=="없음"?C.blueLight:C.bg, color:s.license&&s.license!=="없음"?C.blue:C.muted, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>{s.license||"없음"}</span>
+                    {!readOnly && <button onClick={() => reapprove(s)} style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:0 }}>변경</button>}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:11, color:C.muted }}>앱</span>
+                    {(() => {
+                      const v = s.appVersion;
+                      const isCurrent = v === APP_VERSION || v === "web";
+                      const bg = !v ? C.bg : isCurrent ? C.greenLight : C.redLight;
+                      const col = !v ? C.muted : isCurrent ? C.green : C.red;
+                      return (
+                        <span style={{ background:bg, color:col, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+                          {!v ? "미확인" : v === "web" ? "웹" : `v${v}`}
+                        </span>
+                      );
+                    })()}
+                    {s.lastSeenAt && <span style={{ fontSize:10, color:C.muted }}>{fmtSeen(s.lastSeenAt)}</span>}
+                  </div>
+                </div>
+
                 {!readOnly && (
-                  <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${C.border}` }}>
+                  <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
                     <Btn onClick={() => withdraw(s)} color={C.red} outline full small>강제 탈퇴</Btn>
                   </div>
                 )}
@@ -778,27 +785,27 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
       {tab === "professor" && (
         <>
           {profList.length === 0 && <Empty icon="🎓" text="등록된 교수 계정이 없습니다" />}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(280px,1fr))", gap:14 }}>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {profList.map(s => (
-              <Card key={s.id} style={{ border:`2px solid ${C.blue}20` }}>
-                <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                  <div style={{ width:46, height:46, borderRadius:"50%", background:`linear-gradient(135deg,${C.blue},${C.teal})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>🎓</div>
-                  <div style={{ flex:1 }}>
+              <Card key={s.id} style={{ padding:14, border:`2px solid ${C.blue}20` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:48, height:48, borderRadius:"50%", background:`linear-gradient(135deg,${C.blue},${C.teal})`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:21, flexShrink:0 }}>🎓</div>
+                  <div style={{ flex:1, minWidth:0 }}>
                     {editingProf === s.id ? (
                       <div style={{ display:"flex", gap:6 }}>
                         <input value={profNameVal} onChange={e => setProfNameVal(e.target.value)}
-                          style={{ flex:1, background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:"4px 8px", fontSize:13, fontFamily:"inherit", outline:"none" }} autoFocus />
+                          style={{ flex:1, minWidth:0, background:C.bg, border:`1px solid ${C.border}`, borderRadius:6, color:C.text, padding:"4px 8px", fontSize:13, fontFamily:"inherit", outline:"none" }} autoFocus />
                         <Btn onClick={() => saveProfName(s)} color={C.green} small>저장</Btn>
                         <Btn onClick={() => setEditingProf(null)} color={C.muted} outline small>취소</Btn>
                       </div>
                     ) : (
                       <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                        <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name} 교수님</span>
+                        <span style={{ fontSize:16, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name} 교수님</span>
                         <button onClick={() => { setEditingProf(s.id); setProfNameVal(s.name); }}
-                          style={{ background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>수정</button>
+                          style={{ flexShrink:0, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:0 }}>수정</button>
                       </div>
                     )}
-                    <div style={{ fontSize:12, color:C.muted, fontFamily:"monospace", marginTop:3 }}>{s.profId || ""} · {s.email}</div>
+                    <div style={{ fontSize:12, color:C.muted, fontFamily:"monospace", marginTop:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.profId || ""} · {s.email}</div>
                   </div>
                 </div>
               </Card>
@@ -813,22 +820,24 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
       {tab === "admin" && (
         <>
           {adminList.length === 0 && <Empty icon="👑" text="등록된 관리자가 없습니다" />}
-          {adminList.map(s => (
-            <Card key={s.id} style={{ border:`2px solid ${C.purple}20` }}>
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                <div style={{ width:46, height:46, borderRadius:"50%", background:`linear-gradient(135deg,${C.navy},#2D4A9B)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>👑</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
-                    <span style={{ fontSize:15, fontWeight:700, color:C.text }}>{s.name}</span>
-                    <span style={{ background: s.adminRole==="teacher" ? C.blueLight : s.adminRole==="assistant" ? C.tealLight : C.purpleLight, color: s.adminRole==="teacher" ? C.blue : s.adminRole==="assistant" ? C.teal : C.purple, borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>
-                      {s.adminRole==="super" ? "관리자" : s.adminRole==="professor" ? "교수" : s.adminRole==="teacher" ? "교사" : s.adminRole==="assistant" ? "조교" : "관리자"}
-                    </span>
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            {adminList.map(s => (
+              <Card key={s.id} style={{ padding:14, border:`2px solid ${C.purple}20` }}>
+                <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                  <div style={{ width:48, height:48, borderRadius:"50%", background:`linear-gradient(135deg,${C.navy},#2D4A9B)`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:21, flexShrink:0 }}>👑</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:3 }}>
+                      <span style={{ fontSize:16, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name}</span>
+                      <span style={{ flexShrink:0, background: s.adminRole==="teacher" ? C.blueLight : s.adminRole==="assistant" ? C.tealLight : C.purpleLight, color: s.adminRole==="teacher" ? C.blue : s.adminRole==="assistant" ? C.teal : C.purple, borderRadius:6, padding:"2px 8px", fontSize:11, fontWeight:700 }}>
+                        {s.adminRole==="super" ? "관리자" : s.adminRole==="professor" ? "교수" : s.adminRole==="teacher" ? "교사" : s.adminRole==="assistant" ? "조교" : "관리자"}
+                      </span>
+                    </div>
+                    <div style={{ fontSize:12.5, color:C.muted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.email}</div>
                   </div>
-                  <div style={{ fontSize:12, color:C.muted }}>{s.email}</div>
                 </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
         </>
       )}
     </div>
