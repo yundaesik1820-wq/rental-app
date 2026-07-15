@@ -9,13 +9,17 @@
    (구 GuideReserve의 매칭 규칙을 그대로 옮긴 것)
    ============================================================ */
 
-const CAMERA_MINORS = ["카메라", "캠코더", "드론/액션캠"];
-const LENS_MINORS   = ["단렌즈", "줌렌즈", "시네렌즈", "렌즈"];
+// 관리자 Equipment.jsx의 EQUIP_TYPE_MAP(중분류 → equipType)이 기준.
+// equipType만 믿으면 안 된다 — 중분류를 직접 입력해 등록하면 "etc"로 박히고,
+// 매핑 도입 전에 등록된 장비는 아예 비어 있다. 그래서 중분류로도 폴백한다.
+const CAMERA_MINORS  = ["카메라", "캠코더", "드론/액션캠"];
+const LENS_MINORS    = ["단렌즈", "줌렌즈", "시네렌즈", "렌즈"];
+const TRIPOD_MINORS  = ["비디오삼각대", "사진삼각대", "모노포드"];
 
 // 카메라/캠코더 계열인가 — 상세 페이지(액세서리 선택)를 띄울 대상
 export const isCameraLike = (e) =>
-  ((e.majorCategory === "촬영" && CAMERA_MINORS.includes(e.minorCategory)) ||
-    e.equipType === "camera" || e.equipType === "camcorder") &&
+  (e.equipType === "camera" || e.equipType === "camcorder" ||
+    CAMERA_MINORS.includes(e.minorCategory)) &&
   !e.isSet;
 
 // 같은 modelName끼리 묶고 재고를 합산 (개체 단위 문서 → 모델 단위 카드)
@@ -34,11 +38,12 @@ export function classifyAccessories(equips) {
   return {
     batteries: live.filter(e => e.equipType === "battery" || e.minorCategory === "배터리"),
     chargers:  live.filter(e => e.equipType === "charger" || e.minorCategory === "충전기/전원"),
-    storages:  live.filter(e => e.equipType === "storage" || e.minorCategory === "저장매체"),
+    // 저장매체와 카드리더기는 equipType이 둘 다 "storage"라 중분류로 갈라야 한다
+    storages:  live.filter(e => e.minorCategory === "저장매체" || (e.equipType === "storage" && e.minorCategory !== "카드리더기")),
     readers:   live.filter(e => e.minorCategory === "카드리더기"),
-    tripods:   live.filter(e => e.majorCategory === "트라이포드/그립"),
+    tripods:   live.filter(e => e.equipType === "tripod" || TRIPOD_MINORS.includes(e.minorCategory)),
     lenses:    groupByModel(live.filter(e => (e.equipType === "lens" || LENS_MINORS.includes(e.minorCategory)) && !e.isSet)),
-    adapters:  live.filter(e => e.equipType === "adapter"),
+    adapters:  live.filter(e => e.equipType === "adapter" || e.minorCategory === "렌즈어댑터"),
   };
 }
 
