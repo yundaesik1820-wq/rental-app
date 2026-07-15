@@ -16,6 +16,7 @@ workflows:
         - ios_signing
       vars:
         BUNDLE_ID: "com.kbas.rental"
+        APP_STORE_APP_ID: "6779502423"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
       node: 22
@@ -98,6 +99,7 @@ workflows:
         - ios_signing
       vars:
         BUNDLE_ID: "com.kbas.rental"
+        APP_STORE_APP_ID: "6779502423"
         XCODE_PROJECT: "ios/App/App.xcodeproj"
         XCODE_SCHEME: "App"
       node: 22
