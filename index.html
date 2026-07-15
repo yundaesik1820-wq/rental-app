@@ -2,7 +2,7 @@
 <html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <!-- 모바일 웹 방문자 → 앱 스토어로 자동 안내 (네이티브 앱/데스크톱 제외) -->
     <script>
       (function () {
@@ -40,7 +40,13 @@
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       html, body, #root { height: 100%; }
+      html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
       body { font-family: 'Noto Sans KR', sans-serif; background: #0B0B0E; color: #ECECEE; overflow: hidden; overscroll-behavior: none; }
+
+      /* iOS는 16px 미만 인풋 포커스 시 페이지를 자동 확대하고 되돌리지 않음 (가로 스크롤 발생) */
+      @media (max-width: 768px) {
+        input, textarea, select { font-size: 16px !important; }
+      }
 
       /* 버튼 탭 모션 (네이티브 앱 느낌) */
       * { -webkit-tap-highlight-color: transparent; }
