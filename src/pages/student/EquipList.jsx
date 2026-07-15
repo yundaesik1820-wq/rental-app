@@ -269,7 +269,8 @@ export default function EquipList({ setTab }) {
               const avail  = e.available > 0;
               const qty    = cart[e.modelName] || 0;
               return (
-                <Card key={e.modelName} style={{ padding:"12px 14px" }}>
+                <Card key={e.modelName} style={{ padding:"12px 14px" }}
+                  onClick={isCameraLike(e) && !locked && avail ? () => setDetailCam(e) : undefined}>
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                     {/* 썸네일 */}
                     {photos.length > 0 && (
@@ -313,11 +314,10 @@ export default function EquipList({ setTab }) {
                   ) : !avail ? (
                     <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>재고 없음</div>
                   ) : isCameraLike(e) ? (
-                    <div style={{ marginTop:8 }}>
-                      <Btn onClick={() => setDetailCam(e)} color={C.teal} small>
-                        {qty > 0 ? `담김 ${qty}대 · 다시 고르기 →` : "골라서 담기 →"}
-                      </Btn>
-                    </div>
+                    // 카드 전체가 상세로 가는 버튼 — 담긴 수량만 표시
+                    qty > 0 ? (
+                      <div style={{ fontSize:11, color:C.teal, fontWeight:700, marginTop:8 }}>✓ 담김 {qty}대</div>
+                    ) : null
                   ) : qty > 0 ? (
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
                       <button onClick={() => setQty(e.modelName, qty-1, e.available)}

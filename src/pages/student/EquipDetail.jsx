@@ -18,9 +18,11 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   const isProf = profile?.role === "professor" || profile?.role === "admin";
 
   const [qty, setQty] = useState(1);
-  // 갈래별 { modelName: qty }
-  const [sel, setSel] = useState({ batteries:{}, chargers:{}, storages:{}, readers:{}, lens:{}, tripods:{} });
+  // 갈래별 { modelName: qty } — 삼각대/그립은 장비 목록에서 따로 담는다
+  const [sel, setSel] = useState({ lens:{}, batteries:{}, chargers:{}, storages:{}, readers:{} });
   const [adapters, setAdapters] = useState({}); // 렌즈 때문에 자동으로 붙는 어댑터
+  const [open, setOpen] = useState({});          // 펼친 섹션 { lens: true }
+  const toggle = (id) => setOpen(p => ({ ...p, [id]: !p[id] }));
 
   const acc = classifyAccessories(equipments);
   const camAvail = cam.available ?? 1;
@@ -35,7 +37,6 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   const matchedChargers  = matchChargers(selectedBatteryModels, acc.chargers, cam);
   const storages = groupByModel(acc.storages);
   const readers  = groupByModel(acc.readers);
-  const tripods  = groupByModel(acc.tripods);
 
   // 렌즈는 마운트가 달라도 어댑터가 있으면 담을 수 있다. 어댑터가 없으면 담기 차단.
   const setLens = (lens, q) => {
@@ -100,13 +101,33 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
     );
   };
 
-  const Section = ({ title, desc, children }) => (
-    <div style={{ marginTop:20 }}>
-      <div style={{ fontSize:14, fontWeight:800, color:C.text, marginBottom:2 }}>{title}</div>
-      {desc && <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>{desc}</div>}
-      {children}
-    </div>
-  );
+  // 접힌 상태가 기본. 고른 개수는 접혀 있어도 보이게.
+  const Section = ({ id, title, desc, children }) => {
+    const isOpen = !!open[id];
+    const picked = Object.values(sel[id] || {}).filter(q => q > 0).length;
+    return (
+      <div style={{ marginTop:10 }}>
+        <button onClick={() => toggle(id)}
+          style={{ display:"flex", alignItems:"center", gap:8, width:"100%", background:C.surface,
+            border:`1px solid ${isOpen ? C.teal : C.border}`, borderRadius:12, padding:"12px 14px",
+            cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+          <span style={{ fontSize:14, fontWeight:800, color:C.text }}>{title}</span>
+          {picked > 0 && (
+            <span style={{ background:C.tealLight, color:C.teal, borderRadius:20, padding:"2px 8px", fontSize:11, fontWeight:800 }}>
+              {picked}종
+            </span>
+          )}
+          <span style={{ marginLeft:"auto", fontSize:12, color:C.muted }}>{isOpen ? "▲" : "▼"}</span>
+        </button>
+        {isOpen && (
+          <div style={{ padding:"10px 2px 2px" }}>
+            {desc && <div style={{ fontSize:11, color:C.muted, marginBottom:8 }}>{desc}</div>}
+            {children}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const photos = cam.displayPhotoUrl ? [cam.displayPhotoUrl] : (cam.photoUrls || []);
 
@@ -143,21 +164,7 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
         </div>
       </Card>
 
-      <Section title="🔋 배터리" desc={`${cam.modelName}에 맞는 배터리만 보여요`}>
-        {matchedBatteries.length === 0
-          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 호환 배터리가 없어요</div>
-          : matchedBatteries.map(e => <Row key={e.modelName} e={e} group="batteries" />)}
-      </Section>
-
-      <Section title="🔌 충전기" desc={selectedBatteryModels.length === 0 ? "배터리를 먼저 고르면 맞는 충전기가 떠요" : "고른 배터리에 맞는 충전기예요"}>
-        {selectedBatteryModels.length === 0
-          ? null
-          : matchedChargers.length === 0
-          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>맞는 충전기가 없어요</div>
-          : matchedChargers.map(e => <Row key={e.modelName} e={e} group="chargers" />)}
-      </Section>
-
-      <Section title="🔭 렌즈" desc="마운트가 다르면 어댑터가 자동으로 함께 담겨요">
+      <Section id="lens" title="🔭 렌즈" desc="마운트가 다르면 어댑터가 자동으로 함께 담겨요">
         {acc.lenses.length === 0
           ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 렌즈가 없어요</div>
           : acc.lenses.map(e => {
@@ -175,22 +182,30 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
             })}
       </Section>
 
-      <Section title="💾 저장매체">
+      <Section id="batteries" title="🔋 배터리" desc={`${cam.modelName}에 맞는 배터리만 보여요`}>
+        {matchedBatteries.length === 0
+          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 호환 배터리가 없어요</div>
+          : matchedBatteries.map(e => <Row key={e.modelName} e={e} group="batteries" />)}
+      </Section>
+
+      <Section id="chargers" title="🔌 충전기" desc={selectedBatteryModels.length === 0 ? "배터리를 먼저 고르면 맞는 충전기가 떠요" : "고른 배터리에 맞는 충전기예요"}>
+        {selectedBatteryModels.length === 0
+          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>배터리를 먼저 골라주세요</div>
+          : matchedChargers.length === 0
+          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>맞는 충전기가 없어요</div>
+          : matchedChargers.map(e => <Row key={e.modelName} e={e} group="chargers" />)}
+      </Section>
+
+      <Section id="storages" title="💾 저장매체">
         {storages.length === 0
           ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 저장매체가 없어요</div>
           : storages.map(e => <Row key={e.modelName} e={e} group="storages" />)}
       </Section>
 
-      <Section title="🔎 카드리더기">
+      <Section id="readers" title="🔎 카드리더기">
         {readers.length === 0
           ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 카드리더기가 없어요</div>
           : readers.map(e => <Row key={e.modelName} e={e} group="readers" />)}
-      </Section>
-
-      <Section title="📐 삼각대 / 그립">
-        {tripods.length === 0
-          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 삼각대가 없어요</div>
-          : tripods.map(e => <Row key={e.modelName} e={e} group="tripods" />)}
       </Section>
 
       {/* 담기 바 */}
