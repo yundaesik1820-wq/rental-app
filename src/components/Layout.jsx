@@ -180,12 +180,6 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
                 <span style={{ position: "absolute", top: 0, right: 0, background: C.red, color: "#fff", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{notifCount}</span>
               )}
             </button>
-            {profile && (
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{profile.name}</div>
-                <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? roleLabel : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
-              </div>
-            )}
           </div>
         </header>
 
