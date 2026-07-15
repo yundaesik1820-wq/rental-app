@@ -1071,10 +1071,6 @@ export default function StudentHome({ onOpenRoom }) {
                                     style={{ background:isViewing?C.border:C.blueLight, color:isViewing?C.muted:C.blue, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
                                     {viewFriendLoading&&!isViewing?"...":isViewing?"접기":"시간표"}
                                   </button>
-                                  <button onClick={() => deleteFriend(f)}
-                                    style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, cursor:"pointer", flexShrink:0 }}>
-                                    삭제
-                                  </button>
                                 </div>
                                 {isViewing && viewFriend && (
                                   <div style={{ marginTop:6, overflowX:"auto" }}>
