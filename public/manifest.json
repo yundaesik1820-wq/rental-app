@@ -2,7 +2,7 @@
   "name": "KBAS 장비대여실",
   "short_name": "KBAS Rental",
   "description": "한국방송예술진흥원 장비대여시스템",
-  "start_url": "/",
+  "start_url": "/?web=1",
   "display": "standalone",
   "background_color": "#1B2B6B",
   "theme_color": "#1B2B6B",
