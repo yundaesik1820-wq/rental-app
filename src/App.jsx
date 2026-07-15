@@ -229,77 +229,6 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   );
 }
 
-// 학생용 대여 목록 통합 (장비/소품목록)
-function StudentRentalList({ setTab }) {
-  const [view, setView] = React.useState("equip");
-  return (
-    <div>
-      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
-        {[["equip","🎬 장비 목록"],["props","🎭 소품목록"]].map(([v,l]) => (
-          <button key={v} onClick={() => setView(v)}
-            style={{ padding:"6px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer",
-              background: view===v ? "#1B2B6B" : "#1E293B",
-              color: view===v ? "#fff" : "#64748B" }}>
-            {l}
-          </button>
-        ))}
-      </div>
-      {view === "equip"    && <EquipList setTab={setTab} />}
-      {view === "props"    && <StudentPropsList />}
-    </div>
-  );
-}
-
-// 학생용 소품목록
-function StudentPropsList() {
-  const { data: equipments } = useCollectionHook("equipments", "createdAt");
-  const PROP_CATS = ["의상", "소도구", "대도구"];
-  const [propCat, setPropCat] = React.useState("");
-  const allProps = equipments.filter(e => e.majorCategory === "소품" || PROP_CATS.includes(e.majorCategory));
-  const filtered = propCat ? allProps.filter(e => e.majorCategory === propCat || e.minorCategory === propCat) : allProps;
-  return (
-    <div>
-      {/* 소품목록 배너 */}
-      <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/police.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-            <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>여기는 소품 목록 페이지예요!</div>
-            <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>촬영에 필요한 소품들을 확인해봐요.<br/>의상, 소도구, 대도구를 빌릴 수 있어요 🎭</div>
-          </div>
-        </div>
-      </div>
-      {/* 대분류 카테고리 버튼 */}
-      <div style={{ display:"flex", gap:6, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2 }}>
-        <button onClick={() => setPropCat("")}
-          style={{ background:!propCat?"#1B2B6B":"#1E293B", color:!propCat?"#fff":"#64748B", border:"none", borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-          전체
-        </button>
-        {PROP_CATS.map(c => (
-          <button key={c} onClick={() => setPropCat(c)}
-            style={{ background:propCat===c?"#1B2B6B":"#1E293B", color:propCat===c?"#fff":"#64748B", border:"none", borderRadius:20, padding:"6px 14px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0 }}>
-            {c}
-          </button>
-        ))}
-      </div>
-      {filtered.length === 0
-        ? <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748B" }}>
-            <div style={{ fontSize:32, marginBottom:8 }}>🎭</div>
-            <div>등록된 소품이 없습니다</div>
-            <div style={{ fontSize:12, marginTop:4 }}>관리자가 소품을 등록하면 여기에 표시돼요</div>
-          </div>
-        : filtered.map(e => (
-          <div key={e.id} style={{ background:"#1E293B", borderRadius:12, padding:"14px 16px", marginBottom:10, border:"1px solid #334155" }}>
-            <div style={{ fontSize:14, fontWeight:800, color:"#F1F5F9", marginBottom:4 }}>{e.modelName}</div>
-            <div style={{ fontSize:12, color:"#64748B" }}>{e.majorCategory} · {e.minorCategory} · {e.status||"대여가능"}</div>
-          </div>
-        ))
-      }
-    </div>
-  );
-}
-
 // 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
 function StudentMyPage() {
   const { profile } = useAuth();
@@ -434,10 +363,10 @@ function AppContent() {
 
   // 장비/시설 탭 전환 래퍼
   const ReserveWrapper = () => {
-    const [page, setPage] = React.useState("main"); // main | equip | equip-guide | equip-expert | facility | props
+    const [page, setPage] = React.useState("equip"); // equip | equip-guide | equip-expert
     const [guideItems, setGuideItems] = React.useState(null);
 
-    const Back = ({ to="main", onClick }) => (
+    const Back = ({ to="equip", onClick }) => (
       <button onClick={() => { if(onClick) onClick(); setPage(to); }} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
         ← 뒤로가기
       </button>
@@ -455,46 +384,9 @@ function AppContent() {
       </button>
     );
 
-    // 메인 선택 화면
-    if (page === "main") return (
-      <div>
-        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#0D9488)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <img src="/mascot/curious.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>무엇을 예약할까요?</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>장비, 소품 중에서 선택해봐요!<br/>필요한 걸 골라서 신청하면 돼요 📋</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <BannerCard onClick={() => setPage("equip")} mascot="camera.png" gradient="#1B2B6B,#3B6CF8" title="🎬 장비 예약" desc="카메라, 렌즈, 조명 등 장비를 빌려요" />
-          <BannerCard onClick={() => setPage("props")} mascot="police.png" gradient="#7C3AED,#DB2777" title="🎭 소품 예약" desc="의상, 소도구, 대도구를 빌려요" dark={false} />
-        </div>
-
-        {/* 대여이력 · 캘린더 바로가기 */}
-        <button onClick={() => setPage("history")} style={{
-          marginTop:18, width:"100%", textAlign:"left", cursor:"pointer",
-          background:"#1E293B", borderRadius:14, padding:"15px 18px", border:"1px solid #334155",
-          display:"flex", alignItems:"center", justifyContent:"space-between",
-        }}>
-          <div style={{ display:"flex", alignItems:"center", gap:13 }}>
-            <span style={{ fontSize:24 }}>📋</span>
-            <div>
-              <div style={{ fontSize:15, fontWeight:800, color:"#F1F5F9", marginBottom:2 }}>대여이력 · 캘린더</div>
-              <div style={{ fontSize:12, color:"#64748B" }}>내 대여 기록과 예약 일정을 확인해요</div>
-            </div>
-          </div>
-          <span style={{ fontSize:20, color:"#475569" }}>›</span>
-        </button>
-      </div>
-    );
-
     // 장비 예약 - 초보자/전문가 선택
     if (page === "equip") return (
       <div>
-        <Back />
         <div style={{ background:"linear-gradient(135deg,#1B2B6B,#3B6CF8)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
           <div style={{ display:"flex", alignItems:"center", gap:12 }}>
             <img src="/mascot/hi.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
@@ -537,36 +429,6 @@ function AppContent() {
       </div>
     );
 
-    // 대여이력 · 캘린더
-    if (page === "history") return (
-      <div>
-        <Back />
-        <StudentCalendarHistory profile={profile} />
-      </div>
-    );
-
-    // 소품 예약
-    if (page === "props") return (
-      <div>
-        <Back />
-        <div style={{ background:"linear-gradient(135deg,#7C3AED,#DB2777)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <img src="/mascot/rental.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>소품 예약이군요!</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>필요한 소품을 확인하고 대여 신청을 해봐요 🎭</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ textAlign:"center", padding:"40px 20px", color:"#64748B" }}>
-          <div style={{ fontSize:32, marginBottom:8 }}>🎭</div>
-          <div style={{ fontSize:14, fontWeight:600 }}>소품 예약 준비 중이에요</div>
-          <div style={{ fontSize:12, marginTop:6 }}>곧 이용할 수 있어요!</div>
-        </div>
-      </div>
-    );
-
     return null;
   };
 
@@ -598,7 +460,7 @@ function AppContent() {
     } else {
       switch (tab) {
         case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
-        case "equip":    return <StudentRentalList setTab={setTab} />;
+        case "equip":    return <EquipList setTab={setTab} />;
         case "reserve":  return <ReserveWrapper />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
