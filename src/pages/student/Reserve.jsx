@@ -8,6 +8,7 @@ import { storage, db } from "../../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { useCart } from "../../hooks/useCart.jsx";
 import { groupEquipments } from "../../utils/groupEquipments";
 import { isKoreanHoliday, getKoreanHolidayName } from "../../utils/koreanHolidays";
 import RentalTimeline from "../../components/RentalTimeline";
@@ -115,7 +116,7 @@ function FileAttachSection({ form, f }) {
   );
 }
 
-export default function Reserve({ initialItems = null, initialSets = null }) {
+export default function Reserve() {
   const { profile } = useAuth();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: allRequests } = useCollection("rentalRequests", "createdAt");
@@ -152,15 +153,8 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
 
-  // 장바구니 { modelName: qty } (단품), { modelName: true } (세트)
-  // initialItems: { modelName: qty } 형태로 가이드모드에서 전달 가능
-  const [cart, setCart]         = useState(() => {
-    if (!initialItems) return {};
-    const c = {};
-    Object.entries(initialItems).forEach(([name, qty]) => { c[name] = qty; });
-    return c;
-  });
-  const [cartSets, setCartSets] = useState({});
+  // 장바구니는 CartProvider가 보유 — 장비 목록에서 담은 게 여기로 이어짐
+  const { cart, setCart, cartSets, setCartSets, setQty, clearCart } = useCart();
   const [expandedSet, setExpandedSet] = useState(null);
   const [photoIdx, setPhotoIdx]       = useState({});
   const getIdx = (key) => photoIdx[key] || 0;
@@ -228,12 +222,6 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     days: [],  // [{ day:"금", date:"", keeper:"", equipment:"", location:"", storageTime:"", outTime:"" }, ...]
   });
   const [showForm, setShowForm]     = useState(false);
-  // 가이드모드에서 진입 시 바로 안내사항 모달 열기
-  useEffect(() => {
-    if (initialItems && Object.keys(initialItems).length > 0) {
-      setShowNotice(true);
-    }
-  }, []);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone]           = useState(false);
   const [errors, setErrors]       = useState({});
@@ -243,10 +231,6 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
     startDate:"", startTime:"09:00", endDate:"", endTime:"18:00",
   });
 
-  const setQty = (modelName, qty, max) => {
-    const c = Math.max(0, Math.min(qty, max));
-    setCart(p => ({ ...p, [modelName]: c }));
-  };
   const toggleSet = (modelName) => {
     const isProf   = profile?.role === "professor";
     const myLicNum = licenseToNum(profile?.license);
@@ -532,7 +516,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
         status: "승인대기", reason: "",
         studentSignature: typeof finalSig === "string" ? finalSig : "",
       });
-      setCart({}); setCartSets({});
+      clearCart();
       setStudentSignature("");
       setForm({ emergencyContact:"", participants:"", location:"", locationType:"", purpose:"", purposeDetail:"", club:"", clubDirect:"", courseName:"", professorName:"", eventName:"", eventProfessor:"", attachments:[], startDate:"", startTime:"09:00", endDate:"", endTime:"18:00" });
       setShowForm(false); setDone(true);
@@ -609,7 +593,7 @@ export default function Reserve({ initialItems = null, initialSets = null }) {
             </div>
           ))}
           <div style={{ display:"flex", gap:10, marginTop:12 }}>
-            <Btn onClick={() => { setCart({}); setCartSets({}); }} color={C.muted} outline full small>전체 취소</Btn>
+            <Btn onClick={clearCart} color={C.muted} outline full small>전체 취소</Btn>
             <Btn onClick={() => { setAgreed(false); setShowNotice(true); }} color={C.teal} full>신청서 작성 →</Btn>
           </div>
         </Card>

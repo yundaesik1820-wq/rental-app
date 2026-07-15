@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getThemeMode, setTheme } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
+import { CartProvider } from "./hooks/useCart.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
 import { useFCM } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
@@ -24,7 +25,6 @@ import Settings   from "./pages/admin/Settings";
 import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
-import GuideReserve  from "./pages/student/GuideReserve.jsx";
 import Community     from "./pages/student/Community.jsx";
 import SNSManager    from "./pages/admin/SNSManager";
 import ExternalRental from "./pages/admin/ExternalRental";
@@ -363,77 +363,6 @@ function AppContent() {
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
   const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }).filter(a => notSeen(a.id)).length;
 
-  // 장비/시설 탭 전환 래퍼
-  const ReserveWrapper = () => {
-    const [page, setPage] = React.useState("equip"); // equip | equip-guide | equip-expert
-    const [guideItems, setGuideItems] = React.useState(null);
-
-    const Back = ({ to="equip", onClick }) => (
-      <button onClick={() => { if(onClick) onClick(); setPage(to); }} style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
-        ← 뒤로가기
-      </button>
-    );
-
-    const BannerCard = ({ onClick, mascot, gradient, title, desc, dark }) => (
-      <button onClick={onClick} style={{ background: dark ? "#1E293B" : `linear-gradient(135deg,${gradient})`, borderRadius:16, padding:"18px 20px", border: dark ? "2px solid #334155" : "none", cursor:"pointer", textAlign:"left", width:"100%", boxShadow: dark ? "none" : "0 4px 16px rgba(27,43,107,0.2)" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-          <img src={`/mascot/${mascot}`} alt="" style={{ width:72, height:72, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.25))" }} />
-          <div>
-            <div style={{ fontSize:17, fontWeight:800, color: dark ? "#F1F5F9" : "#fff", marginBottom:4 }}>{title}</div>
-            <div style={{ fontSize:13, color: dark ? "#64748B" : "rgba(255,255,255,0.8)" }}>{desc}</div>
-          </div>
-        </div>
-      </button>
-    );
-
-    // 장비 예약 - 초보자/전문가 선택
-    if (page === "equip") return (
-      <div>
-        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#3B6CF8)", borderRadius:16, padding:"14px 16px", marginBottom:20 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-            <img src="/mascot/hi.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-            <div style={{ position:"relative", background:"#fff", borderRadius:12, padding:"10px 14px", flex:1 }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:"9px solid #fff" }} />
-              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3 }}>장비 예약이군요!</div>
-              <div style={{ fontSize:11, color:"#475569", lineHeight:1.5 }}>처음이라면 렌토리와 함께 골라봐요.<br/>익숙하다면 직접 선택해도 돼요 📷</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-          <BannerCard onClick={() => setPage("equip-guide")} mascot="hi.png" gradient="#1B2B6B,#0D9488" title="🌱 초보자" desc="렌토리랑 같이 장비를 골라요!" />
-          <BannerCard onClick={() => setPage("equip-expert")} mascot="shrug.png" gradient="#334155,#1E293B" title="⚡ 전문가" desc="직접 장비를 선택합니다!" dark />
-        </div>
-      </div>
-    );
-
-    // 장비 - 초보자 가이드
-
-    if (page === "equip-guide" && !guideItems) return (
-      <div>
-        <Back to="equip" />
-        <GuideReserve onComplete={(items) => setGuideItems(items)} />
-      </div>
-    );
-
-    // 초보자 가이드 완료 → Reserve 신청서로 이동
-    if (page === "equip-guide" && guideItems) return (
-      <div>
-        <Back to="equip-guide" onClick={() => setGuideItems(null)} />
-        <Reserve initialItems={guideItems} />
-      </div>
-    );
-
-    // 장비 - 전문가
-    if (page === "equip-expert") return (
-      <div>
-        <Back to="equip" />
-        <Reserve />
-      </div>
-    );
-
-    return null;
-  };
-
   const renderPage = () => {
     if (isAdmin) {
       switch (tab) {
@@ -463,7 +392,7 @@ function AppContent() {
       switch (tab) {
         case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
         case "equip":    return <EquipList setTab={setTab} />;
-        case "reserve":  return <ReserveWrapper />;
+        case "reserve":  return <Reserve />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
@@ -509,7 +438,9 @@ export default function App() {
   return (
     <UpdateGate>
       <AuthProvider>
-        <AppContent />
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
       </AuthProvider>
     </UpdateGate>
   );
