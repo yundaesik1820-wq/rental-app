@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { C } from "../theme";
@@ -40,6 +40,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
 
 
   const [sideOpen, setSideOpen] = useState(true);
+  const mainRef = useRef(null); // 같은 탭 재탭 시 맨 위로 스크롤
 
   const adminRole = profile?.adminRole || "super";
   const isSuper   = profile?.role === "admin"; // 모든 관리자 슈퍼와 동일
@@ -184,7 +185,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
         </header>
 
         {/* Content */}
-        <main style={{ flex: 1, padding: "24px", overflowY: "auto", minHeight: 0 }}>
+        <main ref={mainRef} style={{ flex: 1, padding: "24px", overflowY: "auto", minHeight: 0 }}>
           {children}
         </main>
       </div>
@@ -319,7 +320,12 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
               return (
                 <button
                   key={n.id}
-                  onClick={() => setTab(n.id)}
+                  onClick={() => {
+                    // 같은 탭을 다시 누르면 맨 위로. (그룹탭은 하위 화면 → 허브 복귀가
+                    // 먼저라 active가 아닌 tab === n.id 로 판정)
+                    if (tab === n.id) mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                    else setTab(n.id);
+                  }}
                   style={{
                     background: "transparent",
                     border: "none", cursor: "pointer",
