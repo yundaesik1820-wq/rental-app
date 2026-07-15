@@ -4,7 +4,7 @@ import { Card, Btn, Empty } from "../../components/UI";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import {
   classifyAccessories, matchBatteries, matchChargers,
-  needsAdapter, findAdapter, groupByModel, licenseToNum,
+  needsAdapter, findAdapter, groupByModel, licenseToNum, isVMount,
 } from "../../utils/equipCompat";
 
 /* ============================================================
@@ -23,6 +23,7 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   const [adapters, setAdapters] = useState({}); // 렌즈 때문에 자동으로 붙는 어댑터
   const [open, setOpen] = useState({});          // 펼친 섹션 { lens: true }
   const toggle = (id) => setOpen(p => ({ ...p, [id]: !p[id] }));
+  const [vbpOpen, setVbpOpen] = useState(false); // V마운트 배터리 펼침
 
   const acc = classifyAccessories(equipments);
   const camAvail = cam.available ?? 1;
@@ -34,6 +35,9 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
 
   const selectedBatteryModels = Object.entries(sel.batteries).filter(([, q]) => q > 0).map(([m]) => m);
   const matchedBatteries = matchBatteries(cam, acc.batteries);
+  // 전용 배터리를 위에, V마운트는 접어서 아래에
+  const dedicatedBatteries = matchedBatteries.filter(b => !isVMount(b));
+  const vbpBatteries       = matchedBatteries.filter(isVMount);
   const matchedChargers  = matchChargers(selectedBatteryModels, acc.chargers, cam);
   const storages = groupByModel(acc.storages);
   const readers  = groupByModel(acc.readers);
@@ -183,9 +187,35 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
       </Section>
 
       <Section id="batteries" title="🔋 배터리" desc={`${cam.modelName}에 맞는 배터리만 보여요`}>
-        {matchedBatteries.length === 0
-          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 호환 배터리가 없어요</div>
-          : matchedBatteries.map(e => <Row key={e.modelName} e={e} group="batteries" />)}
+        {matchedBatteries.length === 0 ? (
+          <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 호환 배터리가 없어요</div>
+        ) : (
+          <>
+            {/* 전용 배터리 먼저 */}
+            {dedicatedBatteries.length === 0 && (
+              <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>전용 배터리는 없어요</div>
+            )}
+            {dedicatedBatteries.map(e => <Row key={e.modelName} e={e} group="batteries" />)}
+
+            {/* V마운트는 접어둔다 — 목록이 길고 대부분 전용을 쓴다 */}
+            {vbpBatteries.length > 0 && (
+              <>
+                <button onClick={() => setVbpOpen(o => !o)}
+                  style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, width:"100%",
+                    background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"9px 12px",
+                    fontSize:12, fontWeight:700, color:C.muted, cursor:"pointer", fontFamily:"inherit",
+                    marginTop: dedicatedBatteries.length > 0 ? 4 : 0 }}>
+                  V마운트 배터리 {vbpBatteries.length}종 {vbpOpen ? "▲" : "▼"}
+                </button>
+                {vbpOpen && (
+                  <div style={{ marginTop:6 }}>
+                    {vbpBatteries.map(e => <Row key={e.modelName} e={e} group="batteries" />)}
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
       </Section>
 
       <Section id="chargers" title="🔌 충전기" desc={selectedBatteryModels.length === 0 ? "배터리를 먼저 고르면 맞는 충전기가 떠요" : "고른 배터리에 맞는 충전기예요"}>

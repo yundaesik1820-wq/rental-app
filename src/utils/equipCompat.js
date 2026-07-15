@@ -47,6 +47,12 @@ export function classifyAccessories(equips) {
   };
 }
 
+// V마운트(VBP) 배터리인가 — 소분류로 판별. 전용 배터리와 나눠서 보여주려고 쓴다.
+export const isVMount = (b) => {
+  const s = b.subCategory || "";
+  return s.toUpperCase().includes("VBP") || s.includes("V-Mount") || s.includes("V마운트");
+};
+
 // 이 카메라에 맞는 배터리
 export function matchBatteries(cam, batteries) {
   if (!cam) return [];
