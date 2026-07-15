@@ -1003,85 +1003,12 @@ export default function StudentHome({ onOpenRoom }) {
               </div>
             )}
 
-            {/* 서브탭 */}
-            <div style={{ display:"flex", gap:4, marginBottom:12 }}>
-              {[
-                ["list","친구 목록",0],
-                ["req","친구 요청",receivedRequests.length],
-                ["add","친구 추가",0],
-              ].map(([v,l,cnt]) => (
-                <button key={v} onClick={() => { setFriendSubTab(v); setViewFriend(null); setAddFriendMsg(""); }}
-                  style={{ position:"relative", padding:"5px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:friendSubTab===v?C.navy:C.bg, color:friendSubTab===v?C.bg:C.muted }}>
-                  {l}
-                  {cnt > 0 && <span style={{ position:"absolute", top:-4, right:-4, background:C.red, color:"#fff", borderRadius:10, padding:"0 5px", fontSize:9, fontWeight:700 }}>{cnt}</span>}
-                </button>
-              ))}
-            </div>
-
-            {/* 친구 요청 탭 */}
-            {friendSubTab === "req" && (
-              <div>
-                {receivedRequests.length === 0 && sentRequests.length === 0 ? (
-                  <div style={{ textAlign:"center", padding:"24px 0", color:C.muted, fontSize:12 }}>
-                    <div style={{ fontSize:26, marginBottom:8 }}>📭</div>
-                    주고받은 친구 신청이 없어요
-                  </div>
-                ) : (
-                  <div>
-                    {/* 받은 신청 */}
-                    {receivedRequests.length > 0 && (
-                      <div style={{ marginBottom:14 }}>
-                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>받은 신청 ({receivedRequests.length})</div>
-                        {receivedRequests.map(r => (
-                          <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"10px 12px", marginBottom:6 }}>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{r.fromName}</div>
-                              <div style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</div>
-                            </div>
-                            <button onClick={() => acceptFriend(r)}
-                              style={{ background:C.teal, color:"#fff", border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                              수락
-                            </button>
-                            <button onClick={() => rejectFriend(r)}
-                              style={{ background:C.redLight, color:C.red, border:"none", borderRadius:8, padding:"6px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>
-                              거절
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {/* 보낸 신청 */}
-                    {sentRequests.length > 0 && (
-                      <div>
-                        <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>보낸 신청 ({sentRequests.length})</div>
-                        {sentRequests.map(r => (
-                          <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.bg, borderRadius:10, padding:"10px 12px", marginBottom:6 }}>
-                            <div style={{ flex:1 }}>
-                              <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{r.toName}</div>
-                              <div style={{ fontSize:11, color:C.muted }}>{r.toStudentId}</div>
-                            </div>
-                            <span style={{ fontSize:11, color:C.yellow, background:C.yellowLight, borderRadius:6, padding:"3px 8px", fontWeight:600 }}>대기 중</span>
-                            <button onClick={async () => {
-                              await deleteItem("friendRequests", r.id);
-                            }} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
-                              취소
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* 친구 목록 */}
-            {friendSubTab === "list" && (
               <div>
                 {myFriends.length === 0 ? (
                   <div style={{ textAlign:"center", padding:"20px 0", color:C.muted, fontSize:12 }}>
                     아직 친구가 없어요<br/>
-                    <span style={{ fontSize:11 }}>친구 추가 탭에서 학번으로 신청해보세요</span>
+                    <span style={{ fontSize:11 }}>펫 화면의 친구 탭에서 학번으로 신청해보세요</span>
                   </div>
                 ) : (() => {
                   const sorted = [...myFriends]
@@ -1191,33 +1118,6 @@ export default function StudentHome({ onOpenRoom }) {
                   );
                 })()}
               </div>
-            )}
-
-            {/* 친구 추가 */}
-            {friendSubTab === "add" && (
-              <div>
-                <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                  <input value={addFriendId} onChange={e => { setAddFriendId(e.target.value); setAddFriendMsg(""); }}
-                    onKeyDown={e => e.key==="Enter" && sendFriendRequest()}
-                    placeholder="학번 입력"
-                    style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"8px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
-                  <button onClick={sendFriendRequest} disabled={addFriendLoading}
-                    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:10, padding:"8px 16px", fontSize:12, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
-                    {addFriendLoading?"...":"신청"}
-                  </button>
-                </div>
-                {addFriendMsg && (
-                  <div style={{ background:addFriendMsg.startsWith("error:")?C.redLight:C.greenLight, color:addFriendMsg.startsWith("error:")?C.red:C.green, borderRadius:8, padding:"8px 12px", fontSize:12 }}>
-                    {addFriendMsg.replace(/^(error|success):/, "")}
-                  </div>
-                )}
-                {addFriendMsg && addFriendMsg.startsWith("success:") && (
-                  <div style={{ fontSize:11, color:C.muted, marginTop:8, textAlign:"center" }}>
-                    친구 요청 탭에서 현황을 확인할 수 있어요
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         )}
       </div>
