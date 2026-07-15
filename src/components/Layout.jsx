@@ -66,7 +66,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
   const NAV_ACCENT = C.navy; // 네온 라임 포인트
   const NAV_SHORT = { home: "홈", equip: "장비", reserve: "예약", community: "커뮤니티", mypage: "더보기" };
-  const MOBILE_STU_IDS = ["home", "equip", "reserve", "community", "mypage"];
+  // 예약 신청은 하단 탭에서 뺌 — 장비 목록에서 담고 장바구니 바로 진입 (tab "reserve" 자체는 유효)
+  const MOBILE_STU_IDS = ["home", "equip", "community", "mypage"];
   const isStudentNav = profile?.role !== "admin";
   const stuTabs = MOBILE_STU_IDS
     .map(id => {

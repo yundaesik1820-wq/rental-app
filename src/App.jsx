@@ -392,7 +392,7 @@ function AppContent() {
       switch (tab) {
         case "home":     return <StudentHome onOpenRoom={openCommunityRoom} />;
         case "equip":    return <EquipList setTab={setTab} />;
-        case "reserve":  return <Reserve />;
+        case "reserve":  return <Reserve setTab={setTab} />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;

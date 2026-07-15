@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { C } from "../../theme";
-import { Card, Badge, Empty, PageTitle, Modal } from "../../components/UI";
+import { Card, Badge, Btn, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { useCart } from "../../hooks/useCart.jsx";
 import RentalTimeline from "../../components/RentalTimeline";
 import ExternalRentalView from "./ExternalRentalView";
 import PdfViewer from "../../components/PdfViewer";
@@ -84,6 +85,7 @@ const licenseToNum = (lic) => {
 
 export default function EquipList({ setTab }) {
   const { profile } = useAuth();
+  const { cart, setQty, cartSets, setCartSets, cartCount } = useCart();
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: notices }    = useCollection("notices", "createdAt");
@@ -243,6 +245,7 @@ export default function EquipList({ setTab }) {
               const eqLic  = e.licenseLevel || 0;
               const locked = profile?.role !== "professor" && myLic < eqLic;
               const avail  = e.available > 0;
+              const qty    = cart[e.modelName] || 0;
               return (
                 <Card key={e.modelName} style={{ padding:"12px 14px" }}>
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
@@ -280,6 +283,28 @@ export default function EquipList({ setTab }) {
                   <div style={{ background:C.border, borderRadius:4, height:2, overflow:"hidden", marginTop:6 }}>
                     <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
                   </div>
+                  {/* 담기 — 라이선스/재고는 여기서도 막고, 제출 시 Reserve가 한 번 더 검증 */}
+                  {locked ? (
+                    <div style={{ fontSize:11, color:C.red, fontWeight:600, marginTop:8 }}>
+                      🔒 Lv.{eqLic} 이상 필요 (현재: {profile?.license || "없음"})
+                    </div>
+                  ) : !avail ? (
+                    <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>재고 없음</div>
+                  ) : qty > 0 ? (
+                    <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
+                      <button onClick={() => setQty(e.modelName, qty-1, e.available)}
+                        style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16, fontWeight:700, color:C.text }}>−</button>
+                      <div style={{ fontSize:18, fontWeight:800, color:C.teal, minWidth:30, textAlign:"center" }}>{qty}</div>
+                      <button onClick={() => setQty(e.modelName, qty+1, e.available)}
+                        style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, fontWeight:700, color:C.teal }}>+</button>
+                      <button onClick={() => setQty(e.modelName, 0, e.available)}
+                        style={{ marginLeft:4, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>빼기</button>
+                    </div>
+                  ) : (
+                    <div style={{ marginTop:8 }}>
+                      <Btn onClick={() => setQty(e.modelName, 1, e.available)} color={C.teal} small>담기</Btn>
+                    </div>
+                  )}
                 </Card>
               );
             })}
@@ -297,6 +322,9 @@ export default function EquipList({ setTab }) {
               const isExpand = expandedSet === e.modelName;
               const setList  = e.setItems ? e.setItems.split("\n").filter(Boolean) : [];
               const avail    = e.available > 0;
+              const eqLic    = e.licenseLevel || 0;
+              const locked   = profile?.role !== "professor" && licenseToNum(profile?.license) < eqLic;
+              const picked   = !!cartSets[e.modelName];
               return (
                 <Card key={e.modelName} style={{ padding:"12px 14px", border:`1.5px solid ${C.orange}20` }}>
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
@@ -351,6 +379,21 @@ export default function EquipList({ setTab }) {
                       )}
                     </>
                   )}
+                  {/* 담기 — 세트는 수량 없이 1세트 토글 */}
+                  {locked ? (
+                    <div style={{ fontSize:11, color:C.red, fontWeight:600, marginTop:10 }}>
+                      🔒 Lv.{eqLic} 이상 필요 (현재: {profile?.license || "없음"})
+                    </div>
+                  ) : !avail ? (
+                    <div style={{ fontSize:11, color:C.muted, marginTop:10 }}>재고 없음</div>
+                  ) : (
+                    <div style={{ marginTop:10 }}>
+                      <Btn onClick={() => setCartSets(p => ({ ...p, [e.modelName]: !p[e.modelName] }))}
+                        color={picked ? C.muted : C.teal} outline={picked} small full>
+                        {picked ? "담김 · 빼기" : "담기"}
+                      </Btn>
+                    </div>
+                  )}
                 </Card>
               );
             })}
@@ -401,6 +444,20 @@ export default function EquipList({ setTab }) {
       )}
 
       {pdfView && <PdfViewer url={pdfView.url} title={pdfView.title} onClose={() => setPdfView(null)} />}
+
+      {/* 장바구니 바 — 하단 탭바(70px) 위에 뜸 */}
+      {cartCount > 0 && (
+        <div style={{ position:"fixed", left:0, right:0, bottom:78, padding:"0 16px", zIndex:400 }}>
+          <button onClick={() => setTab && setTab("reserve")}
+            style={{ width:"100%", background:C.teal, color:"#fff", border:"none", borderRadius:14,
+              padding:"14px 18px", fontSize:15, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+              display:"flex", alignItems:"center", justifyContent:"space-between",
+              boxShadow:"0 6px 20px rgba(0,0,0,0.35)" }}>
+            <span>🛒 {cartCount}개 담음</span>
+            <span>예약하러 가기 ›</span>
+          </button>
+        </div>
+      )}
     </div>
   );
 }
