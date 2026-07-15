@@ -16,6 +16,35 @@ const CAMERA_MINORS  = ["카메라", "캠코더", "드론/액션캠"];
 const LENS_MINORS    = ["단렌즈", "줌렌즈", "시네렌즈", "렌즈"];
 const TRIPOD_MINORS  = ["비디오삼각대", "사진삼각대", "모노포드"];
 
+export const isLens = (e) => e.equipType === "lens" || LENS_MINORS.includes(e.minorCategory);
+
+/* 렌즈 제조사 — 이 순서로 보여준다. 목록에 없는 제조사는 뒤에 가나다순.
+   로고는 public/lens-brands/{파일명}.png (48x48, 투명배경 / 24px로 표시) */
+export const LENS_BRAND_ORDER = [
+  "SONY", "CANON", "XEEN CF", "SAMYANG", "TAMRON", "CARL ZEISS", "TOKINA", "SIGMA", "FUJINON",
+];
+const LENS_BRAND_LOGO = {
+  "SONY":"sony", "CANON":"canon", "XEEN CF":"xeen", "SAMYANG":"samyang", "TAMRON":"tamron",
+  "CARL ZEISS":"zeiss", "TOKINA":"tokina", "SIGMA":"sigma", "FUJINON":"fujinon",
+};
+export const normBrand = (m) => (m || "").trim().toUpperCase();
+
+// 렌즈를 제조사별로 묶어 지정 순서로 정렬 → [{ brand, logo, items }]
+export function groupLensesByBrand(lenses) {
+  const map = {};
+  lenses.forEach(e => {
+    const b = normBrand(e.manufacturer) || "기타";
+    (map[b] = map[b] || []).push(e);
+  });
+  const known = LENS_BRAND_ORDER.filter(b => map[b]);
+  const rest  = Object.keys(map).filter(b => !LENS_BRAND_ORDER.includes(b)).sort((a, b) => a.localeCompare(b, "ko"));
+  return [...known, ...rest].map(b => ({
+    brand: b,
+    logo:  LENS_BRAND_LOGO[b] ? `/lens-brands/${LENS_BRAND_LOGO[b]}.png` : null,
+    items: map[b],
+  }));
+}
+
 // 카메라/캠코더 계열인가 — 상세 페이지(액세서리 선택)를 띄울 대상
 export const isCameraLike = (e) =>
   (e.equipType === "camera" || e.equipType === "camcorder" ||
@@ -42,7 +71,9 @@ export function classifyAccessories(equips) {
     storages:  live.filter(e => e.minorCategory === "저장매체" || (e.equipType === "storage" && e.minorCategory !== "카드리더기")),
     readers:   live.filter(e => e.minorCategory === "카드리더기"),
     tripods:   live.filter(e => e.equipType === "tripod" || TRIPOD_MINORS.includes(e.minorCategory)),
-    lenses:    groupByModel(live.filter(e => (e.equipType === "lens" || LENS_MINORS.includes(e.minorCategory)) && !e.isSet)),
+    lenses:    groupByModel(live.filter(e => isLens(e) && !e.isSet)),
+    // 렌즈 세트(XEEN CF 등) — 수량 없이 1세트 단위라 cartSets로 담는다
+    lensSets:  groupByModel(live.filter(e => isLens(e) && e.isSet)),
     adapters:  live.filter(e => e.equipType === "adapter" || e.minorCategory === "렌즈어댑터"),
   };
 }

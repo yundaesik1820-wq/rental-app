@@ -2,9 +2,10 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { Card, Btn, Empty } from "../../components/UI";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { useCart } from "../../hooks/useCart.jsx";
 import {
-  classifyAccessories, matchBatteries, matchChargers,
-  needsAdapter, findAdapter, groupByModel, licenseToNum, isVMount,
+  classifyAccessories, matchBatteries, matchChargers, needsAdapter, findAdapter,
+  groupByModel, licenseToNum, isVMount, groupLensesByBrand,
 } from "../../utils/equipCompat";
 
 /* ============================================================
@@ -12,8 +13,9 @@ import {
    배민 메뉴 상세처럼 한 페이지에서 필요한 것만 고르고 마지막에 장바구니로.
    담기 결과는 { modelName: qty } 평평한 맵 → 그대로 cart에 merge된다.
    ============================================================ */
-export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
+export default function EquipDetail({ cam, equipments, onBack }) {
   const { profile } = useAuth();
+  const { setCart, setCartSets } = useCart();
   const myLic = licenseToNum(profile?.license);
   const isProf = profile?.role === "professor" || profile?.role === "admin";
 
@@ -24,6 +26,9 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   const [open, setOpen] = useState({});          // 펼친 섹션 { lens: true }
   const toggle = (id) => setOpen(p => ({ ...p, [id]: !p[id] }));
   const [vbpOpen, setVbpOpen] = useState(false); // V마운트 배터리 펼침
+  const [selSets, setSelSets] = useState({});    // 고른 렌즈 세트 { modelName: true }
+  const [openBrand, setOpenBrand] = useState({});// 펼친 렌즈 제조사
+  const toggleBrand = (b) => setOpenBrand(p => ({ ...p, [b]: !p[b] }));
 
   const acc = classifyAccessories(equipments);
   const camAvail = cam.available ?? 1;
@@ -41,6 +46,8 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   const matchedChargers  = matchChargers(selectedBatteryModels, acc.chargers, cam);
   const storages = groupByModel(acc.storages);
   const readers  = groupByModel(acc.readers);
+  // 렌즈는 단품 + 세트를 합쳐 제조사별로 (SONY → CANON → XEEN CF → ...)
+  const lensBrands = groupLensesByBrand([...acc.lenses, ...acc.lensSets]);
 
   // 렌즈는 마운트가 달라도 어댑터가 있으면 담을 수 있다. 어댑터가 없으면 담기 차단.
   const setLens = (lens, q) => {
@@ -59,20 +66,32 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
     }
   };
 
-  // 최종 담기 — 본품 + 고른 액세서리 + 자동 어댑터를 한 맵으로
+  // 최종 담기 — 단품(본품·액세서리·자동 어댑터)은 cart로, 렌즈 세트는 cartSets로
   const handleAdd = () => {
     const out = { [cam.modelName]: qty };
     Object.values(sel).forEach(group => {
       Object.entries(group).forEach(([m, q]) => { if (q > 0) out[m] = (out[m] || 0) + q; });
     });
     Object.entries(adapters).forEach(([m, q]) => { out[m] = (out[m] || 0) + q; });
-    onAdd(out);
+    setCart(prev => {
+      const next = { ...prev };
+      Object.entries(out).forEach(([m, q]) => { next[m] = (next[m] || 0) + q; });
+      return next;
+    });
+    const sets = Object.entries(selSets).filter(([, on]) => on);
+    if (sets.length > 0) {
+      setCartSets(prev => {
+        const next = { ...prev };
+        sets.forEach(([m]) => { next[m] = true; });
+        return next;
+      });
+    }
     onBack();
   };
 
   const pickedCount = Object.values(sel).reduce(
     (n, g) => n + Object.values(g).filter(q => q > 0).length, 0
-  ) + Object.keys(adapters).length;
+  ) + Object.keys(adapters).length + Object.values(selSets).filter(Boolean).length;
 
   // 액세서리 한 줄 (수량 조절)
   const Row = ({ e, group, note }) => {
@@ -108,7 +127,9 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
   // 접힌 상태가 기본. 고른 개수는 접혀 있어도 보이게.
   const Section = ({ id, title, desc, children }) => {
     const isOpen = !!open[id];
-    const picked = Object.values(sel[id] || {}).filter(q => q > 0).length;
+    // 렌즈는 세트도 함께 센다 (세트는 sel이 아니라 selSets에 있음)
+    const picked = Object.values(sel[id] || {}).filter(q => q > 0).length
+      + (id === "lens" ? Object.values(selSets).filter(Boolean).length : 0);
     return (
       <div style={{ marginTop:10 }}>
         <button onClick={() => toggle(id)}
@@ -169,21 +190,76 @@ export default function EquipDetail({ cam, equipments, onBack, onAdd }) {
       </Card>
 
       <Section id="lens" title="🔭 렌즈" desc="마운트가 다르면 어댑터가 자동으로 함께 담겨요">
-        {acc.lenses.length === 0
-          ? <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 렌즈가 없어요</div>
-          : acc.lenses.map(e => {
-              const need = needsAdapter(e, cam);
-              const ad = need ? findAdapter(e, cam, acc.adapters) : null;
-              if (need && !ad) return (
-                <div key={e.modelName} style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", marginBottom:6, opacity:0.5 }}>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                    <div style={{ fontSize:11, color:C.red, marginTop:2 }}>마운트 불일치 ({e.mount} → {cam.mount}) · 어댑터 없음</div>
-                  </div>
+        {lensBrands.length === 0 ? (
+          <div style={{ fontSize:12, color:C.muted, padding:"10px 0" }}>등록된 렌즈가 없어요</div>
+        ) : lensBrands.map(g => {
+          const isOpen = !!openBrand[g.brand];
+          const picked = g.items.filter(e => e.isSet ? selSets[e.modelName] : (sel.lens[e.modelName] || 0) > 0).length;
+          return (
+            <div key={g.brand} style={{ marginBottom:6 }}>
+              <button onClick={() => toggleBrand(g.brand)}
+                style={{ display:"flex", alignItems:"center", gap:8, width:"100%", background:C.bg,
+                  border:`1px solid ${isOpen ? C.teal : C.border}`, borderRadius:10, padding:"9px 12px",
+                  cursor:"pointer", fontFamily:"inherit", textAlign:"left" }}>
+                {g.logo && (
+                  <img src={g.logo} alt="" width={24} height={24}
+                    style={{ objectFit:"contain", flexShrink:0 }}
+                    onError={ev => { ev.currentTarget.style.display = "none"; }} />
+                )}
+                <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{g.brand}</span>
+                <span style={{ fontSize:11, color:C.muted }}>{g.items.length}종</span>
+                {picked > 0 && (
+                  <span style={{ background:C.tealLight, color:C.teal, borderRadius:20, padding:"1px 7px", fontSize:10, fontWeight:800 }}>{picked}</span>
+                )}
+                <span style={{ marginLeft:"auto", fontSize:11, color:C.muted }}>{isOpen ? "▲" : "▼"}</span>
+              </button>
+              {isOpen && (
+                <div style={{ marginTop:6 }}>
+                  {g.items.map(e => {
+                    // 렌즈 세트(XEEN CF 등) — 수량 없이 1세트 토글
+                    if (e.isSet) {
+                      const on = !!selSets[e.modelName];
+                      const setList = (e.setItems || "").split("\n").filter(Boolean);
+                      return (
+                        <div key={e.modelName} style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${on ? C.teal : C.border}`, borderRadius:10, padding:"10px 12px", marginBottom:6 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:C.text }}>
+                              {e.modelName} <span style={{ fontSize:10, color:C.purple, fontWeight:800 }}>SET</span>
+                            </div>
+                            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>
+                              {e.available}세트 가능{setList.length > 0 ? ` · 구성 ${setList.length}개` : ""}
+                            </div>
+                          </div>
+                          {e.available === 0 ? (
+                            <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>재고 없음</span>
+                          ) : (
+                            <button onClick={() => setSelSets(p => ({ ...p, [e.modelName]: !p[e.modelName] }))}
+                              style={{ background:on ? C.teal : "transparent", color:on ? "#fff" : C.teal,
+                                border:`1px solid ${C.teal}`, borderRadius:8, padding:"5px 12px",
+                                fontSize:11, fontWeight:800, cursor:"pointer", flexShrink:0, fontFamily:"inherit" }}>
+                              {on ? "담김" : "담기"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    }
+                    const need = needsAdapter(e, cam);
+                    const ad = need ? findAdapter(e, cam, acc.adapters) : null;
+                    if (need && !ad) return (
+                      <div key={e.modelName} style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", marginBottom:6, opacity:0.5 }}>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{e.modelName}</div>
+                          <div style={{ fontSize:11, color:C.red, marginTop:2 }}>마운트 불일치 ({e.mount} → {cam.mount}) · 어댑터 없음</div>
+                        </div>
+                      </div>
+                    );
+                    return <Row key={e.modelName} e={e} group="lens" note={ad ? `${ad.modelName} 어댑터 자동 포함` : undefined} />;
+                  })}
                 </div>
-              );
-              return <Row key={e.modelName} e={e} group="lens" note={ad ? `${ad.modelName} 어댑터 자동 포함` : undefined} />;
-            })}
+              )}
+            </div>
+          );
+        })}
       </Section>
 
       <Section id="batteries" title="🔋 배터리" desc={`${cam.modelName}에 맞는 배터리만 보여요`}>

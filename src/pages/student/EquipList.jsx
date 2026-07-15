@@ -87,17 +87,8 @@ const licenseToNum = (lic) => {
 
 export default function EquipList({ setTab }) {
   const { profile } = useAuth();
-  const { cart, setCart, setQty, cartSets, setCartSets, cartCount } = useCart();
+  const { cart, setQty, cartSets, setCartSets, cartCount } = useCart();
   const [detailCam, setDetailCam] = useState(null); // 카메라 상세(액세서리 선택) 페이지
-
-  // 상세에서 고른 본품+액세서리를 장바구니에 합침
-  const mergeToCart = (add) => {
-    setCart(prev => {
-      const next = { ...prev };
-      Object.entries(add).forEach(([m, q]) => { next[m] = (next[m] || 0) + q; });
-      return next;
-    });
-  };
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: notices }    = useCollection("notices", "createdAt");
@@ -161,7 +152,6 @@ export default function EquipList({ setTab }) {
       cam={detailCam}
       equipments={equipments}
       onBack={() => setDetailCam(null)}
-      onAdd={mergeToCart}
     />
   );
 
