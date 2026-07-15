@@ -4,6 +4,8 @@ import { Card, Badge, Btn, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
+import { isCameraLike } from "../../utils/equipCompat";
+import EquipDetail from "./EquipDetail";
 import RentalTimeline from "../../components/RentalTimeline";
 import ExternalRentalView from "./ExternalRentalView";
 import PdfViewer from "../../components/PdfViewer";
@@ -85,7 +87,17 @@ const licenseToNum = (lic) => {
 
 export default function EquipList({ setTab }) {
   const { profile } = useAuth();
-  const { cart, setQty, cartSets, setCartSets, cartCount } = useCart();
+  const { cart, setCart, setQty, cartSets, setCartSets, cartCount } = useCart();
+  const [detailCam, setDetailCam] = useState(null); // 카메라 상세(액세서리 선택) 페이지
+
+  // 상세에서 고른 본품+액세서리를 장바구니에 합침
+  const mergeToCart = (add) => {
+    setCart(prev => {
+      const next = { ...prev };
+      Object.entries(add).forEach(([m, q]) => { next[m] = (next[m] || 0) + q; });
+      return next;
+    });
+  };
   const { data: equipments } = useCollection("equipments", "createdAt");
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: notices }    = useCollection("notices", "createdAt");
@@ -142,6 +154,16 @@ export default function EquipList({ setTab }) {
 
   const getIdx = (key) => photoIdx[key] || 0;
   const setIdx = (key, val, max) => setPhotoIdx(p => ({ ...p, [key]: Math.max(0, Math.min(val, max - 1)) }));
+
+  // 카메라/캠코더는 목록에서 바로 담지 않고 상세에서 액세서리까지 고른다
+  if (detailCam) return (
+    <EquipDetail
+      cam={detailCam}
+      equipments={equipments}
+      onBack={() => setDetailCam(null)}
+      onAdd={mergeToCart}
+    />
+  );
 
   return (
     <div>
@@ -290,6 +312,12 @@ export default function EquipList({ setTab }) {
                     </div>
                   ) : !avail ? (
                     <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>재고 없음</div>
+                  ) : isCameraLike(e) ? (
+                    <div style={{ marginTop:8 }}>
+                      <Btn onClick={() => setDetailCam(e)} color={C.teal} small>
+                        {qty > 0 ? `담김 ${qty}대 · 다시 고르기 →` : "골라서 담기 →"}
+                      </Btn>
+                    </div>
                   ) : qty > 0 ? (
                     <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
                       <button onClick={() => setQty(e.modelName, qty-1, e.available)}

@@ -21,6 +21,10 @@ export function groupEquipments(equipments) {
         photoUrls:       [],
         displayPhotoUrl: e.displayPhotoUrl || "",
         licenseLevel:    e.licenseLevel    || 0,
+        // 호환성 판정용 (EquipDetail) — 빠지면 마운트/배터리 매칭이 오작동한다
+        equipType:       e.equipType       || "",
+        mount:           e.mount           || "",
+        batteryModel:    e.batteryModel    || "",
         units:           [],
         total:           0,
         available:       0,
