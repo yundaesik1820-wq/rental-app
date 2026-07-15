@@ -181,14 +181,9 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
               )}
             </button>
             {profile && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div style={{ width: 32, height: 32, borderRadius: "50%", background: C.blueLight, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, fontWeight: 800, color: C.blue }}>
-                  {profile.name?.[0] || "U"}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{profile.name}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? roleLabel : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
-                </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{profile.name}</div>
+                <div style={{ fontSize: 10, color: C.muted }}>{profile.role === "admin" ? roleLabel : `${profile.dept} · ${profile.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}</div>
               </div>
             )}
           </div>
