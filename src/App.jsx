@@ -326,6 +326,8 @@ function AppContent() {
     return () => window.removeEventListener("kbas-theme-change", handler);
   }, []);
   const [showNotif, setShowNotif] = useState(false);
+  // 학생 더보기 재탭 시 리마운트용 — StudentMyPage의 view가 내부 state라 밖에서 못 되돌림
+  const [mypageKey, setMypageKey] = useState(0);
 
   const { data: rentalRequests }   = useCollection("rentalRequests",   "createdAt");
   const { data: allUsers }         = useCollection("users",            "createdAt");
@@ -466,7 +468,7 @@ function AppContent() {
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
-        case "mypage":   return <StudentMyPage />;
+        case "mypage":   return <StudentMyPage key={mypageKey} />;
         default:         return <StudentHome onOpenRoom={openCommunityRoom} />;
       }
     }
@@ -474,7 +476,8 @@ function AppContent() {
 
   return (
     <>
-      <Layout tab={tab} setTab={setTab} notifCount={notifCount} onNotif={() => setShowNotif(true)}>
+      <Layout tab={tab} setTab={setTab} notifCount={notifCount} onNotif={() => setShowNotif(true)}
+        onSameTab={(id) => { if (id === "mypage") setMypageKey(k => k + 1); }}>
         {renderPage()}
       </Layout>
       {showNotif && (

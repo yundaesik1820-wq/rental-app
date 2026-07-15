@@ -35,7 +35,7 @@ const STU_NAV = [
   { id: "mypage",    icon: UserCircle,    label: "내정보/문의" },
 ];
 
-export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
+export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab }) {
   const { profile, logout } = useAuth();
 
 
@@ -321,10 +321,12 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif }) {
                 <button
                   key={n.id}
                   onClick={() => {
-                    // 같은 탭을 다시 누르면 맨 위로. (그룹탭은 하위 화면 → 허브 복귀가
-                    // 먼저라 active가 아닌 tab === n.id 로 판정)
-                    if (tab === n.id) mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                    else setTab(n.id);
+                    // 같은 탭을 다시 누르면 맨 위로 + 내부 state를 쓰는 화면은 첫 화면으로.
+                    // (그룹탭은 하위 화면 → 허브 복귀가 먼저라 active가 아닌 tab === n.id 로 판정)
+                    if (tab === n.id) {
+                      onSameTab?.(n.id);
+                      mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                    } else setTab(n.id);
                   }}
                   style={{
                     background: "transparent",
