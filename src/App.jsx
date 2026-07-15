@@ -9,6 +9,7 @@ import UpdateGate from "./components/UpdateGate";
 import { Spinner } from "./components/UI";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { Capacitor } from "@capacitor/core";
 
 // Admin pages
 import Dashboard  from "./pages/admin/Dashboard";
@@ -95,6 +96,30 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
 
+  // 🔧 상태바 안전영역을 JS로 측정해서 px로 적용.
+  //    이 WebView는 calc() 안의 env()를 무시해서 padding이 안 먹음 → probe로 재서 픽셀로 박음.
+  //    최소 48px 바닥값은 네이티브에서만 (env가 0으로 나오는 기기 대비) — 웹/PWA는 상태바가 없으니 0.
+  const SAFE_FLOOR = Capacitor.isNativePlatform() ? 48 : 0;
+  const [safeTop, setSafeTop] = React.useState(SAFE_FLOOR);
+  React.useEffect(() => {
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText =
+        "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
+      document.documentElement.appendChild(probe);
+      const measured = probe.getBoundingClientRect().height || 0;
+      probe.remove();
+      setSafeTop(Math.max(measured, SAFE_FLOOR));
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
   // 읽은 알림 관리 (localStorage)
   const SEEN_KEY = `seen_notifs_${profile?.uid || "guest"}`;
   const [seenIds, setSeenIds] = React.useState(() => {
@@ -150,7 +175,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
     <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }}>
       <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column" }}>
         {/* 헤더 */}
-        <div style={{ padding:"calc(20px + env(safe-area-inset-top, 0px)) 20px 12px", borderBottom:`1px solid ${CC.border}` }}>
+        <div style={{ padding:`${safeTop + 20}px 20px 12px`, borderBottom:`1px solid ${CC.border}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ fontSize:18, fontWeight:800, color:CC.navy }}>🔔 알림 {unreadIn("전체") > 0 && <span style={{ background:CC.red, color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:12, marginLeft:6 }}>{unreadIn("전체")}</span>}</div>
             <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:CC.muted }}>✕</button>
