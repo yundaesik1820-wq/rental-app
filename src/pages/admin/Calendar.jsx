@@ -80,22 +80,24 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
 
   return (
     <div>
-      {/* 뷰 전환 탭 */}
-      <div style={{ display:"flex", gap:4, marginBottom:12 }}>
-        {(isAdmin ? [["calendar","📅 캘린더"],["stats","📊 통계"]] : [["calendar","📅 캘린더"]]).map(([v,l]) => (
-          <button key={v} onClick={() => setCalView(v)}
-            style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?C.bg:C.muted }}>
-            {l}
-          </button>
-        ))}
-      </div>
+      {/* 뷰 전환 탭 (관리자만 — 캘린더/통계 전환. 학생은 캘린더 단일이라 숨김) */}
+      {isAdmin && (
+        <div style={{ display:"flex", gap:4, marginBottom:12 }}>
+          {[["calendar","📅 캘린더"],["stats","📊 통계"]].map(([v,l]) => (
+            <button key={v} onClick={() => setCalView(v)}
+              style={{ padding:"5px 14px", borderRadius:10, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:calView===v?C.navy:C.surface, color:calView===v?C.bg:C.muted }}>
+              {l}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* 통계 뷰 - 관리자만 */}
       {isAdmin && calView === "stats" && <Stats />}
 
       {/* 캘린더 뷰 */}
       {calView === "calendar" && <div>
-      <PageTitle>📅 예약 캘린더</PageTitle>
+      {isAdmin && <PageTitle>📅 예약 캘린더</PageTitle>}
 
       {/* 관리자 월간 통계 */}
       {isAdmin && (
@@ -145,9 +147,9 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         {/* 캘린더 */}
         <Card style={{ padding: "20px 16px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-            <button onClick={prevMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
+            <button onClick={prevMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, color:C.text, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
             <div style={{ fontSize:20, fontWeight:800, color:C.navy }}>{year}년 {MONTH_NAMES[month]}</div>
-            <button onClick={nextMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+            <button onClick={nextMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, color:C.text, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
           </div>
 
           {/* 요일 헤더 */}
