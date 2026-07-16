@@ -52,7 +52,7 @@ function notifLabel(r) {
 
 // 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
 function buildAlerts(isAdmin, profile, data) {
-  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[] } = data || {};
+  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[], friendRequests=[] } = data || {};
   const CC = NOTIF_CC, L = notifLabel;
   const today    = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
@@ -75,6 +75,7 @@ function buildAlerts(isAdmin, profile, data) {
       ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
       ...upcoming.map(s=>({ id:`라이선스_${s.id}`, cat:"라이선스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이선스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
+      ...friendRequests.filter(r=>r.toId===uid && r.status==="pending").map(r=>({ id:`친구_${r.id}`, cat:"친구", color:CC.teal, bg:CC.tealLight, icon:"🤝", title:`${r.fromName}님이 친구 요청을 보냈어요!`, time:r.createdAt, tab:"mypage" })),
     ];
   }
   // 공지 알림 (공통) — 관리자·학생 모두 표시, 30일 윈도우 예외(아래 필터에서 제외)
@@ -93,7 +94,7 @@ function buildAlerts(isAdmin, profile, data) {
   return alerts.filter(a => { if (a.cat === "공지") return true; const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
-function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
+function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
   // 등장/퇴장 애니메이션 — 다음 프레임에 enter=true로 슬라이드 인, 닫을 땐 먼저 슬라이드 아웃 후 언마운트
@@ -163,6 +164,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 
   // 클릭 시 이동할 페이지 + 실제 글까지 여는 딥링크 타깃
   const navTarget = (a) => {
+    if (a.cat === "친구")     return { tab: "mypage" };
     if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
     if (a.cat === "SNS" && a.articleId) return { tab: "community", room: "scenepatch", articleId: a.articleId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
@@ -173,7 +175,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   };
   const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
 
-  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments });
+  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests });
   const unreadIn = (g) => allAlerts.filter(a => !seenIds.has(a.id) && (g === "전체" || groupOf(a) === g)).length;
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
@@ -350,6 +352,7 @@ function AppContent() {
   const _uid = profile?.uid || "";
   const { data: communityPosts }    = useCollection("communityPosts",    null, _uid ? { where: [["authorId", "==", _uid]] }     : { enabled: false });
   const { data: communityComments } = useCollection("communityComments", null, _uid ? { where: [["postAuthorId", "==", _uid]] } : { enabled: false });
+  const { data: friendRequests }    = useCollection("friendRequests",    null, _uid ? { where: [["toId", "==", _uid]] }         : { enabled: false });
 
   if (loading) return <Spinner />;
   if (!user || !profile) return <Login />;
@@ -371,7 +374,7 @@ function AppContent() {
   const notSeen = (id) => !seenNotifIds.has(id);
 
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
-  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }).filter(a => notSeen(a.id)).length;
+  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests }).filter(a => notSeen(a.id)).length;
 
   const renderPage = () => {
     if (isAdmin) {
@@ -438,6 +441,7 @@ function AppContent() {
           articles={articles}
           communityPosts={communityPosts}
           communityComments={communityComments}
+          friendRequests={friendRequests}
         />
       )}
     </>
