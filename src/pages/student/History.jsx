@@ -4,6 +4,9 @@ import { Card, Badge, Empty, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { FileText } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { db, storage } from "../../firebase";
 
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 보류: "⏸", 거절됨: "❌", 반납완료: "📦", 대여중: "🚀" };
 
@@ -161,6 +164,40 @@ ${r.attachments?.length > 0 ? `
   const [expandedId, setExpandedId]     = useState(null);
   const [photoLightbox, setPhotoLightbox] = useState(null);
   const [showPrint, setShowPrint]   = useState(null);
+  const [returnPhotoUploading, setReturnPhotoUploading] = useState(false);
+  const [returnPhotoProgress,  setReturnPhotoProgress]  = useState(0);
+
+  // 반납 사진 업로드 — 학생은 Firestore 규칙상 returnPhotos 키만 수정 가능. 최대 3장.
+  const uploadReturnPhoto = (requestId) => async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const input = e.target;
+    setReturnPhotoUploading(true);
+    setReturnPhotoProgress(0);
+    try {
+      const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
+      const task = uploadBytesResumable(storageRef, file);
+      await new Promise((resolve, reject) => {
+        task.on("state_changed",
+          snap => setReturnPhotoProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
+          reject, resolve);
+      });
+      const url = await getDownloadURL(task.snapshot.ref);
+      const docSnap = await getDoc(doc(db, "rentalRequests", requestId));
+      const current = docSnap.exists() ? (docSnap.data().returnPhotos || []) : [];
+      if (current.length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
+      await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: [...current, url] });
+      input.value = "";
+    } catch (err) {
+      alert("업로드 실패: " + err.message);
+    } finally {
+      setReturnPhotoUploading(false);
+      setReturnPhotoProgress(0);
+    }
+  };
+  const deleteReturnPhoto = async (requestId, photos, idx) => {
+    await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: photos.filter((_, i) => i !== idx) });
+  };
 
   // 🔔 알림 딥링크 — 해당 대여 건으로 필터 전환 + 스크롤 + 하이라이트
   const [flashId, setFlashId] = useState(null);
@@ -343,15 +380,31 @@ ${r.attachments?.length > 0 ? `
                   </div>
                 )}
 
-                {/* 반납 사진 */}
-                {r.returnPhotos?.length > 0 && (
+                {/* 반납 사진 — 대여중이면 업로드/삭제 가능, 그 외엔 보기 전용 */}
+                {(r.returnPhotos?.length > 0 || r.status === "대여중") && (
                   <div style={{ marginBottom:8 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>📸 장비 사용 사진</div>
-                    <div style={{ display:"flex", gap:6 }}>
-                      {r.returnPhotos.map((url, idx) => (
-                        <img key={idx} src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
-                          style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                    <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>
+                      {r.status === "대여중" ? "📸 반납 사진 — 반납 전 장비 상태를 찍어 올려주세요 (최대 3장)" : "📸 장비 사용 사진"}
+                    </div>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                      {(r.returnPhotos || []).map((url, idx) => (
+                        <div key={idx} style={{ position:"relative" }}>
+                          <img src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
+                            style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                          {r.status === "대여중" && (
+                            <button onClick={() => deleteReturnPhoto(r.id, r.returnPhotos, idx)}
+                              style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%", background:C.red, color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1, padding:0 }}>×</button>
+                          )}
+                        </div>
                       ))}
+                      {r.status === "대여중" && (r.returnPhotos?.length || 0) < 3 && (
+                        <label style={{ width:64, height:64, borderRadius:8, border:`1.5px dashed ${C.border}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: returnPhotoUploading ? "wait" : "pointer", color:C.muted, gap:2, background:C.bg }}>
+                          {returnPhotoUploading
+                            ? <span style={{ fontSize:12, fontWeight:700, color:C.teal }}>{returnPhotoProgress}%</span>
+                            : <><span style={{ fontSize:20, lineHeight:1 }}>+</span><span style={{ fontSize:9 }}>사진</span></>}
+                          <input type="file" accept="image/*" onChange={uploadReturnPhoto(r.id)} disabled={returnPhotoUploading} style={{ display:"none" }} />
+                        </label>
+                      )}
                     </div>
                   </div>
                 )}
