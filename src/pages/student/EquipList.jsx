@@ -29,18 +29,18 @@ const HERO_SLIDES = [
 //       예: { name: "카메라", icon: "📷", img: "/cat-icons/camera.png" }
 //       img가 있으면 이미지를, 없으면 icon(이모지)을 표시합니다.
 const RENTAL_CATEGORIES = [
-  { name: "외부 렌탈샵", icon: "🏬", img: "/cat-icons/external.png" },
-  { name: "액션캠/드론",    icon: "🚁", img: "/cat-icons/actioncam-drone.png" },
-  { name: "캠코더",        icon: "📹", img: "/cat-icons/camcorder.png" },
   { name: "카메라",        icon: "📷", img: "/cat-icons/camera.png" },
+  { name: "캠코더",        icon: "📹", img: "/cat-icons/camcorder.png" },
+  { name: "액션캠/드론",    icon: "🚁", img: "/cat-icons/actioncam-drone.png" },
   { name: "렌즈",          icon: "🔭", img: "/cat-icons/lens.png" },
   { name: "ACC",          icon: "🔌", img: "/cat-icons/acc.png" },
   { name: "삼각대/그립",    icon: "📐", img: "/cat-icons/tripod.png" },
   { name: "모니터",        icon: "🖥️", img: "/cat-icons/monitor.png" },
   { name: "조명",          icon: "💡", img: "/cat-icons/light.png" },
   { name: "음향",          icon: "🎤", img: "/cat-icons/audio.png" },
-  { name: "편집",          icon: "✂️", img: "/cat-icons/edit.png" },
   { name: "기타",          icon: "📦", img: "/cat-icons/etc.png" },
+  { name: "편집",          icon: "✂️", img: "/cat-icons/edit.png" },
+  { name: "외부 렌탈샵", icon: "🏬", img: "/cat-icons/external.png" },
 ];
 
 // 카테고리 아이콘 — img가 있으면 이미지, 없거나 로드 실패하면 이모지로 폴백.
