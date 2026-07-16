@@ -107,6 +107,9 @@ export default function EquipList({ setTab }) {
   const [filter, setFilter]   = useState("카메라");
   const [minorFilter, setMinorFilter] = useState("전체");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
+  // 카메라/캠코더/액션캠·드론은 카드 클릭 → 상세로 담는 흐름이라
+  // 중분류 칩·검색창·단품/세트 탭을 숨기고 단품 목록만 바로 보여준다.
+  const catIsCameraLike = ["카메라", "캠코더", "액션캠/드론"].includes(filter);
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
   const [photoIdx, setPhotoIdx] = useState({});
@@ -229,7 +232,7 @@ export default function EquipList({ setTab }) {
       {filter !== "외부 렌탈샵" && (<>
 
       {/* 1.5행: 중분류 */}
-      {minorList.length > 1 && (
+      {!catIsCameraLike && minorList.length > 1 && (
         <div style={{ display:"flex", gap:5, marginBottom:12, flexWrap:"nowrap", overflowX:"auto", paddingBottom:2, WebkitOverflowScrolling:"touch" }}>
           {minorList.map(m => (
             <button key={m} onClick={() => setMinorFilter(m)}
@@ -240,11 +243,14 @@ export default function EquipList({ setTab }) {
         </div>
       )}
 
-      {/* 2행: 검색 */}
+      {/* 2행: 검색 (카메라류는 숨김) */}
+      {!catIsCameraLike && (
       <input placeholder="🔍 장비명, 제조사 검색" value={search} onChange={e => setSearch(e.target.value)}
         style={{ display: "block", width: "100%", background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 16px", fontSize: 14, fontFamily: "inherit", outline: "none", marginBottom: 12, boxSizing: "border-box" }} />
+      )}
 
-      {/* 3행: 단품 / 세트 탭 */}
+      {/* 3행: 단품 / 세트 탭 (카메라류는 숨김) */}
+      {!catIsCameraLike && (
       <div style={{ display: "flex", background: C.surface, borderRadius: 12, padding: 4, marginBottom: 16, border: `1px solid ${C.border}`, width: "fit-content" }}>
         {[["단품", "🔧"], ["세트", "📦"]].map(([v, icon]) => (
           <button key={v} onClick={() => setTabView(v)}
@@ -256,9 +262,10 @@ export default function EquipList({ setTab }) {
           </button>
         ))}
       </div>
+      )}
 
-      {/* ── 단품 목록 ── */}
-      {tabView === "단품" && (
+      {/* ── 단품 목록 (카메라류는 탭 없이 항상 표시) ── */}
+      {(catIsCameraLike || tabView === "단품") && (
         <>
           {filteredUnits.length === 0 && <Empty icon="🔍" text="해당하는 장비가 없습니다" />}
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -342,7 +349,7 @@ export default function EquipList({ setTab }) {
       )}
 
       {/* ── 세트 목록 ── */}
-      {tabView === "세트" && (
+      {!catIsCameraLike && tabView === "세트" && (
         <>
           {filteredSets.length === 0 && <Empty icon="📦" text="등록된 세트 장비가 없습니다" />}
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
