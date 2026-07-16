@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { C } from "../../theme";
-import { Card, Btn, Empty } from "../../components/UI";
+import { Card, Btn, Empty, Modal } from "../../components/UI";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
 import {
-  classifyAccessories, matchBatteries, matchChargers, needsAdapter, findAdapter,
+  classifyAccessories, matchBatteries, matchChargers, needsAdapter, findAdapter, decideAdapter,
   groupByModel, licenseToNum, isVMount, groupLensesByBrand,
 } from "../../utils/equipCompat";
 
@@ -15,19 +15,19 @@ import {
    ============================================================ */
 export default function EquipDetail({ cam, equipments, onBack }) {
   const { profile } = useAuth();
-  const { setCart, setCartSets } = useCart();
+  const { cart, setCart, setCartSets } = useCart();
   const myLic = licenseToNum(profile?.license);
   const isProf = profile?.role === "professor" || profile?.role === "admin";
 
   const [qty, setQty] = useState(1);
   // 갈래별 { modelName: qty } — 삼각대/그립은 장비 목록에서 따로 담는다
   const [sel, setSel] = useState({ lens:{}, batteries:{}, chargers:{}, storages:{}, readers:{} });
-  const [adapters, setAdapters] = useState({}); // 렌즈 때문에 자동으로 붙는 어댑터
   const [open, setOpen] = useState({});          // 펼친 섹션 { lens: true }
   const toggle = (id) => setOpen(p => ({ ...p, [id]: !p[id] }));
   const [vbpOpen, setVbpOpen] = useState(false); // V마운트 배터리 펼침
   const [selSets, setSelSets] = useState({});    // 고른 렌즈 세트 { modelName: true }
   const [openBrand, setOpenBrand] = useState({});// 펼친 렌즈 제조사
+  const [askAdapter, setAskAdapter] = useState(false); // "어댑터 하나 더?" 모달
   const toggleBrand = (b) => setOpenBrand(p => ({ ...p, [b]: !p[b] }));
 
   const acc = classifyAccessories(equipments);
@@ -54,28 +54,35 @@ export default function EquipDetail({ cam, equipments, onBack }) {
     const max = lens.available || 0;
     const v = Math.max(0, Math.min(q, max));
     setSel(p => ({ ...p, lens: { ...p.lens, [lens.modelName]: v } }));
-    if (needsAdapter(lens, cam)) {
-      const ad = findAdapter(lens, cam, acc.adapters);
-      if (ad) {
-        setAdapters(p => {
-          const next = { ...p };
-          if (v > 0) next[ad.modelName] = 1; else delete next[ad.modelName];
-          return next;
-        });
-      }
-    }
+  };
+
+  // 어댑터는 고른 렌즈 전체에서 파생시킨다 — 렌즈마다 붙였다 떼면, 같은 어댑터를 쓰는
+  // 다른 렌즈가 남아 있는데도 지워진다. 판정 규칙은 equipCompat.decideAdapter에.
+  const pickedLenses = Object.entries(sel.lens)
+    .filter(([, q]) => q > 0)
+    .map(([m]) => acc.lenses.find(l => l.modelName === m))
+    .filter(Boolean);
+  const plan = decideAdapter(pickedLenses, cam, acc.adapters, cart);
+
+  // 담기 — 어댑터를 하나 더 담을지 물어봐야 하는 상황이면 모달을 먼저 띄운다
+  const handleAdd = () => {
+    if (plan.askExtra) { setAskAdapter(true); return; }
+    commitAdd(false);
   };
 
   // 최종 담기 — 단품(본품·액세서리·자동 어댑터)은 cart로, 렌즈 세트는 cartSets로
-  const handleAdd = () => {
+  const commitAdd = (extraAdapter) => {
     const out = { [cam.modelName]: qty };
     Object.values(sel).forEach(group => {
       Object.entries(group).forEach(([m, q]) => { if (q > 0) out[m] = (out[m] || 0) + q; });
     });
-    Object.entries(adapters).forEach(([m, q]) => { out[m] = (out[m] || 0) + q; });
     setCart(prev => {
       const next = { ...prev };
       Object.entries(out).forEach(([m, q]) => { next[m] = (next[m] || 0) + q; });
+      // 어댑터만은 누적(+)이 아니라 목표 수량으로 못박는다 — 같은 상세에 두 번 들어와도 안 쌓인다.
+      // 추가분은 askExtra(inCart < stock)를 통과해야만 오므로 재고를 넘지 않는다.
+      if (plan.auto) next[plan.auto.modelName] = 1;
+      else if (extraAdapter && plan.adapter) next[plan.adapter.modelName] = plan.inCart + 1;
       return next;
     });
     const sets = Object.entries(selSets).filter(([, on]) => on);
@@ -91,7 +98,7 @@ export default function EquipDetail({ cam, equipments, onBack }) {
 
   const pickedCount = Object.values(sel).reduce(
     (n, g) => n + Object.values(g).filter(q => q > 0).length, 0
-  ) + Object.keys(adapters).length + Object.values(selSets).filter(Boolean).length;
+  ) + (plan.auto ? 1 : 0) + Object.values(selSets).filter(Boolean).length;
 
   // 액세서리 한 줄 (수량 조절)
   const Row = ({ e, group, note }) => {
@@ -245,15 +252,23 @@ export default function EquipDetail({ cam, equipments, onBack }) {
                     }
                     const need = needsAdapter(e, cam);
                     const ad = need ? findAdapter(e, cam, acc.adapters) : null;
-                    if (need && !ad) return (
+                    const adInCart = ad ? (cart[ad.modelName] || 0) : 0;
+                    // 어댑터가 등록돼 있지 않거나, 있어도 재고가 0이면 이 렌즈는 못 쓴다.
+                    // 이미 장바구니에 담아둔 어댑터가 있으면 남은 재고가 0이어도 쓸 수 있다.
+                    const block =
+                      need && !ad ? `마운트 불일치 (${e.mount} → ${cam.mount}) · 어댑터 없음`
+                      : ad && adInCart === 0 && (ad.available || 0) === 0 ? `${ad.modelName} 어댑터가 전부 대여중이에요`
+                      : null;
+                    if (block) return (
                       <div key={e.modelName} style={{ display:"flex", alignItems:"center", gap:10, background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px", marginBottom:6, opacity:0.5 }}>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:13, fontWeight:700, color:C.text }}>{e.modelName}</div>
-                          <div style={{ fontSize:11, color:C.red, marginTop:2 }}>마운트 불일치 ({e.mount} → {cam.mount}) · 어댑터 없음</div>
+                          <div style={{ fontSize:11, color:C.red, marginTop:2 }}>{block}</div>
                         </div>
                       </div>
                     );
-                    return <Row key={e.modelName} e={e} group="lens" note={ad ? `${ad.modelName} 어댑터 자동 포함` : undefined} />;
+                    return <Row key={e.modelName} e={e} group="lens"
+                      note={ad ? (adInCart > 0 ? "이미 담은 어댑터로 사용해요" : `${ad.modelName} 어댑터 자동 포함`) : undefined} />;
                   })}
                 </div>
               )}
@@ -325,6 +340,24 @@ export default function EquipDetail({ cam, equipments, onBack }) {
           <span>장바구니에 담기 ›</span>
         </button>
       </div>
+
+      {/* 어댑터가 이미 장바구니에 있을 때 — 바디를 여러 대 동시에 쓰면 하나 더 필요할 수 있다 */}
+      {askAdapter && plan.adapter && (
+        <Modal onClose={() => setAskAdapter(false)} width={340}>
+          <div style={{ fontSize:17, fontWeight:800, color:C.text, marginBottom:10 }}>어댑터가 추가로 필요하신가요?</div>
+          <div style={{ fontSize:13, color:C.muted, lineHeight:1.65, marginBottom:20 }}>
+            {plan.adapter.modelName} 어댑터는 장바구니에 이미 {plan.inCart}개 있어요.<br />
+            바디 여러 대에 동시에 물리실 거면 추가로 담아주세요.
+            <div style={{ marginTop:8, fontSize:12, color:C.teal, fontWeight:700 }}>
+              남은 수량 {plan.stock - plan.inCart}개
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:8 }}>
+            <Btn full outline color={C.muted} onClick={() => commitAdd(false)}>아니오</Btn>
+            <Btn full color={C.teal} text="#fff" onClick={() => commitAdd(true)}>네, 추가</Btn>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

@@ -83,7 +83,8 @@ export function classifyAccessories(equips) {
     lenses:    groupByModel(live.filter(e => isLens(e) && !e.isSet)),
     // 렌즈 세트(XEEN CF 등) — 수량 없이 1세트 단위라 cartSets로 담는다
     lensSets:  groupByModel(live.filter(e => isLens(e) && e.isSet)),
-    adapters:  live.filter(e => e.equipType === "adapter" || e.minorCategory === "렌즈어댑터"),
+    // 모델 단위로 묶어 재고를 합산 — "어댑터를 하나 더 담을까" 판단에 available이 필요하다
+    adapters:  groupByModel(live.filter(e => e.equipType === "adapter" || e.minorCategory === "렌즈어댑터")),
   };
 }
 
@@ -120,6 +121,29 @@ export function matchChargers(selectedBatteryModels, chargers, cam) {
 export const needsAdapter = (lens, cam) => !!(cam?.mount && lens.mount && lens.mount !== cam.mount);
 export const findAdapter  = (lens, cam, adapters) =>
   adapters.find(a => a.adapterFrom === lens.mount && a.adapterTo === cam?.mount);
+
+/* 고른 렌즈 + 장바구니 상태 → 어댑터를 어떻게 할지 정한다.
+   어댑터는 종류가 다르면 서로 대체가 안 되므로 개수가 아니라 "이 모델이 담겼나"로 본다.
+   바디가 고정이면 adapterTo도 고정이라 필요한 어댑터는 많아야 1종류.
+     adapter  : 필요한 어댑터 (필요 없거나 등록 안 됐으면 null)
+     auto     : 자동으로 담을 어댑터 — 장바구니에 없고 재고가 있을 때만
+     askExtra : "하나 더 필요하냐" 를 물어야 하나 — 이미 담겼고 재고가 남았을 때
+                (바디를 여러 대 담아 어댑터를 동시에 쓰는 경우)
+     inCart / stock : 안내 문구에 쓰는 값 */
+export function decideAdapter(pickedLenses, cam, adapters, cart = {}) {
+  const lens    = pickedLenses.find(l => l && needsAdapter(l, cam));
+  const adapter = (lens ? findAdapter(lens, cam, adapters) : null) || null;
+  if (!adapter) return { adapter: null, auto: null, askExtra: false, inCart: 0, stock: 0 };
+  const inCart = cart[adapter.modelName] || 0;
+  const stock  = adapter.available || 0;
+  return {
+    adapter,
+    auto:     inCart === 0 && stock > 0 ? adapter : null,
+    askExtra: inCart > 0 && inCart < stock,
+    inCart,
+    stock,
+  };
+}
 
 export const licenseToNum = (lic) => {
   if (!lic || lic === "없음") return 0;
