@@ -4,7 +4,7 @@ import { REQUIRE_RETURN_PHOTOS } from "../../config";
 import { Card, Badge, SectionTitle, Modal, Btn, Inp, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem, updateItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { doc, setDoc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, serverTimestamp, onSnapshot, orderBy } from "firebase/firestore";
+import { doc, setDoc, getDoc, query, where, getDocs, updateDoc, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw } from "lucide-react";
@@ -397,10 +397,6 @@ export default function StudentHome({ onOpenRoom }) {
   const [returnPhotoProgress,  setReturnPhotoProgress]  = useState(0);
   const [expandedReturnId,     setExpandedReturnId]     = useState(null); // 펼쳐진 반납준비 항목
   const [showFriendTab,  setShowFriendTab]  = useState(false);
-  const [friendSubTab,   setFriendSubTab]   = useState("list"); // "list" | "add"
-  const [addFriendId,    setAddFriendId]    = useState("");
-  const [addFriendMsg,   setAddFriendMsg]   = useState("");
-  const [addFriendLoading, setAddFriendLoading] = useState(false);
   const [viewFriend,     setViewFriend]     = useState(null); // { id, name, dept, classes }
   const [viewFriendLoading, setViewFriendLoading] = useState(false);
   const [friendSort,     setFriendSort]     = useState("name"); // "name" | "id"
@@ -576,16 +572,6 @@ export default function StudentHome({ onOpenRoom }) {
     f.userId === profile?.uid || f.friendId === profile?.uid
   );
 
-  // 받은 친구 신청
-  const receivedRequests = friendRequests.filter(r =>
-    r.toId === profile?.uid && r.status === "pending"
-  );
-
-  // 보낸 친구 신청
-  const sentRequests = friendRequests.filter(r =>
-    r.fromId === profile?.uid && r.status === "pending"
-  );
-
   // 반납 준비 사진 업로드
   const uploadReturnPhoto = (requestId) => async (e) => {
     const file = e.target.files[0];
@@ -621,70 +607,6 @@ export default function StudentHome({ onOpenRoom }) {
   const deleteReturnPhoto = async (requestId, photos, idx) => {
     const newPhotos = photos.filter((_, i) => i !== idx);
     await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
-  };
-
-  // 친구 신청 보내기
-  const sendFriendRequest = async () => {
-    if (!addFriendId.trim()) return;
-    setAddFriendLoading(true);
-    setAddFriendMsg("");
-    try {
-      const { collection: col, query: q, where: w, getDocs, addDoc, serverTimestamp } = await import("firebase/firestore");
-      // 본인 학번 체크
-      if (addFriendId.trim().length < 8) {
-        setAddFriendMsg("error:학번을 정확히 입력해주세요 (8자리)");
-        setAddFriendLoading(false); return;
-      }
-      if (addFriendId.trim() === profile?.studentId) {
-        setAddFriendMsg("error:본인에게는 신청할 수 없어요");
-        setAddFriendLoading(false); return;
-      }
-      // 상대방 찾기
-      const snap = await getDocs(q(col(db, "users"), w("studentId", "==", addFriendId.trim()), w("role", "==", "student")));
-      if (snap.empty) { setAddFriendMsg("error:해당 학번의 학생을 찾을 수 없어요"); setAddFriendLoading(false); return; }
-      const toUser = snap.docs[0];
-      const toData = toUser.data();
-      // 이미 친구인지 체크
-      const alreadyFriend = myFriends.some(f =>
-        (f.userId===profile?.uid && f.friendId===toUser.id) ||
-        (f.friendId===profile?.uid && f.userId===toUser.id)
-      );
-      if (alreadyFriend) { setAddFriendMsg("error:이미 친구예요!"); setAddFriendLoading(false); return; }
-      // 이미 신청한지 체크
-      const alreadySent = sentRequests.some(r => r.toId === toUser.id);
-      if (alreadySent) { setAddFriendMsg("error:이미 신청을 보냈어요"); setAddFriendLoading(false); return; }
-      // 신청 전송
-      await addDoc(col(db, "friendRequests"), {
-        fromId: profile?.uid, fromName: profile?.name, fromStudentId: profile?.studentId,
-        toId: toUser.id, toName: toData.name, toStudentId: toData.studentId,
-        status: "pending", createdAt: serverTimestamp(),
-      });
-      setAddFriendMsg(`success:${toData.name}님께 친구 신청을 보냈어요!`);
-      setAddFriendId("");
-    } catch(e) {
-      setAddFriendMsg("error:오류가 발생했어요");
-    }
-    setAddFriendLoading(false);
-  };
-
-  // 친구 신청 수락
-  const acceptFriend = async (req) => {
-    await updateDoc(doc(db, "friendRequests", req.id), { status: "accepted" });
-    await addDoc(collection(db, "friends"), {
-      userId: req.fromId, userName: req.fromName, userStudentId: req.fromStudentId,
-      friendId: req.toId, friendName: req.toName, friendStudentId: req.toStudentId,
-      createdAt: serverTimestamp(),
-    });
-  };
-
-  // 친구 신청 거절
-  const rejectFriend = async (req) => {
-    await updateDoc(doc(db, "friendRequests", req.id), { status: "rejected" });
-  };
-
-  // 친구 삭제
-  const deleteFriend = async (friendDoc) => {
-    await deleteItem("friends", friendDoc.id);
   };
 
   // 친구 시간표 보기
@@ -978,9 +900,6 @@ export default function StudentHome({ onOpenRoom }) {
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:14 }}>👥</span>
             <span style={{ fontSize:12, fontWeight:700, color:C.text }}>친구 시간표</span>
-            {receivedRequests.length > 0 && (
-              <span style={{ background:C.red, color:"#fff", borderRadius:10, padding:"1px 7px", fontSize:10, fontWeight:700 }}>{receivedRequests.length}</span>
-            )}
           </div>
           <span style={{ fontSize:12, color:C.muted }}>{showFriendTab?"▲":"▼"}</span>
         </button>
@@ -988,27 +907,17 @@ export default function StudentHome({ onOpenRoom }) {
         {showFriendTab && (
           <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
 
-            {/* 받은 신청 */}
-            {receivedRequests.length > 0 && (
-              <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", marginBottom:12 }}>
-                <div style={{ fontSize:12, fontWeight:700, color:C.yellow, marginBottom:8 }}>📩 친구 신청이 왔어요</div>
-                {receivedRequests.map(r => (
-                  <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <span style={{ flex:1, fontSize:12, color:C.text, fontWeight:600 }}>{r.fromName}</span>
-                    <span style={{ fontSize:11, color:C.muted }}>{r.fromStudentId}</span>
-                    <button onClick={() => acceptFriend(r)} style={{ background:C.teal, color:"#fff", border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>수락</button>
-                    <button onClick={() => rejectFriend(r)} style={{ background:C.redLight, color:C.red, border:"none", borderRadius:7, padding:"4px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>거절</button>
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* 친구 추가 안내 */}
+            <div style={{ fontSize:11, color:C.muted, textAlign:"center", marginBottom:12 }}>
+              친구 추가·요청은 더보기 › 친구관리에서 할 수 있어요
+            </div>
 
             {/* 친구 목록 */}
               <div>
                 {myFriends.length === 0 ? (
                   <div style={{ textAlign:"center", padding:"20px 0", color:C.muted, fontSize:12 }}>
                     아직 친구가 없어요<br/>
-                    <span style={{ fontSize:11 }}>펫 화면의 친구 탭에서 학번으로 신청해보세요</span>
+                    <span style={{ fontSize:11 }}>더보기 › 친구관리에서 학번으로 신청해보세요</span>
                   </div>
                 ) : (() => {
                   const sorted = [...myFriends]
