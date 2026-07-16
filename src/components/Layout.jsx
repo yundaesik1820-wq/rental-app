@@ -26,12 +26,12 @@ const ADMIN_NAV = [
 
 const STU_NAV = [
   { id: "home",      icon: Home,          label: "홈"       },
-  { id: "equip",     icon: ShoppingCart,  label: "장비 예약" },
+  { id: "equip",     icon: Store,         label: "장비 예약" },
   { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
   { id: "license",   icon: GraduationCap, label: "라이선스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
-  { id: "calendar",  icon: Calendar,      label: "대여이력/캘린더" },
+  { id: "calendar",  icon: ShoppingCart,  label: "대여이력/캘린더" },
   { id: "mypage",    icon: UserCircle,    label: "내정보/문의" },
 ];
 
