@@ -6,7 +6,7 @@ import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart
 } from "lucide-react";
 
 const ADMIN_NAV = [
@@ -26,7 +26,7 @@ const ADMIN_NAV = [
 
 const STU_NAV = [
   { id: "home",      icon: Home,          label: "홈"       },
-  { id: "equip",     icon: Search,        label: "장비 목록" },
+  { id: "equip",     icon: ShoppingCart,  label: "장비 예약" },
   { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
   { id: "license",   icon: GraduationCap, label: "라이선스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
@@ -65,10 +65,10 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
   const NAV_ACCENT = C.navy; // 네온 라임 포인트
-  const NAV_SHORT = { home: "홈", equip: "장비", reserve: "예약", calendar: "예약내역", community: "커뮤니티", mypage: "더보기" };
+  const NAV_SHORT = { home: "홈", equip: "장비예약", reserve: "예약", calendar: "예약내역", community: "커뮤니티", mypage: "더보기" };
   // 예약 신청은 하단 탭에서 뺌 — 장비 목록에서 담고 장바구니 바로 진입 (tab "reserve" 자체는 유효)
   // calendar = 대여이력/예약내역 화면
-  const MOBILE_STU_IDS = ["home", "equip", "calendar", "community", "mypage"];
+  const MOBILE_STU_IDS = ["home", "calendar", "equip", "community", "mypage"];
   const isStudentNav = profile?.role !== "admin";
   const stuTabs = MOBILE_STU_IDS
     .map(id => {
