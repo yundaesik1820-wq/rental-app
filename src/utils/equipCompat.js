@@ -27,7 +27,16 @@ const LENS_BRAND_LOGO = {
   "SONY":"sony", "CANON":"canon", "XEEN CF":"xeen", "SAMYANG":"samyang", "TAMRON":"tamron",
   "CARL ZEISS":"zeiss", "TOKINA":"tokina", "SIGMA":"sigma", "FUJINON":"fujinon",
 };
-export const normBrand = (m) => (m || "").trim().toUpperCase();
+// 실제 데이터에 축약형으로 들어간 표기를 정식 명칭으로 맞춘다
+const BRAND_ALIAS = {
+  "CZ": "CARL ZEISS",
+  "ZEISS": "CARL ZEISS",
+  "XEEN": "XEEN CF",
+};
+export const normBrand = (m) => {
+  const s = (m || "").trim().toUpperCase().replace(/\s+/g, " ");
+  return BRAND_ALIAS[s] || s;
+};
 
 // 렌즈를 제조사별로 묶어 지정 순서로 정렬 → [{ brand, logo, items }]
 export function groupLensesByBrand(lenses) {
