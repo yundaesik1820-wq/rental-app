@@ -1485,7 +1485,7 @@ function RankTab({ uid, rankData, rankKind, setRankKind, me, myPet, friendUids, 
         const lvl = stageFromExp(r.pet.exp) === "adult" ? petLevel(r.pet) : null;
         return (
           <div onClick={() => setSelected(null)}
-            style={{ position:"absolute", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:28, padding:18 }}>
+            style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9998, padding:18 }}>
             <div onClick={e => e.stopPropagation()}
               style={{ background:C.surface, border:`1.5px solid ${C.navy}`, borderRadius:16, padding:"20px 18px", maxWidth:320, width:"100%", textAlign:"center" }}>
               <div style={{ width:96, height:96, margin:"0 auto 12px", background:C.bg, border:`2px solid ${rarity.color}`, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden" }}>
