@@ -1,6 +1,6 @@
 {
   "appId": "com.kbas.rental",
-  "appName": "KBAS 장비대여",
+  "appName": "KBAS 프로덕션",
   "webDir": "dist",
   "server": {
     "iosScheme": "https"

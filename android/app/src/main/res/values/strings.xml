@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">KBAS 장비대여</string>
-    <string name="title_activity_main">KBAS 장비대여</string>
+    <string name="app_name">KBAS 프로덕션</string>
+    <string name="title_activity_main">KBAS 프로덕션</string>
     <string name="package_name">com.kbas.rental</string>
     <string name="custom_url_scheme">com.kbas.rental</string>
 </resources>
