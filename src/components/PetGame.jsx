@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, addDoc, serverTimestamp } from "firebase/firestore";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, addDoc, serverTimestamp, increment, arrayUnion, arrayRemove } from "firebase/firestore";
 import { db } from "../firebase";
 import { C } from "../theme";
 
@@ -839,11 +839,15 @@ export function FriendPetCard({ friendUid, myUid, friendName, myPet }) {
     setHearting(true);
     try {
       const ref = doc(db, "users", friendUid);
-      const newHeartedBy = iHearted ? heartedBy.filter(u => u !== myUid) : [...heartedBy, myUid];
-      const newHearts = newHeartedBy.length;
-      await updateDoc(ref, { "pet.hearts": newHearts, "pet.heartedBy": newHeartedBy });
-      setPet(p => ({ ...p, hearts: newHearts, heartedBy: newHeartedBy }));
-      if (!iHearted) grantPetExp(friendUid, "heart");  // 새 하트 → 상대에게 경험치
+      // 배열은 arrayUnion/arrayRemove로 원자적 갱신 — 동시에 여러 명이 눌러도 유실 없음
+      if (iHearted) {
+        await updateDoc(ref, { "pet.heartedBy": arrayRemove(myUid), "pet.hearts": increment(-1) });
+        setPet(p => ({ ...p, hearts: Math.max(0, (p.hearts || 0) - 1), heartedBy: (p.heartedBy || []).filter(u => u !== myUid) }));
+      } else {
+        await updateDoc(ref, { "pet.heartedBy": arrayUnion(myUid), "pet.hearts": increment(1) });
+        setPet(p => ({ ...p, hearts: (p.hearts || 0) + 1, heartedBy: [...(p.heartedBy || []), myUid] }));
+        grantPetExp(friendUid, "heart");  // 새 하트 → 상대에게 경험치
+      }
     } catch (e) {}
     setHearting(false);
   };
@@ -919,7 +923,9 @@ export function BattleScreen({ uid, myPet, oppPet, oppName, onClose }) {
   const [turn, setTurn] = useState(1);
   const [log, setLog] = useState(["배틀 시작! 행동을 선택하세요."]);
   const [special, setSpecial] = useState(SPECIAL_MAX);
-  const [myGuard, setMyGuard] = useState(false);
+  // 방어 상태는 ref로 — setTimeout으로 도는 enemyTurn이 stale state를 캡처하지 않게.
+  const myGuardRef = useRef(false); // 내 방어(다음 상대 공격 감소)
+  const opGuardRef = useRef(false); // 상대 방어(다음 내 공격 감소)
   const [busy, setBusy] = useState(false);
   const [over, setOver] = useState(null);   // null | "win" | "lose" | "flee"
   const [rewardMsg, setRewardMsg] = useState("");
@@ -941,26 +947,25 @@ export function BattleScreen({ uid, myPet, oppPet, oppName, onClose }) {
   // 상대(친구 펫) AI 턴
   const enemyTurn = (curMyHp) => {
     const r = Math.random();
-    let opGuard = false;
     if (r < 0.7) {
-      // 공격
-      const { dmg, crit } = calcDamage(opStat0.atk, myGuard);
+      // 공격 — 내 방어가 걸려 있으면 감소
+      const { dmg, crit } = calcDamage(opStat0.atk, myGuardRef.current);
       const after = Math.max(0, curMyHp - dmg);
       setMyHp(after);
       addLog(`${opName2}의 공격! ${myName} ${dmg} 데미지${crit ? " (크리티컬!)" : ""}`);
-      setMyGuard(false);
+      myGuardRef.current = false;
       if (after <= 0) { finish("lose"); return; }
     } else if (r < 0.9) {
       addLog(`${opName2}이(가) 방어 자세!`);
-      opGuard = true;
+      opGuardRef.current = true; // 다음 내 공격을 감소시킴
     } else {
       // 필살기
       if (Math.random() < SPECIAL_HIT) {
-        const { dmg } = calcDamage(opStat0.atk * 2, myGuard);
+        const { dmg } = calcDamage(opStat0.atk * 2, myGuardRef.current);
         const after = Math.max(0, curMyHp - dmg);
         setMyHp(after);
         addLog(`${opName2}의 필살기! ${myName} ${dmg} 데미지 ✨`);
-        setMyGuard(false);
+        myGuardRef.current = false;
         if (after <= 0) { finish("lose"); return; }
       } else {
         addLog(`${opName2}의 필살기가 빗나갔어요!`);
@@ -968,7 +973,6 @@ export function BattleScreen({ uid, myPet, oppPet, oppName, onClose }) {
     }
     setTurn(t => t + 1);
     setBusy(false);
-    return opGuard;
   };
 
   // 내 행동
@@ -979,21 +983,23 @@ export function BattleScreen({ uid, myPet, oppPet, oppName, onClose }) {
     if (type === "flee") { finish("flee"); return; }
 
     if (type === "attack") {
-      const { dmg, crit } = calcDamage(myStat0.atk, false);
+      const { dmg, crit } = calcDamage(myStat0.atk, opGuardRef.current);
+      opGuardRef.current = false; // 상대 방어 1회 소비
       const after = Math.max(0, opHp - dmg);
       setOpHp(after);
       addLog(`${myName}의 공격! ${opName2} ${dmg} 데미지${crit ? " (크리티컬!)" : ""}`);
       if (after <= 0) { finish("win"); return; }
       setTimeout(() => enemyTurn(myHp), 700);
     } else if (type === "guard") {
-      setMyGuard(true);
+      myGuardRef.current = true;
       addLog(`${myName}이(가) 방어 자세를 취했어요!`);
       setTimeout(() => enemyTurn(myHp), 700);
     } else if (type === "special") {
       if (special <= 0) { addLog("필살기를 다 썼어요!"); setBusy(false); return; }
       setSpecial(s => s - 1);
       if (Math.random() < SPECIAL_HIT) {
-        const { dmg } = calcDamage(myStat0.atk * 2, false);
+        const { dmg } = calcDamage(myStat0.atk * 2, opGuardRef.current);
+        opGuardRef.current = false; // 상대 방어 1회 소비
         const after = Math.max(0, opHp - dmg);
         setOpHp(after);
         addLog(`${myName}의 필살기 적중! ${opName2} ${dmg} 데미지 ✨`);
@@ -1338,10 +1344,14 @@ function FriendPetView({ uid, friend }) {
     setHearting(true);
     try {
       const ref = doc(db, "users", friend.uid);
-      const nb = iHearted ? heartedBy.filter(u => u !== uid) : [...heartedBy, uid];
-      await updateDoc(ref, { "pet.hearts": nb.length, "pet.heartedBy": nb });
-      setPet(p => ({ ...p, hearts: nb.length, heartedBy: nb }));
-      if (!iHearted) grantPetExp(friend.uid, "heart");  // 새 하트 → 상대에게 경험치
+      if (iHearted) {
+        await updateDoc(ref, { "pet.heartedBy": arrayRemove(uid), "pet.hearts": increment(-1) });
+        setPet(p => ({ ...p, hearts: Math.max(0, (p.hearts || 0) - 1), heartedBy: (p.heartedBy || []).filter(u => u !== uid) }));
+      } else {
+        await updateDoc(ref, { "pet.heartedBy": arrayUnion(uid), "pet.hearts": increment(1) });
+        setPet(p => ({ ...p, hearts: (p.hearts || 0) + 1, heartedBy: [...(p.heartedBy || []), uid] }));
+        grantPetExp(friend.uid, "heart");  // 새 하트 → 상대에게 경험치
+      }
     } catch (e) {}
     setHearting(false);
   };
@@ -1393,13 +1403,17 @@ function RankTab({ uid, rankData, rankKind, setRankKind, me, myPet, friendUids, 
     const cur = localHearts[row.uid];
     const heartedBy = row.pet.heartedBy || [];
     const already = cur ? cur.iHearted : heartedBy.includes(uid);
+    const curCount = cur ? cur.hearts : (row.pet.hearts ?? heartedBy.length);
     try {
       const ref = doc(db, "users", row.uid);
-      const base = heartedBy.filter(u => u !== uid);
-      const nb = already ? base : [...base, uid];
-      await updateDoc(ref, { "pet.hearts": nb.length, "pet.heartedBy": nb });
-      setLocalHearts(p => ({ ...p, [row.uid]: { hearts: nb.length, iHearted: !already } }));
-      if (!already) grantPetExp(row.uid, "heart");
+      if (already) {
+        await updateDoc(ref, { "pet.heartedBy": arrayRemove(uid), "pet.hearts": increment(-1) });
+        setLocalHearts(p => ({ ...p, [row.uid]: { hearts: Math.max(0, curCount - 1), iHearted: false } }));
+      } else {
+        await updateDoc(ref, { "pet.heartedBy": arrayUnion(uid), "pet.hearts": increment(1) });
+        setLocalHearts(p => ({ ...p, [row.uid]: { hearts: curCount + 1, iHearted: true } }));
+        grantPetExp(row.uid, "heart");
+      }
     } catch (e) {}
   };
 
