@@ -37,6 +37,7 @@ import History        from "./pages/student/History";
 import Reserve        from "./pages/student/Reserve";
 import Profile         from "./pages/student/Profile";
 import StudentInquiry from "./pages/student/Inquiry";
+import FriendManager  from "./pages/student/FriendManager";
 
 // Shared
 import { useCollection } from "./hooks/useFirestore";
@@ -237,7 +238,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 // 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
 function StudentMyPage() {
   const { profile } = useAuth();
-  const [view, setView] = React.useState("menu"); // menu | profile | inquiry | license | notices
+  const [view, setView] = React.useState("menu"); // menu | profile | friends | inquiry | license | notices
 
   const Back = () => (
     <button onClick={() => setView("menu")}
@@ -247,6 +248,7 @@ function StudentMyPage() {
   );
 
   if (view === "profile") return (<div><Back /><Profile /></div>);
+  if (view === "friends") return (<div><Back /><FriendManager /></div>);
   if (view === "inquiry") return (<div><Back /><StudentInquiry /></div>);
   if (view === "license") return (<div><Back /><License /></div>);
   if (view === "notices") return (<div><Back /><Notices isAdmin={false} /></div>);
@@ -284,6 +286,7 @@ function StudentMyPage() {
 
       {/* 메뉴 리스트 */}
       <MenuRow icon="👤" label="내 정보" sub="프로필·계정 정보 확인" onClick={() => setView("profile")} />
+      <MenuRow icon="🫂" label="친구관리" sub="친구 추가·요청·목록" onClick={() => setView("friends")} />
       <MenuRow icon="💬" label="문의하기" sub="궁금한 점을 물어봐요" onClick={() => setView("inquiry")} />
       <MenuRow icon="🎓" label="라이선스" sub="내 장비 사용 등급" onClick={() => setView("license")} />
       <MenuRow icon="📢" label="공지사항" sub="대여실 소식·안내" onClick={() => setView("notices")} />
