@@ -95,6 +95,9 @@ function buildAlerts(isAdmin, profile, data) {
 function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
+  // 등장 애니메이션 — 다음 프레임에 enter=true로 바꿔 슬라이드/페이드 인
+  const [enter, setEnter] = React.useState(false);
+  React.useEffect(() => { const id = requestAnimationFrame(() => setEnter(true)); return () => cancelAnimationFrame(id); }, []);
 
   // 🔧 상태바 안전영역을 JS로 측정해서 px로 적용.
   //    이 WebView는 calc() 안의 env()를 무시해서 padding이 안 먹음 → probe로 재서 픽셀로 박음.
@@ -172,8 +175,8 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:500 }}>
-      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column" }}>
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background: enter ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)", zIndex:500, transition:"background 0.3s ease" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:"70vw", maxWidth:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column", transform: enter ? "translateX(0)" : "translateX(100%)", transition:"transform 0.3s cubic-bezier(0.32,0.72,0,1)" }}>
         {/* 헤더 */}
         <div style={{ padding:`${safeTop + 20}px 20px 12px`, borderBottom:`1px solid ${CC.border}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
