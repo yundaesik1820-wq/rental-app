@@ -172,8 +172,8 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               return (
                 <div key={d} onClick={() => setSel(isSel ? null : d)} style={{
                   borderRadius:10, padding:"5px 4px", cursor:"pointer",
-                  background: isSel ? C.navy : isToday ? C.blueLight : C.surface,
-                  border:`2px solid ${isSel ? C.navy : isToday ? C.blue : C.border}`,
+                  background: isSel ? C.teal : isToday ? C.blueLight : C.surface,
+                  border:`2px solid ${isSel ? C.teal : isToday ? C.blue : C.border}`,
                   transition:"all 0.15s",
                   minHeight: isAdmin ? 56 : 44,
                 }}>
