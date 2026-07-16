@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { getThemeMode, setTheme } from "./theme";
+import { getThemeMode, setTheme, C } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { CartProvider } from "./hooks/useCart.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
@@ -293,12 +293,14 @@ function StudentCalendarHistory({ profile, focusId, onConsumed }) {
   React.useEffect(() => { if (focusId) setView("history"); }, [focusId]);
   return (
     <div>
-      <div style={{ display:"flex", gap:4, marginBottom:16 }}>
-        {[["history","📋 대여이력"],["calendar","📅 캘린더"]].map(([v,l]) => (
+      {/* 슬라이드 세그먼트 토글 — 인디케이터가 선택 쪽으로 부드럽게 이동 */}
+      <div style={{ position:"relative", display:"flex", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:4, marginBottom:16 }}>
+        <div style={{ position:"absolute", top:4, bottom:4, left: view==="history" ? 4 : "50%", width:"calc(50% - 4px)", background:C.navy, borderRadius:9, transition:"left 0.28s cubic-bezier(0.4,0,0.2,1)" }} />
+        {[["history","예약내역"],["calendar","예약캘린더"]].map(([v,l]) => (
           <button key={v} onClick={() => setView(v)}
-            style={{ padding:"6px 18px", borderRadius:10, border:"none", fontSize:13, fontWeight:700, cursor:"pointer",
-              background: view===v ? "#1B2B6B" : "#1E293B",
-              color: view===v ? "#fff" : "#64748B" }}>
+            style={{ position:"relative", zIndex:1, flex:1, padding:"9px 0", background:"transparent", border:"none", borderRadius:9,
+              fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
+              color: view===v ? C.bg : C.muted, transition:"color 0.2s" }}>
             {l}
           </button>
         ))}

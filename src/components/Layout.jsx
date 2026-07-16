@@ -31,7 +31,7 @@ const STU_NAV = [
   { id: "license",   icon: GraduationCap, label: "라이선스" },
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
-  { id: "calendar",  icon: ShoppingCart,  label: "대여이력/캘린더" },
+  { id: "calendar",  icon: ShoppingCart,  label: "예약내역" },
   { id: "mypage",    icon: UserCircle,    label: "내정보/문의" },
 ];
 

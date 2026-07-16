@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C } from "../../theme";
-import { Card, Badge, Empty, PageTitle, StatBox, Btn } from "../../components/UI";
+import { Card, Badge, Empty, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { FileText } from "lucide-react";
@@ -182,6 +182,8 @@ ${r.attachments?.length > 0 ? `
   const overdue  = mine.filter(r => r.status === "연체").length;
   const renting  = mine.filter(r => r.status === "대여중").length;
 
+  // 활성 배경이 흰색 계열 토큰(navy/blue, 흑백 테마에선 #FFFFFF)일 땐 글자를 어둡게 — 흰배경+흰글자 방지
+  const activeText = (bg) => (bg === C.navy || bg === C.blue) ? C.bg : "#fff";
   const STATUS_TABS = [
     { id:"전체",    label:"전체 신청", count:total,    color:C.navy,   bg:C.blueLight },
     { id:"승인대기", label:"승인대기",  count:pending,  color:C.yellow, bg:C.yellowLight },
@@ -252,26 +254,11 @@ ${r.attachments?.length > 0 ? `
 
   return (
     <div>
-{/* 페이지 안내 배너 */}
-      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#0D9488)`, borderRadius:16, padding:"14px 16px", marginBottom:16 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/history.png" alt="렌토리" style={{ width:90, height:90, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 8px rgba(0,0,0,0.3))" }} />
-          <div style={{ position:"relative", background:C.surface, borderRadius:12, padding:"10px 14px", flex:1 }}>
-            <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"7px solid transparent", borderBottom:"7px solid transparent", borderRight:`9px solid ${C.surface}` }} />
-            <div style={{ fontSize:12, fontWeight:700, color:C.text, marginBottom:3 }}>여기는 대여 이력 페이지예요!</div>
-            <div style={{ fontSize:11, color:C.muted, lineHeight:1.5 }}>내가 신청한 대여 내역을 확인할 수 있어요.
-승인 여부와 반납 현황도 여기서 볼 수 있어요 📋</div>
-          </div>
-        </div>
-      </div>
-
-      <PageTitle>대여 이력</PageTitle>
-
       {/* 1행: 전체 신청 */}
       <div onClick={() => setTabFilter("전체")}
         style={{ background: tabFilter==="전체" ? C.navy : C.surface, borderRadius:12, padding:"12px 16px", marginBottom:8, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", border:`1.5px solid ${tabFilter==="전체" ? C.navy : C.border}` }}>
-        <span style={{ fontSize:14, fontWeight:700, color: tabFilter==="전체" ? "#fff" : C.text }}>전체 신청</span>
-        <span style={{ fontSize:20, fontWeight:900, color: tabFilter==="전체" ? "#fff" : C.navy }}>{total}</span>
+        <span style={{ fontSize:14, fontWeight:700, color: tabFilter==="전체" ? activeText(C.navy) : C.text }}>전체 신청</span>
+        <span style={{ fontSize:20, fontWeight:900, color: tabFilter==="전체" ? activeText(C.navy) : C.navy }}>{total}</span>
       </div>
 
       {/* 2행: 상태별 탭 */}
@@ -279,8 +266,8 @@ ${r.attachments?.length > 0 ? `
         {STATUS_TABS.slice(1).map(t => (
           <button key={t.id} onClick={() => setTabFilter(t.id)}
             style={{ background: tabFilter===t.id ? t.color : C.surface, border:`1.5px solid ${tabFilter===t.id ? t.color : C.border}`, borderRadius:10, padding:"6px 4px", cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
-            <div style={{ fontSize:16, fontWeight:900, color: tabFilter===t.id ? "#fff" : t.color }}>{t.count}</div>
-            <div style={{ fontSize:9, fontWeight:600, color: tabFilter===t.id ? "rgba(255,255,255,0.85)" : C.muted, marginTop:1, whiteSpace:"nowrap" }}>{t.label}</div>
+            <div style={{ fontSize:16, fontWeight:900, color: tabFilter===t.id ? activeText(t.color) : t.color }}>{t.count}</div>
+            <div style={{ fontSize:9, fontWeight:600, color: tabFilter===t.id ? (activeText(t.color)===C.bg ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)") : C.muted, marginTop:1, whiteSpace:"nowrap" }}>{t.label}</div>
           </button>
         ))}
       </div>
