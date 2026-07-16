@@ -25,6 +25,8 @@ export function groupEquipments(equipments) {
         equipType:       e.equipType       || "",
         mount:           e.mount           || "",
         batteryModel:    e.batteryModel    || "",
+        // 관리자가 정한 표시 순서 (카테고리별). 없으면 정렬에서 맨 뒤로 밀린다.
+        sortOrder:       (typeof e.sortOrder === "number" ? e.sortOrder : null),
         units:           [],
         total:           0,
         available:       0,
@@ -39,6 +41,10 @@ export function groupEquipments(equipments) {
     }
     if (!map[key].displayPhotoUrl && e.displayPhotoUrl) {
       map[key].displayPhotoUrl = e.displayPhotoUrl;
+    }
+    // 모델 내 개체 중 하나라도 순서값이 있으면 그걸 대표로 (개체별 불일치 대비)
+    if (map[key].sortOrder == null && typeof e.sortOrder === "number") {
+      map[key].sortOrder = e.sortOrder;
     }
     if (!map[key].description && e.description) {
       map[key].description = e.description;
@@ -55,5 +61,10 @@ export function groupEquipments(equipments) {
       }
     }
   });
-  return Object.values(map).sort((a, b) => a.majorCategory.localeCompare(b.majorCategory) || a.modelName.localeCompare(b.modelName));
+  // 카테고리 먼저, 그 안에서 관리자가 정한 순서(sortOrder), 없으면 맨 뒤로 밀고 모델명순.
+  return Object.values(map).sort((a, b) =>
+    a.majorCategory.localeCompare(b.majorCategory)
+    || ((a.sortOrder ?? Infinity) - (b.sortOrder ?? Infinity))
+    || a.modelName.localeCompare(b.modelName)
+  );
 }

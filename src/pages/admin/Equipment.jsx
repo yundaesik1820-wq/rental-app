@@ -3,6 +3,7 @@ import { C } from "../../theme";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import CategoryMigrator from "../../components/CategoryMigrator";
+import EquipReorderModal from "../../components/EquipReorderModal";
 import { isValidYoutubeUrl } from "../../utils/youtube";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -599,6 +600,7 @@ export default function Equipment({ initialTab = "equip" }) {
   const [editItem, setEditItem]       = useState(null); // 수정 대상
   const [copyItem, setCopyItem]       = useState(null); // 복사 대상
   const [showMigrator, setShowMigrator] = useState(false); // 카테고리 일괄 정리
+  const [showReorder, setShowReorder] = useState(false); // 장비 표시 순서 편집
 
   const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
   const minorList = filter === "전체"
@@ -783,6 +785,7 @@ export default function Equipment({ initialTab = "equip" }) {
             <button onClick={exportExcel}               style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📤 내보내기</button>
             <button onClick={() => setShowMigrator(true)} style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🗂️ 카테고리</button>
             <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 일괄등록</button>
+            <button onClick={() => setShowReorder(true)} style={{ background:C.purpleLight, color:C.purple, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>↕ 순서</button>
             <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
           </>}
         </div>
@@ -1411,6 +1414,7 @@ export default function Equipment({ initialTab = "equip" }) {
 
       {showImport && <ExcelImportModal onClose={() => setShowImport(false)} onImport={async rows => { for (const r of rows) { try { await addItem("equipments", { ...r, name: r.modelName }); } catch {} } }} />}
       {showMigrator && <CategoryMigrator onClose={() => setShowMigrator(false)} />}
+      {showReorder && <EquipReorderModal equipments={equipments} onClose={() => setShowReorder(false)} />}
 
       {/* 장비 탭 */}
       {activeTab === "equip" && (<>
