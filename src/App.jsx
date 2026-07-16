@@ -164,7 +164,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 
   // 클릭 시 이동할 페이지 + 실제 글까지 여는 딥링크 타깃
   const navTarget = (a) => {
-    if (a.cat === "친구")     return { tab: "mypage" };
+    if (a.cat === "친구")     return { tab: "mypage", mypageView: "friends" };
     if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
     if (a.cat === "SNS" && a.articleId) return { tab: "community", room: "scenepatch", articleId: a.articleId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
@@ -238,9 +238,11 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 }
 
 // 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
-function StudentMyPage() {
+function StudentMyPage({ initialView, onConsumed }) {
   const { profile } = useAuth();
   const [view, setView] = React.useState("menu"); // menu | profile | friends | inquiry | license | notices
+  // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
+  React.useEffect(() => { if (initialView) { setView(initialView); onConsumed?.(); } }, [initialView]);
 
   const Back = () => (
     <button onClick={() => setView("menu")}
@@ -410,7 +412,7 @@ function AppContent() {
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
-        case "mypage":   return <StudentMyPage key={mypageKey} />;
+        case "mypage":   return <StudentMyPage key={mypageKey} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
         default:         return <StudentHome onOpenRoom={openCommunityRoom} />;
       }
     }
