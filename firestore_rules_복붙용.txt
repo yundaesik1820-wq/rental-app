@@ -1,0 +1,231 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isLoggedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isLoggedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isOwner(uid) {
+      return isLoggedIn() && request.auth.uid == uid;
+    }
+
+    function me() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    // 본인이 자기 문서를 수정할 때 건드리면 안 되는 '권한 관련' 필드
+    function touchesPrivileged() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['role', 'adminRole', 'status', 'reporterStatus', 'license']);
+    }
+
+    // 앱 버전 게이트 설정 — 누구나 읽기(로그인 전에도 확인), 쓰기는 콘솔에서만
+    match /config/{doc} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if isLoggedIn();
+      // 가입: admin 역할로 만들거나 자동 승인(approved)으로 만드는 것 차단
+      allow create: if isLoggedIn()
+        && request.resource.data.get('role', '') != 'admin'
+        && request.resource.data.get('status', '') != 'approved';
+      // 수정: 관리자는 전체 / 본인은 권한 필드 제외 / 남은 pet의 하트·경험치 필드만
+      // (친구 펫 상호작용). pet 통째 교체·삭제({pet:null})·종/희귀도/이름 조작 차단.
+      allow update: if isAdmin()
+        || (isOwner(userId) && !touchesPrivileged())
+        || (isLoggedIn()
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pet'])
+            && resource.data.keys().hasAll(['pet'])
+            && request.resource.data.pet.diff(resource.data.pet).affectedKeys()
+                 .hasOnly(['hearts', 'heartedBy', 'exp', 'actLog', 'onceLog']));
+      allow delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /equipments/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /rentalRequests/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isAdmin()
+        || (isLoggedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['returnPhotos']));
+      allow delete: if isAdmin();
+    }
+
+    match /facilityRequests/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /notices/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /noticeComments/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn() && resource.data.authorId == request.auth.uid;
+      allow delete: if isLoggedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    match /communityPosts/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn();
+      allow delete: if isLoggedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    match /communityComments/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn();
+      allow delete: if isLoggedIn() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    // 커뮤니티 신고 기록 (신고는 로그인 사용자가 본인 명의로만 / 열람·처리는 관리자만)
+    match /communityReports/{docId} {
+      allow read: if isAdmin();
+      allow create: if isLoggedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    match /licenseSchedules/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /licenseApplications/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /pwResetRequests/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /facilities/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /timetables/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isLoggedIn();
+    }
+
+    match /fcmSent/{docId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
+    }
+
+    match /inquiries/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /inspections/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /friendRequests/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow update: if isLoggedIn() &&
+        (resource.data.toId == request.auth.uid ||
+         resource.data.fromId == request.auth.uid);
+      allow delete: if isLoggedIn() &&
+        resource.data.fromId == request.auth.uid;
+    }
+
+    match /friends/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn();
+      allow delete: if isLoggedIn() &&
+        (resource.data.userId == request.auth.uid ||
+         resource.data.friendId == request.auth.uid);
+      allow update: if false;
+    }
+
+    match /settings/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    match /quizzes/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    // 오늘의 퀴즈 풀 (관리자만 등록·조회 / 자동 출제 함수는 admin SDK라 규칙 무관)
+    match /quizPool/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+    // 씬스패치 기사
+    function canWriteArticle() {
+      return isLoggedIn() && (
+        (me().get('role','') == 'admin' && me().get('adminRole','super') in ['super','assistant'])
+        || me().get('reporterStatus','') == 'approved'
+      );
+    }
+
+    function isArticleAdmin() {
+      return isLoggedIn()
+        && me().get('role','') == 'admin'
+        && me().get('adminRole','super') in ['super','assistant'];
+    }
+
+    match /scenepatchArticles/{id} {
+      allow read: if isLoggedIn();
+      allow create: if canWriteArticle();
+      allow update: if isLoggedIn() && (
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views','updatedAt'])
+        || resource.data.authorUid == request.auth.uid
+        || isArticleAdmin()
+      );
+      allow delete: if isLoggedIn() && (
+        resource.data.authorUid == request.auth.uid
+        || isArticleAdmin()
+      );
+    }
+
+    // 기자단 신청
+    match /reporterApplications/{id} {
+      allow read: if isAdmin();
+      allow create: if isLoggedIn() && request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // 외부 렌탈샵 (학생 읽기 / 관리자만 추가·수정·삭제)
+    match /externalRentals/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
+    // 장비 수리 관리 (관리자 전용)
+    match /repairs/{docId} {
+      allow read, write: if isAdmin();
+    }
+
+  }
+}

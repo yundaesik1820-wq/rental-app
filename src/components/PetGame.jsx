@@ -794,10 +794,9 @@ export async function grantPetExp(uid, activity) {
 
     const bonus = RARITY[pet.rarity]?.bonus || 1;
     const gain = Math.round(conf.exp * bonus);
-    const updated = { ...pet, exp: (pet.exp || 0) + gain, actLog: log };
-    // 알 단계에서 활동만으로 부화하지는 않게 — 부화는 밥/놀기/퀴즈에서만 처리하므로
-    // 여기선 종 결정 로직 없이 exp만 적립 (egg면 exp만 쌓이고 다음 밥/퀴즈 때 부화 트리거)
-    await updateDoc(ref, { pet: updated });
+    // pet 통째 교체 대신 변경 필드만 갱신 — 보안 규칙이 남의 pet 수정을
+    // exp/actLog/onceLog/hearts/heartedBy 로만 제한하도록. (egg면 exp만 쌓이고 다음 밥/퀴즈 때 부화)
+    await updateDoc(ref, { "pet.exp": (pet.exp || 0) + gain, "pet.actLog": log });
     return gain;
   } catch (e) {
     return 0;  // 조용히 실패
