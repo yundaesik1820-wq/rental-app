@@ -95,9 +95,11 @@ function buildAlerts(isAdmin, profile, data) {
 function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
-  // 등장 애니메이션 — 다음 프레임에 enter=true로 바꿔 슬라이드/페이드 인
+  // 등장/퇴장 애니메이션 — 다음 프레임에 enter=true로 슬라이드 인, 닫을 땐 먼저 슬라이드 아웃 후 언마운트
   const [enter, setEnter] = React.useState(false);
-  React.useEffect(() => { const id = requestAnimationFrame(() => setEnter(true)); return () => cancelAnimationFrame(id); }, []);
+  const closeTimer = React.useRef(null);
+  React.useEffect(() => { const id = requestAnimationFrame(() => setEnter(true)); return () => { cancelAnimationFrame(id); clearTimeout(closeTimer.current); }; }, []);
+  const handleClose = () => { setEnter(false); closeTimer.current = setTimeout(onClose, 300); };
 
   // 🔧 상태바 안전영역을 JS로 측정해서 px로 적용.
   //    이 WebView는 calc() 안의 env()를 무시해서 padding이 안 먹음 → probe로 재서 픽셀로 박음.
@@ -175,13 +177,13 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
   return (
-    <div onClick={onClose} style={{ position:"fixed", inset:0, background: enter ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)", zIndex:500, transition:"background 0.3s ease" }}>
+    <div onClick={handleClose} style={{ position:"fixed", inset:0, background: enter ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)", zIndex:500, transition:"background 0.3s ease" }}>
       <div onClick={e=>e.stopPropagation()} style={{ position:"absolute", top:0, right:0, bottom:0, width:"70vw", maxWidth:360, background:"#fff", boxShadow:"-10px 0 40px rgba(0,0,0,0.15)", display:"flex", flexDirection:"column", transform: enter ? "translateX(0)" : "translateX(100%)", transition:"transform 0.3s cubic-bezier(0.32,0.72,0,1)" }}>
         {/* 헤더 */}
         <div style={{ padding:`${safeTop + 20}px 20px 12px`, borderBottom:`1px solid ${CC.border}` }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
             <div style={{ fontSize:18, fontWeight:800, color:CC.navy }}>🔔 알림 {unreadIn("전체") > 0 && <span style={{ background:CC.red, color:"#fff", borderRadius:20, padding:"2px 8px", fontSize:12, marginLeft:6 }}>{unreadIn("전체")}</span>}</div>
-            <button onClick={onClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:CC.muted }}>✕</button>
+            <button onClick={handleClose} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:CC.muted }}>✕</button>
           </div>
           {/* 카테고리 탭 (당근식 4탭) */}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
