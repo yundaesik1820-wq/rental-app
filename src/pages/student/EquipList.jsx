@@ -4,7 +4,7 @@ import { Card, Badge, Btn, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
-import { isCameraLike } from "../../utils/equipCompat";
+import { isCameraLike, isLens } from "../../utils/equipCompat";
 import EquipDetail from "./EquipDetail";
 import RentalTimeline from "../../components/RentalTimeline";
 import ExternalRentalView from "./ExternalRentalView";
@@ -126,19 +126,23 @@ export default function EquipList({ setTab }) {
   ];
   const allCats = sortedCats; // 전체 제거
 
+  // 카테고리 판정 — 렌즈 계열(XEEN CF 세트 등)은 대분류가 "렌즈"가 아니어도
+  // 렌즈 카테고리에서 보이게 한다
+  const inCategory = (e) => !filter || e.majorCategory === filter || (filter === "렌즈" && isLens(e));
+
   // 선택된 대분류의 중분류 목록
   const minorList = ["전체", ...new Set([
-    ...grouped.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
-    ...setEquips.filter(e => e.majorCategory === filter).map(e => e.minorCategory),
+    ...grouped.filter(inCategory).map(e => e.minorCategory),
+    ...setEquips.filter(inCategory).map(e => e.minorCategory),
   ].filter(Boolean))];
 
   const filteredUnits = grouped.filter(e =>
-    (!filter || e.majorCategory === filter) &&
+    inCategory(e) &&
     (minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search) || e.manufacturer?.includes(search))
   );
   const filteredSets = setEquips.filter(e =>
-    (!filter || e.majorCategory === filter) &&
+    inCategory(e) &&
     (minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search))
   );
