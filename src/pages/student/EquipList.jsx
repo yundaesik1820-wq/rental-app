@@ -30,7 +30,7 @@ const HERO_SLIDES = [
 //       img가 있으면 이미지를, 없으면 icon(이모지)을 표시합니다.
 const RENTAL_CATEGORIES = [
   { name: "외부 렌탈샵", icon: "🏬", img: "/cat-icons/external.png" },
-  { name: "NEW",          icon: "🆕", img: "/cat-icons/new.png" },
+  { name: "액션캠/드론",    icon: "🚁", img: "/cat-icons/actioncam-drone.png" },
   { name: "캠코더",        icon: "📹", img: "/cat-icons/camcorder.png" },
   { name: "카메라",        icon: "📷", img: "/cat-icons/camera.png" },
   { name: "렌즈",          icon: "🔭", img: "/cat-icons/lens.png" },
@@ -42,6 +42,15 @@ const RENTAL_CATEGORIES = [
   { name: "편집",          icon: "✂️", img: "/cat-icons/edit.png" },
   { name: "기타",          icon: "📦", img: "/cat-icons/etc.png" },
 ];
+
+// 카테고리 아이콘 — img가 있으면 이미지, 없거나 로드 실패하면 이모지로 폴백.
+// (이미지 파일을 아직 안 올렸을 때 깨진 이미지 대신 이모지가 보이게 한다)
+function CatIcon({ c }) {
+  const [err, setErr] = useState(false);
+  return c.img && !err
+    ? <img src={c.img} alt={c.name} onError={() => setErr(true)} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+    : <span>{c.icon}</span>;
+}
 import { groupEquipments } from "../../utils/groupEquipments";
 import { youtubeEmbedUrl } from "../../utils/youtube";
 import SpecTable from "../../components/SpecTable";
@@ -206,9 +215,7 @@ export default function EquipList({ setTab }) {
               style={{ textAlign:"center", cursor:"pointer" }}>
               <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto", overflow:"hidden",
                 background: on ? C.navy : C.surface, border:`1px solid ${on ? C.navy : C.border}`, transition:"all .15s", boxShadow: on ? `0 4px 12px ${C.navy}40` : "none" }}>
-                {c.img
-                  ? <img src={c.img} alt={c.name} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-                  : <span>{c.icon}</span>}
+                <CatIcon c={c} />
               </div>
               <div style={{ fontSize:11, color: on ? C.text : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
             </div>

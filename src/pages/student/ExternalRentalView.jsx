@@ -61,7 +61,7 @@ export default function ExternalRentalView() {
             {s.parking && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🅿️ {s.parking}</div>}
             {s.transit && <div style={{ fontSize: 12.5, color: C.text, marginTop: 4 }}>🚇 {s.transit}</div>}
             <div style={{ display: "flex", gap: 8, marginTop: 11 }}>
-              {s.phone && <button onClick={() => callPhone(s.phone)} style={btnStyle(C.navy, C.bg)}>전화</button>}
+              {s.phone && <button onClick={() => callPhone(s.phone)} style={btnStyle("#A3E635", C.bg)}>전화</button>}
               {s.kakao && <button onClick={() => openWeb(s.kakao)} style={btnStyle("#FEE500", "#191600")}>카톡</button>}
               {s.website && <button onClick={() => openWeb(s.website)} style={btnStyle(C.teal, "#fff")}>홈페이지</button>}
               <button onClick={() => setNavShop(s)} style={btnStyle(C.border, C.text)}>길찾기</button>
