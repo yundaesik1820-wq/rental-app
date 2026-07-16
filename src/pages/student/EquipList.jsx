@@ -172,7 +172,8 @@ export default function EquipList({ setTab }) {
   );
 
   return (
-    <div>
+    // 장바구니 바(fixed, bottom:78)가 뜨면 마지막 카드를 덮으므로 그만큼 하단 여백을 준다
+    <div style={{ paddingBottom: cartCount > 0 ? 96 : 0 }}>
       {/* 🎞️ 자동 슬라이드 히어로 (내용은 상단 HERO_SLIDES에서 수정) */}
       <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18, aspectRatio:"3 / 1", minHeight:96 }}>
         <div style={{ display:"flex", height:"100%", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
