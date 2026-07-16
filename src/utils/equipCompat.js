@@ -21,11 +21,11 @@ export const isLens = (e) => e.equipType === "lens" || LENS_MINORS.includes(e.mi
 /* 렌즈 제조사 — 이 순서로 보여준다. 목록에 없는 제조사는 뒤에 가나다순.
    로고는 public/lens-brands/{파일명}.png (48x48, 투명배경 / 24px로 표시) */
 export const LENS_BRAND_ORDER = [
-  "SONY", "CANON", "XEEN CF", "SAMYANG", "TAMRON", "CARL ZEISS", "TOKINA", "SIGMA", "FUJINON",
+  "SONY", "CANON", "XEEN CF", "SAMYANG", "TAMRON", "CARL ZEISS", "TOKINA", "SIGMA", "FUJINON", "NIKON",
 ];
 const LENS_BRAND_LOGO = {
   "SONY":"sony", "CANON":"canon", "XEEN CF":"xeen", "SAMYANG":"samyang", "TAMRON":"tamron",
-  "CARL ZEISS":"zeiss", "TOKINA":"tokina", "SIGMA":"sigma", "FUJINON":"fujinon",
+  "CARL ZEISS":"zeiss", "TOKINA":"tokina", "SIGMA":"sigma", "FUJINON":"fujinon", "NIKON":"nikon",
 };
 // 실제 데이터에 축약형으로 들어간 표기를 정식 명칭으로 맞춘다
 const BRAND_ALIAS = {
