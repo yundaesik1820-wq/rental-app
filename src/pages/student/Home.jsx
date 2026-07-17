@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, query, where, getDocs, updateDoc, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
-import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot } from "lucide-react";
+import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot, Camera, Image as ImageIcon } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
@@ -117,7 +117,7 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
         <div style={{ display: "flex", gap: 6 }}>
           {DAYS.map(d => (
             <button key={d} onClick={() => f("day", d)}
-              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${form.day === d ? C.navy : C.border}`, background: form.day === d ? C.navy : C.bg, color: form.day === d ? C.bg : C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+              style={{ flex: 1, padding: "7px 0", borderRadius: 8, border: `1.5px solid ${form.day === d ? "#4d7cfe" : C.border}`, background: form.day === d ? "linear-gradient(135deg,#4d7cfe,#3b6cf8)" : C.bg, color: form.day === d ? "#fff" : C.muted, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
               {d}
             </button>
           ))}
@@ -170,9 +170,15 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
       <div style={{ display: "flex", gap: 8 }}>
         {initial && <Btn onClick={onDelete} color={C.red} outline>삭제</Btn>}
         <Btn onClick={onClose} color={C.muted} outline full>취소</Btn>
-        <Btn onClick={() => onSave(form)} color={C.navy} full disabled={!form.name || !form.location || !form.startTime || !form.endTime}>
-          저장
-        </Btn>
+        {(() => {
+          const canSave = form.name && form.location && form.startTime && form.endTime;
+          return (
+            <button onClick={() => canSave && onSave(form)} disabled={!canSave}
+              style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "none", background: canSave ? "linear-gradient(135deg,#4d7cfe,#3b6cf8)" : C.border, color: "#fff", fontSize: 13, fontWeight: 800, cursor: canSave ? "pointer" : "default", fontFamily: "inherit", opacity: canSave ? 1 : 0.55 }}>
+              저장
+            </button>
+          );
+        })()}
       </div>
     </div>
   );
@@ -939,15 +945,15 @@ export default function StudentHome({ onOpenRoom, setTab }) {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 800, color: "#fff" }}>아직 시간표가 없어요</div>
-              <div style={{ fontSize: 10.5, color: "#8f9ac0", marginTop: 4, lineHeight: 1.4 }}>시간표를 추가하고 대여 계획을 세워보세요!</div>
+              <div style={{ fontSize: 10.5, color: "#8f9ac0", marginTop: 4, lineHeight: 1.4 }}>시간표를 추가하고<br/>다음 수업을 놓치지 마세요!</div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 7, flexShrink: 0 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, flexShrink: 0, width: 98 }}>
               <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "rgba(70,110,255,0.12)", border: "1px solid rgba(100,140,255,0.32)", color: "#cdd8ff", fontFamily: "inherit" }}>
+                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "rgba(70,110,255,0.12)", border: "1px solid rgba(100,140,255,0.32)", color: "#cdd8ff", fontFamily: "inherit" }}>
                 <PlusCircle size={15} color="#6f8cff" /> 직접 추가
               </button>
               <button onClick={() => setShowTtSource(true)} disabled={importing}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", border: "none", color: "#fff", fontFamily: "inherit", opacity: importing ? 0.7 : 1 }}>
+                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", border: "none", color: "#fff", fontFamily: "inherit", opacity: importing ? 0.7 : 1 }}>
                 <Bot size={15} /> {importing ? "인식 중…" : "AI로 추가"}
               </button>
             </div>
@@ -1219,19 +1225,43 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             <Btn onClick={() => setImportPreview(null)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={confirmImport} color={C.navy} full>{importPreview.length}개 추가</Btn>
+            <button onClick={confirmImport}
+              style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "none", background: "linear-gradient(135deg,#4d7cfe,#3b6cf8)", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+              {importPreview.length}개 추가
+            </button>
           </div>
         </Modal>
       )}
 
-      {/* 시간표 AI 추가 — 촬영 / 갤러리 선택 */}
+      {/* 시간표 AI 추가 — 촬영 / 갤러리 선택 (홈 톤) */}
       {showTtSource && (
         <Modal onClose={() => setShowTtSource(false)} width={360}>
-          <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 4 }}>📷 시간표 AI 추가</div>
-          <div style={{ fontSize: 12, color: C.muted, marginBottom: 16 }}>사진으로 시간표를 자동 인식해요.</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            <Btn onClick={() => { setShowTtSource(false); document.getElementById("tt-import-camera")?.click(); }} color={C.teal} full>📷 시간표를 촬영할래요</Btn>
-            <Btn onClick={() => { setShowTtSource(false); document.getElementById("tt-import-input")?.click(); }} color={C.navy} full>🖼️ 시간표를 캡쳐했어요</Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 16 }}>
+            <div style={{ width: 42, height: 42, borderRadius: 13, background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <Bot size={22} color="#fff" />
+            </div>
+            <div>
+              <div style={{ fontSize: 15.5, fontWeight: 800, color: C.text }}>AI로 시간표 추가</div>
+              <div style={{ fontSize: 11.5, color: C.muted, marginTop: 2 }}>사진 한 장이면 자동으로 인식해요</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {[
+              { Ic: Camera, tint: "linear-gradient(135deg,#4d7cfe,#3b6cf8)", t: "시간표 촬영하기", s: "카메라로 바로 찍어요", onClick: () => { setShowTtSource(false); document.getElementById("tt-import-camera")?.click(); } },
+              { Ic: ImageIcon, tint: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", t: "갤러리에서 선택", s: "캡쳐한 이미지를 올려요", onClick: () => { setShowTtSource(false); document.getElementById("tt-import-input")?.click(); } },
+            ].map((o, i) => (
+              <button key={i} onClick={o.onClick}
+                style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", textAlign: "left", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 14, padding: "12px 13px", cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ width: 38, height: 38, borderRadius: 11, background: o.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <o.Ic size={19} color="#fff" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{o.t}</div>
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{o.s}</div>
+                </div>
+                <ChevronRight size={16} color={C.muted} />
+              </button>
+            ))}
           </div>
         </Modal>
       )}
