@@ -173,15 +173,15 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         {/* Top bar — 커뮤니티 헤더와 동일 스타일 (띠 없음, 큰 볼드 제목, 검색+알림) */}
         <header style={{ background: C.bg, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <span style={{ fontSize: 22, fontWeight: 900, color: C.text, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <span style={{ fontSize: 20, fontWeight: 900, color: C.text, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {currentNav?.label}
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 16, paddingRight: "env(safe-area-inset-right, 0px)" }}>
-            <button onClick={() => setShowSearch(true)} className="tap-spring" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", color: C.text }}>
-              <Search size={23} strokeWidth={2} />
+            <button onClick={() => setShowSearch(true)} className="tap-spring" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", color: C.text }}>
+              <Search size={20} strokeWidth={2} />
             </button>
-            <button onClick={onNotif} className="tap-spring" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: C.text }}>
-              <Bell size={23} strokeWidth={2} />
+            <button onClick={onNotif} className="tap-spring" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", alignItems: "center", color: C.text }}>
+              <Bell size={20} strokeWidth={2} />
               {notifCount > 0 && (
                 <span style={{ position: "absolute", top: -5, right: -6, background: C.red, color: "#fff", borderRadius: "50%", width: 17, height: 17, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{notifCount}</span>
               )}
