@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, query, where, getDocs, updateDoc, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
-import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight } from "lucide-react";
+import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
@@ -933,14 +933,23 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         <input id="tt-import-camera" type="file" accept="image/*" capture="environment" style={{ display: "none" }}
           onChange={(e) => { const f = e.target.files && e.target.files[0]; e.target.value = ""; handleImportImage(f); }} />
         {classes.length === 0 ? (
-          <div style={{ background: C.surface, borderRadius: 14, border: `1.5px dashed ${C.border}`, padding: "16px 0", textAlign: "center" }}>
-            <div style={{ fontSize: 30, marginBottom: 8 }}>📚</div>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 12 }}>시간표가 없어요</div>
-            <div style={{ display: "flex", gap: 6, justifyContent: "center" }}>
-              <Btn onClick={() => { setShowClassForm(true); setEditClass(null); }} color={C.navy} small>직접추가</Btn>
-              <Btn onClick={() => setShowTtSource(true)} color={C.teal} small disabled={importing}>
-                {importing ? "인식 중…" : "📷 AI 추가"}
-              </Btn>
+          <div style={{ display: "flex", alignItems: "center", gap: 11, background: "linear-gradient(135deg,#141d3d,#101733)", border: "1px solid #23305c", borderRadius: 16, padding: 14 }}>
+            <div style={{ width: 52, height: 52, flexShrink: 0, display: "grid", placeItems: "center", color: "#4a5a9e", opacity: 0.85 }}>
+              <CalendarDays size={44} strokeWidth={1.6} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: "#fff" }}>아직 시간표가 없어요</div>
+              <div style={{ fontSize: 10.5, color: "#8f9ac0", marginTop: 4, lineHeight: 1.4 }}>시간표를 추가하고 대여 계획을 세워보세요!</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 7, flexShrink: 0 }}>
+              <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "rgba(70,110,255,0.12)", border: "1px solid rgba(100,140,255,0.32)", color: "#cdd8ff", fontFamily: "inherit" }}>
+                <PlusCircle size={15} color="#6f8cff" /> 직접 추가
+              </button>
+              <button onClick={() => setShowTtSource(true)} disabled={importing}
+                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 12px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", border: "none", color: "#fff", fontFamily: "inherit", opacity: importing ? 0.7 : 1 }}>
+                <Bot size={15} /> {importing ? "인식 중…" : "AI로 추가"}
+              </button>
             </div>
           </div>
         ) : (
