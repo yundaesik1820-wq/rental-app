@@ -777,53 +777,8 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           .home-hero-chev{display:block;flex-shrink:0;color:rgba(200,214,245,0.4);width:20px;height:20px;}
         }
       `}</style>
-      <div className="home-hero">
-        <div className="home-hero-glow" aria-hidden="true" />
-        <div className="home-hero-stars" aria-hidden="true" />
-        <div className="home-hero-diag" aria-hidden="true" />
-
-        {/* 로그아웃/계정전환 */}
-        <div className="home-hero-top">
-          {profile?.linkedEmail && (
-            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환" style={{ opacity:switchLoading2?0.6:1 }}>
-              <RefreshCw size={13} />
-            </button>
-          )}
-          <button onClick={logout} title="로그아웃"><LogOut size={13} /></button>
-        </div>
-
-        {/* 캐릭터 (z2 — 배경 위, 액션카드 아래. 하반신은 카드 뒤로 가려짐) */}
-        <img className="home-hero-char" src="/mascot/thumbsup.png" alt="렌토리" aria-hidden="true" />
-
-        {/* 텍스트 (z3) */}
-        <div className="home-hero-text">
-          <div className="home-hero-greet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</div>
-          <div className="home-hero-sub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</div>
-        </div>
-
-        {/* 액션 카드 (z4 — 캐릭터 하반신 앞) */}
-        <div className="home-hero-actions">
-          {[
-            { Icon: CalendarPlus,  tint:"linear-gradient(135deg,#8b5cf6,#6d5cf6)", title:"장비 예약", sub:"새로 예약하기", onClick:() => setTab?.("equip") },
-            { Icon: ClipboardList, tint:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", title:"예약 내역", sub:"내 예약 보기", onClick:() => setTab?.("calendar") },
-            { Icon: ShieldCheck,   tint:"linear-gradient(135deg,#5b8def,#4f6bd8)", title:"대여 규칙", sub:"이용 가이드", onClick:() => setShowRules(true) },
-          ].map((b, i) => {
-            const Icon = b.Icon;
-            return (
-              <button key={i} className="home-hero-act" onClick={b.onClick}>
-                <div className="home-hero-ic" style={{ background:b.tint }}>
-                  <Icon size={19} color="#fff" strokeWidth={2.2} />
-                </div>
-                <div className="home-hero-lbl">
-                  <div className="home-hero-title">{b.title}</div>
-                  <div className="home-hero-desc">{b.sub}</div>
-                </div>
-                <ChevronRight className="home-hero-chev" size={16} />
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* home-hero.png 이미지 그대로 (크기만 폰 폭에 맞춤) */}
+      <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block", marginBottom: 16 }} />
 
       {/* 대여 규칙 모달 */}
       {showRules && (
