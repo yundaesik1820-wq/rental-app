@@ -24,7 +24,9 @@ const C = {
 const HOME_GRAD  = "linear-gradient(140deg,#0f1636 0%,#182655 52%,#243676 100%)";
 const HOME_NAME  = "#8ea2ff"; // 이름 하이라이트
 
-const DAYS   = ["월", "화", "수", "목", "금", "토"];
+const DAYS   = ["월", "화", "수", "목", "금"];
+// 시간표 다크 톤 (tlrksvy.png)
+const TT = { bg: "#0d1428", border: "#1c2947", line: "#17223d", day: "#93a0bd", hour: "#5c6784", sub: "#8a93a8" };
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
 const SLOT_H = 28; // px per hour
 const COLORS = [
@@ -42,32 +44,32 @@ function Timetable({ classes, onEdit, readOnly = false }) {
   const colW = `calc((100% - 36px) / 5)`;
 
   return (
-    <div style={{ background: "#fff", borderRadius: 14, overflow: "hidden", border: `1px solid ${C.border}` }}>
+    <div style={{ background: TT.bg, borderRadius: 14, overflow: "hidden", border: `1px solid ${TT.border}` }}>
       {/* 헤더 */}
-      <div style={{ display: "flex", borderBottom: `1px solid ${C.border}`, background: C.bg }}>
-        <div style={{ width: 36, flexShrink: 0 }} />
+      <div style={{ display: "flex", borderBottom: `1px solid ${TT.border}` }}>
+        <div style={{ width: 30, flexShrink: 0 }} />
         {DAYS.map(d => (
-          <div key={d} style={{ flex: 1, textAlign: "center", fontSize: 12, fontWeight: 700, color: C.navy, padding: "4px 0" }}>{d}</div>
+          <div key={d} style={{ flex: 1, textAlign: "center", fontSize: 11, fontWeight: 700, color: TT.day, padding: "6px 0" }}>{d}</div>
         ))}
       </div>
 
       {/* 그리드 바디 */}
       <div style={{ position: "relative", display: "flex" }}>
         {/* 시간 라벨 */}
-        <div style={{ width: 36, flexShrink: 0 }}>
+        <div style={{ width: 30, flexShrink: 0 }}>
           {HOURS.map(h => (
-            <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 2 }}>
-              <span style={{ fontSize: 9, color: C.muted, lineHeight: 1 }}>{h}</span>
+            <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${TT.line}`, display: "flex", alignItems: "flex-start", justifyContent: "center", paddingTop: 2 }}>
+              <span style={{ fontSize: 9, color: TT.hour, lineHeight: 1 }}>{h}</span>
             </div>
           ))}
         </div>
 
         {/* 열 (월~금) */}
         {DAYS.map((day, di) => (
-          <div key={day} style={{ flex: 1, position: "relative", borderLeft: `1px solid ${C.border}` }}>
+          <div key={day} style={{ flex: 1, position: "relative", borderLeft: `1px solid ${TT.line}` }}>
             {/* 시간 구분선 */}
             {HOURS.map(h => (
-              <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${C.border}` }} />
+              <div key={h} style={{ height: SLOT_H, borderBottom: `1px solid ${TT.line}` }} />
             ))}
             {/* 수업 블록 */}
             {classes.filter(c => c.day === day).map((cls, i) => {
@@ -337,6 +339,8 @@ export default function StudentHome({ onOpenRoom, setTab }) {
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
   const [showRules, setShowRules] = useState(false); // 대여 규칙 모달
+  const [nowTick, setNowTick] = useState(0); // 1분마다 갱신 (다음 수업 카운트다운)
+  useEffect(() => { const id = setInterval(() => setNowTick(t => t + 1), 60000); return () => clearInterval(id); }, []);
 
   // 계정 전환 (학생↔관리자)
   const switchKey = `linked_creds_${profile?.uid}`;
@@ -547,6 +551,22 @@ export default function StudentHome({ onOpenRoom, setTab }) {
   // 신뢰도 = 정시반납×120 + 대여×30 − 연체×300 (최소 0). ※ 규칙은 조정 가능
   const trustScore = Math.max(0, onTimeCnt * 120 + rentedCnt * 30 - overdueCnt * 300);
   const petStats = { rented: rentedCnt, onTime: onTimeCnt, overdue: overdueCnt, trust: trustScore };
+
+  // ── 시간표: 오늘 수업 / 다음 수업 (nowTick으로 1분마다 갱신) ──
+  const _now = new Date(); void nowTick;
+  const _todayLabel = ["일", "월", "화", "수", "목", "금", "토"][_now.getDay()];
+  const _nowMin = _now.getHours() * 60 + _now.getMinutes();
+  const _toMin = (t) => { const [h, m] = String(t || "0:0").split(":").map(Number); return (h || 0) * 60 + (m || 0); };
+  const todayClasses = DAYS.includes(_todayLabel)
+    ? classes.filter(c => c.day === _todayLabel).sort((a, b) => _toMin(a.startTime) - _toMin(b.startTime))
+    : [];
+  const nextClass = todayClasses.find(c => _toMin(c.endTime) > _nowMin) || null;
+  let nextStatus = null;
+  if (nextClass) {
+    const s = _toMin(nextClass.startTime);
+    if (s <= _nowMin) nextStatus = "진행 중";
+    else { const d = s - _nowMin; nextStatus = d >= 60 ? `${Math.floor(d / 60)}시간 ${d % 60}분 후 시작` : `${d}분 후 시작`; }
+  }
 
   const pinned = notices.filter(n => n.pinned).slice(0, 3);
   const recentNotices = pinned.length > 0
@@ -924,14 +944,72 @@ export default function StudentHome({ onOpenRoom, setTab }) {
             </div>
           </div>
         ) : (
-          <div style={{ overflowX: "auto" }}>
-            <div style={{ minWidth: 320 }}>
-              <Timetable
-                classes={classes}
-                onEdit={(cls) => { setEditClass(cls); setShowClassForm(true); }}
-              />
+          <>
+            <style>{`
+              .tt-next{position:relative;overflow:hidden;background:linear-gradient(135deg,#141d3d,#101733);border:1px solid #23305c;border-radius:16px;padding:14px 15px;margin-bottom:16px;}
+              .tt-bblue{display:inline-block;background:rgba(70,110,255,0.18);color:#7ea2ff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:7px;}
+              .tt-bpurple{display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,0.2);color:#c4b5fd;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:8px;position:absolute;top:14px;right:15px;}
+              .tt-nname{font-size:18px;font-weight:800;color:#fff;margin:9px 0 5px;letter-spacing:-0.02em;}
+              .tt-ntime{font-size:13px;font-weight:700;color:#c8d3ee;margin-bottom:7px;}
+              .tt-nmeta{font-size:11.5px;color:#93a0bd;display:flex;gap:12px;flex-wrap:wrap;}
+              .tt-nmeta span{display:inline-flex;align-items:center;gap:4px;}
+              .tt-thumb{position:absolute;right:15px;bottom:14px;width:86px;height:58px;border-radius:10px;background:linear-gradient(135deg,#2a3566,#1a2547);border:1px solid #2f3d6e;opacity:0.9;}
+              .tt-label{font-size:12.5px;font-weight:700;color:#93a0bd;margin:0 2px 8px;}
+              .tt-today{background:#0d1428;border:1px solid #1c2947;border-radius:14px;overflow:hidden;margin-bottom:18px;}
+              .tt-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid #17223d;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+              .tt-row:first-child{border-top:none;}
+              .tt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+              .tt-rbody{flex:1;min-width:0;}
+              .tt-rname{font-size:12.5px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+              .tt-rsub{font-size:10.5px;color:#8a93a8;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.01em;}
+              .tt-chev{color:#5c6784;font-size:15px;flex-shrink:0;}
+            `}</style>
+
+            {/* 다음 수업 */}
+            {nextClass && (
+              <div className="tt-next">
+                <span className="tt-bblue">다음 수업</span>
+                {nextStatus && <span className="tt-bpurple">🕐 {nextStatus}</span>}
+                <div className="tt-nname">{nextClass.name}</div>
+                <div className="tt-ntime">{nextClass.startTime} - {nextClass.endTime}</div>
+                <div className="tt-nmeta">
+                  {nextClass.location && <span>📍 {nextClass.location}</span>}
+                  {nextClass.professor && <span>👤 {nextClass.professor}</span>}
+                </div>
+                <div className="tt-thumb" />
+              </div>
+            )}
+
+            {/* 오늘의 수업 */}
+            {todayClasses.length > 0 && (
+              <>
+                <div className="tt-label">오늘의 수업</div>
+                <div className="tt-today">
+                  {todayClasses.map((c, i) => (
+                    <div key={i} className="tt-row" onClick={() => { setEditClass(c); setShowClassForm(true); }}>
+                      <span className="tt-dot" style={{ background: c.color || COLORS[i % COLORS.length] }} />
+                      <div className="tt-rbody">
+                        <div className="tt-rname">{c.name}</div>
+                        <div className="tt-rsub">{c.startTime} - {c.endTime}{c.location ? ` · ${c.location}` : ""}{c.professor ? ` · ${c.professor}` : ""}</div>
+                      </div>
+                      <span className="tt-chev">›</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* 주간 시간표 */}
+            <div className="tt-label">주간 시간표</div>
+            <div style={{ overflowX: "auto" }}>
+              <div style={{ minWidth: 320 }}>
+                <Timetable
+                  classes={classes}
+                  onEdit={(cls) => { setEditClass(cls); setShowClassForm(true); }}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
 
