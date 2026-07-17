@@ -733,36 +733,37 @@ export default function StudentHome({ onOpenRoom, setTab }) {
       )}
 
       {/* Welcome banner — 컬러 개편(홈 전용) + 퀵버튼 3개 */}
-      <div style={{ background: HOME_GRAD, borderRadius: 22, padding: "18px 18px 16px", marginBottom: 18, position: "relative", overflow: "hidden" }}>
+      <div style={{ background: HOME_GRAD, borderRadius: 20, padding: "13px 16px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
         {/* 우상단 로그아웃/계정전환 (작은 아이콘) */}
-        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6, zIndex:2 }}>
+        <div style={{ position:"absolute", top:9, right:9, display:"flex", gap:5, zIndex:3 }}>
           {profile?.linkedEmail && (
             <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환"
-              style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:9, padding:7, color:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center", opacity:switchLoading2?0.6:1 }}>
-              <RefreshCw size={15} />
+              style={{ background:"rgba(255,255,255,0.14)", border:"none", borderRadius:8, padding:6, color:"rgba(255,255,255,0.8)", cursor:"pointer", display:"flex", alignItems:"center", opacity:switchLoading2?0.6:1 }}>
+              <RefreshCw size={13} />
             </button>
           )}
           <button onClick={logout} title="로그아웃"
-            style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:9, padding:7, color:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center" }}>
-            <LogOut size={15} />
+            style={{ background:"rgba(255,255,255,0.14)", border:"none", borderRadius:8, padding:6, color:"rgba(255,255,255,0.8)", cursor:"pointer", display:"flex", alignItems:"center" }}>
+            <LogOut size={13} />
           </button>
         </div>
 
-        {/* 인사 + 마스코트 */}
-        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:14 }}>
-          <div style={{ flex:1, minWidth:0, paddingTop:8 }}>
-            <div style={{ fontSize:21, fontWeight:900, color:"#fff", lineHeight:1.25, letterSpacing:"-0.02em" }}>
-              안녕하세요,<br/><span style={{ color:HOME_NAME }}>{profile?.name}</span>님 <span style={{ fontWeight:400 }}>👋</span>
-            </div>
-            <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.72)", marginTop:9, lineHeight:1.5 }}>
-              오늘도 멋진 촬영과 작품을<br/>KBAS가 함께 응원할게요!
-            </div>
+        {/* 마스코트 — 절대배치, 크게 내려서 버튼까지 겹침(버튼 반투명이라 자연스럽게 비침) */}
+        <img src="/mascot/hi.png" alt="렌토리" aria-hidden="true"
+          style={{ position:"absolute", right:0, top:4, width:130, height:130, objectFit:"contain", pointerEvents:"none", filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", zIndex:1 }} />
+
+        {/* 인사말 (한 줄) */}
+        <div style={{ position:"relative", zIndex:2, paddingRight:80 }}>
+          <div style={{ fontSize:18, fontWeight:900, color:"#fff", lineHeight:1.2, letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
+            안녕하세요, <span style={{ color:HOME_NAME }}>{profile?.name}</span>님 <span style={{ fontWeight:400 }}>👋</span>
           </div>
-          <img src="/mascot/hi.png" alt="렌토리" style={{ width:112, height:112, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", marginTop:-2, marginRight:-2 }} />
+          <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.72)", marginTop:7, lineHeight:1.45 }}>
+            오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!
+          </div>
         </div>
 
         {/* 퀵버튼 3개 */}
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+        <div style={{ position:"relative", zIndex:2, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:12 }}>
           {[
             { Icon: CalendarPlus,  tint:"linear-gradient(135deg,#8b5cf6,#6d5cf6)", title:"장비 예약", sub:"새로 예약하기", onClick:() => setTab?.("equip") },
             { Icon: ClipboardList, tint:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", title:"예약 내역", sub:"내 예약 보기", onClick:() => setTab?.("calendar") },
