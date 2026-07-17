@@ -222,12 +222,15 @@ function GpaCalculator({ classes = [] }) {
     <div style={{ marginBottom:16 }}>
       <button onClick={() => setOpen(o=>!o)}
         style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:14 }}>🎓</span>
-          <span style={{ fontSize:12, fontWeight:700, color:C.text }}>학점 계산기</span>
+        <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+          <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#22c55e,#16a34a)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>🧮</div>
+          <div style={{ textAlign:"left" }}>
+            <div style={{ fontSize:13, fontWeight:800, color:C.text }}>학점 계산기</div>
+            <div style={{ fontSize:10.5, color:C.muted, marginTop:1 }}>나의 학점과 졸업요건을 계산해보세요!</div>
+          </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {!open && totalCredit>0 && <span style={{ fontSize:12, fontWeight:800, color:gpaColor }}>{gpa} / 4.5</span>}
+          {!open && totalCredit>0 && <span style={{ fontSize:12, fontWeight:800, color:gpaColor, background:`${gpaColor}1f`, borderRadius:7, padding:"3px 8px" }}>{gpa} / 4.5</span>}
           <span style={{ fontSize:12, color:C.muted }}>{open?"▲":"▼"}</span>
         </div>
       </button>
@@ -305,9 +308,9 @@ function ScenePatchHomeCard({ onOpen }) {
           <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.02em", color: C.text }}>
             SCENE<span style={{ color: RED }}>PATCH</span>
           </span>
-          <span style={{ fontSize: 10.5, color: C.muted, fontWeight: 600 }}>영상계열 단독</span>
+          <span style={{ fontSize: 10.5, color: C.muted, fontWeight: 600 }}>우리 학교 소식과 이야기를 만나보세요</span>
         </div>
-        <span style={{ fontSize: 12, color: C.muted, fontWeight: 600 }}>전체보기 ›</span>
+        <span style={{ fontSize: 12, color: C.muted, fontWeight: 600, flexShrink: 0 }}>전체보기 ›</span>
       </div>
 
       {/* 기사 미리보기 (최신 3개) */}
@@ -947,9 +950,12 @@ export default function StudentHome({ onOpenRoom, setTab }) {
       <div style={{ marginBottom:16 }}>
         <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontSize:14 }}>👥</span>
-            <span style={{ fontSize:12, fontWeight:700, color:C.text }}>친구 시간표</span>
+          <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+            <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#14b8a6,#0e9f97)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>👥</div>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ fontSize:13, fontWeight:800, color:C.text }}>친구 시간표</div>
+              <div style={{ fontSize:10.5, color:C.muted, marginTop:1 }}>친구들의 수업시간을 함께 확인해보세요!</div>
+            </div>
           </div>
           <span style={{ fontSize:12, color:C.muted }}>{showFriendTab?"▲":"▼"}</span>
         </button>
