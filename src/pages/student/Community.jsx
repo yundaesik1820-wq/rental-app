@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
+import { Search, Bell, ChevronRight, MessageCircle, SatelliteDish, BookOpen, ShoppingCart, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -7,7 +8,6 @@ import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp } from "firebase/firestore";
-import EveryTimeIntro from "../../components/EveryTimeIntro";
 import CinemaSlate from "../../components/CinemaSlate";
 import ExposureLive from "../../components/ExposureLive";
 import ExposureCalc from "../../components/ExposureCalc";
@@ -154,6 +154,18 @@ const ROOMS = [
   },
 ];
 
+// 🎬 룸 → 라인 아이콘 (목업 00.png 디자인)
+const ROOM_ICON = {
+  community:   MessageCircle,
+  scenepatch:  SatelliteDish,
+  knowledge:   BookOpen,
+  marketplace: ShoppingCart,
+  crew:        Users,
+  tools:       Clapperboard,
+  boxoffice:   Video,
+  class:       GraduationCap,
+};
+
 async function uploadImage(file) {
   return new Promise((resolve, reject) => {
     const storageRef = ref(storage, `community/${Date.now()}_${file.name}`);
@@ -215,25 +227,13 @@ function posLabel(pos) {
   return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
 }
 
-export default function Community({ onExit, initialRoom, initialPostId, initialArticleId, onRoomConsumed }) {
+export default function Community({ onExit, onNotif, initialRoom, initialPostId, initialArticleId, onRoomConsumed }) {
   const { profile } = useAuth();
-
-  // 진입 인트로 - 세션당 한 번만 표시 (알림 딥링크로 진입하면 인트로 건너뜀)
-  const INTRO_KEY = "everytime_intro_shown_session";
-  const [showIntro, setShowIntro] = useState(() => {
-    if (typeof window === "undefined") return false;
-    if (initialRoom || initialPostId || initialArticleId) return false;
-    return sessionStorage.getItem(INTRO_KEY) !== "1";
-  });
-  useEffect(() => {
-    if (!showIntro && typeof window !== "undefined") {
-      sessionStorage.setItem(INTRO_KEY, "1");
-    }
-  }, [showIntro]);
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
+  const [showSearch, setShowSearch] = useState(false); // 헤더 검색(추후 구현 — 현재 자리만)
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
   const [selectedTool, setSelectedTool] = useState(null);
@@ -265,6 +265,22 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
       const measured = probe.getBoundingClientRect().height || 0;
       probe.remove();
       setSafeTop(Math.max(measured, SAFE_FLOOR)); // 상태바 최소 확보 높이(바닥값, 네이티브 전용)
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
+  }, []);
+
+  // 하단 네비 높이 실측 → 컨테이너 하단을 그만큼 비워 하단바가 보이게 (모바일: 실측값 / 데스크톱: 0=풀스크린)
+  const [navH, setNavH] = useState(0);
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector(".mobile-nav");
+      setNavH(el ? el.offsetHeight : 0);
     };
     measure();
     window.addEventListener("resize", measure);
@@ -876,65 +892,84 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
 
   return (
     <>
-      {/* 🎬 진입 인트로 (세션당 1회) */}
-      {showIntro && <EveryTimeIntro onComplete={() => setShowIntro(false)} />}
-
-      {/* 🎬 시네마 톤 풀스크린 컨테이너 */}
+      {/* 🎬 시네마 톤 풀스크린 컨테이너 — 하단은 네비 높이만큼 비워 하단바가 보이게 */}
       <div style={{
-        position:"fixed", inset:0, zIndex:200,
+        position:"fixed", top:0, left:0, right:0, bottom: navH, zIndex:200,
         background:"#0a0a0a",
         color:"#fafaf9",
         overflowY:"auto",
         WebkitOverflowScrolling:"touch",
-        paddingBottom:"env(safe-area-inset-bottom, 16px)",
+        paddingBottom:16,
       }}>
-        {/* 상단 시네마 헤더 - 룸별 동적 */}
-        <div data-cinema="1" style={{
-          position:"sticky", top:0, zIndex:50,
-          background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
-          backdropFilter:"blur(8px)",
-          paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 18, paddingLeft: 18,
-          display:"flex", alignItems:"center", justifyContent:"space-between",
-          borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
-        }}>
-          <button onClick={() => {
-            if (selectedTool) {
-              setSelectedTool(null);
-            } else if (currentRoom) {
-              setSelectedRoom(null);
-              setSelectedTool(null);
-            } else {
-              onExit && onExit();
-            }
-          }}
-            style={{
-              background:`${currentRoom ? currentRoom.color : "#dc2626"}1A`,
-              border:`1px solid ${currentRoom ? currentRoom.color : "#dc2626"}4D`,
-              color:"#fafaf9", fontSize:12, fontWeight:600,
-              padding:"7px 14px", borderRadius:8, cursor:"pointer",
-              display:"flex", alignItems:"center", gap:6,
-            }}>
-            <span style={{ color: currentRoom ? currentRoom.color : "#dc2626" }}>←</span>
-            {selectedTool ? "도구" : (currentRoom ? "ROOMS" : "메인으로")}
-          </button>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
-            <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
-              {selectedTool === "slate" ? "SLATE"
-                : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
-                : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
-                : selectedTool === "dof" ? "DOF"
-                : selectedTool === "color-temp" ? "COLOR TEMP"
-                : selectedTool === "fov" ? "FOV"
-                : selectedTool === "scripter" ? "SCRIPTER"
-                : selectedTool === "sun" ? "SUN SEEKER"
-                : selectedTool === "resources" ? "RESOURCES"
-                : currentRoom ? currentRoom.title
-                : "ZZOTKYO"}
-            </span>
+        {/* 상단 헤더 - 최상위는 목업(커뮤니티+검색+벨), 룸/도구 안은 시네마 헤더 */}
+        {(!currentRoom && !selectedTool) ? (
+          <div data-cinema="1" style={{
+            position:"sticky", top:0, zIndex:50,
+            background:"#0a0a0a",
+            paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+          }}>
+            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+              <span style={{ fontSize:22, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em" }}>커뮤니티</span>
+              <span style={{ width:7, height:7, borderRadius:"50%", background:"#dc2626", display:"inline-block", marginBottom:8 }} />
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+              <button onClick={() => setShowSearch(true)}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", color:"#e7e5e4" }}>
+                <Search size={23} strokeWidth={2} />
+              </button>
+              <button onClick={() => onNotif && onNotif()}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", color:"#e7e5e4", position:"relative" }}>
+                <Bell size={23} strokeWidth={2} />
+              </button>
+            </div>
           </div>
-          <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
-        </div>
+        ) : (
+          <div data-cinema="1" style={{
+            position:"sticky", top:0, zIndex:50,
+            background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
+            backdropFilter:"blur(8px)",
+            paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 18, paddingLeft: 18,
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+            borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
+          }}>
+            <button onClick={() => {
+                if (selectedTool) {
+                  setSelectedTool(null);
+                } else {
+                  setSelectedRoom(null);
+                  setSelectedTool(null);
+                }
+              }}
+              style={{
+                background:`${currentRoom ? currentRoom.color : "#dc2626"}1A`,
+                border:`1px solid ${currentRoom ? currentRoom.color : "#dc2626"}4D`,
+                color:"#fafaf9", fontSize:12, fontWeight:600,
+                padding:"7px 14px", borderRadius:8, cursor:"pointer",
+                display:"flex", alignItems:"center", gap:6,
+              }}>
+              <span style={{ color: currentRoom ? currentRoom.color : "#dc2626" }}>←</span>
+              {selectedTool ? "도구" : "ROOMS"}
+            </button>
+            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
+              <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
+                {selectedTool === "slate" ? "SLATE"
+                  : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
+                  : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
+                  : selectedTool === "dof" ? "DOF"
+                  : selectedTool === "color-temp" ? "COLOR TEMP"
+                  : selectedTool === "fov" ? "FOV"
+                  : selectedTool === "scripter" ? "SCRIPTER"
+                  : selectedTool === "sun" ? "SUN SEEKER"
+                  : selectedTool === "resources" ? "RESOURCES"
+                  : currentRoom ? currentRoom.title
+                  : "ZZOTKYO"}
+              </span>
+            </div>
+            <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
+          </div>
+        )}
 
         {/* 본문 콘텐츠 */}
         <div style={{ padding:"4px 14px 80px", maxWidth:1000, margin:"0 auto" }}>
@@ -958,68 +993,114 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
       {/* 🎬 룸 분기 화면 (selectedRoom === null) */}
       {!selectedRoom && (
         <div style={{ marginTop:20 }}>
-          {/* CHOOSE YOUR ROOM 안내 */}
-          <div style={{ textAlign:"center", marginBottom:18, padding:"0 8px" }}>
-            <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:"#dc2626", letterSpacing:"0.35em", fontWeight:700, marginBottom:5 }}>
-              CHOOSE YOUR ROOM
-            </div>
-            <div style={{ fontSize:13, color:"#a8a29e" }}>어디로 가시겠습니까?</div>
-          </div>
-
-          {/* 룸 박스 2열 그리드 */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
-            {ROOMS.map(room => {
-              const locked = room.studentOnly && isProfOrTeacher;
+          {(() => {
+            const openRoom = (room) => {
+              if (room.studentOnly && isProfOrTeacher) { setBlockedRoom(room); return; }
+              setSelectedRoom(room.id);
+              setCat(room.id === "crew" ? "협업모집" : room.id === "class" ? "클래스" : "전체");
+              setPage(1); setSearch("");
+            };
+            const chipsOf = (room) => room.id === "tools" ? ["슬레이터","스크립터","계산기"] : room.categories;
+            const Chip = ({ room, label }) => (
+              <span style={{
+                border:`1px solid ${room.color}55`, background:`${room.color}14`, color:room.color,
+                fontSize:10.5, padding:"3px 8px", borderRadius:7, fontWeight:700, whiteSpace:"nowrap",
+              }}>{label}</span>
+            );
+            const IconOrb = ({ room, size=46 }) => {
+              const Ic = ROOM_ICON[room.id];
               return (
-                <div key={room.id} onClick={() => {
-                    if (locked) { setBlockedRoom(room); return; }
-                    setSelectedRoom(room.id); setCat(room.id === "crew" ? "협업모집" : room.id === "class" ? "클래스" : "전체"); setPage(1); setSearch("");
-                  }}
-                  style={{
-                    background: "#1a1a1a",
-                    border: "1px solid #2a2a2a",
-                    borderLeft: `4px solid ${room.color}`,
-                    borderRadius:6, padding:"11px 11px", cursor:"pointer", position:"relative",
-                    transition:"transform 0.15s",
-                    opacity: locked ? 0.6 : 1,
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                >
-                  <div style={{ position:"absolute", top:7, right:8, fontFamily:"'Courier New', monospace", fontSize:7, color:"#71706b", letterSpacing:"0.15em" }}>
-                    {locked ? "🔒 STUDENTS" : `ROOM ${room.number}`}
-                  </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:9 }}>
-                    <div style={{ fontSize:24, lineHeight:1 }}>{room.icon}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontFamily:"'Courier New', monospace", fontSize:7.5, color:room.color, letterSpacing:"0.08em", fontWeight:700, marginBottom:3 }}>
-                        {room.subtitle}
-                      </div>
-                      <div style={{ fontSize:12.5, fontWeight:900, color:"#fafaf9", marginBottom:4 }}>{room.title}</div>
-                      {room.id === "tools" ? (
-                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {["슬레이터","스크립터","계산기"].map(t => (
-                            <span key={t} style={{ background:room.colorBg, color:room.color, fontSize:8, padding:"1px 5px", borderRadius:3, fontWeight:700 }}>{t}</span>
-                          ))}
-                        </div>
-                      ) : (
-                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {room.categories.map(c => (
-                            <span key={c} style={{ background:room.colorBg, color:room.color, fontSize:8, padding:"1px 5px", borderRadius:3, fontWeight:700 }}>{c}</span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                <div style={{
+                  width:size, height:size, borderRadius:"50%", flexShrink:0,
+                  background:`${room.color}1F`, border:`1px solid ${room.color}55`,
+                  boxShadow:`0 0 20px ${room.color}40, inset 0 0 12px ${room.color}22`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                }}>
+                  {Ic && <Ic size={Math.round(size*0.48)} color={room.color} strokeWidth={2} />}
                 </div>
               );
-            })}
-          </div>
+            };
+            const cardBg = (room) => `radial-gradient(120% 85% at 22% 0%, ${room.color}16 0%, #141418 52%)`;
+            const mainRooms = ROOMS.slice(0, 6);
+            const wideRooms = ROOMS.slice(6);
+            return (
+              <>
+                {/* 상단 6개 세로형 카드 (2열) */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
+                  {mainRooms.map(room => {
+                    const locked = room.studentOnly && isProfOrTeacher;
+                    return (
+                      <div key={room.id} onClick={() => openRoom(room)}
+                        style={{
+                          background: cardBg(room), border:"1px solid #26262b",
+                          borderRadius:16, padding:16, cursor:"pointer", position:"relative",
+                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                      >
+                        <ChevronRight size={18} color="#5a5a62" style={{ position:"absolute", top:14, right:12 }} />
+                        <div style={{ marginBottom:13 }}><IconOrb room={room} /></div>
+                        <div style={{ fontSize:9.5, color:room.color, letterSpacing:"0.1em", fontWeight:800, marginBottom:5 }}>
+                          {locked ? "STUDENTS ONLY" : room.subtitle}
+                        </div>
+                        <div style={{ fontSize:16.5, fontWeight:900, color:"#fafaf9", marginBottom:11 }}>{room.title}</div>
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                          {chipsOf(room).map(c => <Chip key={c} room={room} label={c} />)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
 
-          {/* 푸터 */}
-          <div style={{ padding:"18px 8px 30px", textAlign:"center", fontFamily:"'Courier New', monospace", fontSize:9, color:"#71706b", letterSpacing:"0.2em" }}>
-            A ZZOTKYO PRESENTATION · {new Date().getFullYear()}
-          </div>
+                {/* 하단 2개 가로형 카드 (2열) */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginTop:11 }}>
+                  {wideRooms.map(room => {
+                    const locked = room.studentOnly && isProfOrTeacher;
+                    return (
+                      <div key={room.id} onClick={() => openRoom(room)}
+                        style={{
+                          background: cardBg(room), border:"1px solid #26262b",
+                          borderRadius:16, padding:14, cursor:"pointer", position:"relative",
+                          display:"flex", alignItems:"center", gap:11,
+                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                      >
+                        <IconOrb room={room} size={40} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:8.5, color:room.color, letterSpacing:"0.08em", fontWeight:800, marginBottom:3 }}>
+                            {room.subtitle}
+                          </div>
+                          <div style={{ fontSize:14, fontWeight:900, color:"#fafaf9", marginBottom:7, lineHeight:1.15 }}>{room.title}</div>
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            {room.categories.map(c => <Chip key={c} room={room} label={c} />)}
+                          </div>
+                        </div>
+                        <ChevronRight size={18} color="#5a5a62" style={{ position:"absolute", top:14, right:12 }} />
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 프로젝트 시작 배너 → 크루 메이커스 진입 */}
+                <div onClick={() => openRoom(ROOMS.find(r => r.id === "crew"))}
+                  style={{
+                    marginTop:14, marginBottom:8, background:"#151519", border:"1px solid #26262b",
+                    borderRadius:14, padding:"15px 16px", cursor:"pointer",
+                    display:"flex", alignItems:"center", gap:13,
+                  }}>
+                  <Clapperboard size={24} color="#a8a29e" strokeWidth={2} style={{ flexShrink:0 }} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:800, color:"#fafaf9", marginBottom:3 }}>나만의 프로젝트를 시작해보세요</div>
+                    <div style={{ fontSize:12, color:"#a8a29e" }}>팀원을 모집하고, 아이디어를 실현해보세요.</div>
+                  </div>
+                  <ChevronRight size={20} color="#5a5a62" style={{ flexShrink:0 }} />
+                </div>
+              </>
+            );
+          })()}
 
           {/* 🔒 학생 전용 안내 모달 */}
           {blockedRoom && (
@@ -1040,6 +1121,26 @@ export default function Community({ onExit, initialRoom, initialPostId, initialA
                 </div>
                 <button onClick={() => setBlockedRoom(null)}
                   style={{ width:"100%", padding:"11px", minHeight:44, background:blockedRoom.color, color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:800, fontFamily:"Pretendard, sans-serif", cursor:"pointer", touchAction:"manipulation" }}>
+                  확인
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 🔍 검색 (자리만 — 추후 구현) */}
+          {showSearch && (
+            <div onClick={() => setShowSearch(false)}
+              style={{ position:"fixed", inset:0, zIndex:9500, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", padding:24 }}>
+              <div onClick={e => e.stopPropagation()}
+                style={{ background:"#0a0a0a", border:"1px solid #2a2a2a", borderRadius:12, padding:"28px 24px", maxWidth:320, textAlign:"center" }}>
+                <Search size={40} color="#a8a29e" strokeWidth={2} style={{ marginBottom:12 }} />
+                <div style={{ fontSize:15, fontWeight:800, color:"#fafaf9", marginBottom:8 }}>통합 검색 준비 중</div>
+                <div style={{ fontSize:12.5, color:"#a8a29e", lineHeight:1.6, marginBottom:20 }}>
+                  곧 커뮤니티 전체 글을 검색할 수 있어요.<br/>
+                  <span style={{ color:"#71706b", fontSize:11 }}>지금은 각 게시판 안에서 검색해 주세요.</span>
+                </div>
+                <button onClick={() => setShowSearch(false)}
+                  style={{ width:"100%", padding:"11px", minHeight:44, background:"#dc2626", color:"#fff", border:"none", borderRadius:8, fontSize:13, fontWeight:800, fontFamily:"Pretendard, sans-serif", cursor:"pointer", touchAction:"manipulation" }}>
                   확인
                 </button>
               </div>
