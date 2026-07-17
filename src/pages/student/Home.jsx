@@ -748,13 +748,13 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           </button>
         </div>
 
-        {/* 마스코트 — 절대배치, 크게 내려서 버튼까지 겹침(버튼 반투명이라 자연스럽게 비침) */}
-        <img src="/mascot/hi.png" alt="렌토리" aria-hidden="true"
-          style={{ position:"absolute", right:0, top:4, width:130, height:130, objectFit:"contain", pointerEvents:"none", filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", zIndex:1 }} />
+        {/* 마스코트(따봉 수달) — 절대배치, 크게 내려서 버튼까지 겹침(버튼 반투명이라 자연스럽게 비침) */}
+        <img src="/mascot/thumbsup.png" alt="렌토리" aria-hidden="true"
+          style={{ position:"absolute", right:-6, top:0, height:176, width:"auto", objectFit:"contain", pointerEvents:"none", filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", zIndex:1 }} />
 
         {/* 인사말 (한 줄) */}
-        <div style={{ position:"relative", zIndex:2, paddingRight:80 }}>
-          <div style={{ fontSize:18, fontWeight:900, color:"#fff", lineHeight:1.2, letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
+        <div style={{ position:"relative", zIndex:2, paddingRight:96 }}>
+          <div style={{ fontSize:17, fontWeight:900, color:"#fff", lineHeight:1.2, letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
             안녕하세요, <span style={{ color:HOME_NAME }}>{profile?.name}</span>님 <span style={{ fontWeight:400 }}>👋</span>
           </div>
           <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.72)", marginTop:7, lineHeight:1.45 }}>
