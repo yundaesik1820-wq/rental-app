@@ -40,6 +40,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
 
   const [sideOpen, setSideOpen] = useState(true);
+  const [showSearch, setShowSearch] = useState(false); // 헤더 검색(커뮤니티와 동일 — 현재 준비중 껍데기)
   const mainRef = useRef(null); // 같은 탭 재탭 시 맨 위로 스크롤
 
   const adminRole = profile?.adminRole || "super";
@@ -170,17 +171,19 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
       {/* ── Main ── */}
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
-        {/* Top bar */}
-        <header style={{ background: C.surface, borderBottom: `1px solid ${C.border}`, padding: "0 24px", height: 60, display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 16, fontWeight: 800, color: C.navy }}>
-            {currentNav && <currentNav.icon size={20} color={C.navy} strokeWidth={2.5} />}
+        {/* Top bar — 커뮤니티 헤더와 동일 스타일 (띠 없음, 큰 볼드 제목, 검색+알림) */}
+        <header style={{ background: C.bg, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
+          <span style={{ fontSize: 22, fontWeight: 900, color: C.text, letterSpacing: "-0.02em", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
             {currentNav?.label}
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 12, paddingRight: "env(safe-area-inset-right, 0px)" }}>
-            <button onClick={onNotif} className="tap-spring" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 6, borderRadius: 8, display: "flex", alignItems: "center", color: C.muted }}>
-              <Bell size={22} />
+          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, paddingRight: "env(safe-area-inset-right, 0px)" }}>
+            <button onClick={() => setShowSearch(true)} className="tap-spring" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", color: C.text }}>
+              <Search size={23} strokeWidth={2} />
+            </button>
+            <button onClick={onNotif} className="tap-spring" style={{ position: "relative", background: "none", border: "none", cursor: "pointer", padding: 0, display: "flex", color: C.text }}>
+              <Bell size={23} strokeWidth={2} />
               {notifCount > 0 && (
-                <span style={{ position: "absolute", top: 0, right: 0, background: C.red, color: "#fff", borderRadius: "50%", width: 18, height: 18, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{notifCount}</span>
+                <span style={{ position: "absolute", top: -5, right: -6, background: C.red, color: "#fff", borderRadius: "50%", width: 17, height: 17, fontSize: 10, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{notifCount}</span>
               )}
             </button>
           </div>
@@ -202,9 +205,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
           main { padding: 12px !important; padding-bottom: 70px !important; }
 
-          /* 헤더 */
-          header { padding: 0 12px !important; height: 46px !important; }
-          header > div:last-child > div > div:last-child { display: none !important; }
+          /* 헤더 (커뮤니티와 동일 — 띠 없이 볼드 제목) */
+          header { padding: 12px 16px !important; }
 
           /* 카드 패딩 축소 */
           [class*="card"], [data-card] { padding: 12px !important; }
@@ -360,6 +362,25 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
           </div>
         ))}
       </div>
+
+      {/* 🔍 통합 검색 (준비중 껍데기 — 커뮤니티 헤더와 동일) */}
+      {showSearch && (
+        <div onClick={() => setShowSearch(false)}
+          style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: "28px 24px", maxWidth: 320, textAlign: "center" }}>
+            <Search size={40} color={C.muted} strokeWidth={2} style={{ marginBottom: 12 }} />
+            <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>통합 검색 준비 중</div>
+            <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6, marginBottom: 20 }}>
+              곧 검색 기능을 추가할 예정이에요.
+            </div>
+            <button onClick={() => setShowSearch(false)}
+              style={{ width: "100%", padding: "11px", minHeight: 44, background: C.navy, color: C.bg, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
+              확인
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );
