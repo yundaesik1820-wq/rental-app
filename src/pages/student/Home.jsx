@@ -740,9 +740,9 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         .hero-hit:active{transform:scale(0.94);background-color:rgba(255,255,255,0.12);
           box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18);}
         .htext{position:absolute;top:20px;left:22px;width:52%;z-index:5;pointer-events:none;line-height:normal;}
-        .hgreet{margin:0;font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.02em;white-space:nowrap;}
+        .hgreet{margin:0;font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.035em;white-space:nowrap;}
         .hgreet .nm{color:#6f8cff;}
-        .hsub{margin:7px 0 0;font-size:11px;line-height:1.5;font-weight:500;color:rgba(214,224,252,0.78);}
+        .hsub{margin:7px 0 0;font-size:11px;line-height:1.55;font-weight:500;color:rgba(214,224,252,0.78);letter-spacing:-0.02em;}
       `}</style>
       <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 16 }}>
         <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
