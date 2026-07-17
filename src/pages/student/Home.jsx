@@ -167,19 +167,20 @@ function ClassForm({ initial, onSave, onDelete, onClose }) {
         </div>
       </div>
 
-      <div style={{ display: "flex", gap: 8 }}>
-        {initial && <Btn onClick={onDelete} color={C.red} outline>삭제</Btn>}
-        <Btn onClick={onClose} color={C.muted} outline full>취소</Btn>
-        {(() => {
-          const canSave = form.name && form.location && form.startTime && form.endTime;
-          return (
+      {(() => {
+        const canSave = form.name && form.location && form.startTime && form.endTime;
+        const base = { padding: "11px 0", borderRadius: 10, fontSize: 13, fontWeight: 800, fontFamily: "inherit", boxSizing: "border-box", cursor: "pointer" };
+        return (
+          <div style={{ display: "flex", gap: 8 }}>
+            {initial && (
+              <button onClick={onDelete} style={{ ...base, flex: "0 0 auto", padding: "11px 18px", border: `1.5px solid ${C.red}66`, background: "transparent", color: C.red }}>삭제</button>
+            )}
+            <button onClick={onClose} style={{ ...base, flex: 1, border: `1.5px solid ${C.border}`, background: "transparent", color: C.muted }}>취소</button>
             <button onClick={() => canSave && onSave(form)} disabled={!canSave}
-              style={{ flex: 1, padding: "11px 0", borderRadius: 10, border: "none", background: canSave ? "linear-gradient(135deg,#4d7cfe,#3b6cf8)" : C.border, color: "#fff", fontSize: 13, fontWeight: 800, cursor: canSave ? "pointer" : "default", fontFamily: "inherit", opacity: canSave ? 1 : 0.55 }}>
-              저장
-            </button>
-          );
-        })()}
-      </div>
+              style={{ ...base, flex: 1, border: "1.5px solid transparent", background: canSave ? "linear-gradient(135deg,#4d7cfe,#3b6cf8)" : C.border, color: "#fff", cursor: canSave ? "pointer" : "default", opacity: canSave ? 1 : 0.55 }}>저장</button>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -949,11 +950,11 @@ export default function StudentHome({ onOpenRoom, setTab }) {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 7, flexShrink: 0, width: 98 }}>
               <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
-                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "rgba(70,110,255,0.12)", border: "1px solid rgba(100,140,255,0.32)", color: "#cdd8ff", fontFamily: "inherit" }}>
+                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", boxSizing: "border-box", background: "rgba(70,110,255,0.12)", border: "1px solid rgba(100,140,255,0.32)", color: "#cdd8ff", fontFamily: "inherit" }}>
                 <PlusCircle size={15} color="#6f8cff" /> 직접 추가
               </button>
               <button onClick={() => setShowTtSource(true)} disabled={importing}
-                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", border: "none", color: "#fff", fontFamily: "inherit", opacity: importing ? 0.7 : 1 }}>
+                style={{ display: "flex", width: "100%", alignItems: "center", justifyContent: "center", gap: 5, borderRadius: 11, padding: "9px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap", boxSizing: "border-box", background: "linear-gradient(135deg,#8b5cf6,#6d5cf6)", border: "1px solid transparent", color: "#fff", fontFamily: "inherit", opacity: importing ? 0.7 : 1 }}>
                 <Bot size={15} /> {importing ? "인식 중…" : "AI로 추가"}
               </button>
             </div>
