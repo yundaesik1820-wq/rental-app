@@ -754,8 +754,10 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         .home-hero-greet{font-size:21px;font-weight:800;color:#fff;line-height:1.28;letter-spacing:-0.01em;}
         .home-hero-greet .nm{color:#7ea2ff;}
         .home-hero-sub{font-size:12.5px;line-height:1.5;color:rgba(200,214,245,0.75);margin-top:8px;}
-        .home-hero-char{position:absolute;z-index:2;right:-16px;top:6px;height:236px;width:auto;pointer-events:none;
-          filter:drop-shadow(0 8px 20px rgba(0,0,0,0.45));}
+        .home-hero-char{position:absolute;z-index:2;right:-26px;top:-4px;height:264px;width:auto;pointer-events:none;
+          filter:drop-shadow(0 10px 22px rgba(0,0,0,0.4));
+          -webkit-mask-image:linear-gradient(to bottom,#000 50%,rgba(0,0,0,0.35) 74%,transparent 90%);
+          mask-image:linear-gradient(to bottom,#000 50%,rgba(0,0,0,0.35) 74%,transparent 90%);}
         .home-hero-actions{position:absolute;left:16px;right:16px;bottom:16px;z-index:4;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
         .home-hero-act{display:flex;align-items:center;gap:8px;padding:10px 9px;border-radius:14px;cursor:pointer;text-align:left;min-width:0;
           background:rgba(22,42,88,0.66);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
