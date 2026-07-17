@@ -753,14 +753,14 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           <p className="hsub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
         </div>
         <div className="hmini">
+          <button onClick={logout} title="로그아웃" aria-label="로그아웃">
+            <LogOut size={14} />
+          </button>
           {profile?.linkedEmail && (
             <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환" aria-label="계정 전환" style={{ opacity: switchLoading2 ? 0.6 : 1 }}>
               <RefreshCw size={14} />
             </button>
           )}
-          <button onClick={logout} title="로그아웃" aria-label="로그아웃">
-            <LogOut size={14} />
-          </button>
         </div>
         {[
           { label: "장비 예약", box: { left: "4.0%",  top: "66.6%", width: "30.2%", height: "26.6%" }, onClick: () => setTab?.("equip") },
