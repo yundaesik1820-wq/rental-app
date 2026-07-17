@@ -739,22 +739,14 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           background:linear-gradient(140deg,#0b1230 0%,#142250 48%,#1f2f6c 100%);
           border:1px solid rgba(100,140,255,0.18);
           box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 12px 30px rgba(0,0,0,0.35);}
-        .home-hero-glow{position:absolute;right:-50px;top:-50px;width:320px;height:320px;z-index:0;pointer-events:none;
-          background:radial-gradient(circle at 55% 45%,rgba(139,92,246,0.38),rgba(77,124,254,0.18) 46%,transparent 72%);}
-        .home-hero-stars{position:absolute;inset:0;z-index:0;pointer-events:none;
-          background-image:radial-gradient(2px 2px at 68% 22%,rgba(255,255,255,0.75),transparent),
-            radial-gradient(1.6px 1.6px at 84% 42%,rgba(180,200,255,0.6),transparent),
-            radial-gradient(1.6px 1.6px at 60% 58%,rgba(255,255,255,0.5),transparent),
-            radial-gradient(1.4px 1.4px at 90% 62%,rgba(160,190,255,0.5),transparent);}
-        .home-hero-diag{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0.6;
-          background:linear-gradient(122deg,transparent 54%,rgba(90,120,220,0.10) 62%,transparent 70%);}
+        .home-hero-glow,.home-hero-stars,.home-hero-diag{display:none;}
         .home-hero-top{position:absolute;top:10px;right:10px;display:flex;gap:5px;z-index:6;}
         .home-hero-top button{background:rgba(255,255,255,0.14);border:none;border-radius:8px;padding:6px;color:rgba(255,255,255,0.8);cursor:pointer;display:flex;align-items:center;}
         .home-hero-text{position:absolute;top:20px;left:18px;right:96px;z-index:3;}
         .home-hero-greet{font-size:18px;font-weight:800;color:#fff;line-height:1.25;letter-spacing:-0.01em;white-space:nowrap;}
         .home-hero-greet .nm{color:#7ea2ff;}
         .home-hero-sub{font-size:12px;line-height:1.5;color:rgba(200,214,245,0.75);margin-top:8px;}
-        .home-hero-char{position:absolute;z-index:2;right:-14px;top:6px;height:206px;width:auto;pointer-events:none;
+        .home-hero-char{position:absolute;z-index:2;right:10px;top:30px;height:206px;width:auto;pointer-events:none;
           filter:drop-shadow(0 10px 22px rgba(0,0,0,0.4));
           -webkit-mask-image:linear-gradient(to bottom,#000 54%,rgba(0,0,0,0.3) 78%,transparent 94%);
           mask-image:linear-gradient(to bottom,#000 54%,rgba(0,0,0,0.3) 78%,transparent 94%);}
