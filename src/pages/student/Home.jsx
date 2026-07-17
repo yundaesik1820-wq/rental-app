@@ -743,12 +743,24 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         .hgreet{margin:0;font-size:14px;font-weight:800;color:#fff;letter-spacing:0.02em;white-space:nowrap;}
         .hgreet .nm{color:#6f8cff;}
         .hsub{margin:7px 0 0;font-size:11px;line-height:1.6;font-weight:500;color:rgba(214,224,252,0.78);letter-spacing:0.02em;}
+        .hbtns{margin-top:9px;display:flex;gap:6px;pointer-events:auto;}
+        .hbtn{display:inline-flex;align-items:center;gap:3px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.12);border-radius:7px;padding:3px 8px;color:rgba(255,255,255,0.85);font-size:10px;font-weight:600;cursor:pointer;font-family:inherit;}
       `}</style>
       <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 16 }}>
         <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
         <div className="htext">
           <p className="hgreet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</p>
           <p className="hsub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
+          <div className="hbtns">
+            {profile?.linkedEmail && (
+              <button className="hbtn" onClick={handleSwitch2} disabled={switchLoading2} style={{ opacity: switchLoading2 ? 0.6 : 1 }}>
+                <RefreshCw size={11} /> {switchLoading2 ? "전환 중..." : "계정 전환"}
+              </button>
+            )}
+            <button className="hbtn" onClick={logout}>
+              <LogOut size={11} /> 로그아웃
+            </button>
+          </div>
         </div>
         {[
           { label: "장비 예약", box: { left: "4.0%",  top: "66.6%", width: "30.2%", height: "26.6%" }, onClick: () => setTab?.("equip") },
