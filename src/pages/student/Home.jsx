@@ -1016,7 +1016,7 @@ export default function StudentHome({ onOpenRoom, setTab }) {
       {/* 친구 시간표 */}
       <div style={{ marginBottom:16 }}>
         <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
-          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
+          style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:TT.bg, border:`1px solid ${TT.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
           <div style={{ display:"flex", alignItems:"center", gap:11 }}>
             <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#14b8a6,#0e9f97)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>👥</div>
             <div style={{ textAlign:"left" }}>
@@ -1028,7 +1028,7 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         </button>
 
         {showFriendTab && (
-          <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
+          <div style={{ background:TT.bg, border:`1px solid ${TT.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
 
             {/* 친구 추가 안내 */}
             <div style={{ fontSize:11, color:C.muted, textAlign:"center", marginBottom:12 }}>
@@ -1071,10 +1071,10 @@ export default function StudentHome({ onOpenRoom, setTab }) {
                       <div style={{ display:"flex", gap:6, marginBottom:8, alignItems:"center" }}>
                         <input value={friendSearch} onChange={e => { setFriendSearch(e.target.value); setFriendPage(1); }}
                           placeholder="이름 또는 학번 검색"
-                          style={{ flex:1, minWidth:0, background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
+                          style={{ flex:1, minWidth:0, background:TT.line, border:`1.5px solid ${TT.border}`, borderRadius:9, color:C.text, padding:"6px 12px", fontSize:12, fontFamily:"inherit", outline:"none" }} />
                         {[["name","이름순"],["id","학번순"]].map(([v,l]) => (
                           <button key={v} onClick={() => { setFriendSort(v); setFriendPage(1); }}
-                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:C.bg, color:friendSort===v?C.bg:C.muted }}>
+                            style={{ padding:"5px 10px", borderRadius:7, border:"none", fontSize:11, fontWeight:600, cursor:"pointer", flexShrink:0, background:friendSort===v?C.navy:TT.line, color:friendSort===v?C.bg:C.muted }}>
                             {l}
                           </button>
                         ))}
@@ -1089,14 +1089,14 @@ export default function StudentHome({ onOpenRoom, setTab }) {
                           const isViewing = viewFriend?.id === fid;
                             return (
                               <div key={f.id}>
-                                <div style={{ display:"flex", alignItems:"center", gap:6, background:f._pinned?C.tealLight:C.bg, borderRadius:10, padding:"8px 12px", border:f._pinned?`1px solid ${C.teal}30`:"none" }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:6, background:f._pinned?"rgba(20,184,166,0.14)":TT.line, borderRadius:10, padding:"8px 12px", border:f._pinned?`1px solid ${C.teal}40`:`1px solid ${TT.border}` }}>
                                   <div style={{ flex:1, minWidth:0 }}>
                                     <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{f._name}</span>
                                     {f._pinned && <span style={{ fontSize:9, color:C.teal, marginLeft:4 }}>📌</span>}
                                     <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{f._sid}</span>
                                   </div>
                                   <button onClick={() => togglePin(f.id)}
-                                    style={{ background:f._pinned?C.teal:C.bg, color:f._pinned?"#fff":C.muted, border:`1px solid ${f._pinned?C.teal:C.border}`, borderRadius:7, padding:"4px 8px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+                                    style={{ background:f._pinned?C.teal:TT.line, color:f._pinned?"#fff":C.muted, border:`1px solid ${f._pinned?C.teal:TT.border}`, borderRadius:7, padding:"4px 8px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
                                     📌
                                   </button>
                                   <button onClick={() => isViewing ? setViewFriend(null) : viewFriendTimetable(f)}
