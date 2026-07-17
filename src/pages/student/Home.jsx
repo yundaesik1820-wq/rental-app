@@ -739,9 +739,17 @@ export default function StudentHome({ onOpenRoom, setTab }) {
           transition:transform .16s cubic-bezier(.34,1.4,.5,1), background-color .16s ease, box-shadow .16s ease;}
         .hero-hit:active{transform:scale(0.94);background-color:rgba(255,255,255,0.12);
           box-shadow:inset 0 0 0 1px rgba(255,255,255,0.18);}
+        .htext{position:absolute;top:20px;left:22px;width:52%;z-index:5;pointer-events:none;line-height:normal;}
+        .hgreet{margin:0;font-size:14px;font-weight:800;color:#fff;letter-spacing:-0.02em;white-space:nowrap;}
+        .hgreet .nm{color:#6f8cff;}
+        .hsub{margin:7px 0 0;font-size:11px;line-height:1.5;font-weight:500;color:rgba(214,224,252,0.78);}
       `}</style>
       <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 16 }}>
         <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
+        <div className="htext">
+          <p className="hgreet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</p>
+          <p className="hsub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
+        </div>
         {[
           { label: "장비 예약", box: { left: "4.0%",  top: "66.6%", width: "30.2%", height: "26.6%" }, onClick: () => setTab?.("equip") },
           { label: "예약 내역", box: { left: "35.8%", top: "66.6%", width: "28.6%", height: "26.6%" }, onClick: () => setTab?.("calendar") },
