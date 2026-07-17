@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, query, where, getDocs, updateDoc, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
-import { LogOut, RefreshCw } from "lucide-react";
+import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
@@ -19,6 +19,10 @@ const C = {
   blue: "#5b6191",
   teal: "#6aa890", // 보조 → 세이지
 };
+
+// ── 홈 전용 컬러(목업) — 홈만 파랑/보라, 나머지 화면은 흑백 유지 ──
+const HOME_GRAD  = "linear-gradient(140deg,#0f1636 0%,#182655 52%,#243676 100%)";
+const HOME_NAME  = "#8ea2ff"; // 이름 하이라이트
 
 const DAYS   = ["월", "화", "수", "목", "금", "토"];
 const HOURS  = Array.from({ length: 14 }, (_, i) => i + 9); // 9~22
@@ -325,10 +329,11 @@ function ScenePatchHomeCard({ onOpen }) {
   );
 }
 
-export default function StudentHome({ onOpenRoom }) {
+export default function StudentHome({ onOpenRoom, setTab }) {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
+  const [showRules, setShowRules] = useState(false); // 대여 규칙 모달
 
   // 계정 전환 (학생↔관리자)
   const switchKey = `linked_creds_${profile?.uid}`;
@@ -715,46 +720,82 @@ export default function StudentHome({ onOpenRoom }) {
         </div>
       )}
 
-      {/* Welcome banner */}
-      <div style={{ background: "linear-gradient(135deg,#3d4370,#5b6191)", borderRadius: 20, padding: "20px 20px 12px", marginBottom: 20, position: "relative" }}>
-        {/* 버튼들 - 배너 우측 상단 */}
-        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
+      {/* Welcome banner — 컬러 개편(홈 전용) + 퀵버튼 3개 */}
+      <div style={{ background: HOME_GRAD, borderRadius: 22, padding: "18px 18px 16px", marginBottom: 18, position: "relative", overflow: "hidden" }}>
+        {/* 우상단 로그아웃/계정전환 (작은 아이콘) */}
+        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6, zIndex:2 }}>
           {profile?.linkedEmail && (
-            <button onClick={handleSwitch2} disabled={switchLoading2}
-              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4, opacity:switchLoading2?0.7:1 }}>
-              <RefreshCw size={14} /> {switchLoading2?"전환 중...":"계정 전환"}
+            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환"
+              style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:9, padding:7, color:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center", opacity:switchLoading2?0.6:1 }}>
+              <RefreshCw size={15} />
             </button>
           )}
-          <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-            <LogOut size={14} /> 로그아웃
+          <button onClick={logout} title="로그아웃"
+            style={{ background:"rgba(255,255,255,0.12)", border:"none", borderRadius:9, padding:7, color:"rgba(255,255,255,0.85)", cursor:"pointer", display:"flex", alignItems:"center" }}>
+            <LogOut size={15} />
           </button>
         </div>
-        {/* 학번/계열만 표시 */}
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", fontWeight:600, marginBottom: 14 }}>
-          {profile?.role === "professor" ? "교수" : `${profile?.dept} · ${profile?.studentId ? profile.studentId.slice(0,2)+"학번" : ""}`}
-        </div>
 
-        {/* 마스코트 + 말풍선 + 워터마크 */}
-        <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-          <img src="/mascot/hi.png" alt="렌토리" style={{ width:96, height:96, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 4px 12px rgba(0,0,0,0.3))" }} />
-          <div style={{ flex:1 }}>
-            <div style={{ position:"relative", background:"#fff", borderRadius:14, padding:"10px 14px", boxShadow:"0 4px 12px rgba(0,0,0,0.15)" }}>
-              <div style={{ position:"absolute", left:-8, top:"50%", transform:"translateY(-50%)", width:0, height:0, borderTop:"8px solid transparent", borderBottom:"8px solid transparent", borderRight:"10px solid #fff" }}></div>
-              <div style={{ fontSize:12, fontWeight:700, color:"#1B2B6B", marginBottom:3, lineHeight:1.4 }}>
-                난 장비대여실 마스코트 렌토리예요!
-              </div>
-              <div style={{ fontSize:12, color:"#475569", lineHeight:1.4 }}>
-                오늘도 잘 부탁해요, {profile?.name}님!
-              </div>
+        {/* 인사 + 마스코트 */}
+        <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8, marginBottom:14 }}>
+          <div style={{ flex:1, minWidth:0, paddingTop:8 }}>
+            <div style={{ fontSize:21, fontWeight:900, color:"#fff", lineHeight:1.25, letterSpacing:"-0.02em" }}>
+              안녕하세요,<br/><span style={{ color:HOME_NAME }}>{profile?.name}</span>님 <span style={{ fontWeight:400 }}>👋</span>
             </div>
-            <div style={{ textAlign:"right", marginTop:6 }}>
-              <span style={{ fontSize:9, color:"rgba(255,255,255,0.3)", fontStyle:"italic", whiteSpace:"nowrap" }}>
-                Designed &amp; Developed by 윤대식
-              </span>
+            <div style={{ fontSize:12.5, color:"rgba(255,255,255,0.72)", marginTop:9, lineHeight:1.5 }}>
+              오늘도 멋진 촬영과 작품을<br/>KBAS가 함께 응원할게요!
             </div>
           </div>
+          <img src="/mascot/hi.png" alt="렌토리" style={{ width:112, height:112, objectFit:"contain", flexShrink:0, filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", marginTop:-2, marginRight:-2 }} />
+        </div>
+
+        {/* 퀵버튼 3개 */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+          {[
+            { Icon: CalendarPlus,  tint:"linear-gradient(135deg,#8b5cf6,#6d5cf6)", title:"장비 예약", sub:"새로 예약하기", onClick:() => setTab?.("equip") },
+            { Icon: ClipboardList, tint:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", title:"예약 내역", sub:"내 예약 보기", onClick:() => setTab?.("calendar") },
+            { Icon: ShieldCheck,   tint:"linear-gradient(135deg,#5b8def,#4f6bd8)", title:"대여 규칙", sub:"이용 가이드", onClick:() => setShowRules(true) },
+          ].map((b, i) => (
+            <button key={i} onClick={b.onClick}
+              style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"11px 10px", cursor:"pointer", textAlign:"left", display:"flex", flexDirection:"column", gap:8, fontFamily:"inherit" }}>
+              <div style={{ width:34, height:34, borderRadius:10, background:b.tint, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                <b.Icon size={18} color="#fff" strokeWidth={2.2} />
+              </div>
+              <div style={{ minWidth:0 }}>
+                <div style={{ fontSize:12.5, fontWeight:800, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.title}</div>
+                <div style={{ fontSize:10, color:"rgba(255,255,255,0.58)", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.sub}</div>
+              </div>
+            </button>
+          ))}
         </div>
       </div>
+
+      {/* 대여 규칙 모달 */}
+      {showRules && (
+        <Modal onClose={() => setShowRules(false)} width={380}>
+          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14 }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#5b8def,#4f6bd8)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+              <ShieldCheck size={19} color="#fff" strokeWidth={2.2} />
+            </div>
+            <div style={{ fontSize:15, fontWeight:900, color:C.text }}>대여 이용 규칙</div>
+          </div>
+          {[
+            { t:"대여 시간", d:"평일 당일대여 09:00~17:30 / 주말대여 금 17:30 ~ 월 09:00" },
+            { t:"신청 기한", d:"이용일 최소 3일 전까지 신청 (긴급 체크 시 예외)" },
+            { t:"라이선스", d:"보유 라이선스 등급(LV0~LV3)에 따라 대여 가능 장비가 달라져요" },
+            { t:"반납", d:"제시간에 반납해주세요. 연체 시 이용이 제한될 수 있어요" },
+          ].map((r,i) => (
+            <div key={i} style={{ display:"flex", gap:10, padding:"10px 0", borderTop: i>0 ? `1px solid ${C.border}` : "none" }}>
+              <div style={{ flexShrink:0, width:64, fontSize:12, fontWeight:800, color:C.text }}>{r.t}</div>
+              <div style={{ flex:1, fontSize:12, color:C.muted, lineHeight:1.55 }}>{r.d}</div>
+            </div>
+          ))}
+          <button onClick={() => setShowRules(false)}
+            style={{ width:"100%", marginTop:14, background:C.navy, color:C.bg, border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
+            확인
+          </button>
+        </Modal>
+      )}
 
       {/* 🐾 펫 키우기 카드 */}
       <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
