@@ -732,54 +732,101 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         </div>
       )}
 
-      {/* Welcome banner — 컬러 개편(홈 전용) + 퀵버튼 3개 */}
-      <div style={{ background: HOME_GRAD, borderRadius: 20, padding: "13px 16px", marginBottom: 16, position: "relative", overflow: "hidden" }}>
-        {/* 우상단 로그아웃/계정전환 (작은 아이콘) */}
-        <div style={{ position:"absolute", top:9, right:9, display:"flex", gap:5, zIndex:3 }}>
+      {/* Welcome hero — 대형 히어로(텍스트·캐릭터·액션카드 겹침 구조, 목업 this.png 기준) */}
+      <style>{`
+        /* 폰 기준 — 전부 절대배치 + 높이 고정으로 모든 폰에서 동일 구조 (텍스트 줄 수와 무관) */
+        .home-hero{position:relative;overflow:hidden;border-radius:24px;margin-bottom:18px;height:300px;
+          background:linear-gradient(140deg,#0b1230 0%,#142250 48%,#1f2f6c 100%);
+          border:1px solid rgba(100,140,255,0.18);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,0.05),0 12px 30px rgba(0,0,0,0.35);}
+        .home-hero-glow{position:absolute;right:-50px;top:-50px;width:320px;height:320px;z-index:0;pointer-events:none;
+          background:radial-gradient(circle at 55% 45%,rgba(139,92,246,0.38),rgba(77,124,254,0.18) 46%,transparent 72%);}
+        .home-hero-stars{position:absolute;inset:0;z-index:0;pointer-events:none;
+          background-image:radial-gradient(2px 2px at 68% 22%,rgba(255,255,255,0.75),transparent),
+            radial-gradient(1.6px 1.6px at 84% 42%,rgba(180,200,255,0.6),transparent),
+            radial-gradient(1.6px 1.6px at 60% 58%,rgba(255,255,255,0.5),transparent),
+            radial-gradient(1.4px 1.4px at 90% 62%,rgba(160,190,255,0.5),transparent);}
+        .home-hero-diag{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0.6;
+          background:linear-gradient(122deg,transparent 54%,rgba(90,120,220,0.10) 62%,transparent 70%);}
+        .home-hero-top{position:absolute;top:10px;right:10px;display:flex;gap:5px;z-index:6;}
+        .home-hero-top button{background:rgba(255,255,255,0.14);border:none;border-radius:8px;padding:6px;color:rgba(255,255,255,0.8);cursor:pointer;display:flex;align-items:center;}
+        .home-hero-text{position:absolute;top:20px;left:18px;right:120px;z-index:3;}
+        .home-hero-greet{font-size:21px;font-weight:800;color:#fff;line-height:1.28;letter-spacing:-0.01em;}
+        .home-hero-greet .nm{color:#7ea2ff;}
+        .home-hero-sub{font-size:12.5px;line-height:1.5;color:rgba(200,214,245,0.75);margin-top:8px;}
+        .home-hero-char{position:absolute;z-index:2;right:-16px;top:6px;height:236px;width:auto;pointer-events:none;
+          filter:drop-shadow(0 8px 20px rgba(0,0,0,0.45));}
+        .home-hero-actions{position:absolute;left:16px;right:16px;bottom:16px;z-index:4;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+        .home-hero-act{display:flex;align-items:center;gap:8px;padding:10px 9px;border-radius:14px;cursor:pointer;text-align:left;min-width:0;
+          background:rgba(22,42,88,0.66);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+          border:1px solid rgba(100,140,255,0.22);transition:transform .15s,border-color .15s;font-family:inherit;}
+        .home-hero-act:hover{transform:translateY(-2px);border-color:rgba(150,180,255,0.5);}
+        .home-hero-ic{position:relative;z-index:5;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+        .home-hero-lbl{position:relative;z-index:5;min-width:0;flex:1;}
+        .home-hero-title{font-size:12px;font-weight:800;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .home-hero-desc{font-size:9.5px;color:rgba(200,214,245,0.62);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+        .home-hero-chev{flex-shrink:0;color:rgba(200,214,245,0.4);}
+        /* 넓은 웹(≥900px)에서만 살짝 키움 — 폰엔 영향 없음 */
+        @media(min-width:900px){
+          .home-hero{height:auto;min-height:360px;border-radius:28px;}
+          .home-hero-text{right:auto;max-width:46%;top:44px;left:44px;}
+          .home-hero-greet{font-size:32px;}
+          .home-hero-sub{font-size:18px;margin-top:14px;}
+          .home-hero-char{height:320px;right:48px;top:24px;}
+          .home-hero-actions{left:44px;right:44px;bottom:30px;gap:14px;}
+          .home-hero-act{padding:16px 18px;border-radius:18px;gap:14px;}
+          .home-hero-ic{width:52px;height:52px;border-radius:15px;}
+          .home-hero-ic svg{width:25px;height:25px;}
+          .home-hero-title{font-size:17px;}
+          .home-hero-desc{font-size:13px;margin-top:3px;}
+          .home-hero-chev{width:20px;height:20px;}
+        }
+      `}</style>
+      <div className="home-hero">
+        <div className="home-hero-glow" aria-hidden="true" />
+        <div className="home-hero-stars" aria-hidden="true" />
+        <div className="home-hero-diag" aria-hidden="true" />
+
+        {/* 로그아웃/계정전환 */}
+        <div className="home-hero-top">
           {profile?.linkedEmail && (
-            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환"
-              style={{ background:"rgba(255,255,255,0.14)", border:"none", borderRadius:8, padding:6, color:"rgba(255,255,255,0.8)", cursor:"pointer", display:"flex", alignItems:"center", opacity:switchLoading2?0.6:1 }}>
+            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환" style={{ opacity:switchLoading2?0.6:1 }}>
               <RefreshCw size={13} />
             </button>
           )}
-          <button onClick={logout} title="로그아웃"
-            style={{ background:"rgba(255,255,255,0.14)", border:"none", borderRadius:8, padding:6, color:"rgba(255,255,255,0.8)", cursor:"pointer", display:"flex", alignItems:"center" }}>
-            <LogOut size={13} />
-          </button>
+          <button onClick={logout} title="로그아웃"><LogOut size={13} /></button>
         </div>
 
-        {/* 마스코트(따봉 수달) — 절대배치, 크게 내려서 버튼까지 겹침(버튼 반투명이라 자연스럽게 비침) */}
-        <img src="/mascot/thumbsup.png" alt="렌토리" aria-hidden="true"
-          style={{ position:"absolute", right:-6, top:0, height:176, width:"auto", objectFit:"contain", pointerEvents:"none", filter:"drop-shadow(0 6px 16px rgba(0,0,0,0.4))", zIndex:1 }} />
+        {/* 캐릭터 (z2 — 배경 위, 액션카드 아래. 하반신은 카드 뒤로 가려짐) */}
+        <img className="home-hero-char" src="/mascot/thumbsup.png" alt="렌토리" aria-hidden="true" />
 
-        {/* 인사말 (한 줄) */}
-        <div style={{ position:"relative", zIndex:2, paddingRight:96 }}>
-          <div style={{ fontSize:17, fontWeight:900, color:"#fff", lineHeight:1.2, letterSpacing:"0.01em", whiteSpace:"nowrap" }}>
-            안녕하세요, <span style={{ color:HOME_NAME }}>{profile?.name}</span>님 <span style={{ fontWeight:400 }}>👋</span>
-          </div>
-          <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.72)", marginTop:7, lineHeight:1.45 }}>
-            오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!
-          </div>
+        {/* 텍스트 (z3) */}
+        <div className="home-hero-text">
+          <div className="home-hero-greet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</div>
+          <div className="home-hero-sub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</div>
         </div>
 
-        {/* 퀵버튼 3개 */}
-        <div style={{ position:"relative", zIndex:2, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginTop:12 }}>
+        {/* 액션 카드 (z4 — 캐릭터 하반신 앞) */}
+        <div className="home-hero-actions">
           {[
             { Icon: CalendarPlus,  tint:"linear-gradient(135deg,#8b5cf6,#6d5cf6)", title:"장비 예약", sub:"새로 예약하기", onClick:() => setTab?.("equip") },
             { Icon: ClipboardList, tint:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", title:"예약 내역", sub:"내 예약 보기", onClick:() => setTab?.("calendar") },
             { Icon: ShieldCheck,   tint:"linear-gradient(135deg,#5b8def,#4f6bd8)", title:"대여 규칙", sub:"이용 가이드", onClick:() => setShowRules(true) },
-          ].map((b, i) => (
-            <button key={i} onClick={b.onClick}
-              style={{ background:"rgba(255,255,255,0.07)", border:"1px solid rgba(255,255,255,0.1)", borderRadius:14, padding:"11px 10px", cursor:"pointer", textAlign:"left", display:"flex", flexDirection:"column", gap:8, fontFamily:"inherit" }}>
-              <div style={{ width:34, height:34, borderRadius:10, background:b.tint, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                <b.Icon size={18} color="#fff" strokeWidth={2.2} />
-              </div>
-              <div style={{ minWidth:0 }}>
-                <div style={{ fontSize:12.5, fontWeight:800, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.title}</div>
-                <div style={{ fontSize:10, color:"rgba(255,255,255,0.58)", marginTop:2, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{b.sub}</div>
-              </div>
-            </button>
-          ))}
+          ].map((b, i) => {
+            const Icon = b.Icon;
+            return (
+              <button key={i} className="home-hero-act" onClick={b.onClick}>
+                <div className="home-hero-ic" style={{ background:b.tint }}>
+                  <Icon size={19} color="#fff" strokeWidth={2.2} />
+                </div>
+                <div className="home-hero-lbl">
+                  <div className="home-hero-title">{b.title}</div>
+                  <div className="home-hero-desc">{b.sub}</div>
+                </div>
+                <ChevronRight className="home-hero-chev" size={16} />
+              </button>
+            );
+          })}
         </div>
       </div>
 
