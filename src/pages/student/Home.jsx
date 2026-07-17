@@ -702,7 +702,7 @@ export default function StudentHome({ onOpenRoom, setTab }) {
     <div style={{ fontFamily: "'Pretendard', -apple-system, 'Malgun Gothic', sans-serif" }}>
       {/* PWA 설치 배너 */}
       {showInstall && (
-        <div style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:14, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
+        <div data-hbanner style={{ background:"linear-gradient(135deg,#1B2B6B,#7C3AED)", borderRadius:14, padding:"12px 16px", marginBottom:12, display:"flex", alignItems:"center", gap:12 }}>
           <span style={{ fontSize:26 }}>📲</span>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ fontSize:12, fontWeight:800, color:"#fff", marginBottom:2 }}>앱으로 설치하기</div>
@@ -728,7 +728,7 @@ export default function StudentHome({ onOpenRoom, setTab }) {
 
       {/* iOS PWA 설치 안내 배너 */}
       {showIosInstall && (
-        <div style={{ background:"linear-gradient(135deg,#0F172A,#1B2B6B)", borderRadius:14, padding:"14px 16px", marginBottom:12, border:"1px solid rgba(255,255,255,0.15)" }}>
+        <div data-hbanner style={{ background:"linear-gradient(135deg,#0F172A,#1B2B6B)", borderRadius:14, padding:"14px 16px", marginBottom:12, border:"1px solid rgba(255,255,255,0.15)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontSize:20 }}>📲</span>

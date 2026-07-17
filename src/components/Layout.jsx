@@ -245,8 +245,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
           /* 버튼 최소 높이 */
           button { min-height: 36px; }
 
-          /* 홈 배너 */
-          [style*="linear-gradient"]:not([data-cinema]) { border-radius: 14px !important; padding: 18px 16px !important; }
+          /* 홈 설치 배너 전용 (예전엔 모든 인라인 그라데이션을 잡아 버튼·아이콘까지 왜곡시켰음) */
+          [data-hbanner] { border-radius: 14px !important; padding: 18px 16px !important; }
 
           /* 입력창 */
           input, textarea, select { font-size: 16px !important; }
