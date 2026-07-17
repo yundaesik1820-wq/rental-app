@@ -116,7 +116,7 @@ function petImg(pet) {
 /* ============================================================
    홈 화면 요약 카드 (푸른 박스 아래에 들어감)
    ============================================================ */
-export function PetHomeCard({ uid, onOpen }) {
+export function PetHomeCard({ uid, onOpen, stats }) {
   const [pet, setPet] = useState(undefined); // undefined=로딩, null=없음
 
   const load = useCallback(async () => {
@@ -131,46 +131,66 @@ export function PetHomeCard({ uid, onOpen }) {
 
   if (pet === undefined) return null; // 로딩 중엔 안 보임
 
-  // 펫 없음 → 알 받기 유도 카드
-  if (!pet) {
-    return (
-      <div onClick={onOpen}
-        style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:"14px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
-        <div style={{ width:56, height:56, background:C.bg, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", fontSize:28, flexShrink:0 }}>🥚</div>
-        <div style={{ flex:1 }}>
-          <div style={{ fontSize:14, fontWeight:800, color:C.text }}>나만의 펫 키우기</div>
-          <div style={{ fontSize:12, color:C.muted, marginTop:2 }}>알을 받아 부화시켜보세요!</div>
-        </div>
-        <div style={{ fontSize:12, color: C.bg, background:C.navy, borderRadius:8, padding:"7px 12px", fontWeight:700 }}>시작</div>
-      </div>
-    );
-  }
+  // ── 홈 전용 컬러(목업) ──
+  const GRAD = "linear-gradient(140deg,#161a3a 0%,#1d2a58 100%)";
+  const HAIR = "rgba(255,255,255,0.08)";
+  const s = stats || { rented: 0, onTime: 0, overdue: 0, trust: 0 };
 
-  const stage = stageFromExp(pet.exp);
-  const prog = stageProgress(pet.exp);
-  const rarity = RARITY[pet.rarity] || RARITY.common;
-  const pct = Math.min(100, Math.round((prog.cur / prog.need) * 100));
-  const label = stage === "egg"
-    ? `${rarity.kr} 알`
-    : `${pet.name || SPECIES_KR[pet.species]}`;
+  // 펫 요약값 계산 (없으면 알 유도)
+  const hasPet = !!pet;
+  const rarity = hasPet ? (RARITY[pet.rarity] || RARITY.common) : RARITY.common;
+  const stage  = hasPet ? stageFromExp(pet.exp) : "egg";
+  const lvInfo = hasPet && stage === "adult" ? levelFromAdultExp(pet.exp - ADULT_BASE) : null;
+  const prog   = hasPet ? stageProgress(pet.exp) : { cur: 0, need: 1 };
+  const lvl    = hasPet ? petLevel(pet) : 1;
+  const pct    = !hasPet ? 0
+    : lvInfo ? (lvInfo.max ? 100 : Math.round((lvInfo.cur / lvInfo.need) * 100))
+    : Math.min(100, Math.round((prog.cur / prog.need) * 100));
+  const barColor = rarity.color;
+  const title = !hasPet ? "나만의 펫" : (pet.name || SPECIES_KR[pet.species]);
+  const progLabel = !hasPet ? "알을 받아 부화시켜보세요!"
+    : lvInfo ? (lvInfo.max ? "만렙 달성! 🎉" : `다음 레벨까지 ${lvInfo.need - lvInfo.cur}점`)
+    : `${STAGE_KR[stage]} · 다음 단계까지 ${prog.need - prog.cur}점`;
 
   return (
     <div onClick={onOpen}
-      style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:16, padding:"12px 14px", marginBottom:16, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
-      <div style={{ width:60, height:60, background:C.bg, border:`2px solid ${rarity.color}`, borderRadius:12, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
-        <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+      style={{ background: GRAD, border:`1px solid ${HAIR}`, borderRadius:18, padding:"14px 16px", marginBottom:16, cursor:"pointer" }}>
+      {/* 상단: 아바타 + 이름/레벨 + EXP바 */}
+      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+        <div style={{ width:58, height:58, borderRadius:"50%", background:"rgba(0,0,0,0.28)", border:`2px solid ${barColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden", fontSize:28 }}>
+          {hasPet
+            ? <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
+            : "🥚"}
+        </div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+            <span style={{ fontSize:15, fontWeight:900, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{title}</span>
+            {hasPet && <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:barColor, borderRadius:5, padding:"1px 6px", flexShrink:0 }}>{rarity.kr}</span>}
+            {hasPet && <span style={{ fontSize:11.5, fontWeight:800, color:"#ffd66b", flexShrink:0 }}>★ Lv.{lvl}</span>}
+          </div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.62)", margin:"6px 0 5px" }}>{progLabel}</div>
+          <div style={{ height:7, background:"rgba(255,255,255,0.12)", borderRadius:4, overflow:"hidden" }}>
+            <div style={{ width:`${pct}%`, height:"100%", background:`linear-gradient(90deg,${barColor},#8b5cf6)`, borderRadius:4 }} />
+          </div>
+        </div>
       </div>
-      <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-          <span style={{ fontSize:14, fontWeight:800, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
-          <span style={{ fontSize:10, color:rarity.color, border:`1px solid ${rarity.color}`, borderRadius:4, padding:"1px 5px", flexShrink:0 }}>{rarity.kr}</span>
-        </div>
-        <div style={{ fontSize:11, color:C.muted, margin:"5px 0 4px" }}>
-          {stage === "adult" ? "다 자랐어요! 🎉" : `${STAGE_KR[stage]} · ${prog.cur} / ${prog.need} EXP`}
-        </div>
-        <div style={{ height:6, background:C.bg, borderRadius:3, overflow:"hidden" }}>
-          <div style={{ width:`${pct}%`, height:"100%", background:rarity.color }} />
-        </div>
+
+      {/* 하단: 대여 통계 3개 */}
+      <div style={{ display:"flex", marginTop:13, paddingTop:12, borderTop:`1px solid ${HAIR}` }}>
+        {[["대여", s.rented], ["정시반납", s.onTime], ["연체", s.overdue]].map(([lbl, val], i) => (
+          <div key={i} style={{ flex:1, textAlign:"center", borderLeft: i > 0 ? `1px solid ${HAIR}` : "none" }}>
+            <div style={{ fontSize:16, fontWeight:900, color: (lbl === "연체" && val > 0) ? "#ff8a8a" : "#fff" }}>
+              {val}<span style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.55)" }}>회</span>
+            </div>
+            <div style={{ fontSize:10.5, color:"rgba(255,255,255,0.55)", marginTop:2 }}>{lbl}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* 대여 신뢰도 */}
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:11, background:"rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 12px" }}>
+        <span style={{ fontSize:11.5, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>대여 신뢰도</span>
+        <span style={{ fontSize:14, fontWeight:900, color:"#7fe3c4" }}>{(s.trust || 0).toLocaleString()}점</span>
       </div>
     </div>
   );

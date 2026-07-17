@@ -536,6 +536,15 @@ export default function StudentHome({ onOpenRoom, setTab }) {
     (r.status === "승인대기" || r.status === "승인됨")
   );
 
+  // 레벨/신뢰도 카드용 대여 통계 (실제 데이터)
+  const myRentalsAll = allRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
+  const rentedCnt  = myRentalsAll.filter(r => ["대여중", "반납완료", "연체"].includes(r.status)).length; // 실제 대여한 횟수
+  const onTimeCnt  = myRentalsAll.filter(r => r.status === "반납완료").length;                          // 정시반납(반납완료)
+  const overdueCnt = myRentalsAll.filter(r => r.status === "연체").length;                              // 연체
+  // 신뢰도 = 정시반납×120 + 대여×30 − 연체×300 (최소 0). ※ 규칙은 조정 가능
+  const trustScore = Math.max(0, onTimeCnt * 120 + rentedCnt * 30 - overdueCnt * 300);
+  const petStats = { rented: rentedCnt, onTime: onTimeCnt, overdue: overdueCnt, trust: trustScore };
+
   const pinned = notices.filter(n => n.pinned).slice(0, 3);
   const recentNotices = pinned.length > 0
     ? pinned
@@ -798,7 +807,7 @@ export default function StudentHome({ onOpenRoom, setTab }) {
       )}
 
       {/* 🐾 펫 키우기 카드 */}
-      <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
+      <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} stats={petStats} />
 
       {/* 📡 씬스패치 기사 박스 — 누르면 에타 씬스패치로 이동 */}
       <ScenePatchHomeCard onOpen={() => onOpenRoom("scenepatch")} />
