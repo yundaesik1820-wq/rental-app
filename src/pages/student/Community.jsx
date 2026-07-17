@@ -910,17 +910,17 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:22, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em" }}>커뮤니티</span>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:"#dc2626", display:"inline-block", marginBottom:8 }} />
+              <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
+              <span style={{ width:7, height:7, borderRadius:"50%", background:"#dc2626", display:"inline-block", alignSelf:"flex-end", marginBottom:2 }} />
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <button onClick={() => setShowSearch(true)}
-                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", color:"#e7e5e4" }}>
-                <Search size={23} strokeWidth={2} />
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4" }}>
+                <Search size={20} strokeWidth={2} />
               </button>
               <button onClick={() => onNotif && onNotif()}
-                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", color:"#e7e5e4", position:"relative" }}>
-                <Bell size={23} strokeWidth={2} />
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4", position:"relative" }}>
+                <Bell size={20} strokeWidth={2} />
               </button>
             </div>
           </div>
