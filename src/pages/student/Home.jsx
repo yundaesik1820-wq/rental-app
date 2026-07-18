@@ -341,7 +341,33 @@ function ScenePatchHomeCard({ onOpen }) {
   );
 }
 
-export default function StudentHome({ onOpenRoom, setTab }) {
+// ── 친구관리 타일 (펫 카드 옆 반폭) ──
+function FriendTile({ count, reqCount, onOpen }) {
+  return (
+    <button onClick={onOpen}
+      style={{ flex:1, minWidth:0, boxSizing:"border-box", position:"relative", textAlign:"left", cursor:"pointer",
+        background:"linear-gradient(140deg,#16233a 0%,#1f3c66 100%)", border:"1px solid rgba(255,255,255,0.08)",
+        borderRadius:18, padding:"14px", display:"flex", flexDirection:"column", gap:8, fontFamily:"inherit" }}>
+      {reqCount > 0 && (
+        <span style={{ position:"absolute", top:10, right:10, minWidth:18, height:18, padding:"0 5px", boxSizing:"border-box",
+          background:"#FF5A5A", color:"#fff", borderRadius:9, fontSize:11, fontWeight:800,
+          display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
+          {reqCount > 99 ? "99+" : reqCount}
+        </span>
+      )}
+      <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)",
+        display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
+      <div style={{ marginTop:"auto" }}>
+        <div style={{ fontSize:14, fontWeight:900, color:"#fff" }}>친구관리</div>
+        <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
+          친구 {count}명{reqCount > 0 ? ` · 요청 ${reqCount}` : ""}
+        </div>
+      </div>
+    </button>
+  );
+}
+
+export default function StudentHome({ onOpenRoom, setTab, onOpenFriends }) {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
@@ -825,8 +851,15 @@ export default function StudentHome({ onOpenRoom, setTab }) {
         </Modal>
       )}
 
-      {/* 🐾 펫 키우기 카드 */}
-      <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} stats={petStats} />
+      {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
+      <div style={{ display:"flex", gap:10, marginBottom:16, alignItems:"stretch" }}>
+        <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
+        <FriendTile
+          count={myFriends.length}
+          reqCount={friendRequests.filter(r => r.toId === profile?.uid && r.status === "pending").length}
+          onOpen={() => onOpenFriends?.()}
+        />
+      </div>
 
       {/* 📡 씬스패치 기사 박스 — 누르면 에타 씬스패치로 이동 */}
       <ScenePatchHomeCard onOpen={() => onOpenRoom("scenepatch")} />

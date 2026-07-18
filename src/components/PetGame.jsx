@@ -43,6 +43,9 @@ const QUEST_EXP = 10;      // 성공 시 기본 경험치
 const QUIZ_EXP  = 30;      // 오늘의 퀴즈 정답 시 기본 경험치
 const QUEST_SUCCESS = 0.9; // 90% 성공
 
+const INTIMACY_MAX  = 100; // 친밀도 최대치(%)
+const INTIMACY_GAIN = 2;   // 밥주기/놀아주기 1회당 친밀도 증가
+
 const todayStr = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -129,12 +132,12 @@ export function PetHomeCard({ uid, onOpen, stats }) {
 
   useEffect(() => { load(); }, [load]);
 
-  if (pet === undefined) return null; // 로딩 중엔 안 보임
+  // 로딩 중엔 자리만 차지(친구 타일과 50:50 유지)
+  if (pet === undefined) return <div style={{ flex:1, minWidth:0 }} />;
 
   // ── 홈 전용 컬러(목업) ──
   const GRAD = "linear-gradient(140deg,#161a3a 0%,#1d2a58 100%)";
   const HAIR = "rgba(255,255,255,0.08)";
-  const s = stats || { rented: 0, onTime: 0, overdue: 0, trust: 0 };
 
   // 펫 요약값 계산 (없으면 알 유도)
   const hasPet = !!pet;
@@ -151,46 +154,44 @@ export function PetHomeCard({ uid, onOpen, stats }) {
   const progLabel = !hasPet ? "알을 받아 부화시켜보세요!"
     : lvInfo ? (lvInfo.max ? "만렙 달성! 🎉" : `다음 레벨까지 ${lvInfo.need - lvInfo.cur}점`)
     : `${STAGE_KR[stage]} · 다음 단계까지 ${prog.need - prog.cur}점`;
+  const intimacy = hasPet ? Math.min(INTIMACY_MAX, pet.intimacy || 0) : 0;
 
   return (
     <div onClick={onOpen}
-      style={{ background: GRAD, border:`1px solid ${HAIR}`, borderRadius:18, padding:"14px 16px", marginBottom:16, cursor:"pointer" }}>
-      {/* 상단: 아바타 + 이름/레벨 + EXP바 */}
-      <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:58, height:58, borderRadius:"50%", background:"rgba(0,0,0,0.28)", border:`2px solid ${barColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden", fontSize:28 }}>
+      style={{ flex:1, minWidth:0, boxSizing:"border-box", background: GRAD, border:`1px solid ${HAIR}`, borderRadius:18, padding:"14px", cursor:"pointer", display:"flex", flexDirection:"column", gap:11 }}>
+      {/* 상단: 아바타 + 이름/레벨 */}
+      <div style={{ display:"flex", alignItems:"center", gap:11 }}>
+        <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(0,0,0,0.28)", border:`2px solid ${barColor}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden", fontSize:24 }}>
           {hasPet
             ? <img src={petImg(pet)} alt="" style={{ width:"100%", height:"100%", objectFit:"contain", imageRendering:"pixelated" }} />
             : "🥚"}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-            <span style={{ fontSize:15, fontWeight:900, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{title}</span>
-            {hasPet && <span style={{ fontSize:10, fontWeight:800, color:"#fff", background:barColor, borderRadius:5, padding:"1px 6px", flexShrink:0 }}>{rarity.kr}</span>}
-            {hasPet && <span style={{ fontSize:11.5, fontWeight:800, color:"#ffd66b", flexShrink:0 }}>★ Lv.{lvl}</span>}
+          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+            <span style={{ fontSize:14, fontWeight:900, color:"#fff", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{title}</span>
+            {hasPet && <span style={{ fontSize:11, fontWeight:800, color:"#ffd66b", flexShrink:0 }}>★{lvl}</span>}
           </div>
-          <div style={{ fontSize:11, color:"rgba(255,255,255,0.62)", margin:"6px 0 5px" }}>{progLabel}</div>
-          <div style={{ height:7, background:"rgba(255,255,255,0.12)", borderRadius:4, overflow:"hidden" }}>
-            <div style={{ width:`${pct}%`, height:"100%", background:`linear-gradient(90deg,${barColor},#8b5cf6)`, borderRadius:4 }} />
-          </div>
+          {hasPet && <div style={{ fontSize:10, fontWeight:800, color:"#fff", background:barColor, borderRadius:5, padding:"1px 6px", display:"inline-block", marginTop:3 }}>{rarity.kr}</div>}
         </div>
       </div>
 
-      {/* 하단: 대여 통계 3개 */}
-      <div style={{ display:"flex", marginTop:13, paddingTop:12, borderTop:`1px solid ${HAIR}` }}>
-        {[["대여", s.rented], ["정시반납", s.onTime], ["연체", s.overdue]].map(([lbl, val], i) => (
-          <div key={i} style={{ flex:1, textAlign:"center", borderLeft: i > 0 ? `1px solid ${HAIR}` : "none" }}>
-            <div style={{ fontSize:16, fontWeight:900, color: (lbl === "연체" && val > 0) ? "#ff8a8a" : "#fff" }}>
-              {val}<span style={{ fontSize:11, fontWeight:700, color:"rgba(255,255,255,0.55)" }}>회</span>
-            </div>
-            <div style={{ fontSize:10.5, color:"rgba(255,255,255,0.55)", marginTop:2 }}>{lbl}</div>
-          </div>
-        ))}
+      {/* EXP 진행바 */}
+      <div>
+        <div style={{ fontSize:10, color:"rgba(255,255,255,0.55)", marginBottom:4, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{progLabel}</div>
+        <div style={{ height:6, background:"rgba(255,255,255,0.12)", borderRadius:4, overflow:"hidden" }}>
+          <div style={{ width:`${pct}%`, height:"100%", background:`linear-gradient(90deg,${barColor},#8b5cf6)`, borderRadius:4 }} />
+        </div>
       </div>
 
-      {/* 대여 신뢰도 */}
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:11, background:"rgba(255,255,255,0.06)", borderRadius:10, padding:"8px 12px" }}>
-        <span style={{ fontSize:11.5, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>대여 신뢰도</span>
-        <span style={{ fontSize:14, fontWeight:900, color:"#7fe3c4" }}>{(s.trust || 0).toLocaleString()}점</span>
+      {/* 친밀도 */}
+      <div style={{ marginTop:"auto" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+          <span style={{ fontSize:10.5, color:"rgba(255,255,255,0.7)", fontWeight:600 }}>친밀도</span>
+          <span style={{ fontSize:12, fontWeight:900, color:"#7fe3c4" }}>{intimacy}%</span>
+        </div>
+        <div style={{ height:6, background:"rgba(255,255,255,0.12)", borderRadius:4, overflow:"hidden" }}>
+          <div style={{ width:`${intimacy}%`, height:"100%", background:"linear-gradient(90deg,#2dd4bf,#7fe3c4)", borderRadius:4 }} />
+        </div>
       </div>
     </div>
   );
@@ -320,7 +321,7 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
     setBusy(true);
     const newPet = {
       rarity: rollRarity(), species: null, name: null,
-      exp: 0, bornAt: Date.now(), lastQuestDate: todayStr(), quests: { feed:0, play:0 },
+      exp: 0, intimacy: 0, bornAt: Date.now(), lastQuestDate: todayStr(), quests: { feed:0, play:0 },
     };
     await updateDoc(doc(db, "users", uid), { pet: newPet }).catch(async () => {
       await setDoc(doc(db, "users", uid), { pet: newPet }, { merge:true });
@@ -349,7 +350,10 @@ export function PetOverlay({ uid, onClose, friends = [], me = {} }) {
     const quests = sameDay ? { ...pet.quests } : { feed:0, play:0 };
     quests[key] = (quests[key] || 0) + 1;
 
-    let updated = { ...pet, exp:newExp, lastQuestDate:todayStr(), quests };
+    // 친밀도: 밥주기/놀아주기 시도할 때마다 상승(성공 여부 무관, 최대 100%)
+    const newIntimacy = Math.min(INTIMACY_MAX, (pet.intimacy || 0) + INTIMACY_GAIN);
+
+    let updated = { ...pet, exp:newExp, intimacy:newIntimacy, lastQuestDate:todayStr(), quests };
 
     // 알 → 부화 (egg에서 baby로 넘어가는 순간 종 결정)
     let hatched = false;
