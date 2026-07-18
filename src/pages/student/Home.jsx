@@ -298,6 +298,7 @@ function GpaCalculator({ classes = [] }) {
 
 // ── 친구관리 타일 (펫 카드 옆 반폭) ──
 function FriendTile({ count, reqCount, onOpen }) {
+  const [iconOk, setIconOk] = useState(true);
   return (
     <button onClick={onOpen}
       style={{ flex:1, minWidth:0, boxSizing:"border-box", position:"relative", textAlign:"left", cursor:"pointer",
@@ -310,8 +311,13 @@ function FriendTile({ count, reqCount, onOpen }) {
           {reqCount > 99 ? "99+" : reqCount}
         </span>
       )}
-      <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)",
-        display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
+      {iconOk ? (
+        <img src="/friend-icon.png" alt="친구관리" onError={() => setIconOk(false)}
+          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block" }} />
+      ) : (
+        <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)",
+          display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
+      )}
       <div style={{ marginTop:"auto" }}>
         <div style={{ fontSize:14, fontWeight:900, color:"#fff" }}>친구관리</div>
         <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
