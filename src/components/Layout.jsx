@@ -101,10 +101,6 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
   };
   const mobileRows = isStudentNav ? [stuTabs] : [ADMIN_MOBILE_TABS];
 
-  // 학생 하단바 슬라이드 밑줄 위치 (FAB(장비예약) 탭이면 밑줄 숨김)
-  const activeStuIndex = stuTabs.findIndex(n => n.id === tab);
-  const showUnderline = activeStuIndex >= 0 && stuTabs[activeStuIndex].id !== "equip";
-
   const currentNav = nav.find(n => n.id === tab);
 
   return (
@@ -204,6 +200,11 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
       {/* ── 모바일 2줄 하단 네비 ── */}
       <style>{`
+        /* 하단바 선택 시 밑줄 팝인 (이동 없이 그 자리에서 톡) */
+        @keyframes navUnderlinePop {
+          from { opacity: 0; transform: translateX(-50%) scaleX(0.3); }
+          to   { opacity: 1; transform: translateX(-50%) scaleX(1); }
+        }
         @media (max-width: 768px) {
           /* 노치/상태바 아래로 내림 — 최소 24px 바닥값은 네이티브 앱에서만 (웹/PWA는 상단 틈 없이 딱 붙게) */
           .kbas-root { padding-top: max(env(safe-area-inset-top, 0px), ${Capacitor.isNativePlatform() ? 24 : 0}px) !important; }
@@ -330,19 +331,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
         </svg>
 
         {isStudentNav ? (
-          /* ── 학생 하단바: 가운데 장비예약 FAB + 슬라이드 밑줄 + 그라데이션 아이콘 ── */
+          /* ── 학생 하단바: 가운데 장비예약 FAB + 선택 시 밑줄 팝인 + 그라데이션 아이콘 ── */
           <div className="bottom-nav-row" style={{ position: "relative", display: "grid", gridTemplateColumns: `repeat(${stuTabs.length}, 1fr)` }}>
-            {/* 슬라이드 그라데이션 밑줄 */}
-            <span aria-hidden="true" style={{
-              position: "absolute", bottom: 0, left: 0, width: `${100 / stuTabs.length}%`,
-              display: "flex", justifyContent: "center", pointerEvents: "none",
-              transform: `translateX(${activeStuIndex < 0 ? 0 : activeStuIndex * 100}%)`,
-              transition: "transform 0.32s cubic-bezier(.34,1.4,.5,1), opacity 0.2s ease",
-              opacity: showUnderline ? 1 : 0,
-            }}>
-              <span style={{ width: 22, height: 3, borderRadius: 3, background: "linear-gradient(90deg,#5b8def,#7c3aed)" }} />
-            </span>
-
             {stuTabs.map(n => {
               const active = tab === n.id;
               const isFab = n.id === "equip";
@@ -391,6 +381,15 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
                         whiteSpace: "nowrap", letterSpacing: "-0.3px",
                         transition: "color 0.2s ease",
                       }}>{n.label}</span>
+                      {active && (
+                        <span aria-hidden="true" style={{
+                          position: "absolute", bottom: 0, left: "50%",
+                          width: 22, height: 3, borderRadius: 3,
+                          background: "linear-gradient(90deg,#5b8def,#7c3aed)",
+                          transform: "translateX(-50%)",
+                          animation: "navUnderlinePop 0.24s cubic-bezier(.34,1.5,.5,1)",
+                        }} />
+                      )}
                     </>
                   )}
                 </button>
