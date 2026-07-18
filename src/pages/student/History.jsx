@@ -3,12 +3,37 @@ import { C } from "../../theme";
 import { Card, Badge, Empty, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { FileText } from "lucide-react";
+import { FileText, CalendarDays, MapPin, Camera, ChevronRight } from "lucide-react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, storage } from "../../firebase";
 
 const STATUS_ICON = { 승인대기: "⏳", 승인됨: "✅", 보류: "⏸", 거절됨: "❌", 반납완료: "📦", 대여중: "🚀" };
+
+// ── 예약내역 새 디자인 (홈 톤 블루 계열) ──
+const CARD_BG = "#141824", CARD2 = "#10131d", BD = "#232a3a";
+const PAL = {
+  blue:   { line:"linear-gradient(#3b82f6,#2563eb)", bg:"rgba(59,130,246,.16)", fg:"#7fa9ff", big:"#5b9bff", dot:"#3b82f6" },
+  teal:   { line:"linear-gradient(#2DD4BF,#0ea5a5)", bg:"rgba(45,212,191,.16)", fg:"#5eead4", big:"#2DD4BF", dot:"#2DD4BF" },
+  purple: { line:"linear-gradient(#a78bfa,#7c3aed)", bg:"rgba(167,139,250,.16)", fg:"#c4b5fd", big:"#c4b5fd", dot:"#a78bfa" },
+  red:    { line:"linear-gradient(#ef4444,#b91c1c)", bg:"rgba(239,68,68,.16)", fg:"#fca5a5", big:"#fca5a5", dot:"#ef4444" },
+  amber:  { line:"linear-gradient(#f59e0b,#d97706)", bg:"rgba(245,158,11,.16)", fg:"#fcd34d", big:"#fcd34d", dot:"#f59e0b" },
+  gray:   { line:"linear-gradient(#64748b,#475569)", bg:"rgba(148,163,184,.16)", fg:"#cbd5e1", big:"#cbd5e1", dot:"#64748b" },
+};
+const STATUS_CFG = {
+  대여중:   { pal:"blue",   badge:"대여중",   box:"반납 예정일", use:"end",   photoBtn:true },
+  승인됨:   { pal:"teal",   badge:"승인완료", box:"대여 예정일", use:"start" },
+  승인대기: { pal:"amber",  badge:"승인대기", box:"대여 예정일", use:"start" },
+  반납완료: { pal:"purple", badge:"반납완료", box:"반납일",     use:"end" },
+  연체:     { pal:"red",    badge:"연체중",   box:"연체 기간",   use:"overdue" },
+  거절됨:   { pal:"red",    badge:"거절됨",   box:"대여 예정일", use:"start" },
+  보류:     { pal:"amber",  badge:"보류",     box:"대여 예정일", use:"start" },
+};
+const WD = ["일","월","화","수","목","금","토"];
+const parseYMD = (s) => { if (!s) return null; const p = String(s).split(/[-.\/]/).map(Number); if (p.length < 3 || !p[0]) return null; const d = new Date(p[0], p[1]-1, p[2]); return isNaN(d) ? null : d; };
+const fmtMD   = (s) => { const d = parseYMD(s); return d ? `${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} (${WD[d.getDay()]})` : (s || "-"); };
+const fmtFull = (s) => { const d = parseYMD(s); return d ? `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} (${WD[d.getDay()]})` : (s || "-"); };
+const overdueDays = (s) => { const d = parseYMD(s); if (!d) return 0; const now = new Date(); now.setHours(0,0,0,0); return Math.max(0, Math.round((now - d) / 86400000)); };
 
 export default function History({ focusId, onConsumed }) {
   const { profile } = useAuth();
@@ -218,6 +243,7 @@ ${r.attachments?.length > 0 ? `
 
   const overdue  = mine.filter(r => r.status === "연체").length;
   const renting  = mine.filter(r => r.status === "대여중").length;
+  const approved = mine.filter(r => r.status === "승인됨").length;
 
   // 활성 배경이 흰색 계열 토큰(navy/blue, 흑백 테마에선 #FFFFFF)일 땐 글자를 어둡게 — 흰배경+흰글자 방지
   const activeText = (bg) => (bg === C.navy || bg === C.blue) ? C.bg : "#fff";
@@ -291,22 +317,26 @@ ${r.attachments?.length > 0 ? `
 
   return (
     <div>
-      {/* 1행: 전체 신청 */}
-      <div onClick={() => setTabFilter("전체")}
-        style={{ background: tabFilter==="전체" ? C.navy : C.surface, borderRadius:12, padding:"12px 16px", marginBottom:8, cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"center", border:`1.5px solid ${tabFilter==="전체" ? C.navy : C.border}` }}>
-        <span style={{ fontSize:14, fontWeight:700, color: tabFilter==="전체" ? activeText(C.navy) : C.text }}>전체 신청</span>
-        <span style={{ fontSize:20, fontWeight:900, color: tabFilter==="전체" ? activeText(C.navy) : C.navy }}>{total}</span>
-      </div>
-
-      {/* 2행: 상태별 탭 */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(5,1fr)", gap:5, marginBottom:20 }}>
-        {STATUS_TABS.slice(1).map(t => (
-          <button key={t.id} onClick={() => setTabFilter(t.id)}
-            style={{ background: tabFilter===t.id ? t.color : C.surface, border:`1.5px solid ${tabFilter===t.id ? t.color : C.border}`, borderRadius:10, padding:"6px 4px", cursor:"pointer", textAlign:"center", transition:"all 0.15s" }}>
-            <div style={{ fontSize:16, fontWeight:900, color: tabFilter===t.id ? activeText(t.color) : t.color }}>{t.count}</div>
-            <div style={{ fontSize:9, fontWeight:600, color: tabFilter===t.id ? (activeText(t.color)===C.bg ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)") : C.muted, marginTop:1, whiteSpace:"nowrap" }}>{t.label}</div>
-          </button>
-        ))}
+      {/* 상태 필터 칩 (가로 스크롤) */}
+      <div style={{ display:"flex", gap:8, overflowX:"auto", paddingBottom:4, marginBottom:14 }}>
+        {[
+          { id:"전체",    label:"전체",     n:total,    pal:"blue" },
+          { id:"대여중",   label:"대여중",   n:renting,  pal:"blue" },
+          { id:"승인됨",   label:"승인완료", n:approved, pal:"teal" },
+          { id:"반납완료", label:"반납완료", n:returned, pal:"purple" },
+          { id:"연체",    label:"연체중",   n:overdue,  pal:"red" },
+          { id:"승인대기", label:"승인대기", n:pending,  pal:"amber" },
+        ].filter(c => c.id === "전체" || c.n > 0).map(c => {
+          const on = tabFilter === c.id, p = PAL[c.pal];
+          return (
+            <button key={c.id} onClick={() => setTabFilter(c.id)}
+              style={{ flex:"none", display:"flex", alignItems:"center", gap:6, padding:"9px 15px", borderRadius:20,
+                border:`1px solid ${on ? p.dot : BD}`, background: on ? p.bg : CARD2,
+                fontSize:13, fontWeight:700, color: on ? "#e8eefc" : C.muted, whiteSpace:"nowrap", cursor:"pointer", fontFamily:"inherit" }}>
+              {c.label} <span style={{ fontWeight:900, color: p.fg }}>{c.n}</span>
+            </button>
+          );
+        })}
       </div>
 
       {filtered.length === 0 && (
@@ -318,62 +348,96 @@ ${r.attachments?.length > 0 ? `
 
       {filtered.map(r => {
         const isExpand = expandedId === r.id;
-        const statusColor = {
-          승인대기: C.yellow, 승인됨: C.teal, 대여중: C.blue,
-          반납완료: C.green, 거절됨: C.red, 보류: C.orange, 연체: C.red,
-        }[r.status] || C.muted;
+        const cfg = STATUS_CFG[r.status] || { pal:"gray", badge:r.status, box:"대여 예정일", use:"start" };
+        const p = PAL[cfg.pal];
+        const isEnd = cfg.use === "end";
+        const boxDate = fmtMD(isEnd ? r.endDate : r.startDate);
+        const boxTime = isEnd ? r.endTime : r.startTime;
 
         return (
-          <Card key={r.id} id={`history-card-${r.id}`} style={{ marginBottom:8, border:`1.5px solid ${flashId===r.id ? C.teal : statusColor+"30"}`, padding:"12px 14px", ...(flashId===r.id ? { boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
-            {/* 카드 헤더 - 항상 보임 */}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+          <div key={r.id} id={`history-card-${r.id}`} onClick={() => setExpandedId(isExpand ? null : r.id)}
+            style={{ position:"relative", background:CARD_BG, border:`1px solid ${flashId===r.id ? C.teal : BD}`, borderRadius:16,
+              padding:"16px 34px 16px 18px", marginBottom:12, overflow:"hidden", cursor:"pointer",
+              ...(flashId===r.id ? { boxShadow:`0 0 0 3px ${C.teal}55` } : {}) }}>
+            {/* 좌측 상태 컬러바 */}
+            <span style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:p.line }} />
+            <ChevronRight size={20} color="#4a5678" style={{ position:"absolute", right:10, top:16 }} />
+
+            <div style={{ display:"flex", justifyContent:"space-between", gap:12 }}>
+              {/* 좌측 정보 */}
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:14, fontWeight:700, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:9 }}>
+                  <span style={{ fontSize:11, fontWeight:800, padding:"3px 10px", borderRadius:8, background:p.bg, color:p.fg }}>{cfg.badge}</span>
+                  <span style={{ width:7, height:7, borderRadius:"50%", background:p.dot }} />
+                </div>
+                <div style={{ fontSize:17, fontWeight:900, letterSpacing:"-0.02em", color:C.text, marginBottom:9, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {getEquipLabel(r)}
                 </div>
-                <div style={{ fontSize:11, color:C.muted }}>{r.startDate} ~ {r.endDate}</div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:5, flexShrink:0 }}>
-                <Badge label={r.status} />
-                <div style={{ display:"flex", gap:5 }}>
-                  <button onClick={() => setShowPrint(r)}
-                    style={{ display:"flex", alignItems:"center", gap:3, background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:C.muted, cursor:"pointer" }}>
-                    <FileText size={11} /> 신청서
-                  </button>
-                  <button onClick={() => setExpandedId(isExpand ? null : r.id)}
-                    style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:6, padding:"3px 8px", fontSize:11, color:C.navy, fontWeight:600, cursor:"pointer" }}>
-                    {isExpand ? "접기 ▲" : "자세히 ▼"}
-                  </button>
+                <div style={{ fontSize:12.5, color: cfg.pal==="red" ? "#fca5a5" : "#aab3c5", display:"flex", gap:7, marginBottom:5, lineHeight:1.5 }}>
+                  <CalendarDays size={14} style={{ flexShrink:0, marginTop:2 }} />
+                  <span>{fmtFull(r.startDate)} {r.startTime}<br/>~ {fmtMD(r.endDate)} {r.endTime}</span>
                 </div>
+                <div style={{ fontSize:12.5, color:"#aab3c5", display:"flex", gap:7 }}>
+                  <MapPin size={14} style={{ flexShrink:0, marginTop:1 }} />
+                  <span>{r.location || r.locationType || "장비대여실"}</span>
+                </div>
+              </div>
+
+              {/* 우측 날짜 박스 + (대여중) 반납사진 버튼 */}
+              <div style={{ width:112, flexShrink:0, textAlign:"center" }}>
+                <div style={{ background:CARD2, border:`1px solid ${BD}`, borderRadius:12, padding:"11px 8px" }}>
+                  <div style={{ fontSize:11, color:C.muted, marginBottom:3 }}>{cfg.box}</div>
+                  {cfg.use === "overdue" ? (
+                    <div style={{ fontSize:22, fontWeight:900, color:p.big }}>{overdueDays(r.endDate)}일</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize:17, fontWeight:900, color:p.big, lineHeight:1.15 }}>{boxDate}</div>
+                      {boxTime && <div style={{ fontSize:15, fontWeight:900, color:p.big }}>{boxTime}</div>}
+                    </>
+                  )}
+                </div>
+                {cfg.photoBtn && (
+                  <button onClick={(e) => { e.stopPropagation(); setExpandedId(r.id); }}
+                    style={{ marginTop:9, width:"100%", padding:"9px 0", borderRadius:10, fontSize:12, fontWeight:800, fontFamily:"inherit", cursor:"pointer",
+                      border:`1px solid ${p.dot}`, background:"transparent", color:p.fg, display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    <Camera size={13} /> 반납사진
+                  </button>
+                )}
               </div>
             </div>
 
-            {/* 자세히 보기 - 클릭 시 펼침 */}
+            {/* 펼침 상세 */}
             {isExpand && (
-              <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${C.border}` }}>
-                <div style={{ fontSize:12, color:C.muted, marginBottom:8 }}>목적: {r.purpose}</div>
+              <div onClick={(e) => e.stopPropagation()} style={{ marginTop:14, paddingTop:14, borderTop:`1px solid ${BD}` }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                  <div style={{ fontSize:12, color:C.muted }}>목적: {r.purpose || "-"}</div>
+                  <button onClick={() => setShowPrint(r)}
+                    style={{ display:"flex", alignItems:"center", gap:4, background:"none", border:`1px solid ${BD}`, borderRadius:8, padding:"5px 10px", fontSize:11.5, color:"#aab3c5", cursor:"pointer", fontFamily:"inherit", flexShrink:0 }}>
+                    <FileText size={12} /> 신청서
+                  </button>
+                </div>
 
                 {/* 장비 목록 */}
-                <div style={{ background:C.bg, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                <div style={{ background:CARD2, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
                   {r.items?.map((item, i) => (
-                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom: i<r.items.length-1?`1px solid ${C.border}`:"none", fontSize:12 }}>
+                    <div key={i} style={{ display:"flex", justifyContent:"space-between", padding:"4px 0", borderBottom: i<r.items.length-1?`1px solid ${BD}`:"none", fontSize:12 }}>
                       <span style={{ color:C.text }}>{item.modelName || item.equipName}</span>
-                      <span style={{ fontWeight:700, color:C.navy }}>{item.quantity}개</span>
+                      <span style={{ fontWeight:700, color:"#7fa9ff" }}>{item.quantity}개</span>
                     </div>
                   ))}
                 </div>
 
                 {/* 배치 장비 */}
                 {r.assignedUnits?.length > 0 && (
-                  <div style={{ background: r.status==="반납완료"?C.surface:C.blueLight, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
-                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="반납완료"?C.muted:C.blue, marginBottom:5 }}>
+                  <div style={{ background:CARD2, borderRadius:8, padding:"8px 12px", marginBottom:8 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="반납완료"?C.muted:"#7fa9ff", marginBottom:5 }}>
                       {r.status==="반납완료" ? "사용한 장비" : "배치된 장비"}
                     </div>
                     <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
                       {r.assignedUnits.map((u,i) => (
-                        <span key={i} style={{ background:C.surface, border:`1px solid ${C.border}`, borderRadius:5, padding:"2px 7px", fontSize:11, color:C.text }}>
+                        <span key={i} style={{ background:CARD_BG, border:`1px solid ${BD}`, borderRadius:5, padding:"2px 7px", fontSize:11, color:C.text }}>
                           {u.itemName||u.modelName}
-                          {u.itemNo && <span style={{ color:C.blue, marginLeft:3, fontWeight:600 }}>{u.itemNo}</span>}
+                          {u.itemNo && <span style={{ color:"#7fa9ff", marginLeft:3, fontWeight:600 }}>{u.itemNo}</span>}
                         </span>
                       ))}
                     </div>
@@ -390,7 +454,7 @@ ${r.attachments?.length > 0 ? `
                       {(r.returnPhotos || []).map((url, idx) => (
                         <div key={idx} style={{ position:"relative" }}>
                           <img src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
-                            style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
+                            style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${BD}`, cursor:"pointer" }} />
                           {r.status === "대여중" && (
                             <button onClick={() => deleteReturnPhoto(r.id, r.returnPhotos, idx)}
                               style={{ position:"absolute", top:-6, right:-6, width:20, height:20, borderRadius:"50%", background:C.red, color:"#fff", border:"none", fontSize:13, fontWeight:700, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1, padding:0 }}>×</button>
@@ -398,7 +462,7 @@ ${r.attachments?.length > 0 ? `
                         </div>
                       ))}
                       {r.status === "대여중" && (r.returnPhotos?.length || 0) < 3 && (
-                        <label style={{ width:64, height:64, borderRadius:8, border:`1.5px dashed ${C.border}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: returnPhotoUploading ? "wait" : "pointer", color:C.muted, gap:2, background:C.bg }}>
+                        <label style={{ width:64, height:64, borderRadius:8, border:`1.5px dashed ${BD}`, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", cursor: returnPhotoUploading ? "wait" : "pointer", color:C.muted, gap:2, background:CARD2 }}>
                           {returnPhotoUploading
                             ? <span style={{ fontSize:12, fontWeight:700, color:C.teal }}>{returnPhotoProgress}%</span>
                             : <><span style={{ fontSize:20, lineHeight:1 }}>+</span><span style={{ fontSize:9 }}>사진</span></>}
@@ -411,8 +475,8 @@ ${r.attachments?.length > 0 ? `
 
                 {/* 보류/거절 사유 */}
                 {r.reason && (
-                  <div style={{ background: r.status==="보류"?C.yellowLight:C.redLight, borderRadius:8, padding:"8px 12px", borderLeft:`3px solid ${r.status==="보류"?C.yellow:C.red}` }}>
-                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="보류"?"#92400E":C.red, marginBottom:3 }}>
+                  <div style={{ background:"rgba(239,68,68,.1)", borderRadius:8, padding:"8px 12px", borderLeft:`3px solid ${r.status==="보류"?"#f59e0b":"#ef4444"}` }}>
+                    <div style={{ fontSize:11, fontWeight:700, color: r.status==="보류"?"#fcd34d":"#fca5a5", marginBottom:3 }}>
                       {r.status==="보류" ? "보류 사유" : "거절 사유"}
                     </div>
                     <div style={{ fontSize:12, color:C.text }}>{r.reason}</div>
@@ -420,7 +484,7 @@ ${r.attachments?.length > 0 ? `
                 )}
               </div>
             )}
-          </Card>
+          </div>
         );
       })}
 

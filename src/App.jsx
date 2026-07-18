@@ -11,6 +11,7 @@ import { Spinner } from "./components/UI";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
+import { CalendarDays } from "lucide-react";
 
 // Admin pages
 import Dashboard  from "./pages/admin/Dashboard";
@@ -305,14 +306,23 @@ function StudentCalendarHistory({ profile, focusId, onConsumed }) {
   React.useEffect(() => { if (focusId) setView("history"); }, [focusId]);
   return (
     <div>
-      {/* 슬라이드 세그먼트 토글 — 인디케이터가 선택 쪽으로 부드럽게 이동 */}
-      <div style={{ position:"relative", display:"flex", background:C.surface, border:`1px solid ${C.border}`, borderRadius:12, padding:4, marginBottom:16 }}>
-        <div style={{ position:"absolute", top:4, bottom:4, left: view==="history" ? 4 : "50%", width:"calc(50% - 4px)", background:C.navy, borderRadius:9, transition:"left 0.28s cubic-bezier(0.4,0,0.2,1)" }} />
+      {/* 페이지 타이틀 */}
+      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:3 }}>
+        <div style={{ width:44, height:44, borderRadius:12, background:"linear-gradient(135deg,#3b82f6,#7c3aed)", display:"grid", placeItems:"center", flexShrink:0 }}>
+          <CalendarDays size={24} color="#fff" strokeWidth={2.2} />
+        </div>
+        <div style={{ fontSize:26, fontWeight:900, letterSpacing:"-0.02em", color:C.text }}>예약내역</div>
+      </div>
+      <div style={{ fontSize:12.5, color:C.muted, margin:"0 0 16px 2px" }}>내 장비 예약 현황을 한눈에 확인하세요.</div>
+
+      {/* 슬라이드 세그먼트 토글 (블루 그라데이션) */}
+      <div style={{ position:"relative", display:"flex", background:"#10131d", border:"1px solid #232a3a", borderRadius:14, padding:5, marginBottom:16 }}>
+        <div style={{ position:"absolute", top:5, bottom:5, left: view==="history" ? 5 : "50%", width:"calc(50% - 5px)", background:"linear-gradient(135deg,#3b82f6,#2563eb)", borderRadius:10, transition:"left 0.28s cubic-bezier(0.4,0,0.2,1)", boxShadow:"0 4px 14px rgba(37,99,235,0.4)" }} />
         {[["history","예약내역"],["calendar","예약캘린더"]].map(([v,l]) => (
           <button key={v} onClick={() => setView(v)}
-            style={{ position:"relative", zIndex:1, flex:1, padding:"9px 0", background:"transparent", border:"none", borderRadius:9,
-              fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit",
-              color: view===v ? C.bg : C.muted, transition:"color 0.2s" }}>
+            style={{ position:"relative", zIndex:1, flex:1, padding:"11px 0", background:"transparent", border:"none", borderRadius:10,
+              fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
+              color: view===v ? "#fff" : C.muted, transition:"color 0.2s" }}>
             {l}
           </button>
         ))}
