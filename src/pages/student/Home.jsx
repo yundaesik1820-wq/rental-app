@@ -232,7 +232,7 @@ function GpaCalculator({ classes = [] }) {
       <button onClick={() => setOpen(o=>!o)}
         style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:"linear-gradient(135deg,#141d3d,#101733)", border:"1px solid #23305c", borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-          <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>🧮</div>
+          <img src="/gpa-icon.png" alt="" style={{ width:38, height:38, borderRadius:11, objectFit:"cover", flexShrink:0, display:"block" }} />
           <div style={{ textAlign:"left" }}>
             <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>학점 계산기</div>
             <div style={{ fontSize:10.5, color:"#93a0bd", marginTop:1 }}>본인의 학점을 계산해보세요!</div>
@@ -1026,7 +1026,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
         <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:TT.bg, border:`1px solid ${TT.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
           <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-            <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#14b8a6,#0e9f97)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>👥</div>
+            <img src="/friends-tt-icon.png" alt="" style={{ width:38, height:38, borderRadius:11, objectFit:"cover", flexShrink:0, display:"block" }} />
             <div style={{ textAlign:"left" }}>
               <div style={{ fontSize:13, fontWeight:800, color:C.text }}>친구 시간표</div>
               <div style={{ fontSize:10.5, color:C.muted, marginTop:1 }}>친구들의 수업시간을 함께 확인해보세요!</div>
