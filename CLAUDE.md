@@ -109,6 +109,31 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
 
 ---
 
+## 최근 작업 내역 (2026-07-19, 학생 UI 블루 리디자인 + 하단바 개편)
+
+⚠️ **이날부터 학생 리디자인 화면은 흑백 모노톤이 아니라 블루 액센트**를 씀 (`#3b82f6`/`#7c3aed` 그라데이션, 활성 텍스트 `#7e9dff`, 상태색 teal/purple/red). `theme.js`의 `C`는 아직 모노톤(navy=흰색)이라 **이 화면들은 로컬 색상 상수로 블루를 직접 박음**. 다른 화면은 여전히 흑백. (전체 블루 전환 여부는 미정)
+
+### 학생 홈 (`src/pages/student/Home.jsx`)
+- 펫 카드 + **친구관리 타일** 한 줄 2박스(반폭). 펫 카드는 대여통계·신뢰도 빼고 **친밀도(`pet.intimacy`) 바**만 — 밥주기/놀아주기 1회당 +2%, max 100 (`PetGame.jsx` `doQuest`/`getEgg`에 신설, 본인 문서라 규칙 변경 불필요).
+- 친구관리 타일: 친구 수 + 받은요청 배지(`friendRequests.filter(toId===uid && pending)`), 누르면 더보기›친구관리(App.jsx `onOpenFriends` → `setNotifTarget({mypageView:"friends"})`).
+- **씬스패치 홈 카드 제거** (커뮤니티/기자 기능은 유지). `onOpenRoom`·`openCommunityRoom` 데드코드 정리.
+- 마스코트 이미지로 이모지 교체: `public/friend-icon.png`(원형+검은링 2px), `friends-tt-icon.png`·`gpa-icon.png`(38×38 둥근사각), `next-class-thumb.png`(다음수업 카드 86×58). 전부 objectFit cover, 클릭 유지 위해 pointer-events는 안 건드림.
+- 학점계산기 블루톤 통일, 세부설명 "본인의 학점을 계산해보세요!". 내 시간표 📅 이모지 제거. 홈 세로 여백 16→12, 펫-시간표 간격 6px.
+
+### 하단바 개편 (`src/components/Layout.jsx`) — 학생만, 관리자 그대로
+- 가운데 **장비예약 = 볼록 그라데이션 FAB**(CalendarPlus, 텍스트 z-index 최상단). `STU_BAR_ICON` 맵으로 아이콘 지정(예약내역=ClipboardList 등).
+- 선택 탭: **그라데이션 stroke 아이콘**(`<Icon stroke="url(#navGrad)">` + 숨은 `<linearGradient id=navGrad>`) + **밑줄 팝인**(`navUnderlinePop`, 이동 없음). 비활성 아이콘은 **흰색**(`color="#fff"` — `stroke={undefined}` 주면 획이 사라져 투명해지는 버그 있었음).
+- 모션: tap-spring(누름 바운스). 활성색 블루.
+- ⚠️ **z-index 함정**: 하단바 `zIndex:250`으로 올림. Community 루트가 `position:fixed zIndex:200`이라 FAB를 덮었음. Community의 풀스크린 모달(이미지뷰어 9999·영상 99999)은 z-200 컨테이너 **밖 형제**라 250 위로 그대로 뜸. 단 z-200 컨테이너 **안에 중첩된** 모달(blockedRoom 등)은 전역 200레벨이라 250 하단바에 살짝 가림(경미).
+
+### 네이티브 앱 느낌 (`index.html`)
+- 전역 `user-select:none` + `-webkit-touch-callout:none` + `img -webkit-user-drag:none` + `contextmenu` preventDefault → 롱프레스 이미지저장/텍스트복사 차단. **input/textarea/contenteditable은 예외**(선택·붙여넣기 유지).
+
+### 예약내역·예약캘린더 리디자인 (목업 반영)
+- `StudentCalendarHistory`(App.jsx): 타이틀 제거, 블루 토글부터. `History.jsx`: 가로 스크롤 pill 칩 + 좌측 컬러바 카드(상태별 날짜박스). **반납하기/연장신청 버튼 없앰**, 대여중 카드에 **반납사진 버튼**(펼침 업로드). 신청서·장비목록·사유는 펼침 상세.
+- `CalendarPage`(admin/Calendar.jsx)는 관리자 공유 → **학생 뷰(`!isAdmin`)만** 리스타일(정사각 다크셀, 오늘=민트+점, 선택=흰테두리, 범례에 월 예약/반납완료 건수, 일별 상세 아바타 카드). 관리자 뷰 안 건드림.
+- 연체 일수 = `종료일→오늘` 계산(실제 연체정책과 일치 확인 필요).
+
 ## 최근 작업 내역 (2026-07-16, 학생 화면 대개편 — 커밋 20개)
 
 ### 장바구니 전환 (배민식)
