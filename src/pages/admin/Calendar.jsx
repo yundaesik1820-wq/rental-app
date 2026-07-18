@@ -4,6 +4,7 @@ import { C } from "../../theme";
 import { Card, PageTitle, Badge, Modal, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { isKoreanHoliday, getKoreanHolidayName } from "../../utils/koreanHolidays";
+import { CalendarDays, MapPin, Wrench, User, ChevronLeft, ChevronRight } from "lucide-react";
 
 const MONTH_NAMES = ["","1월","2월","3월","4월","5월","6월","7월","8월","9월","10월","11월","12월"];
 const DAY_NAMES   = ["일","월","화","수","목","금","토"];
@@ -14,6 +15,15 @@ const STATUS_META = {
   "대여중":   { color: C.teal,    bg: C.tealLight, label: "대여중"   },
   "반납완료": { color: C.muted,   bg: "#F8FAFC",   label: "반납완료" },
   "거절됨":   { color: C.red,     bg: C.redLight,  label: "거절됨"   },
+};
+
+// 학생 캘린더 리디자인용 상태 색(홈 톤 블루 계열)
+const ST_PAL = {
+  "승인대기": { bg:"rgba(245,158,11,.16)", fg:"#fcd34d" },
+  "승인됨":   { bg:"rgba(45,212,191,.16)", fg:"#5eead4" },
+  "대여중":   { bg:"rgba(59,130,246,.16)", fg:"#7fa9ff" },
+  "반납완료": { bg:"rgba(45,212,191,.16)", fg:"#5eead4" },
+  "거절됨":   { bg:"rgba(239,68,68,.16)",  fg:"#fca5a5" },
 };
 
 const ALL_STATUSES = ["승인대기","승인됨","대여중","반납완료","거절됨"];
@@ -65,6 +75,11 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
     approved: monthRequests.filter(r => r.status === "승인됨").length,
     active:   monthRequests.filter(r => r.status === "대여중").length,
   };
+
+  // 학생 범례용 — 이번 달 내 예약/반납완료 건수
+  const myMonthReqs     = monthRequests.filter(isMineReq);
+  const myMonthTotal    = myMonthReqs.length;
+  const myMonthReturned = myMonthReqs.filter(r => r.status === "반납완료").length;
 
   const getItemLabel = (r) => {
     if (!r.items?.length) return r.equipName || "-";
@@ -145,22 +160,22 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
       <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
 
         {/* 캘린더 */}
-        <Card style={{ padding: "20px 16px" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-            <button onClick={prevMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, color:C.text, display:"flex", alignItems:"center", justifyContent:"center" }}>‹</button>
-            <div style={{ fontSize:20, fontWeight:800, color:C.navy }}>{year}년 {MONTH_NAMES[month]}</div>
-            <button onClick={nextMonth} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:10, width:38, height:38, cursor:"pointer", fontSize:18, color:C.text, display:"flex", alignItems:"center", justifyContent:"center" }}>›</button>
+        <Card style={ isAdmin ? { padding: "20px 16px" } : { padding: 16, background:"#141824", border:"1px solid #232a3a", borderRadius:18 } }>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: isAdmin ? 20 : 14 }}>
+            <button onClick={prevMonth} style={{ background: isAdmin?C.bg:"#10131d", border:`1px solid ${isAdmin?C.border:"#2a4a6a"}`, borderRadius:10, width:38, height:36, cursor:"pointer", color: isAdmin?C.text:"#cfe0ff", display:"flex", alignItems:"center", justifyContent:"center" }}>{isAdmin ? "‹" : <ChevronLeft size={18} />}</button>
+            <div style={{ fontSize: isAdmin?20:19, fontWeight: isAdmin?800:900, color: isAdmin?C.navy:"#fff" }}>{year}년 {MONTH_NAMES[month]}</div>
+            <button onClick={nextMonth} style={{ background: isAdmin?C.bg:"#10131d", border:`1px solid ${isAdmin?C.border:"#2a4a6a"}`, borderRadius:10, width:38, height:36, cursor:"pointer", color: isAdmin?C.text:"#cfe0ff", display:"flex", alignItems:"center", justifyContent:"center" }}>{isAdmin ? "›" : <ChevronRight size={18} />}</button>
           </div>
 
           {/* 요일 헤더 */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3, marginBottom:6 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap: isAdmin?3:6, marginBottom:6 }}>
             {DAY_NAMES.map((d,i) => (
-              <div key={d} style={{ textAlign:"center", fontSize:12, fontWeight:700, padding:"4px 0", color:i===0?C.red:i===6?C.blue:C.muted }}>{d}</div>
+              <div key={d} style={{ textAlign:"center", fontSize:12.5, fontWeight:700, padding:"4px 0", color:i===0?"#f87171":i===6?"#60a5fa":(isAdmin?C.muted:"#93a0bd") }}>{d}</div>
             ))}
           </div>
 
           {/* 날짜 셀 */}
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:3 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap: isAdmin?3:6 }}>
             {Array(firstDay).fill(null).map((_,i) => <div key={`p${i}`} />)}
             {Array(daysInMonth).fill(null).map((_,i) => {
               const d       = i + 1;
@@ -170,6 +185,27 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               const dow     = new Date(year, month-1, d).getDay();
               const holidayName = getKoreanHolidayName(year, month, d);
               const isHoliday   = !!holidayName;
+
+              // ── 학생 리디자인 셀 (정사각·다크, 오늘=민트, 선택=흰테두리) ──
+              if (!isAdmin) {
+                const mineCount = events.filter(isMineReq).length;
+                const numColor = isToday ? "#04201d" : isSel ? "#fff" : (dow===0||isHoliday) ? "#f87171" : dow===6 ? "#60a5fa" : "#c7cfdd";
+                return (
+                  <div key={d} onClick={() => setSel(isSel ? null : d)} style={{
+                    aspectRatio:"1/1", borderRadius:12, cursor:"pointer", position:"relative",
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    background: isToday ? "linear-gradient(135deg,#22d3ee,#2DD4BF)" : "#0d1017",
+                    border: isSel ? "2px solid #fff" : isToday ? "1px solid transparent" : "1px solid #1b2130",
+                    transition:"all 0.15s",
+                  }}>
+                    <span style={{ fontSize:15, fontWeight: (isToday||isSel)?800:600, color:numColor }}>{d}</span>
+                    {events.length > 0 && (
+                      <span style={{ position:"absolute", bottom:7, left:"50%", transform:"translateX(-50%)", width:5, height:5, borderRadius:"50%",
+                        background: isToday ? "#04201d" : mineCount>0 ? "#2DD4BF" : "#3b4560" }} />
+                    )}
+                  </div>
+                );
+              }
 
               return (
                 <div key={d} onClick={() => setSel(isSel ? null : d)} style={{
@@ -255,8 +291,10 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               })}
             </div>
           ) : (
-            <div style={{ display:"flex", gap:20, marginTop:16, justifyContent:"center" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6 }}><div style={{ width:10, height:10, borderRadius:"50%", background:C.teal }} /><span style={{ fontSize:12, color:C.muted }}>대여 일정</span></div>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginTop:16, justifyContent:"center", flexWrap:"wrap", fontSize:12, color:C.muted }}>
+              <span style={{ display:"flex", alignItems:"center", gap:6 }}><span style={{ width:9, height:9, borderRadius:"50%", background:"#2DD4BF" }} /><span style={{ color:C.text }}>대여 일정</span></span>
+              <span style={{ color:"#2a3448" }}>|</span>
+              <span>이번 달 예약 <b style={{ color:"#5eead4" }}>{myMonthTotal}건</b> · 반납완료 <b style={{ color:"#7fa9ff" }}>{myMonthReturned}건</b></span>
             </div>
           )}
         </Card>
@@ -264,13 +302,13 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
         {/* 선택 날짜 상세 패널 - 캘린더 아래 */}
         {sel && (
           <div>
-            <Card style={{ border:`2px solid ${C.blue}25` }}>
+            <Card style={ isAdmin ? { border:`2px solid ${C.blue}25` } : { background:"#141824", border:"1px solid #232a3a", borderRadius:18 } }>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <div style={{ fontSize:16, fontWeight:800, color:C.navy }}>{month}월 {sel}일</div>
-                  <span style={{ fontSize:12, color:C.muted, background:C.bg, borderRadius:12, padding:"2px 10px" }}>총 {selEvents.length}건</span>
+                <div style={{ display:"flex", alignItems:"center", gap:9 }}>
+                  <div style={{ fontSize: isAdmin?16:20, fontWeight: isAdmin?800:900, color: isAdmin?C.navy:"#fff" }}>{month}월 {sel}일</div>
+                  <span style={{ fontSize:12, color:C.muted, background: isAdmin?C.bg:"#10131d", border: isAdmin?"none":"1px solid #232a3a", borderRadius:16, padding:"3px 11px" }}>총 {selEvents.length}건</span>
                 </div>
-                <button onClick={() => setSel(null)} style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:8, padding:"4px 10px", color:C.muted, fontSize:12, cursor:"pointer" }}>닫기</button>
+                <button onClick={() => setSel(null)} style={{ background: isAdmin?C.bg:"#10131d", border:`1px solid ${isAdmin?C.border:"#232a3a"}`, borderRadius:10, padding:"6px 13px", color:C.muted, fontSize:13, cursor:"pointer" }}>닫기 ⌃</button>
               </div>
 
               {selEvents.length === 0 && (
@@ -278,6 +316,36 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
               )}
               {selEvents.map(r => {
                 const sm = STATUS_META[r.status] || {};
+
+                // ── 학생 리디자인 예약 카드 (아바타·배지·아이콘) ──
+                if (!isAdmin) {
+                  const p = ST_PAL[r.status] || { bg:"rgba(148,163,184,.16)", fg:"#cbd5e1" };
+                  return (
+                    <div key={r.id} onClick={() => setDetail(r)} style={{
+                      background:"#10131d", border:"1px solid #2a4a6a", borderRadius:14, padding:14, marginBottom:10, cursor:"pointer",
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:11, marginBottom:11 }}>
+                        <div style={{ width:44, height:44, borderRadius:12, background:"rgba(59,130,246,.16)", display:"grid", placeItems:"center", flexShrink:0 }}>
+                          <User size={22} color="#7fa9ff" />
+                        </div>
+                        <div style={{ fontSize:16, fontWeight:900, color:C.text, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{r.studentName}</div>
+                        <span style={{ fontSize:12, fontWeight:800, padding:"5px 13px", borderRadius:16, background:p.bg, color:p.fg, flexShrink:0 }}>{r.status}</span>
+                      </div>
+                      <div style={{ fontSize:15, fontWeight:800, color:C.text, marginBottom:9, display:"flex", alignItems:"center", gap:7 }}>
+                        <Wrench size={15} color="#7fa9ff" style={{ flexShrink:0 }} /> {getItemLabel(r)}
+                      </div>
+                      <div style={{ fontSize:12.5, color:"#aab3c5", display:"flex", gap:7, marginBottom:5, alignItems:"center" }}>
+                        <CalendarDays size={14} style={{ flexShrink:0 }} /> <span>{r.startDate} {r.startTime} ~ {r.endDate} {r.endTime}</span>
+                      </div>
+                      {r.location && (
+                        <div style={{ fontSize:12.5, color:"#aab3c5", display:"flex", gap:7, alignItems:"center" }}>
+                          <MapPin size={14} style={{ flexShrink:0 }} /> <span>{r.locationType ? r.locationType+" · " : ""}{r.location}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={r.id} onClick={() => setDetail(r)} style={{
                     background:C.bg, borderRadius:12, padding:"12px 14px", marginBottom:10,
