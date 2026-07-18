@@ -328,7 +328,6 @@ function AppContent() {
   useFCM(profile?.uid);
   const [tab,       setTab]       = useState("home");
   const [communityRoom, setCommunityRoom] = useState(null);
-  const openCommunityRoom = (roomId) => { setCommunityRoom(roomId); setTab("community"); };
   // 알림 클릭 시 실제 글까지 여는 딥링크 타깃 { postId?, articleId?, noticeId? }
   const [notifTarget, setNotifTarget] = useState(null);
   const [themeMode, setThemeMode] = useState(getThemeMode());
@@ -405,7 +404,7 @@ function AppContent() {
       }
     } else {
       switch (tab) {
-        case "home":     return <StudentHome onOpenRoom={openCommunityRoom} setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        case "home":     return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
         case "equip":    return <EquipList setTab={setTab} />;
         case "reserve":  return <Reserve setTab={setTab} />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
@@ -413,7 +412,7 @@ function AppContent() {
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
         case "mypage":   return <StudentMyPage key={mypageKey} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
-        default:         return <StudentHome onOpenRoom={openCommunityRoom} setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        default:         return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
       }
     }
   };

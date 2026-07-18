@@ -296,51 +296,6 @@ function GpaCalculator({ classes = [] }) {
   );
 }
 
-/* 📡 씬스패치 홈 카드 — 최신 기사 미리보기 + 누르면 에타 씬스패치로 점프 */
-const SP_TAGCOLOR = { 단독: "#ED1B2F", 포착: "#f472b6", 현장: "#60a5fa", 인터뷰: "#4ade80", 공지: "#cbd5e1" };
-const spTagStyle = (t) =>
-  t === "단독"
-    ? { background: "#ED1B2F", color: "#fff" }
-    : { background: (SP_TAGCOLOR[t] || "#cbd5e1") + "22", color: SP_TAGCOLOR[t] || "#94a3b8" };
-
-function ScenePatchHomeCard({ onOpen }) {
-  const { data: articles } = useCollection("scenepatchArticles");
-  const list = (articles || []).slice(0, 3);
-  const RED = "#ED1B2F";
-  return (
-    <div onClick={onOpen} role="button"
-      style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: 16, marginTop: 14, cursor: "pointer", WebkitTapHighlightColor: "transparent" }}>
-      {/* 헤더 */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: list.length ? 12 : 0 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 7 }}>
-          <span style={{ fontSize: 14 }}>📡</span>
-          <span style={{ fontSize: 13, fontWeight: 900, letterSpacing: "0.02em", color: C.text }}>
-            SCENE<span style={{ color: RED }}>PATCH</span>
-          </span>
-          <span style={{ fontSize: 10.5, color: C.muted, fontWeight: 600 }}>우리 학교 소식과 이야기를 만나보세요</span>
-        </div>
-        <span style={{ fontSize: 12, color: C.muted, fontWeight: 600, flexShrink: 0 }}>전체보기 ›</span>
-      </div>
-
-      {/* 기사 미리보기 (최신 3개) */}
-      {list.length === 0 ? (
-        <div style={{ textAlign: "center", color: C.muted, fontSize: 11.5, padding: "14px 0 6px" }}>
-          아직 올라온 소식이 없어요 · 둘러보기 ›
-        </div>
-      ) : (
-        list.map((a, i) => (
-          <div key={a.id}
-            style={{ display: "flex", alignItems: "center", gap: 9, padding: "10px 0", borderTop: i > 0 ? `1px solid ${C.border}` : "none" }}>
-            <span style={{ flexShrink: 0, fontSize: 9.5, fontWeight: 800, padding: "2px 7px", borderRadius: 5, ...spTagStyle(a.tag) }}>{a.tag}</span>
-            <span style={{ flex: 1, minWidth: 0, fontSize: 12, fontWeight: 600, color: C.text, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.title}</span>
-            {a.thumbnail && <img src={a.thumbnail} alt="" style={{ width: 36, height: 36, borderRadius: 8, objectFit: "cover", flexShrink: 0, pointerEvents: "none" }} />}
-          </div>
-        ))
-      )}
-    </div>
-  );
-}
-
 // ── 친구관리 타일 (펫 카드 옆 반폭) ──
 function FriendTile({ count, reqCount, onOpen }) {
   return (
@@ -367,7 +322,7 @@ function FriendTile({ count, reqCount, onOpen }) {
   );
 }
 
-export default function StudentHome({ onOpenRoom, setTab, onOpenFriends }) {
+export default function StudentHome({ setTab, onOpenFriends }) {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
@@ -861,8 +816,6 @@ export default function StudentHome({ onOpenRoom, setTab, onOpenFriends }) {
         />
       </div>
 
-      {/* 📡 씬스패치 기사 박스 — 누르면 에타 씬스패치로 이동 */}
-      <ScenePatchHomeCard onOpen={() => onOpenRoom("scenepatch")} />
       {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }}
         friends={myFriends.map(f => {
           const isMine = f.userId === profile?.uid;
