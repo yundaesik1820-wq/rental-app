@@ -5,7 +5,7 @@ import { C } from "../theme";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
-  BookOpen, CalendarCheck, UserCircle, Bell, LogOut,
+  BookOpen, CalendarCheck, CalendarPlus, UserCircle, Bell, LogOut,
   ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart
 } from "lucide-react";
 
@@ -34,6 +34,9 @@ const STU_NAV = [
   { id: "calendar",  icon: ShoppingCart,  label: "예약내역" },
   { id: "mypage",    icon: UserCircle,    label: "내 정보" },
 ];
+
+// 학생 하단바 아이콘 (목업 기준: 홈/예약내역/장비예약(FAB)/커뮤니티/더보기)
+const STU_BAR_ICON = { home: Home, calendar: ClipboardList, equip: CalendarPlus, community: MessageSquare, mypage: MoreHorizontal };
 
 export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab }) {
   const { profile, logout } = useAuth();
@@ -97,6 +100,10 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
     g_more:    ["g_more", "calendar", "stats", "notices", "inquiry", "settings"],
   };
   const mobileRows = isStudentNav ? [stuTabs] : [ADMIN_MOBILE_TABS];
+
+  // 학생 하단바 슬라이드 밑줄 위치 (FAB(장비예약) 탭이면 밑줄 숨김)
+  const activeStuIndex = stuTabs.findIndex(n => n.id === tab);
+  const showUnderline = activeStuIndex >= 0 && stuTabs[activeStuIndex].id !== "equip";
 
   const currentNav = nav.find(n => n.id === tab);
 
@@ -312,55 +319,134 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
         zIndex: 100,
         paddingBottom: 8,
       }}>
-        {mobileRows.map((row, rowIdx) => (
-          <div key={rowIdx} className="bottom-nav-row" style={{
-            display: "grid",
-            gridTemplateColumns: `repeat(${row.length}, 1fr)`,
-            borderTop: rowIdx === 1 ? `1px solid ${C.border}` : "none",
-          }}>
-            {row.map(n => {
-              const active = GROUP_MEMBERS[n.id] ? GROUP_MEMBERS[n.id].includes(tab) : tab === n.id;
-              const Icon = n.icon;
+        {/* 아이콘 그라데이션 정의 (선택 탭 아이콘 stroke용) */}
+        <svg width="0" height="0" style={{ position: "absolute" }} aria-hidden="true">
+          <defs>
+            <linearGradient id="navGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stopColor="#5b8def" />
+              <stop offset="1" stopColor="#7c3aed" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {isStudentNav ? (
+          /* ── 학생 하단바: 가운데 장비예약 FAB + 슬라이드 밑줄 + 그라데이션 아이콘 ── */
+          <div className="bottom-nav-row" style={{ position: "relative", display: "grid", gridTemplateColumns: `repeat(${stuTabs.length}, 1fr)` }}>
+            {/* 슬라이드 그라데이션 밑줄 */}
+            <span aria-hidden="true" style={{
+              position: "absolute", bottom: 0, left: 0, width: `${100 / stuTabs.length}%`,
+              display: "flex", justifyContent: "center", pointerEvents: "none",
+              transform: `translateX(${activeStuIndex < 0 ? 0 : activeStuIndex * 100}%)`,
+              transition: "transform 0.32s cubic-bezier(.34,1.4,.5,1), opacity 0.2s ease",
+              opacity: showUnderline ? 1 : 0,
+            }}>
+              <span style={{ width: 22, height: 3, borderRadius: 3, background: "linear-gradient(90deg,#5b8def,#7c3aed)" }} />
+            </span>
+
+            {stuTabs.map(n => {
+              const active = tab === n.id;
+              const isFab = n.id === "equip";
+              const Icon = STU_BAR_ICON[n.id] || n.icon;
+              const onClick = () => {
+                if (tab === n.id) {
+                  onSameTab?.(n.id);
+                  mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                } else setTab(n.id);
+              };
               return (
-                <button
-                  key={n.id}
-                  onClick={() => {
-                    // 같은 탭을 다시 누르면 맨 위로 + 내부 state를 쓰는 화면은 첫 화면으로.
-                    // (그룹탭은 하위 화면 → 허브 복귀가 먼저라 active가 아닌 tab === n.id 로 판정)
-                    if (tab === n.id) {
-                      onSameTab?.(n.id);
-                      mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-                    } else setTab(n.id);
-                  }}
-                  style={{
-                    background: "transparent",
-                    border: "none", cursor: "pointer",
-                    padding: "9px 2px 5px",
-                    display: "flex", flexDirection: "column",
-                    alignItems: "center", justifyContent: "center", gap: 4,
-                    WebkitTapHighlightColor: "transparent",
-                  }}
-                >
-                  <Icon
-                    size={23}
-                    color={active ? NAV_ACCENT : C.muted}
-                    strokeWidth={active ? 2.4 : 1.9}
-                    style={{
-                      transform: active ? "translateY(-2px)" : "translateY(0)",
-                      transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1)",
-                    }}
-                  />
-                  <span style={{
-                    fontSize: 10, fontWeight: active ? 700 : 500,
-                    color: active ? NAV_ACCENT : C.muted,
-                    whiteSpace: "nowrap", letterSpacing: "-0.3px",
-                    transition: "color 0.2s ease",
-                  }}>{n.label}</span>
+                <button key={n.id} className="tap-spring" onClick={onClick} style={{
+                  background: "transparent", border: "none", cursor: "pointer",
+                  padding: "10px 2px 8px", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "flex-end", gap: 4,
+                  position: "relative", WebkitTapHighlightColor: "transparent",
+                }}>
+                  {isFab ? (
+                    <>
+                      <div style={{
+                        position: "absolute", top: -24, left: "50%", transform: "translateX(-50%)",
+                        width: 58, height: 58, borderRadius: "50%",
+                        background: "linear-gradient(135deg,#5b8def,#7c3aed)",
+                        display: "grid", placeItems: "center",
+                        boxShadow: "0 6px 18px rgba(124,58,237,0.5)",
+                        border: `4px solid ${C.surface}`, zIndex: 1,
+                      }}>
+                        <CalendarPlus size={27} color="#fff" strokeWidth={2.2} />
+                      </div>
+                      <span style={{ position: "relative", zIndex: 3, fontSize: 10, fontWeight: 700, color: "#7e9dff", whiteSpace: "nowrap", letterSpacing: "-0.3px" }}>{n.label}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Icon
+                        size={23}
+                        stroke={active ? "url(#navGrad)" : undefined}
+                        color={active ? undefined : C.muted}
+                        strokeWidth={active ? 2.3 : 1.9}
+                        style={{
+                          transform: active ? "translateY(-2px)" : "translateY(0)",
+                          transition: "transform 0.28s cubic-bezier(.34,1.56,.64,1)",
+                        }}
+                      />
+                      <span style={{
+                        fontSize: 10, fontWeight: active ? 700 : 500,
+                        color: active ? "#7e9dff" : C.muted,
+                        whiteSpace: "nowrap", letterSpacing: "-0.3px",
+                        transition: "color 0.2s ease",
+                      }}>{n.label}</span>
+                    </>
+                  )}
                 </button>
               );
             })}
           </div>
-        ))}
+        ) : (
+          mobileRows.map((row, rowIdx) => (
+            <div key={rowIdx} className="bottom-nav-row" style={{
+              display: "grid",
+              gridTemplateColumns: `repeat(${row.length}, 1fr)`,
+              borderTop: rowIdx === 1 ? `1px solid ${C.border}` : "none",
+            }}>
+              {row.map(n => {
+                const active = GROUP_MEMBERS[n.id] ? GROUP_MEMBERS[n.id].includes(tab) : tab === n.id;
+                const Icon = n.icon;
+                return (
+                  <button
+                    key={n.id}
+                    onClick={() => {
+                      if (tab === n.id) {
+                        onSameTab?.(n.id);
+                        mainRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+                      } else setTab(n.id);
+                    }}
+                    style={{
+                      background: "transparent",
+                      border: "none", cursor: "pointer",
+                      padding: "9px 2px 5px",
+                      display: "flex", flexDirection: "column",
+                      alignItems: "center", justifyContent: "center", gap: 4,
+                      WebkitTapHighlightColor: "transparent",
+                    }}
+                  >
+                    <Icon
+                      size={23}
+                      color={active ? NAV_ACCENT : C.muted}
+                      strokeWidth={active ? 2.4 : 1.9}
+                      style={{
+                        transform: active ? "translateY(-2px)" : "translateY(0)",
+                        transition: "transform 0.22s cubic-bezier(.34,1.56,.64,1)",
+                      }}
+                    />
+                    <span style={{
+                      fontSize: 10, fontWeight: active ? 700 : 500,
+                      color: active ? NAV_ACCENT : C.muted,
+                      whiteSpace: "nowrap", letterSpacing: "-0.3px",
+                      transition: "color 0.2s ease",
+                    }}>{n.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))
+        )}
       </div>
 
       {/* 🔍 통합 검색 (준비중 껍데기 — 커뮤니티 헤더와 동일) */}
