@@ -813,7 +813,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
       )}
 
       {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
-      <div style={{ display:"flex", gap:10, marginBottom:12, alignItems:"stretch" }}>
+      <div style={{ display:"flex", gap:10, marginBottom:6, alignItems:"stretch" }}>
         <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
         <FriendTile
           count={myFriends.length}
