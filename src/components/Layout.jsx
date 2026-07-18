@@ -316,7 +316,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
         background: C.surface,
         borderTop: `1px solid ${C.border}`,
         boxShadow: "0 -4px 20px rgba(0,0,0,0.08)",
-        zIndex: 100,
+        zIndex: 250, // Community 등 풀스크린 페이지(z-200) 위로 — FAB 안 가리게 (모달 9500+는 그대로 위)
         paddingBottom: 8,
       }}>
         {/* 아이콘 그라데이션 정의 (선택 탭 아이콘 stroke용) */}
@@ -378,9 +378,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
                     <>
                       <Icon
                         size={23}
-                        stroke={active ? "url(#navGrad)" : undefined}
-                        color={active ? undefined : C.muted}
                         strokeWidth={active ? 2.3 : 1.9}
+                        {...(active ? { stroke: "url(#navGrad)" } : { color: "#fff" })}
                         style={{
                           transform: active ? "translateY(-2px)" : "translateY(0)",
                           transition: "transform 0.28s cubic-bezier(.34,1.56,.64,1)",
