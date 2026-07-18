@@ -453,7 +453,12 @@ ${r.attachments?.length > 0 ? `
                 {(r.returnPhotos?.length > 0 || r.status === "대여중") && (
                   <div style={{ marginBottom:8 }}>
                     <div style={{ fontSize:11, fontWeight:700, color:C.muted, marginBottom:6 }}>
-                      {r.status === "대여중" ? "📸 반납 사진 — 반납 전 장비 상태를 찍어 올려주세요 (최대 3장)" : "📸 장비 사용 사진"}
+                      {r.status === "대여중" ? (
+                        <>
+                          📸 촬영현장에서 장비를 사용했던 모습을 찍고 올려주세요!
+                          <span style={{ display:"block", color:"#ef4444", marginTop:3 }}>(3장을 업로드해주셔야하며 미업로드시 반납처리가 불가합니다.)</span>
+                        </>
+                      ) : "📸 장비 사용 사진"}
                     </div>
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                       {(r.returnPhotos || []).map((url, idx) => (
