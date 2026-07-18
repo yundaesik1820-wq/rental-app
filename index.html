@@ -63,6 +63,24 @@
         transform: scale(0.96);
       }
 
+      /* 네이티브 앱 느낌 — 롱프레스 이미지 저장 / 텍스트 선택·복사 콜아웃 차단 */
+      * {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+      /* 입력 요소는 선택·복사·붙여넣기 가능하게 예외 */
+      input, textarea, [contenteditable="true"], [contenteditable=""] {
+        -webkit-user-select: text;
+        user-select: text;
+        -webkit-touch-callout: default;
+      }
+      /* 이미지 드래그 저장 방지 (클릭 핸들러는 유지) */
+      img {
+        -webkit-user-drag: none;
+      }
+
       /* 스무스한 통통 누름 모션 (알림 아이콘·항목 등) */
       /* 뗄 때: 부드럽게 오버슈트하며 통 튀어오름 */
       .tap-spring {
@@ -109,6 +127,14 @@
             setTimeout(() => splash.remove(), 400);
           }
         }, 800);
+      });
+
+      // 롱프레스/우클릭 컨텍스트 메뉴 차단 (이미지 저장·텍스트 복사 메뉴 방지)
+      // 입력창(input/textarea/contenteditable)은 예외 — 붙여넣기 등 유지
+      document.addEventListener('contextmenu', function (e) {
+        var t = e.target;
+        if (t && t.closest && t.closest('input, textarea, [contenteditable="true"], [contenteditable=""]')) return;
+        e.preventDefault();
       });
     </script>
   </body>
