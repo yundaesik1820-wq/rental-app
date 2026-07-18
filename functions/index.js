@@ -137,11 +137,12 @@ exports.onRentalStatusChange = functions.firestore
       ? `${itemNames[0]} 외 ${itemNames.length - 1}건`
       : (itemNames[0] || after.equipName || "장비");
     const messages = {
-      "승인됨":   { title: "대여가 승인됐어요",      body: `${name}님, ${label} 대여가 승인됐어요. 신청한 시간에 맞춰 방문해주세요!` },
-      "거절됨":   { title: "대여가 거절됐어요",      body: `${name}님, 이번 신청은 승인되지 않았어요. 앱에서 사유를 확인해주세요!` },
-      "반납완료": { title: "반납이 완료됐어요",      body: `${label} 반납이 확인됐어요. 이용해주셔서 고마워요!` },
-      "보류":     { title: "대여가 보류됐어요",      body: `${name}님의 신청을 검토 중이에요. 앱에서 자세한 내용을 확인해주세요!` },
-      "연체":     { title: "반납일이 지났어요 🚨",   body: `${name}님, ${label} 반납이 늦어지고 있어요. 빠르게 반납해주세요!` },
+      "승인됨":   { title: "대여가 승인됐어요 🎉",       body: `${name}님, 요청하신 신청건이 승인됐어요. 신청한 시간에 맞춰 방문해주세요!` },
+      "거절됨":   { title: "대여가 거절됐어요 😢",       body: `${name}님, 요청하신 신청건이 거절됐어요. 앱에서 사유를 확인해주세요!` },
+      "대여중":   { title: "멋진 작품 만드시길 바래요!", body: `${name}님, 즐거운 촬영하시길 바래요. 반납 전에 촬영 중인 사진 업로드! 잊지 않으셨죠?` },
+      "반납완료": { title: "반납이 완료됐어요!",         body: `${name}님, 반납이 정상적으로 확인됐어요! 이용해주셔서 감사해요!` },
+      "보류":     { title: `${name}님의 신청이 보류중이에요.`, body: "앱에서 자세한 사유를 확인해주세요!" },
+      "연체":     { title: "🚨반납시간이 지났어요🚨",     body: `${name}님, 반납이 늦어지고 있어요. 빠르게 반납해주세요!` },
     };
     const msg = messages[after.status];
     if (msg) await sendFCM(uid, msg.title, msg.body);
@@ -220,6 +221,7 @@ exports.checkOverdue = functions.pubsub
     const statusBatch = admin.firestore().batch();
     const newOverdue = [];
     const alertTargets = [];
+    const preAlertTargets = [];   // 반납 1시간 전 알림 대상
 
     snap.docs.forEach(doc => {
       const d = doc.data();
@@ -232,6 +234,14 @@ exports.checkOverdue = functions.pubsub
       if (d.endDate < todayStr || (d.endDate === todayStr && d.endTime <= timeStr)) {
         statusBatch.update(doc.ref, { status: "연체" });
         newOverdue.push({ id: doc.id, uid: d.studentId, name: d.studentName });
+      } else if (!d.preReturnAlerted) {
+        // 반납 1시간 전 알림 (아직 안 보낸 대여중 건만, 한 번만 발송)
+        const endMs = new Date(`${d.endDate}T${d.endTime}:00+09:00`).getTime();
+        const diff  = endMs - now.getTime();
+        if (diff > 0 && diff <= 60 * 60 * 1000) {
+          statusBatch.update(doc.ref, { preReturnAlerted: true });
+          preAlertTargets.push({ uid: d.studentId, name: d.studentName });
+        }
       }
     });
 
@@ -255,17 +265,16 @@ exports.checkOverdue = functions.pubsub
     });
 
     if (Object.keys(statusBatch._ops || {}).length > 0 ||
-        newOverdue.length > 0 || alertTargets.length > 0) {
+        newOverdue.length > 0 || alertTargets.length > 0 || preAlertTargets.length > 0) {
       await statusBatch.commit();
     }
 
-    // 새로 연체된 학생 - 상태 변경 알림 + overdueAlerted 초기화
+    // 새로 연체된 학생 - overdueAlerted 초기화만 (연체 푸시는 onRentalStatusChange가 단독 발송 → 중복 방지)
     await Promise.allSettled(
-      newOverdue.map(async r => {
-        await admin.firestore().collection("rentalRequests").doc(r.id)
-          .update({ overdueAlerted: false });
-        return sendFCM(r.uid, "반납 시간이 지났어요 🚨", `${r.name ? r.name + "님, " : ""}지금 장비대여실에 방문해 반납을 완료해주세요!`);
-      })
+      newOverdue.map(r =>
+        admin.firestore().collection("rentalRequests").doc(r.id)
+          .update({ overdueAlerted: false })
+      )
     );
 
     // 30분 초과 연체 알림
@@ -275,7 +284,14 @@ exports.checkOverdue = functions.pubsub
       )
     );
 
-    console.log(`연체 처리: ${newOverdue.length}건, 30분 알림: ${alertTargets.length}건`);
+    // 반납 1시간 전 알림
+    await Promise.allSettled(
+      preAlertTargets.map(r =>
+        sendFCM(r.uid, "장비 반납 1시간 전이에요!", "반납 전 예약내역에서 장비사용사진 업로드! 잊지말고 꼭 해주세요!")
+      )
+    );
+
+    console.log(`연체 처리: ${newOverdue.length}건, 30분 알림: ${alertTargets.length}건, 반납1시간전: ${preAlertTargets.length}건`);
     return null;
   });
 
