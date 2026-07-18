@@ -230,12 +230,12 @@ function GpaCalculator({ classes = [] }) {
   return (
     <div style={{ marginBottom:12 }}>
       <button onClick={() => setOpen(o=>!o)}
-        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
+        style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:"linear-gradient(135deg,#141d3d,#101733)", border:"1px solid #23305c", borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
-          <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#22c55e,#16a34a)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>🧮</div>
+          <div style={{ width:38, height:38, borderRadius:11, background:"linear-gradient(135deg,#4d7cfe,#3b6cf8)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:18 }}>🧮</div>
           <div style={{ textAlign:"left" }}>
-            <div style={{ fontSize:13, fontWeight:800, color:C.text }}>학점 계산기</div>
-            <div style={{ fontSize:10.5, color:C.muted, marginTop:1 }}>나의 학점과 졸업요건을 계산해보세요!</div>
+            <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>학점 계산기</div>
+            <div style={{ fontSize:10.5, color:"#93a0bd", marginTop:1 }}>본인의 학점을 계산해보세요!</div>
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
@@ -244,7 +244,7 @@ function GpaCalculator({ classes = [] }) {
         </div>
       </button>
       {open && (
-        <div style={{ background:C.surface, border:`1px solid ${C.border}`, borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
+        <div style={{ background:"linear-gradient(135deg,#141d3d,#101733)", border:"1px solid #23305c", borderTop:"none", borderRadius:"0 0 12px 12px", padding:"14px 16px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12, background:C.bg, borderRadius:10, padding:"10px 14px" }}>
             <div>
               <div style={{ fontSize:11, color:C.muted }}>평점 평균 (4.5 기준)</div>
