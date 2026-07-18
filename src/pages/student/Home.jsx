@@ -961,7 +961,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
               .tt-ntime{font-size:13px;font-weight:700;color:#c8d3ee;margin-bottom:7px;}
               .tt-nmeta{font-size:11.5px;color:#93a0bd;display:flex;gap:12px;flex-wrap:wrap;}
               .tt-nmeta span{display:inline-flex;align-items:center;gap:4px;}
-              .tt-thumb{position:absolute;right:15px;bottom:14px;width:86px;height:58px;border-radius:10px;background:linear-gradient(135deg,#2a3566,#1a2547);border:1px solid #2f3d6e;opacity:0.9;}
+              .tt-thumb{position:absolute;right:15px;bottom:14px;width:86px;height:58px;border-radius:10px;object-fit:cover;border:1px solid #2f3d6e;display:block;}
               .tt-label{font-size:12.5px;font-weight:700;color:#93a0bd;margin:0 2px 6px;}
               .tt-today{background:#0d1428;border:1px solid #1c2947;border-radius:14px;overflow:hidden;margin-bottom:12px;}
               .tt-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid #17223d;cursor:pointer;-webkit-tap-highlight-color:transparent;}
@@ -984,7 +984,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
                   {nextClass.location && <span>📍 {nextClass.location}</span>}
                   {nextClass.professor && <span>👤 {nextClass.professor}</span>}
                 </div>
-                <div className="tt-thumb" />
+                <img className="tt-thumb" src="/next-class-thumb.png" alt="" />
               </div>
             )}
 
