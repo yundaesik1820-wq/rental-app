@@ -3,7 +3,7 @@ import { C } from "../../theme";
 import { Card, Badge, Empty, StatBox, Btn } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { FileText, CalendarDays, MapPin, Camera, ChevronRight } from "lucide-react";
+import { FileText, CalendarDays, MapPin, Camera, ChevronDown } from "lucide-react";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db, storage } from "../../firebase";
@@ -302,9 +302,9 @@ ${r.attachments?.length > 0 ? `
             ))}
           </div>
           {showPrint.studentSignature && (
-            <div style={{ marginTop:16, textAlign:"right" }}>
-              <div style={{ fontSize:11, color:C.muted, marginBottom:4 }}>신청자 서명</div>
-              <img src={showPrint.studentSignature} alt="서명" style={{ height:60, objectFit:"contain", border:`1px solid ${C.border}`, borderRadius:8, padding:4 }} />
+            <div style={{ marginTop:16, textAlign:"center" }}>
+              <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>신청자 서명</div>
+              <img src={showPrint.studentSignature} alt="서명" style={{ height:70, objectFit:"contain", background:"#fff", border:`1px solid ${C.border}`, borderRadius:8, padding:6 }} />
             </div>
           )}
           <div style={{ marginTop:20, display:"flex", gap:10 }}>
@@ -355,13 +355,12 @@ ${r.attachments?.length > 0 ? `
         const boxTime = isEnd ? r.endTime : r.startTime;
 
         return (
-          <div key={r.id} id={`history-card-${r.id}`} onClick={() => setExpandedId(isExpand ? null : r.id)}
+          <div key={r.id} id={`history-card-${r.id}`} className="card-press" onClick={() => setExpandedId(isExpand ? null : r.id)}
             style={{ position:"relative", background:CARD_BG, border:`1px solid ${flashId===r.id ? C.teal : BD}`, borderRadius:16,
-              padding:"16px 34px 16px 18px", marginBottom:12, overflow:"hidden", cursor:"pointer",
+              padding:"16px 18px 10px", marginBottom:12, overflow:"hidden", cursor:"pointer",
               ...(flashId===r.id ? { boxShadow:`0 0 0 3px ${C.teal}55` } : {}) }}>
             {/* 좌측 상태 컬러바 */}
             <span style={{ position:"absolute", left:0, top:0, bottom:0, width:4, background:p.line }} />
-            <ChevronRight size={20} color="#4a5678" style={{ position:"absolute", right:10, top:16 }} />
 
             <div style={{ display:"flex", justifyContent:"space-between", gap:12 }}>
               {/* 좌측 정보 */}
@@ -406,9 +405,15 @@ ${r.attachments?.length > 0 ? `
               </div>
             </div>
 
+            {/* 하단 중앙 펼침 화살표 */}
+            <div style={{ display:"flex", justifyContent:"center", marginTop:isExpand ? 6 : 2 }}>
+              <ChevronDown size={20} color="#4a5678"
+                style={{ transform:`rotate(${isExpand ? 180 : 0}deg)`, transition:"transform 0.3s cubic-bezier(0.34,1.5,0.5,1)" }} />
+            </div>
+
             {/* 펼침 상세 */}
             {isExpand && (
-              <div onClick={(e) => e.stopPropagation()} style={{ marginTop:14, paddingTop:14, borderTop:`1px solid ${BD}` }}>
+              <div onClick={(e) => e.stopPropagation()} style={{ animation:"historyExpand 0.25s ease", marginTop:8, paddingTop:14, borderTop:`1px solid ${BD}` }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                   <div style={{ fontSize:12, color:C.muted }}>목적: {r.purpose || "-"}</div>
                   <button onClick={() => setShowPrint(r)}

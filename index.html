@@ -109,6 +109,10 @@
         display: block;
       }
       @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      /* 예약내역 카드: 부드러운 누름 + 펼침 모션 */
+      .card-press { transition: transform 0.4s cubic-bezier(0.22, 1.2, 0.36, 1); }
+      .card-press:active { transform: scale(0.98); transition: transform 0.11s cubic-bezier(0.33, 0, 0.3, 1); }
+      @keyframes historyExpand { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
     </style>
   </head>
   <body>
