@@ -564,8 +564,7 @@ ${r.attachments?.length > 0 ? `
 
   // 예약 확정 (equipment.status 변경 없음 - 아직 물리 대여 전)
   const approve = async (r, adminSignature) => {
-    // ⚠️ 임시: 교사 서명대기 단계 스킵 (테스트 속도). 원복 시 status를 "교사서명대기"로 되돌릴 것.
-    await updateItem("rentalRequests", r.id, { status: "승인됨", reason: "", adminSignature: adminSignature || "" });
+    await updateItem("rentalRequests", r.id, { status: "교사서명대기", reason: "", adminSignature: adminSignature || "" });
   };
 
   // 배치 선택 모달 열기 (자동배치 기본값 + 체크리스트)
