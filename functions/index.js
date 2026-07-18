@@ -148,6 +148,26 @@ exports.onRentalStatusChange = functions.firestore
     if (msg) await sendFCM(uid, msg.title, msg.body);
   });
 
+// ── 대여 신청 접수 알림 (신청 직후) ────────────────────────
+exports.onRentalCreate = functions.firestore
+  .document("rentalRequests/{reqId}")
+  .onCreate(async (snap) => {
+    const d = snap.data();
+    // 학생 조회 (onRentalStatusChange과 동일 방식)
+    const usersSnap = await admin.firestore().collection("users")
+      .where("studentId", "==", d.studentId)
+      .where("status", "==", "approved")
+      .limit(1).get();
+    if (usersSnap.empty) return;
+    const uid  = usersSnap.docs[0].id;
+    const name = d.studentName || usersSnap.docs[0].data().name || "학생";
+    await sendFCM(
+      uid,
+      "신청이 완료됐어요!",
+      `${name}님의 소중한 신청 잘 받았어요! 열심히 검토할게요🔥`
+    );
+  });
+
 // ── 새 공지사항 알림 ──────────────────────────────────────
 exports.onNewNotice = functions.firestore
   .document("notices/{noticeId}")
