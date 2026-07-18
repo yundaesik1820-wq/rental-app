@@ -917,7 +917,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
       {/* 시간표 */}
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
-          <SectionTitle>📅 내 시간표</SectionTitle>
+          <SectionTitle>내 시간표</SectionTitle>
           {classes.length > 0 && (
             <div style={{ display: "flex", gap: 6, marginLeft: "auto", marginTop: 12 }}>
               <button onClick={() => { setShowClassForm(true); setEditClass(null); }}
