@@ -308,7 +308,7 @@ export default function CalendarPage({ isAdmin = true, userId = null, userEmail 
                   <div style={{ fontSize: isAdmin?16:20, fontWeight: isAdmin?800:900, color: isAdmin?C.navy:"#fff" }}>{month}월 {sel}일</div>
                   <span style={{ fontSize:12, color:C.muted, background: isAdmin?C.bg:"#10131d", border: isAdmin?"none":"1px solid #232a3a", borderRadius:16, padding:"3px 11px" }}>총 {selEvents.length}건</span>
                 </div>
-                <button onClick={() => setSel(null)} style={{ background: isAdmin?C.bg:"#10131d", border:`1px solid ${isAdmin?C.border:"#232a3a"}`, borderRadius:10, padding:"6px 13px", color:C.muted, fontSize:13, cursor:"pointer" }}>닫기 ⌃</button>
+                <button onClick={() => setSel(null)} style={{ background: isAdmin?C.bg:"#10131d", border:`1px solid ${isAdmin?C.border:"#232a3a"}`, borderRadius:10, padding:"6px 16px", color:C.muted, fontSize:13, cursor:"pointer", textAlign:"center" }}>닫기</button>
               </div>
 
               {selEvents.length === 0 && (
