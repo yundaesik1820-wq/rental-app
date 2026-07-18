@@ -228,7 +228,7 @@ function GpaCalculator({ classes = [] }) {
   const gpaColor = gpa>=4.0?C.teal:gpa>=3.0?C.blue:gpa>=2.0?C.yellow:C.red;
 
   return (
-    <div style={{ marginBottom:16 }}>
+    <div style={{ marginBottom:12 }}>
       <button onClick={() => setOpen(o=>!o)}
         style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:C.surface, border:`1px solid ${C.border}`, borderRadius:open?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
         <div style={{ display:"flex", alignItems:"center", gap:11 }}>
@@ -313,7 +313,7 @@ function FriendTile({ count, reqCount, onOpen }) {
       )}
       {iconOk ? (
         <img src="/friend-icon.png" alt="친구관리" onError={() => setIconOk(false)}
-          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block" }} />
+          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #0B0B0E", background:"#0B0B0E" }} />
       ) : (
         <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)",
           display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
@@ -760,7 +760,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
         .hmini{position:absolute;left:4%;top:54%;transform:translateY(-50%);z-index:6;display:flex;gap:7px;pointer-events:auto;}
         .hmini button{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.85);cursor:pointer;padding:0;}
       `}</style>
-      <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 16 }}>
+      <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 12 }}>
         <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
         <div className="htext">
           <p className="hgreet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</p>
@@ -813,7 +813,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
       )}
 
       {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
-      <div style={{ display:"flex", gap:10, marginBottom:16, alignItems:"stretch" }}>
+      <div style={{ display:"flex", gap:10, marginBottom:12, alignItems:"stretch" }}>
         <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
         <FriendTile
           count={myFriends.length}
@@ -915,8 +915,8 @@ export default function StudentHome({ setTab, onOpenFriends }) {
       )}
 
       {/* 시간표 */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 8 }}>
           <SectionTitle>📅 내 시간표</SectionTitle>
           {classes.length > 0 && (
             <div style={{ display: "flex", gap: 6, marginLeft: "auto", marginTop: 12 }}>
@@ -954,7 +954,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
         ) : (
           <>
             <style>{`
-              .tt-next{position:relative;overflow:hidden;background:linear-gradient(135deg,#141d3d,#101733);border:1px solid #23305c;border-radius:16px;padding:14px 15px;margin-bottom:16px;}
+              .tt-next{position:relative;overflow:hidden;background:linear-gradient(135deg,#141d3d,#101733);border:1px solid #23305c;border-radius:16px;padding:12px 15px;margin-bottom:12px;}
               .tt-bblue{display:inline-block;background:rgba(70,110,255,0.18);color:#7ea2ff;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:7px;}
               .tt-bpurple{display:inline-flex;align-items:center;gap:4px;background:rgba(139,92,246,0.2);color:#c4b5fd;font-size:10.5px;font-weight:700;padding:4px 9px;border-radius:8px;position:absolute;top:14px;right:15px;}
               .tt-nname{font-size:18px;font-weight:800;color:#fff;margin:9px 0 5px;letter-spacing:-0.02em;}
@@ -962,8 +962,8 @@ export default function StudentHome({ setTab, onOpenFriends }) {
               .tt-nmeta{font-size:11.5px;color:#93a0bd;display:flex;gap:12px;flex-wrap:wrap;}
               .tt-nmeta span{display:inline-flex;align-items:center;gap:4px;}
               .tt-thumb{position:absolute;right:15px;bottom:14px;width:86px;height:58px;border-radius:10px;background:linear-gradient(135deg,#2a3566,#1a2547);border:1px solid #2f3d6e;opacity:0.9;}
-              .tt-label{font-size:12.5px;font-weight:700;color:#93a0bd;margin:0 2px 8px;}
-              .tt-today{background:#0d1428;border:1px solid #1c2947;border-radius:14px;overflow:hidden;margin-bottom:18px;}
+              .tt-label{font-size:12.5px;font-weight:700;color:#93a0bd;margin:0 2px 6px;}
+              .tt-today{background:#0d1428;border:1px solid #1c2947;border-radius:14px;overflow:hidden;margin-bottom:12px;}
               .tt-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border-top:1px solid #17223d;cursor:pointer;-webkit-tap-highlight-color:transparent;}
               .tt-row:first-child{border-top:none;}
               .tt-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
@@ -1022,7 +1022,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
       </div>
 
       {/* 친구 시간표 */}
-      <div style={{ marginBottom:16 }}>
+      <div style={{ marginBottom:12 }}>
         <button onClick={() => { setShowFriendTab(o=>!o); setViewFriend(null); }}
           style={{ display:"flex", alignItems:"center", justifyContent:"space-between", width:"100%", background:TT.bg, border:`1px solid ${TT.border}`, borderRadius:showFriendTab?"12px 12px 0 0":"12px", padding:"10px 16px", cursor:"pointer", fontFamily:"inherit" }}>
           <div style={{ display:"flex", alignItems:"center", gap:11 }}>
