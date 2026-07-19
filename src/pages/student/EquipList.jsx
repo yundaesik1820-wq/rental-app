@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C } from "../../theme";
-import { Card, Badge, Btn, Empty, PageTitle, Modal } from "../../components/UI";
+import { Card, Badge, Empty, PageTitle, Modal } from "../../components/UI";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCart } from "../../hooks/useCart.jsx";
@@ -93,6 +93,46 @@ const licenseToNum = (lic) => {
   const n = parseInt(lic);
   return isNaN(n) ? 0 : n;
 };
+
+// ── 학생 리디자인 블루 팔레트 (theme.js C는 아직 모노톤이라 여기서 직접 박음) ──
+const BOX_CAT = { color:"#93a8e8", bg:"rgba(96,130,246,0.13)", bd:"rgba(96,130,246,0.22)" };
+// 라이선스 레벨별 컬러만 다르게 (Lv.1 민트 / Lv.2 블루 / Lv.3+ 퍼플)
+const lvStyle = (n) =>
+  n >= 3 ? { color:"#b79bff", bg:"rgba(124,58,237,0.18)", bd:"rgba(124,58,237,0.34)" } :
+  n === 2 ? { color:"#7e9dff", bg:"rgba(96,130,246,0.15)", bd:"rgba(96,130,246,0.30)" } :
+            { color:"#2DD4BF", bg:"rgba(45,212,191,0.13)", bd:"rgba(45,212,191,0.28)" };
+const LOCK_BOX = { color:"#FF6B6B", bg:"#2E1414", bd:"rgba(255,107,107,0.30)" };
+
+// 블루 박스 (카테고리 / 라이선스 / 보유대수)
+function Box({ s, children }) {
+  return <span style={{ fontSize:11, fontWeight:800, padding:"4px 9px", borderRadius:8, whiteSpace:"nowrap",
+    color:s.color, background:s.bg, border:`1px solid ${s.bd}` }}>{children}</span>;
+}
+
+// 입체 버튼 — 누르면 아래로 쑥 들어가는 모션. 폰트는 기존 그대로(inherit) 유지.
+function PressBtn({ children, onClick, variant = "reserve", disabled, style }) {
+  const [p, setP] = useState(false);
+  const base = { fontSize:12, fontWeight:800, padding:"8px 14px", borderRadius:10, border:"none",
+    whiteSpace:"nowrap", fontFamily:"inherit", cursor: disabled ? "default" : "pointer",
+    transition:"transform .07s ease, box-shadow .07s ease", flexShrink:0, ...style };
+  if (disabled)
+    return <button disabled style={{ ...base, color:"#5a5a63", background:"#141419", border:"1px solid #26262e" }}>{children}</button>;
+  const reserve = variant === "reserve";
+  const sh = reserve
+    ? (p ? "0 1px 0 #2a2170, 0 2px 7px rgba(79,139,255,0.35), inset 0 1px 0 rgba(255,255,255,0.25)"
+         : "0 4px 0 #2a2170, 0 6px 14px rgba(79,139,255,0.40), inset 0 1px 0 rgba(255,255,255,0.35)")
+    : (p ? "0 1px 0 #0d0f16, 0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)"
+         : "0 3px 0 #0d0f16, 0 4px 9px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)");
+  const vs = reserve
+    ? { color:"#fff", background:"linear-gradient(135deg,#4f8bff,#8b5cf6)", textShadow:"0 1px 1px rgba(0,0,0,0.28)", transform:p?"translateY(3px)":"none" }
+    : { color:"#cdd7f6", background:"linear-gradient(180deg,#242836,#191c26)", transform:p?"translateY(2px)":"none" };
+  return (
+    <button onClick={onClick}
+      onPointerDown={() => setP(true)} onPointerUp={() => setP(false)}
+      onPointerLeave={() => setP(false)} onPointerCancel={() => setP(false)}
+      style={{ ...base, ...vs, boxShadow:sh }}>{children}</button>
+  );
+}
 
 export default function EquipList({ setTab }) {
   const { profile } = useAuth();
@@ -277,70 +317,57 @@ export default function EquipList({ setTab }) {
               const locked = profile?.role !== "professor" && myLic < eqLic;
               const avail  = e.available > 0;
               const qty    = cart[e.modelName] || 0;
+              const cat = e.minorCategory || e.majorCategory;
               return (
-                <Card key={e.modelName} style={{ padding:"12px 14px" }}
-                  onClick={isCameraLike(e) && !locked && avail ? () => setDetailCam(e) : undefined}>
+                <Card key={e.modelName} style={{ padding:"12px 13px" }}>
+                  {/* 상단: 썸네일 · 모델명/제조사 · 대여가능 뱃지 */}
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                    {/* 썸네일 */}
                     {photos.length > 0 && (
-                      <div style={{ width:46, height:46, borderRadius:7, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
+                      <div style={{ width:48, height:48, borderRadius:9, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
                         <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
-                    {/* 정보 */}
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:4, marginBottom:2 }}>
-                        <div style={{ fontSize:13, fontWeight:800, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
-                        <span style={{ flexShrink:0, background:avail?C.greenLight:C.redLight, color:avail?C.green:C.red, borderRadius:5, padding:"1px 6px", fontSize:10, fontWeight:700 }}>
-                          {avail ? "대여가능" : "대여불가"}
-                        </span>
-                      </div>
-                      {e.manufacturer && <div style={{ fontSize:11, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:2 }}>{e.manufacturer}</div>}
-                      <div style={{ display:"flex", alignItems:"center", gap:4, flexWrap:"wrap" }}>
-                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 5px", fontSize:9, fontWeight:700 }}>{e.minorCategory}</span>}
-                        {eqLic > 0 && (
-                          <span style={{ background:locked?C.redLight:C.blueLight, color:locked?C.red:C.blue, borderRadius:4, padding:"1px 5px", fontSize:9, fontWeight:700 }}>
-                            {locked ? `🔴 Lv.${eqLic}` : `🔵 Lv.${eqLic}`}
-                          </span>
-                        )}
-                        <span style={{ fontSize:9, color:C.muted }}>{e.available}/{e.total}대</span>
-                        <button onClick={ev => { ev.stopPropagation(); setShowDescModel(e); }}
-                          style={{ background:"none", border:`1px solid ${C.border}`, borderRadius:5, padding:"1px 6px", fontSize:9, color:C.muted, cursor:"pointer", marginLeft:"auto", flexShrink:0, whiteSpace:"nowrap" }}>
-                          🔍 장비가 궁금하다면?
-                        </button>
-                      </div>
+                      <div style={{ fontSize:15, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
+                      {e.manufacturer && <div style={{ fontSize:11.5, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>{e.manufacturer}</div>}
+                    </div>
+                    <span style={{ flexShrink:0, fontSize:10.5, fontWeight:800, padding:"3px 8px", borderRadius:7,
+                      color:avail?"#34D399":"#FF6B6B", background:avail?"#0F3028":"#2E1414" }}>
+                      {avail ? "대여가능" : "대여불가"}
+                    </span>
+                  </div>
+
+                  {/* 하단: 블루 박스 3개 · 상세보기/예약하기 */}
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginTop:11, flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", minWidth:0 }}>
+                      {cat && <Box s={BOX_CAT}>{cat}</Box>}
+                      {eqLic > 0 && <Box s={locked ? LOCK_BOX : lvStyle(eqLic)}>{locked ? `🔒 Lv.${eqLic}` : `Lv.${eqLic}`}</Box>}
+                      <Box s={BOX_CAT}>{e.available}/{e.total}대</Box>
+                    </div>
+                    <div style={{ display:"flex", gap:7, flexShrink:0, alignItems:"center" }}>
+                      <PressBtn variant="detail" onClick={() => setShowDescModel(e)}>상세보기</PressBtn>
+                      {locked ? (
+                        <PressBtn disabled>Lv.{eqLic} 필요</PressBtn>
+                      ) : !avail ? (
+                        <PressBtn disabled>재고 없음</PressBtn>
+                      ) : isCameraLike(e) ? (
+                        <PressBtn onClick={() => setDetailCam(e)}>예약하기</PressBtn>
+                      ) : qty > 0 ? (
+                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={() => setQty(e.modelName, qty-1, e.available)}
+                            style={{ width:30, height:30, borderRadius:8, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:17, fontWeight:700, color:C.text }}>−</button>
+                          <div style={{ fontSize:16, fontWeight:800, color:"#7e9dff", minWidth:22, textAlign:"center" }}>{qty}</div>
+                          <button onClick={() => setQty(e.modelName, qty+1, e.available)}
+                            style={{ width:30, height:30, borderRadius:8, border:"1px solid #3b5bdb", background:"rgba(96,130,246,0.14)", cursor:"pointer", fontSize:17, fontWeight:700, color:"#7e9dff" }}>+</button>
+                        </div>
+                      ) : (
+                        <PressBtn onClick={() => setQty(e.modelName, 1, e.available)}>예약하기</PressBtn>
+                      )}
                     </div>
                   </div>
-                  {/* 재고 바 */}
-                  <div style={{ background:C.border, borderRadius:4, height:2, overflow:"hidden", marginTop:6 }}>
-                    <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
-                  </div>
-                  {/* 담기 — 라이선스/재고는 여기서도 막고, 제출 시 Reserve가 한 번 더 검증 */}
-                  {locked ? (
-                    <div style={{ fontSize:11, color:C.red, fontWeight:600, marginTop:8 }}>
-                      🔒 Lv.{eqLic} 이상 필요 (현재: {profile?.license || "없음"})
-                    </div>
-                  ) : !avail ? (
-                    <div style={{ fontSize:11, color:C.muted, marginTop:8 }}>재고 없음</div>
-                  ) : isCameraLike(e) ? (
-                    // 카드 전체가 상세로 가는 버튼 — 담긴 수량만 표시
-                    qty > 0 ? (
-                      <div style={{ fontSize:11, color:C.teal, fontWeight:700, marginTop:8 }}>✓ 담김 {qty}대</div>
-                    ) : null
-                  ) : qty > 0 ? (
-                    <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:8 }}>
-                      <button onClick={() => setQty(e.modelName, qty-1, e.available)}
-                        style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.border}`, background:C.bg, cursor:"pointer", fontSize:16, fontWeight:700, color:C.text }}>−</button>
-                      <div style={{ fontSize:18, fontWeight:800, color:C.teal, minWidth:30, textAlign:"center" }}>{qty}</div>
-                      <button onClick={() => setQty(e.modelName, qty+1, e.available)}
-                        style={{ width:30, height:30, borderRadius:7, border:`1px solid ${C.teal}`, background:C.tealLight, cursor:"pointer", fontSize:16, fontWeight:700, color:C.teal }}>+</button>
-                      <button onClick={() => setQty(e.modelName, 0, e.available)}
-                        style={{ marginLeft:4, background:"none", border:"none", color:C.muted, fontSize:11, cursor:"pointer", textDecoration:"underline" }}>빼기</button>
-                    </div>
-                  ) : (
-                    <div style={{ marginTop:8 }}>
-                      <Btn onClick={() => setQty(e.modelName, 1, e.available)} color={C.teal} small>담기</Btn>
-                    </div>
+                  {/* 카메라류는 상세에서 액세서리까지 담으므로 담긴 수량만 표시 */}
+                  {isCameraLike(e) && qty > 0 && (
+                    <div style={{ fontSize:11, color:"#2DD4BF", fontWeight:800, marginTop:8 }}>✓ 담김 {qty}대</div>
                   )}
                 </Card>
               );
@@ -363,33 +390,45 @@ export default function EquipList({ setTab }) {
               const locked   = profile?.role !== "professor" && licenseToNum(profile?.license) < eqLic;
               const picked   = !!cartSets[e.modelName];
               return (
-                <Card key={e.modelName} style={{ padding:"12px 14px", border:`1.5px solid ${C.orange}20` }}>
+                <Card key={e.modelName} style={{ padding:"12px 13px", border:`1.5px solid rgba(251,146,60,0.20)` }}>
+                  {/* 상단: 썸네일 · 모델명/제조사 · 대여가능 뱃지 */}
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-                    {/* 썸네일 */}
                     {photos.length > 0 && (
-                      <div style={{ width:46, height:46, borderRadius:7, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
+                      <div style={{ width:48, height:48, borderRadius:9, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
                         <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
-                    {/* 정보 */}
                     <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:6, marginBottom:2 }}>
-                        <div style={{ fontSize:14, fontWeight:800, color:C.navy, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
-                        <span style={{ flexShrink:0, background:avail?C.greenLight:C.redLight, color:avail?C.green:C.red, borderRadius:6, padding:"2px 7px", fontSize:11, fontWeight:700 }}>
-                          {avail ? "대여가능" : "대여불가"}
-                        </span>
-                      </div>
-                      {e.manufacturer && <div style={{ fontSize:12, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{e.manufacturer}</div>}
-                      <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
-                        <span style={{ background:"#FFF7ED", color:"#EA580C", borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>📦 세트</span>
-                        {e.minorCategory && <span style={{ background:C.blueLight, color:C.blue, borderRadius:4, padding:"1px 6px", fontSize:10, fontWeight:700 }}>{e.minorCategory}</span>}
-                        <span style={{ fontSize:10, color:C.muted }}>{e.available}/{e.total}세트</span>
-                      </div>
+                      <div style={{ fontSize:15, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{e.modelName}</div>
+                      {e.manufacturer && <div style={{ fontSize:11.5, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>{e.manufacturer}</div>}
                     </div>
+                    <span style={{ flexShrink:0, fontSize:10.5, fontWeight:800, padding:"3px 8px", borderRadius:7,
+                      color:avail?"#34D399":"#FF6B6B", background:avail?"#0F3028":"#2E1414" }}>
+                      {avail ? "대여가능" : "대여불가"}
+                    </span>
                   </div>
-                  {/* 재고 바 */}
-                  <div style={{ background:C.border, borderRadius:4, height:3, overflow:"hidden", marginTop:8, marginBottom: setList.length>0?8:0 }}>
-                    <div style={{ width:`${(e.available/e.total)*100}%`, background:avail?C.teal:C.red, height:"100%", borderRadius:4 }} />
+
+                  {/* 하단: 블루 박스 · 상세보기/예약하기 */}
+                  <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginTop:11, marginBottom: setList.length>0?10:0, flexWrap:"wrap" }}>
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", minWidth:0 }}>
+                      <Box s={{ color:"#FB923C", bg:"rgba(251,146,60,0.14)", bd:"rgba(251,146,60,0.30)" }}>📦 세트</Box>
+                      {e.minorCategory && <Box s={BOX_CAT}>{e.minorCategory}</Box>}
+                      {eqLic > 0 && <Box s={locked ? LOCK_BOX : lvStyle(eqLic)}>{locked ? `🔒 Lv.${eqLic}` : `Lv.${eqLic}`}</Box>}
+                      <Box s={BOX_CAT}>{e.available}/{e.total}세트</Box>
+                    </div>
+                    <div style={{ display:"flex", gap:7, flexShrink:0 }}>
+                      <PressBtn variant="detail" onClick={() => setShowDescModel(e)}>상세보기</PressBtn>
+                      {locked ? (
+                        <PressBtn disabled>Lv.{eqLic} 필요</PressBtn>
+                      ) : !avail ? (
+                        <PressBtn disabled>재고 없음</PressBtn>
+                      ) : (
+                        <PressBtn variant={picked ? "detail" : "reserve"}
+                          onClick={() => setCartSets(p => ({ ...p, [e.modelName]: !p[e.modelName] }))}>
+                          {picked ? "담김 ✓" : "예약하기"}
+                        </PressBtn>
+                      )}
+                    </div>
                   </div>
 
                   {/* 구성품 목록 펼치기 */}
@@ -415,21 +454,6 @@ export default function EquipList({ setTab }) {
                         </div>
                       )}
                     </>
-                  )}
-                  {/* 담기 — 세트는 수량 없이 1세트 토글 */}
-                  {locked ? (
-                    <div style={{ fontSize:11, color:C.red, fontWeight:600, marginTop:10 }}>
-                      🔒 Lv.{eqLic} 이상 필요 (현재: {profile?.license || "없음"})
-                    </div>
-                  ) : !avail ? (
-                    <div style={{ fontSize:11, color:C.muted, marginTop:10 }}>재고 없음</div>
-                  ) : (
-                    <div style={{ marginTop:10 }}>
-                      <Btn onClick={() => setCartSets(p => ({ ...p, [e.modelName]: !p[e.modelName] }))}
-                        color={picked ? C.muted : C.teal} outline={picked} small full>
-                        {picked ? "담김 · 빼기" : "담기"}
-                      </Btn>
-                    </div>
                   )}
                 </Card>
               );
