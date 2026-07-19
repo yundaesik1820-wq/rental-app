@@ -128,6 +128,38 @@ export async function getFcmTokenOnce() {
   }
 }
 
+/* ───────── 현재 알림 권한 상태 조회 (배너 노출 판정용) ─────────
+   반환: "granted" | "denied" | "prompt"/"default"(아직 안 물어봄) | "unsupported" */
+export async function getNotifPermissionState() {
+  try {
+    if (Capacitor.isNativePlatform()) {
+      const { FirebaseMessaging } = await import("@capacitor-firebase/messaging");
+      const p = await FirebaseMessaging.checkPermissions();
+      return p.receive; // granted | denied | prompt | prompt-with-rationale
+    }
+    if (!("Notification" in window)) return "unsupported";
+    return Notification.permission; // granted | denied | default
+  } catch {
+    return "unsupported";
+  }
+}
+
+/* ───────── 알림 켜기 (배너 "알림 설정" 버튼 등에서 온디맨드 호출) ─────────
+   권한 요청 + 토큰 발급 + 플랫폼별 배열 저장까지 수행하고 결과 상태를 반환. */
+export async function enableNotifications(userId) {
+  try {
+    const res = await getFcmTokenOnce();          // 권한 요청 + 토큰 발급
+    if (res?.token) {
+      await saveToken(userId, res.token, res.native);
+      return "granted";
+    }
+    return await getNotifPermissionState();        // 실패 원인(denied 등) 파악
+  } catch (e) {
+    console.error("알림 켜기 실패:", e.message);
+    return "error";
+  }
+}
+
 /* ───────── 진입점: 환경 자동 분기 ───────── */
 export function useFCM(userId) {
   useEffect(() => {

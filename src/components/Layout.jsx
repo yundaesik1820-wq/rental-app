@@ -1,6 +1,7 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../hooks/useAuth.jsx";
+import { enableNotifications, getNotifPermissionState } from "../hooks/useFCM";
 import { C } from "../theme";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
@@ -45,6 +46,12 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
   const [sideOpen, setSideOpen] = useState(true);
   const [showSearch, setShowSearch] = useState(false); // 헤더 검색(커뮤니티와 동일 — 현재 준비중 껍데기)
   const mainRef = useRef(null); // 같은 탭 재탭 시 맨 위로 스크롤
+
+  // 푸시 알림 유도 배너 (학생, 알림 미허용 시 하단바 위에 노출)
+  const navRef = useRef(null);
+  const [navH, setNavH] = useState(64);          // 하단바 실측 높이 (배너 위치용)
+  const [notifPerm, setNotifPerm] = useState("granted"); // 판정 전엔 granted로 둬서 깜빡임 방지
+  const [notifBusy, setNotifBusy] = useState(false);
 
   const adminRole = profile?.adminRole || "super";
   const isSuper   = profile?.role === "admin"; // 모든 관리자 슈퍼와 동일
@@ -100,6 +107,28 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
     g_more:    ["g_more", "calendar", "stats", "notices", "inquiry", "settings"],
   };
   const mobileRows = isStudentNav ? [stuTabs] : [ADMIN_MOBILE_TABS];
+
+  // 알림 권한 상태 확인 (학생만) — granted면 배너 숨김
+  useEffect(() => {
+    if (isStudentNav && profile?.uid) getNotifPermissionState().then(setNotifPerm);
+  }, [isStudentNav, profile?.uid]);
+  // 하단바 높이 실측 (배너를 바로 위에 붙이기 위해)
+  useEffect(() => {
+    const measure = () => { if (navRef.current) setNavH(navRef.current.offsetHeight); };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  });
+  const showNotifBanner = isStudentNav && notifPerm !== "granted" && notifPerm !== "unsupported";
+  const handleEnableNotif = async () => {
+    if (!profile?.uid) return;
+    setNotifBusy(true);
+    const state = await enableNotifications(profile.uid);
+    setNotifBusy(false);
+    setNotifPerm(state);
+    if (state === "denied")      alert("알림이 차단돼 있어요.\n폰 설정 › 알림에서 'KBAS 장비대여실'을 켜주세요.");
+    else if (state === "error")  alert("알림 설정 중 오류가 났어요. 잠시 후 다시 시도해주세요.");
+  };
 
   const currentNav = nav.find(n => n.id === tab);
 
@@ -310,8 +339,37 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
 
 
+      {/* 푸시 알림 유도 배너 — 하단바 바로 위 (학생, 알림 미허용 시) */}
+      {showNotifBanner && (
+        <div className="mobile-nav" style={{ display: "none", position: "fixed", left: 0, right: 0, bottom: navH, zIndex: 249, padding: "0 10px 22px" }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 8,
+            background: "linear-gradient(135deg,#1b2547,#141b33)",
+            border: "1px solid #2b3a63", borderRadius: 16,
+            padding: "8px 10px 8px 6px",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+          }}>
+            <img src="/mascot/mega.png" alt="" style={{ width: 54, height: 54, objectFit: "contain", flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+                <Bell size={14} color="#fcd34d" fill="#fcd34d" style={{ flexShrink: 0 }} />
+                <span style={{ fontSize: 12.5, fontWeight: 800, color: "#eef2ff", lineHeight: 1.25 }}>대여 일정이 다가오면 푸시 알림으로 알려드려요!</span>
+              </div>
+              <div style={{ fontSize: 11, color: "#9fb0d6" }}>놓치지 말고 알림을 켜주세요.</div>
+            </div>
+            <button onClick={handleEnableNotif} disabled={notifBusy} className="tap-spring" style={{
+              flexShrink: 0, border: "none", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+              background: "linear-gradient(135deg,#5b8def,#7c3aed)", color: "#fff",
+              fontSize: 12, fontWeight: 800, padding: "10px 14px", borderRadius: 10,
+            }}>
+              {notifBusy ? "설정 중…" : "알림 설정"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 모바일 하단 2줄 네비 */}
-      <div className="mobile-nav" style={{
+      <div ref={navRef} className="mobile-nav" style={{
         display: "none",
         position: "fixed", bottom: 0, left: 0, right: 0,
         background: C.surface,
