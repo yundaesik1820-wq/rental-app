@@ -342,28 +342,23 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
       {/* 푸시 알림 유도 배너 — 하단바 바로 위 (학생, 알림 미허용 시) */}
       {showNotifBanner && (
         <div className="mobile-nav" style={{ display: "none", position: "fixed", left: 0, right: 0, bottom: navH, zIndex: 249, padding: "0 10px 22px" }}>
-          <div style={{
-            display: "flex", alignItems: "center", gap: 8,
-            background: "linear-gradient(135deg,#1b2547,#141b33)",
-            border: "1px solid #2b3a63", borderRadius: 16,
-            padding: "8px 10px 8px 6px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
-          }}>
-            <img src="/mascot/mega.png" alt="" style={{ width: 54, height: 54, objectFit: "contain", flexShrink: 0 }} />
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
-                <Bell size={14} color="#fcd34d" fill="#fcd34d" style={{ flexShrink: 0 }} />
-                <span style={{ fontSize: 12.5, fontWeight: 800, color: "#eef2ff", lineHeight: 1.25 }}>대여 일정이 다가오면 푸시 알림으로 알려드려요!</span>
+          <div style={{ position: "relative" }}>
+            {/* 배너 박스 전체 = 제공 이미지 (투명배경 라운드 박스 + 마스코트 포함) */}
+            <img src="/notif-banner.png" alt="" style={{ display: "block", width: "100%", height: "auto" }} />
+            {/* 텍스트 + 버튼 오버레이 — 박스 영역(상단 마스코트 여백 제외)에 세로 중앙 + 우측 */}
+            <div style={{ position: "absolute", top: "11%", bottom: 0, left: 0, right: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6, paddingRight: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 8.5, fontWeight: 800, color: "#eef2ff", lineHeight: 1.3, whiteSpace: "nowrap" }}>대여 상태가 바뀌면 바로 알려드려요!</div>
+                <div style={{ fontSize: 7.5, color: "#9fb0d6", marginTop: 1, whiteSpace: "nowrap" }}>승인부터 반납까지, 중요한 안내를 놓치지 마세요.</div>
               </div>
-              <div style={{ fontSize: 11, color: "#9fb0d6" }}>놓치지 말고 알림을 켜주세요.</div>
+              <button onClick={handleEnableNotif} disabled={notifBusy} className="tap-spring" style={{
+                flexShrink: 0, border: "none", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+                background: "linear-gradient(135deg,#5b8def,#7c3aed)", color: "#fff",
+                fontSize: 10, fontWeight: 800, padding: "7px 10px", borderRadius: 9,
+              }}>
+                {notifBusy ? "설정 중…" : "알림 설정"}
+              </button>
             </div>
-            <button onClick={handleEnableNotif} disabled={notifBusy} className="tap-spring" style={{
-              flexShrink: 0, border: "none", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-              background: "linear-gradient(135deg,#5b8def,#7c3aed)", color: "#fff",
-              fontSize: 12, fontWeight: 800, padding: "10px 14px", borderRadius: 10,
-            }}>
-              {notifBusy ? "설정 중…" : "알림 설정"}
-            </button>
           </div>
         </div>
       )}
