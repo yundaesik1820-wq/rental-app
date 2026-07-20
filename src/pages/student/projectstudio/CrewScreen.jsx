@@ -7,7 +7,7 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/u
 import {
   PS, CREW_ROLES, CREW_STATUS, crewStatus, newCrewMember, typeLabel, stageLabel,
 } from "./constants";
-import { communityRecruitmentAdapter } from "./adapters";
+import { createCommunityRecruitmentAdapter } from "./adapters";
 
 // ===== 팀원 추가/수정 모달 (backdrop 닫기 없음) =====
 // 이름 입력 → 가입 학생 자동완성 (본인 포함, 수기 입력도 허용).
@@ -203,9 +203,10 @@ function CrewFormModal({ member, project, crew, uid, profile, onClose }) {
   );
 }
 
-// ===== 모집글 미리보기 모달 (요청서 12번 — 프로젝트 정보 자동 입력, mock 등록) =====
-function RecruitModal({ member, project, scenes, days, onClose, onRegistered }) {
+// ===== 모집글 미리보기 모달 (요청서 12번 — 프로젝트 정보 자동 입력 → 커뮤니티 실제 등록) =====
+function RecruitModal({ member, project, scenes, days, profile, onClose, onRegistered }) {
   const [busy, setBusy] = useState(false);
+  const alreadyPosted = !!member.recruitPostId;
 
   const locations = [...new Set(scenes.map(s => s.locationName).filter(Boolean))];
   const dates = days.map(d => d.date).sort();
@@ -227,13 +228,19 @@ function RecruitModal({ member, project, scenes, days, onClose, onRegistered }) 
   ].filter(v => v !== null);
 
   const register = async () => {
+    if (alreadyPosted) return;
     setBusy(true);
     try {
-      await communityRecruitmentAdapter.createRecruitmentPost(project.id, member.role);
+      const adapter = createCommunityRecruitmentAdapter({ profile });
+      const { postId } = await adapter.createRecruitmentPost(project, member.role, {
+        shootDate, extraDays: Math.max(0, dates.length - 1), locations, totalMinutes: totalMin,
+      });
+      // 중복 등록 방지 — 팀원 항목에 생성된 글 id 기록
+      await updateItem("crewMembers", member.id, { recruitPostId: postId });
       onRegistered();
     } catch (e) {
-      console.warn("recruit mock error:", e);
-      alert("등록 준비에 실패했어요.");
+      console.warn("recruit post error:", e);
+      alert("모집글 등록에 실패했어요. 잠시 후 다시 시도해주세요.");
       setBusy(false);
     }
   };
@@ -265,12 +272,17 @@ function RecruitModal({ member, project, scenes, days, onClose, onRegistered }) 
           {lines.join("\n")}
         </div>
 
-        <button onClick={register} disabled={busy}
-          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: "pointer", marginTop: 16,
-            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
-            border: "none", color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+        <div style={{ fontSize: 11.5, color: PS.sub, marginTop: 10, lineHeight: 1.55 }}>
+          등록하면 커뮤니티 <b style={{ color: PS.primaryLight }}>크루 메이커스</b>에 협업모집 글로 올라가요.
+        </div>
+
+        <button onClick={register} disabled={busy || alreadyPosted}
+          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: alreadyPosted ? "default" : "pointer", marginTop: 12,
+            background: alreadyPosted ? PS.elev : `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: alreadyPosted ? `1px solid ${PS.border}` : "none",
+            color: alreadyPosted ? PS.success : "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
             opacity: busy ? 0.7 : 1 }}>
-          {busy ? "준비 중..." : "모집글 초안 저장 (커뮤니티 등록은 곧 제공)"}
+          {alreadyPosted ? "✓ 이미 커뮤니티에 등록됨" : busy ? "등록 중..." : "크루 메이커스에 모집글 등록"}
         </button>
       </div>
     </div>
@@ -400,10 +412,11 @@ export default function CrewScreen({ project, onBack }) {
                   {canEdit && m.status === "recruiting" && (
                     <button onClick={() => setRecruitFor(m)}
                       style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
-                        background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`, borderRadius: 10,
-                        color: PS.primaryLight, fontSize: 11.5, fontWeight: 800, padding: "7px 11px",
+                        background: m.recruitPostId ? `${PS.success}14` : `${PS.primary}1A`,
+                        border: `1px solid ${m.recruitPostId ? PS.success + "55" : PS.primary + "55"}`, borderRadius: 10,
+                        color: m.recruitPostId ? PS.success : PS.primaryLight, fontSize: 11.5, fontWeight: 800, padding: "7px 11px",
                         cursor: "pointer", fontFamily: "inherit" }}>
-                      <Megaphone size={13} /> 모집글 미리보기
+                      <Megaphone size={13} /> {m.recruitPostId ? "모집글 등록됨" : "모집글 등록"}
                     </button>
                   )}
                   {canEdit && (
@@ -447,9 +460,9 @@ export default function CrewScreen({ project, onBack }) {
           onClose={() => setFormMember(null)} />
       )}
       {recruitFor && (
-        <RecruitModal member={recruitFor} project={project} scenes={scenes} days={days}
+        <RecruitModal member={recruitFor} project={project} scenes={scenes} days={days} profile={profile}
           onClose={() => setRecruitFor(null)}
-          onRegistered={() => { setRecruitFor(null); showToast("모집글 초안이 준비됐어요! 커뮤니티 등록은 곧 제공돼요."); }} />
+          onRegistered={() => { setRecruitFor(null); showToast("크루 메이커스에 모집글을 등록했어요! 🎬"); }} />
       )}
     </div>
   );

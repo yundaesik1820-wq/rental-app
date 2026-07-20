@@ -4,6 +4,8 @@
 // — 커뮤니티 모집: MVP는 mock (미리보기 + 초안 반환까지), 실제 등록은 추후 교체
 
 import { groupEquipments } from "../../../utils/groupEquipments";
+import { addItem } from "../../../hooks/useFirestore";
+import { typeLabel } from "./constants";
 
 /**
  * 장비 예약 어댑터
@@ -40,12 +42,47 @@ export function createEquipmentReservationAdapter({ equipments, setQty }) {
 }
 
 /**
- * 커뮤니티 크루 모집 어댑터 (MVP mock)
- * 실제 연동 시 communityPosts에 category "협업모집" 글을 생성하도록 이 함수만 교체.
+ * 커뮤니티 크루 모집 어댑터 — 실제 커뮤니티(크루 메이커스=협업모집) 글로 등록.
+ * 화면은 communityPosts를 직접 만들지 않고 이 어댑터를 통한다.
+ * @param profile useAuth().profile (작성자)
  */
-export const communityRecruitmentAdapter = {
-  async createRecruitmentPost(projectId, crewRole) {
-    // mock: 등록된 척 가짜 postId 반환
-    return { postId: `mock_${projectId.slice(0, 6)}_${crewRole}` };
-  },
-};
+export function createCommunityRecruitmentAdapter({ profile }) {
+  return {
+    /**
+     * @param project 프로젝트 문서
+     * @param crewRole 모집 포지션
+     * @param opts { shootDate, extraDays, locations[], totalMinutes, deadline }
+     * @returns { postId }
+     */
+    async createRecruitmentPost(project, crewRole, opts = {}) {
+      const { shootDate = "", extraDays = 0, locations = [], totalMinutes = 0, deadline = "" } = opts;
+      const intro = (project.description || "").trim() || `함께 작품을 완성할 ${crewRole} 팀원을 찾고 있어요!`;
+      const scheduleStr = shootDate ? `${shootDate}${extraDays > 0 ? ` 외 ${extraDays}일` : ""}` : "";
+      const runtimeStr = totalMinutes > 0 ? `약 ${Math.ceil(totalMinutes / 60)}시간 촬영 예상` : "";
+
+      const ref = await addItem("communityPosts", {
+        title:       project.title,
+        content:     intro,
+        category:    "협업모집",
+        authorId:    profile?.uid || "",
+        authorName:  profile?.name || "",
+        images:      [],
+        // 크루 메이커스 전용 필드 (Community.jsx submitPost와 동일 스키마)
+        positions:   [{ role: crewRole, count: 1 }],
+        crewDirector: profile?.name || "",
+        crewLogline: intro,
+        crewSchedule: [scheduleStr, runtimeStr].filter(Boolean).join(" · "),
+        crewPlace:   locations.join(", "),
+        crewPay:     "",
+        crewGenre:   typeLabel(project.type),
+        deadline:    deadline || "",
+        applicants:  [],
+        // 반응/집계 필드 (다른 글과 동일 초기값)
+        views: 0, likes: 0, likedBy: [], dislikes: 0, dislikedBy: [],
+        // 출처 표시 (프로젝트 스튜디오에서 자동 생성됨을 구분)
+        fromProjectId: project.id,
+      });
+      return { postId: ref.id };
+    },
+  };
+}
