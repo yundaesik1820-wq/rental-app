@@ -235,5 +235,20 @@ service cloud.firestore {
         && request.resource.data.ownerId == resource.data.ownerId; // 소유권 이전 차단
     }
 
+    // 🎬 Project Studio 하위 데이터 (전부 ownerId 소유 문서 — projects와 동일 규칙)
+    // 와일드카드지만 아래 목록에 없는 컬렉션엔 아무 권한도 주지 않음.
+    match /{psCol}/{docId} {
+      allow create: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
+        && isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
+        && isLoggedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
+        && isLoggedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId;
+    }
+
   }
 }

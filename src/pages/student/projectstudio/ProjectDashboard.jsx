@@ -1,8 +1,16 @@
-import { ArrowLeft, CalendarDays, Flag, LayoutGrid } from "lucide-react";
-import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, CalendarDays, Flag, Settings2 } from "lucide-react";
+import { PS, typeLabel, typeIcon, stageLabel, WORKSPACE_MENUS } from "./constants";
+import ProjectTasks from "./ProjectTasks";
+import ProjectEditModal from "./ProjectEditModal";
 
-// 프로젝트 대시보드 (Phase 1 — 기본 정보/진행률만. 할일·워크스페이스 메뉴는 Phase 2)
+// 프로젝트 대시보드 (Phase 2 — 기본 정보 + 할 일 + 워크스페이스 메뉴 + 수정/보관)
 export default function ProjectDashboard({ project, onBack }) {
+  const [showEdit, setShowEdit] = useState(false);
+  const [menuToast, setMenuToast] = useState("");
+  const toastTimer = useRef(null);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
   if (!project) {
     return (
       <div style={{ padding: "40px 16px", textAlign: "center", color: PS.sub, fontSize: 14 }}>
@@ -23,6 +31,15 @@ export default function ProjectDashboard({ project, onBack }) {
   const progress = Math.max(0, Math.min(100, project.progress || 0));
   const fmtDate = (d) => d ? d.replaceAll("-", ".") : "미정";
 
+  const openMenu = (m) => {
+    // Phase 3+에서 화면 연결 — 지금은 안내 토스트
+    if (!m.ready) {
+      setMenuToast(`${m.label}는 다음 업데이트에 추가돼요!`);
+      clearTimeout(toastTimer.current);
+      toastTimer.current = setTimeout(() => setMenuToast(""), 2200);
+    }
+  };
+
   return (
     <div style={{ padding: "4px 2px 24px", color: PS.text }}>
       <button onClick={onBack}
@@ -38,14 +55,27 @@ export default function ProjectDashboard({ project, onBack }) {
       <div style={{
         background: `linear-gradient(150deg, ${PS.primary}22 0%, ${PS.surface} 55%)`,
         border: `1px solid ${PS.primary}33`, borderRadius: 18, padding: 18, marginTop: 6,
+        position: "relative",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+        <button onClick={() => setShowEdit(true)}
+          style={{
+            position: "absolute", top: 10, right: 10, width: 40, height: 40,
+            background: "rgba(255,255,255,0.06)", border: `1px solid ${PS.border}`,
+            borderRadius: 11, color: PS.sub, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+          }}>
+          <Settings2 size={17} />
+        </button>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, paddingRight: 44 }}>
           <Ic size={16} color={PS.primaryLight} />
           <span style={{ fontSize: 12, fontWeight: 700, color: PS.primaryLight }}>
             {typeLabel(project.type)} · {stageLabel(project.stage)}
           </span>
         </div>
-        <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 14, wordBreak: "keep-all" }}>{project.title}</div>
+        <div style={{ fontSize: 20, fontWeight: 900, marginBottom: 14, wordBreak: "keep-all", paddingRight: 44 }}>
+          {project.title}
+        </div>
 
         {/* 진행률 */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
@@ -71,17 +101,49 @@ export default function ProjectDashboard({ project, onBack }) {
         </div>
       </div>
 
-      {/* 워크스페이스 메뉴 — Phase 2 예정 */}
-      <div style={{
-        marginTop: 14, background: PS.surface, border: `1px dashed ${PS.border}`,
-        borderRadius: 16, padding: "26px 16px", textAlign: "center",
-      }}>
-        <LayoutGrid size={26} color={PS.sub} style={{ marginBottom: 8 }} />
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 4 }}>워크스페이스 준비 중</div>
-        <div style={{ fontSize: 12.5, color: PS.sub, lineHeight: 1.6 }}>
-          할 일 · 시나리오 · 콘티 · 촬영 일정 · 장비 · 예산 메뉴가<br />다음 업데이트에 추가돼요.
-        </div>
+      {/* 오늘 해야 할 일 */}
+      <ProjectTasks projectId={project.id} />
+
+      {/* 워크스페이스 메뉴 */}
+      <div style={{ margin: "18px 0 10px", fontSize: 14.5, fontWeight: 800 }}>워크스페이스</div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 9 }}>
+        {WORKSPACE_MENUS.map(m => {
+          const MIc = m.icon;
+          return (
+            <button key={m.key} onClick={() => openMenu(m)}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                gap: 7, minHeight: 76, padding: "12px 6px", borderRadius: 14, cursor: "pointer",
+                background: PS.surface, border: `1px solid ${PS.border}`,
+                color: PS.text, fontFamily: "inherit",
+                opacity: m.ready ? 1 : 0.55,
+              }}>
+              <MIc size={20} color={m.ready ? PS.primaryLight : PS.sub} strokeWidth={1.9} />
+              <span style={{ fontSize: 11.5, fontWeight: 700, wordBreak: "keep-all", lineHeight: 1.25 }}>{m.label}</span>
+            </button>
+          );
+        })}
       </div>
+
+      {/* 메뉴 준비중 토스트 */}
+      {menuToast && (
+        <div style={{
+          position: "fixed", left: "50%", bottom: 96, transform: "translateX(-50%)",
+          background: "rgba(23,26,35,0.97)", border: `1px solid ${PS.border}`,
+          color: PS.text, fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap",
+          padding: "10px 16px", borderRadius: 999, zIndex: 300,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)",
+        }}>{menuToast}</div>
+      )}
+
+      {/* 수정 모달 */}
+      {showEdit && (
+        <ProjectEditModal
+          project={project}
+          onClose={() => setShowEdit(false)}
+          onArchived={() => { setShowEdit(false); onBack(); }}
+        />
+      )}
     </div>
   );
 }

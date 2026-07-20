@@ -1,6 +1,9 @@
 // 🎬 Project Studio 공통 상수
 // 이 화면군은 theme.js(모노톤)와 별개로 로컬 디자인 토큰을 쓴다 (블루/퍼플 리디자인 흐름).
-import { Clapperboard, Music2, Megaphone, Film, Youtube, Shapes } from "lucide-react";
+import {
+  Clapperboard, Music2, Megaphone, Film, Youtube, Shapes,
+  Lightbulb, FileText, ListTree, Camera, CalendarDays, Users, MapPin, Wrench, Wallet, UserPlus, FolderOpen,
+} from "lucide-react";
 
 // 디자인 토큰 (요청서 19번 기준)
 export const PS = {
@@ -35,6 +38,21 @@ export const PROJECT_STAGES = [
   { value: "production",     label: "프로덕션" },
   { value: "postproduction", label: "포스트프로덕션" },
   { value: "completed",      label: "완료" },
+];
+
+// 워크스페이스 빠른 메뉴 (key = 추후 화면 라우팅 키, ready=false면 "준비 중")
+export const WORKSPACE_MENUS = [
+  { key: "idea",      label: "기획 노트",       icon: Lightbulb,    ready: false },
+  { key: "script",    label: "시나리오",        icon: FileText,     ready: false },
+  { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: false },
+  { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: false },
+  { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: false },
+  { key: "casting",   label: "캐스팅",          icon: Users,        ready: false },
+  { key: "locations", label: "로케이션",        icon: MapPin,       ready: false },
+  { key: "equipment", label: "장비",            icon: Wrench,       ready: false },
+  { key: "budget",    label: "예산",            icon: Wallet,       ready: false },
+  { key: "crew",      label: "팀원",            icon: UserPlus,     ready: false },
+  { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: false },
 ];
 
 export const typeLabel  = (v) => PROJECT_TYPES.find(t => t.value === v)?.label || v;
