@@ -261,7 +261,8 @@ service cloud.firestore {
     // 와일드카드지만 아래 목록에 없는 컬렉션엔 아무 권한도 주지 않음.
     function isPsCol(c) {
       return c in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-        'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles'];
+        'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems',
+        'projectFiles', 'ideaNotes'];
     }
     match /{psCol}/{docId} {
       // 생성: 프로젝트 멤버 + ownerId는 본인(문서 생성자)으로 고정(위조 방지)

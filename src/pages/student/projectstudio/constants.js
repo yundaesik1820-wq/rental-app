@@ -42,7 +42,7 @@ export const PROJECT_STAGES = [
 
 // 워크스페이스 빠른 메뉴 (key = 추후 화면 라우팅 키, ready=false면 "준비 중")
 export const WORKSPACE_MENUS = [
-  { key: "idea",      label: "기획 노트",       icon: Lightbulb,    ready: false },
+  { key: "idea",      label: "기획 노트",       icon: Lightbulb,    ready: true },
   { key: "script",    label: "시나리오",        icon: FileText,     ready: true },
   { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: true },
   { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: true },
@@ -227,6 +227,11 @@ export function newProjectFile({ projectId, ownerId, name, url, category, size, 
     category: category || "기타",
     size: size || 0, contentType: contentType || "",
   };
+}
+
+/** IdeaNote 문서 기본값 팩토리 — 기획 노트(아이디어·레퍼런스·컨셉) */
+export function newIdeaNote({ projectId, ownerId }) {
+  return { projectId, ownerId, title: "", content: "" };
 }
 
 export const fmtBytes = (n) => {

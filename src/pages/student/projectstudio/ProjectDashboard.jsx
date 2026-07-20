@@ -41,7 +41,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
     if (m.key === "script" || m.key === "breakdown") { onOpenScript && onOpenScript(); return; }
     if (m.key === "shots") { onOpenShots && onOpenShots(); return; }
     if (m.key === "schedule") { onOpenSchedule && onOpenSchedule(); return; }
-    if (["crew", "equipment", "budget", "casting", "locations", "files"].includes(m.key)) { onOpenMenuScreen && onOpenMenuScreen(m.key); return; }
+    if (["crew", "equipment", "budget", "casting", "locations", "files", "idea"].includes(m.key)) { onOpenMenuScreen && onOpenMenuScreen(m.key); return; }
     if (!m.ready) {
       setMenuToast(`${m.label}는 다음 업데이트에 추가돼요!`);
       clearTimeout(toastTimer.current);

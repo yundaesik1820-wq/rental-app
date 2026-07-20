@@ -16,6 +16,7 @@ import BudgetScreen from "./BudgetScreen";
 import CastScreen from "./CastScreen";
 import LocationScreen from "./LocationScreen";
 import FilesScreen from "./FilesScreen";
+import IdeaNotesScreen from "./IdeaNotesScreen";
 
 // 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
 // initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
@@ -67,7 +68,7 @@ export default function ProjectStudio({ initialView, onConsumed }) {
     return <ProjectAICreate basic={aiBasic} onBack={() => setView("create")} onCreated={(id) => setView(id)} />;
   }
   // 서브 화면 ("script:" | "shots:" | "schedule:" | "crew:" | "equipment:" | "budget:" | "casting:" | "locations:" | "files:" + 프로젝트 id)
-  if (typeof view === "string" && /^(script|shots|schedule|crew|equipment|budget|casting|locations|files):/.test(view)) {
+  if (typeof view === "string" && /^(script|shots|schedule|crew|equipment|budget|casting|locations|files|idea):/.test(view)) {
     const [screen, pid] = [view.split(":")[0], view.split(":")[1]];
     const project = projects.find(p => p.id === pid);
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
@@ -110,6 +111,9 @@ export default function ProjectStudio({ initialView, onConsumed }) {
     }
     if (screen === "files") {
       return <FilesScreen project={project} onBack={() => setView(pid)} />;
+    }
+    if (screen === "idea") {
+      return <IdeaNotesScreen project={project} onBack={() => setView(pid)} />;
     }
     return <ScriptScreen project={project} onBack={() => setView(pid)}
       onOpenShots={(scene) => { setShotsSceneId(scene.id); setView("shots:" + pid); }} />;
