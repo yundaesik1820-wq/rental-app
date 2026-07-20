@@ -4,8 +4,8 @@ import { useAuth } from "../../../hooks/useAuth.jsx";
 import { addItem } from "../../../hooks/useFirestore";
 import { PS, PROJECT_TYPES, PROJECT_STAGES, newProject } from "./constants";
 
-// 새 프로젝트 생성 화면 (Phase 1 — 빈 프로젝트 생성만, AI 플로우는 Phase 6)
-export default function ProjectCreate({ onBack, onCreated }) {
+// 새 프로젝트 생성 화면 — 빈 프로젝트 생성 + AI와 함께 시작(질문 마법사로 이동)
+export default function ProjectCreate({ onBack, onCreated, onStartAI }) {
   const { user } = useAuth();
 
   const [type, setType]   = useState(null);
@@ -21,6 +21,17 @@ export default function ProjectCreate({ onBack, onCreated }) {
     if (!type) return "프로젝트 유형을 선택해주세요.";
     if (shootDate && doneDate && doneDate < shootDate) return "완성일이 촬영일보다 빠를 수 없어요.";
     return "";
+  };
+
+  // AI와 함께 시작 — 기본 정보 검증 후 질문 마법사로
+  const startAI = () => {
+    const v = validate();
+    if (v) { setErr(v); return; }
+    setErr("");
+    onStartAI({
+      title, type, stage,
+      expectedShootDate: shootDate, expectedCompletionDate: doneDate,
+    });
   };
 
   // 빈 프로젝트로 시작
@@ -140,20 +151,20 @@ export default function ProjectCreate({ onBack, onCreated }) {
 
       {/* 생성 방법 */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {/* AI — Phase 6 예정, 자리만 */}
-        <button onClick={() => setErr("AI 생성은 준비 중이에요. 빈 프로젝트로 시작해주세요!")} disabled={busy}
+        {/* AI와 함께 시작 → 질문 마법사 */}
+        <button onClick={startAI} disabled={busy}
           style={{
             display: "flex", alignItems: "center", gap: 12, minHeight: 62, textAlign: "left",
             padding: "14px 16px", borderRadius: 16, cursor: "pointer",
-            background: PS.surface, border: `1px solid ${PS.border}`, opacity: 0.6,
+            background: `${PS.primary}14`, border: `1px solid ${PS.primary}44`,
             color: PS.text, fontFamily: "inherit",
           }}>
           <Sparkles size={22} color={PS.primaryLight} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14.5, fontWeight: 800 }}>AI와 함께 시작하기</div>
-            <div style={{ fontSize: 12, color: PS.sub, marginTop: 2 }}>질문에 답하면 초안을 만들어줘요 · 준비 중</div>
+            <div style={{ fontSize: 12, color: PS.sub, marginTop: 2 }}>질문에 답하면 설명·할 일·예산·팀 초안을 만들어줘요</div>
           </div>
-          <ChevronRight size={17} color={PS.sub} />
+          <ChevronRight size={17} color={PS.primaryLight} />
         </button>
 
         {/* 빈 프로젝트 */}

@@ -4,6 +4,7 @@ import { useAuth } from "../../../hooks/useAuth.jsx";
 import { PS, typeLabel, typeIcon, stageLabel, WORKSPACE_MENUS } from "./constants";
 import ProjectTasks from "./ProjectTasks";
 import ProjectEditModal from "./ProjectEditModal";
+import AIManager from "./AIManager";
 
 // 프로젝트 대시보드 (Phase 2 — 기본 정보 + 할 일 + 워크스페이스 메뉴 + 수정/보관)
 export default function ProjectDashboard({ project, onBack, onOpenScript, onOpenShots, onOpenSchedule, onOpenMenuScreen }) {
@@ -162,6 +163,9 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
           onArchived={() => { setShowEdit(false); onBack(); }}
         />
       )}
+
+      {/* AI 프로덕션 매니저 (플로팅) */}
+      <AIManager project={project} canEdit={canEdit} />
     </div>
   );
 }

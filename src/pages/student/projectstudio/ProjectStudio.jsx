@@ -5,6 +5,7 @@ import { useCollection, updateItem } from "../../../hooks/useFirestore";
 import { Spinner } from "../../../components/UI";
 import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
+import ProjectAICreate from "./ProjectAICreate";
 import ProjectDashboard from "./ProjectDashboard";
 import ScriptScreen from "./ScriptScreen";
 import ShotsScreen from "./ShotsScreen";
@@ -33,6 +34,7 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   const projects = [...ownProjects, ...joinedProjects.filter(p => !ownProjects.some(o => o.id === p.id))];
 
   const [view, setView] = useState(initialView === "create" ? "create" : "list");
+  const [aiBasic, setAiBasic] = useState(null); // AI 생성 진입 시 기본 정보
   const [shotsSceneId, setShotsSceneId] = useState(null); // "이 장면으로 콘티 만들기" 진입 시 초기 장면
   const [showArchived, setShowArchived] = useState(false);
   const [restoringId, setRestoringId] = useState(null);
@@ -55,7 +57,11 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   };
 
   if (view === "create") {
-    return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
+    return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)}
+      onStartAI={(basic) => { setAiBasic(basic); setView("aicreate"); }} />;
+  }
+  if (view === "aicreate") {
+    return <ProjectAICreate basic={aiBasic} onBack={() => setView("create")} onCreated={(id) => setView(id)} />;
   }
   // 서브 화면 ("script:" | "shots:" | "schedule:" | "crew:" | "equipment:" | "budget:" + 프로젝트 id)
   if (typeof view === "string" && /^(script|shots|schedule|crew|equipment|budget):/.test(view)) {
