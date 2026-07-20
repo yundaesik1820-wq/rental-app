@@ -61,6 +61,7 @@ const ROOMS = [
     number:"01",
     icon:"💬",
     subtitle:"BEHIND THE SCENES",
+    subEn:"Community",
     title:"커뮤니티",
     desc:"익명으로 나누는 영상계열 이야기",
     color:"#dc2626",
@@ -73,6 +74,7 @@ const ROOMS = [
     number:"02",
     icon:"📡",
     subtitle:"SCENEPATCH",
+    subEn:"Scene Patch",
     title:"씬스패치",
     desc:"영상계열 단독 소식",
     color:"#ED1B2F",
@@ -85,6 +87,7 @@ const ROOMS = [
     number:"03",
     icon:"📚",
     subtitle:"KNOWLEDGE",
+    subEn:"Info Share",
     title:"정보 공유",
     desc:"강의·정보·취업·공모전",
     color:"#06b6d4",
@@ -97,6 +100,7 @@ const ROOMS = [
     number:"04",
     icon:"🛒",
     subtitle:"MARKETPLACE",
+    subEn:"Marketplace",
     title:"중고 장터",
     desc:"학생들 간 거래 게시판",
     color:"#10b981",
@@ -109,6 +113,7 @@ const ROOMS = [
     number:"05",
     icon:"🤝",
     subtitle:"CREW MAKERS",
+    subEn:"Crew Makers",
     title:"크루 메이커스",
     desc:"함께할 팀원·스태프 모집",
     color:"#f97316",
@@ -121,6 +126,7 @@ const ROOMS = [
     number:"06",
     icon:"🎬",
     subtitle:"FILM TOOLS",
+    subEn:"Film Tools",
     title:"필름 도구",
     desc:"촬영 현장 실용 도구",
     color:"#fbbf24",
@@ -133,6 +139,7 @@ const ROOMS = [
     number:"07",
     icon:"🎥",
     subtitle:"KBATV BOXOFFICE",
+    subEn:"Box Office",
     title:"KBATV 박스오피스",
     desc:"학생 단편·작품 상영관",
     color:"#a855f7",
@@ -145,6 +152,7 @@ const ROOMS = [
     number:"08",
     icon:"🎓",
     subtitle:"FILM CLASS",
+    subEn:"Film Class",
     title:"필름 클래스",
     desc:"영상 제작 강의 모음",
     color:"#6366f1",
@@ -909,9 +917,9 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
-            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-              <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
-              <span style={{ width:7, height:7, borderRadius:"50%", background:"#dc2626", display:"inline-block", alignSelf:"flex-end", marginBottom:2 }} />
+            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
+              <span style={{ fontSize:23, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
+              <span style={{ fontSize:12.5, color:"#8a8a92", fontWeight:500, lineHeight:1 }}>함께 만들고, 배우고, 나눠보세요</span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <button onClick={() => setShowSearch(true)}
@@ -1000,104 +1008,62 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               setCat(room.id === "crew" ? "협업모집" : room.id === "class" ? "클래스" : "전체");
               setPage(1); setSearch("");
             };
-            const chipsOf = (room) => room.id === "tools" ? ["슬레이터","스크립터","계산기"] : room.categories;
-            const Chip = ({ room, label }) => (
-              <span style={{
-                border:`1px solid ${room.color}55`, background:`${room.color}14`, color:room.color,
-                fontSize:10.5, padding:"3px 8px", borderRadius:7, fontWeight:700, whiteSpace:"nowrap",
-              }}>{label}</span>
-            );
-            const IconOrb = ({ room, size=46 }) => {
+            // 🌈 네온 카드 (목업 dd.png) — 색 틴트 배경 + 글로우 아이콘 + 영문 서브타이틀
+            const NeonIcon = ({ room }) => {
               const Ic = ROOM_ICON[room.id];
-              return (
-                <div style={{
-                  width:size, height:size, borderRadius:"50%", flexShrink:0,
-                  background:`${room.color}1F`, border:`1px solid ${room.color}55`,
-                  boxShadow:`0 0 20px ${room.color}40, inset 0 0 12px ${room.color}22`,
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                }}>
-                  {Ic && <Ic size={Math.round(size*0.48)} color={room.color} strokeWidth={2} />}
-                </div>
-              );
+              return Ic ? (
+                <Ic size={42} color={room.color} strokeWidth={1.9}
+                  style={{ filter:`drop-shadow(0 0 5px ${room.color}E6) drop-shadow(0 0 14px ${room.color}80)` }} />
+              ) : null;
             };
-            const cardBg = (room) => `radial-gradient(120% 85% at 22% 0%, ${room.color}16 0%, #141418 52%)`;
-            const mainRooms = ROOMS.slice(0, 6);
-            const wideRooms = ROOMS.slice(6);
+            const cardBg = (room) =>
+              `linear-gradient(150deg, ${room.color}26 0%, ${room.color}0D 46%, #121216 100%)`;
             return (
               <>
-                {/* 상단 6개 세로형 카드 (2열) */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11 }}>
-                  {mainRooms.map(room => {
-                    const locked = room.studentOnly && isProfOrTeacher;
-                    return (
-                      <div key={room.id} onClick={() => openRoom(room)}
-                        style={{
-                          background: cardBg(room), border:"1px solid #26262b",
-                          borderRadius:16, padding:16, cursor:"pointer", position:"relative",
-                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                      >
-                        <ChevronRight size={18} color="#5a5a62" style={{ position:"absolute", top:14, right:12 }} />
-                        <div style={{ marginBottom:13 }}><IconOrb room={room} /></div>
-                        <div style={{ fontSize:9.5, color:room.color, letterSpacing:"0.1em", fontWeight:800, marginBottom:5 }}>
-                          {locked ? "STUDENTS ONLY" : room.subtitle}
-                        </div>
-                        <div style={{ fontSize:16.5, fontWeight:900, color:"#fafaf9", marginBottom:11 }}>{room.title}</div>
-                        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                          {chipsOf(room).map(c => <Chip key={c} room={room} label={c} />)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 하단 2개 가로형 카드 (2열) */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:11, marginTop:11 }}>
-                  {wideRooms.map(room => {
-                    const locked = room.studentOnly && isProfOrTeacher;
-                    return (
-                      <div key={room.id} onClick={() => openRoom(room)}
-                        style={{
-                          background: cardBg(room), border:"1px solid #26262b",
-                          borderRadius:16, padding:14, cursor:"pointer", position:"relative",
-                          display:"flex", alignItems:"center", gap:11,
-                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                      >
-                        <IconOrb room={room} size={40} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:8.5, color:room.color, letterSpacing:"0.08em", fontWeight:800, marginBottom:3 }}>
-                            {room.subtitle}
-                          </div>
-                          <div style={{ fontSize:14, fontWeight:900, color:"#fafaf9", marginBottom:7, lineHeight:1.15 }}>{room.title}</div>
-                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                            {room.categories.map(c => <Chip key={c} room={room} label={c} />)}
-                          </div>
-                        </div>
-                        <ChevronRight size={18} color="#5a5a62" style={{ position:"absolute", top:14, right:12 }} />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* 프로젝트 시작 배너 → 크루 메이커스 진입 */}
+                {/* 프로젝트 시작 배너 (이미지) → 크루 메이커스 진입 */}
                 <div onClick={() => openRoom(ROOMS.find(r => r.id === "crew"))}
                   style={{
-                    marginTop:14, marginBottom:8, background:"#151519", border:"1px solid #26262b",
-                    borderRadius:14, padding:"15px 16px", cursor:"pointer",
-                    display:"flex", alignItems:"center", gap:13,
+                    marginBottom:14, cursor:"pointer", borderRadius:18, overflow:"hidden",
+                    border:"1px solid #26262b", lineHeight:0, position:"relative",
                   }}>
-                  <Clapperboard size={24} color="#a8a29e" strokeWidth={2} style={{ flexShrink:0 }} />
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:14, fontWeight:800, color:"#fafaf9", marginBottom:3 }}>나만의 프로젝트를 시작해보세요</div>
-                    <div style={{ fontSize:12, color:"#a8a29e" }}>팀원을 모집하고, 아이디어를 실현해보세요.</div>
-                  </div>
-                  <ChevronRight size={20} color="#5a5a62" style={{ flexShrink:0 }} />
+                  <img src="/project-banner.png" alt="나만의 프로젝트를 시작해보세요"
+                    style={{ width:"100%", display:"block" }} />
+                  <ChevronRight size={20} color="#fff" strokeWidth={2.2}
+                    style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", opacity:0.45 }} />
                 </div>
+
+                {/* 8개 세로형 네온 카드 (2열) */}
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  {ROOMS.map(room => {
+                    const locked = room.studentOnly && isProfOrTeacher;
+                    return (
+                      <div key={room.id} onClick={() => openRoom(room)}
+                        style={{
+                          background: cardBg(room), border:`1px solid ${room.color}33`,
+                          borderRadius:20, padding:"20px 16px 15px", cursor:"pointer",
+                          display:"flex", flexDirection:"column", minHeight:168,
+                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+                      >
+                        <div style={{ height:64, display:"flex", alignItems:"flex-start" }}>
+                          <NeonIcon room={room} />
+                        </div>
+                        <div style={{ marginTop:"auto" }}>
+                          <div style={{ fontSize:16.5, fontWeight:900, color:"#fafaf9", marginBottom:4, lineHeight:1.2, wordBreak:"keep-all" }}>{room.title}</div>
+                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                            <span style={{ fontSize:11.5, color:"#8a8a92", fontWeight:500 }}>
+                              {locked ? "Students Only" : room.subEn}
+                            </span>
+                            <ChevronRight size={15} color="#6b6b74" style={{ flexShrink:0 }} />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
               </>
             );
           })()}
