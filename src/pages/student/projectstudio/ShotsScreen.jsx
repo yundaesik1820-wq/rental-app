@@ -1,0 +1,366 @@
+import { useState } from "react";
+import { ArrowLeft, Plus, X, Camera, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth.jsx";
+import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
+import {
+  PS, SHOT_SIZES, SHOT_ANGLES, SHOT_MOVES, SHOT_STATUS, shotStatus, newShot, locTypeLabel,
+} from "./constants";
+
+// ===== 숏 추가/수정 모달 (backdrop 닫기 없음 — X로만) =====
+function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
+  const isEdit = !!shot;
+  const [num, setNum]     = useState(shot?.shotNumber ?? nextNumber);
+  const [title, setTitle] = useState(shot?.title || "");
+  const [desc, setDesc]   = useState(shot?.description || "");
+  const [size, setSize]   = useState(shot?.shotSize || null);
+  const [angle, setAngle] = useState(shot?.cameraAngle || null);
+  const [move, setMove]   = useState(shot?.cameraMovement || null);
+  const [lens, setLens]   = useState(shot?.lens || "");
+  const [dialogue, setDialogue] = useState(shot?.dialogue || "");
+  const [secs, setSecs]   = useState(shot?.estimatedSeconds ?? "");
+  const [status, setStatus] = useState(shot?.status || "planned");
+  const [err, setErr]   = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    if (!String(num) || Number(num) < 1) { setErr("숏 번호는 1 이상이어야 해요."); return; }
+    if (!title.trim() && !desc.trim()) { setErr("숏 제목 또는 설명을 입력해주세요."); return; }
+    if (secs !== "" && (isNaN(Number(secs)) || Number(secs) < 0)) { setErr("예상 길이는 0 이상의 숫자로 입력해주세요."); return; }
+    setErr("");
+    setBusy(true);
+    const data = {
+      shotNumber: Number(num), title: title.trim(), description: desc.trim(),
+      shotSize: size, cameraAngle: angle, cameraMovement: move, lens: lens.trim(),
+      dialogue: dialogue.trim(), estimatedSeconds: secs === "" ? null : Number(secs), status,
+    };
+    try {
+      if (isEdit) await updateItem("shots", shot.id, data);
+      else await addItem("shots", { ...newShot({ projectId: scene.projectId, ownerId: uid, sceneId: scene.id, shotNumber: Number(num) }), ...data });
+      onClose();
+    } catch (e) {
+      console.warn("shot save error:", e);
+      setErr("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setBusy(false);
+    }
+  };
+
+  const inputStyle = {
+    width: "100%", boxSizing: "border-box", minHeight: 42,
+    background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
+    color: PS.text, fontSize: 13.5, padding: "9px 12px", outline: "none", fontFamily: "inherit",
+  };
+  const labelStyle = { fontSize: 12.5, fontWeight: 700, color: PS.sub, marginBottom: 6, display: "block" };
+  const chip = (on) => ({
+    padding: "7px 11px", minHeight: 34, borderRadius: 999, cursor: "pointer",
+    background: on ? PS.primary : PS.elev, border: `1px solid ${on ? PS.primary : PS.border}`,
+    color: on ? "#fff" : PS.sub, fontSize: 11.5, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap",
+  });
+  // 선택형 옵션 (같은 값 다시 누르면 해제)
+  const OptRow = ({ label, options, value, onChange }) => (
+    <div>
+      <span style={labelStyle}>{label}</span>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {options.map(o => (
+          <button key={o} onClick={() => onChange(value === o ? null : o)} disabled={busy} style={chip(value === o)}>
+            {o}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div
+        style={{ width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto",
+          background: PS.surface, borderRadius: "20px 20px 0 0",
+          border: `1px solid ${PS.border}`, borderBottom: "none",
+          padding: "18px 18px 28px", color: PS.text, boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <span style={{ fontSize: 16, fontWeight: 900 }}>{isEdit ? "숏 수정" : "숏 추가"}</span>
+          <button onClick={onClose} disabled={busy}
+            style={{ background: "none", border: "none", color: PS.sub, cursor: "pointer", padding: 8, display: "flex" }}>
+            <X size={19} />
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: PS.sub, marginBottom: 16 }}>
+          S#{scene.sceneNumber} {scene.heading || scene.locationName}
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "88px 1fr", gap: 10 }}>
+            <div>
+              <span style={labelStyle}>숏 번호</span>
+              <input type="number" min={1} style={inputStyle} value={num} disabled={busy}
+                onChange={e => setNum(e.target.value)} />
+            </div>
+            <div>
+              <span style={labelStyle}>숏 제목</span>
+              <input style={inputStyle} value={title} maxLength={60} disabled={busy}
+                placeholder="예) 현우 얼굴 클로즈업" onChange={e => setTitle(e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <span style={labelStyle}>숏 설명</span>
+            <textarea value={desc} maxLength={1000} disabled={busy} rows={3}
+              placeholder="화면에 담길 내용, 연출 의도"
+              onChange={e => setDesc(e.target.value)}
+              style={{ ...inputStyle, resize: "vertical" }} />
+          </div>
+
+          <OptRow label="화면 크기" options={SHOT_SIZES} value={size} onChange={setSize} />
+          <OptRow label="카메라 앵글" options={SHOT_ANGLES} value={angle} onChange={setAngle} />
+          <OptRow label="카메라 움직임" options={SHOT_MOVES} value={move} onChange={setMove} />
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <span style={labelStyle}>렌즈 (선택)</span>
+              <input style={inputStyle} value={lens} maxLength={30} disabled={busy}
+                placeholder="예) 35mm" onChange={e => setLens(e.target.value)} />
+            </div>
+            <div>
+              <span style={labelStyle}>예상 길이(초)</span>
+              <input type="number" min={0} step={1} style={inputStyle} value={secs} disabled={busy}
+                placeholder="예) 8" onChange={e => setSecs(e.target.value)} />
+            </div>
+          </div>
+
+          <div>
+            <span style={labelStyle}>대사 (선택)</span>
+            <textarea value={dialogue} maxLength={500} disabled={busy} rows={2}
+              onChange={e => setDialogue(e.target.value)}
+              style={{ ...inputStyle, resize: "vertical" }} />
+          </div>
+
+          <div>
+            <span style={labelStyle}>상태</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {SHOT_STATUS.map(s => (
+                <button key={s.value} onClick={() => setStatus(s.value)} disabled={busy}
+                  style={{ ...chip(status === s.value), flex: 1 }}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {err && (
+          <div style={{ background: `${PS.danger}14`, border: `1px solid ${PS.danger}55`, color: PS.danger,
+            borderRadius: 11, padding: "10px 13px", fontSize: 13, fontWeight: 600, marginTop: 14 }}>{err}</div>
+        )}
+
+        <button onClick={save} disabled={busy}
+          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: "pointer", marginTop: 18,
+            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: "none", color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+            opacity: busy ? 0.7 : 1 }}>
+          {busy ? "저장 중..." : isEdit ? "수정 저장" : "숏 추가"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ===== 콘티/샷리스트 화면 — 장면 선택 → 장면별 숏 목록 =====
+export default function ShotsScreen({ project, initialSceneId, onBack }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+
+  const { data: scenes, loading: scenesLoading } = useCollection(
+    "scenes", null,
+    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+  );
+  const { data: shots } = useCollection(
+    "shots", null,
+    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+  );
+
+  const [sceneId, setSceneId] = useState(initialSceneId || null);
+  const [formShot, setFormShot] = useState(null); // null | "new" | shot 객체
+
+  const sortedScenes = [...scenes].sort((a, b) => (a.sceneNumber || 0) - (b.sceneNumber || 0));
+  const scene = scenes.find(s => s.id === sceneId);
+  const sceneShots = shots
+    .filter(sh => sh.sceneId === sceneId)
+    .sort((a, b) => (a.shotNumber || 0) - (b.shotNumber || 0));
+  const nextNumber = sceneShots.reduce((m, s) => Math.max(m, s.shotNumber || 0), 0) + 1;
+
+  const removeShot = async (sh) => {
+    if (!window.confirm(`${sh.shotNumber}번 숏을 삭제할까요?`)) return;
+    try { await deleteItem("shots", sh.id); }
+    catch (e) { console.warn("shot delete error:", e); alert("삭제에 실패했어요."); }
+  };
+
+  const backBtnStyle = {
+    background: "none", border: "none", color: PS.sub, cursor: "pointer",
+    display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600,
+    padding: "8px 4px", minHeight: 44, fontFamily: "inherit",
+  };
+
+  // ===== 장면별 숏 목록 =====
+  if (scene) {
+    const totalSecs = sceneShots.reduce((sum, sh) => sum + (sh.estimatedSeconds || 0), 0);
+    return (
+      <div style={{ padding: "4px 2px 24px", color: PS.text }}>
+        <button onClick={() => setSceneId(null)} style={backBtnStyle}>
+          <ArrowLeft size={17} /> 장면 목록
+        </button>
+
+        <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", margin: "6px 0 14px" }}>
+          <div>
+            <div style={{ fontSize: 18, fontWeight: 900 }}>S#{scene.sceneNumber} 콘티</div>
+            <div style={{ fontSize: 12, color: PS.sub, marginTop: 3, wordBreak: "keep-all" }}>
+              {scene.heading || scene.locationName} · 숏 {sceneShots.length}개
+              {totalSecs > 0 && ` · 약 ${Math.floor(totalSecs / 60) > 0 ? `${Math.floor(totalSecs / 60)}분 ` : ""}${totalSecs % 60 > 0 ? `${totalSecs % 60}초` : ""}`}
+            </div>
+          </div>
+          <button onClick={() => setFormShot("new")}
+            style={{
+              display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
+              background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+              border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
+              padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+            }}>
+            <Plus size={15} /> 숏 추가
+          </button>
+        </div>
+
+        {sceneShots.length === 0 ? (
+          <div style={{ background: PS.surface, border: `1px dashed ${PS.border}`, borderRadius: 18,
+            padding: "38px 20px", textAlign: "center" }}>
+            <Camera size={28} color={PS.sub} style={{ marginBottom: 10 }} />
+            <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 5 }}>아직 숏이 없어요</div>
+            <div style={{ fontSize: 12.5, color: PS.sub }}>이 장면을 어떤 숏으로 나눠 찍을지 계획해보세요.</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            {sceneShots.map(sh => {
+              const st = shotStatus(sh.status);
+              const specs = [sh.shotSize, sh.cameraAngle, sh.cameraMovement, sh.lens].filter(Boolean);
+              return (
+                <div key={sh.id}
+                  style={{ background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 15, padding: "13px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                    <span style={{ fontSize: 12, fontWeight: 900, color: PS.primaryLight, flexShrink: 0 }}>#{sh.shotNumber}</span>
+                    <div style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, wordBreak: "keep-all" }}>
+                      {sh.title || sh.description || "(제목 없음)"}
+                    </div>
+                    <span style={{ fontSize: 10.5, fontWeight: 800, color: st.color, flexShrink: 0,
+                      background: `${st.color}1A`, border: `1px solid ${st.color}44`,
+                      padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                      {st.label}
+                    </span>
+                  </div>
+                  {specs.length > 0 && (
+                    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 8 }}>
+                      {specs.map(sp => (
+                        <span key={sp} style={{ padding: "3px 8px", background: PS.elev,
+                          border: `1px solid ${PS.border}`, borderRadius: 999,
+                          color: PS.sub, fontSize: 11, fontWeight: 700 }}>{sp}</span>
+                      ))}
+                      {sh.estimatedSeconds != null && (
+                        <span style={{ padding: "3px 8px", background: PS.elev,
+                          border: `1px solid ${PS.border}`, borderRadius: 999,
+                          color: PS.sub, fontSize: 11, fontWeight: 700 }}>{sh.estimatedSeconds}초</span>
+                      )}
+                    </div>
+                  )}
+                  {sh.title && sh.description && (
+                    <div style={{ fontSize: 12.5, color: PS.sub, lineHeight: 1.55, marginTop: 8, whiteSpace: "pre-wrap" }}>
+                      {sh.description}
+                    </div>
+                  )}
+                  {sh.dialogue && (
+                    <div style={{ fontSize: 12, color: PS.sub, lineHeight: 1.5, marginTop: 6,
+                      borderLeft: `2px solid ${PS.border}`, paddingLeft: 9, whiteSpace: "pre-wrap" }}>
+                      {sh.dialogue}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: 7, marginTop: 10 }}>
+                    <button onClick={() => setFormShot(sh)}
+                      style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 38,
+                        background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
+                        color: PS.text, fontSize: 12, fontWeight: 700, padding: "8px 12px",
+                        cursor: "pointer", fontFamily: "inherit" }}>
+                      <Pencil size={13} /> 수정
+                    </button>
+                    <button onClick={() => removeShot(sh)}
+                      style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 38,
+                        background: PS.elev, border: `1px solid ${PS.danger}44`, borderRadius: 10,
+                        color: PS.danger, fontSize: 12, fontWeight: 700, padding: "8px 12px",
+                        cursor: "pointer", fontFamily: "inherit" }}>
+                      <Trash2 size={13} /> 삭제
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {formShot && (
+          <ShotFormModal
+            shot={formShot === "new" ? null : formShot}
+            scene={scene} nextNumber={nextNumber} uid={uid}
+            onClose={() => setFormShot(null)} />
+        )}
+      </div>
+    );
+  }
+
+  // ===== 장면 선택 목록 =====
+  return (
+    <div style={{ padding: "4px 2px 24px", color: PS.text }}>
+      <button onClick={onBack} style={backBtnStyle}>
+        <ArrowLeft size={17} /> {project.title}
+      </button>
+
+      <div style={{ margin: "6px 0 14px" }}>
+        <div style={{ fontSize: 19, fontWeight: 900 }}>콘티 / 샷리스트</div>
+        <div style={{ fontSize: 12, color: PS.sub, marginTop: 3 }}>장면을 골라 숏을 계획해보세요</div>
+      </div>
+
+      {scenesLoading ? (
+        <div style={{ padding: "30px 0", textAlign: "center", fontSize: 13, color: PS.sub }}>불러오는 중...</div>
+      ) : sortedScenes.length === 0 ? (
+        <div style={{ background: PS.surface, border: `1px dashed ${PS.border}`, borderRadius: 18,
+          padding: "38px 20px", textAlign: "center" }}>
+          <Camera size={28} color={PS.sub} style={{ marginBottom: 10 }} />
+          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 5 }}>장면이 없어요</div>
+          <div style={{ fontSize: 12.5, color: PS.sub }}>시나리오에서 장면을 먼저 만들어주세요.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+          {sortedScenes.map(s => {
+            const count = shots.filter(sh => sh.sceneId === s.id).length;
+            return (
+              <div key={s.id} onClick={() => setSceneId(s.id)}
+                style={{ display: "flex", alignItems: "center", gap: 10,
+                  background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 15,
+                  padding: "14px", cursor: "pointer", minHeight: 56 }}>
+                <span style={{ fontSize: 12, fontWeight: 900, color: PS.primaryLight, flexShrink: 0 }}>S#{s.sceneNumber}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, wordBreak: "keep-all",
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {s.heading || s.locationName || "(제목 없음)"}
+                  </div>
+                  <div style={{ fontSize: 11, color: PS.sub, marginTop: 2 }}>
+                    {locTypeLabel(s.locationType)}{s.locationName && ` · ${s.locationName}`} · {s.timeOfDay}
+                  </div>
+                </div>
+                <span style={{ fontSize: 11.5, color: count > 0 ? PS.primaryLight : PS.sub, fontWeight: 800, flexShrink: 0 }}>
+                  숏 {count}개
+                </span>
+                <ChevronRight size={15} color={PS.sub} style={{ flexShrink: 0 }} />
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

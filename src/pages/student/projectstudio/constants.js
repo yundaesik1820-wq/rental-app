@@ -45,8 +45,8 @@ export const WORKSPACE_MENUS = [
   { key: "idea",      label: "기획 노트",       icon: Lightbulb,    ready: false },
   { key: "script",    label: "시나리오",        icon: FileText,     ready: true },
   { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: true },
-  { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: false },
-  { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: false },
+  { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: true },
+  { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: true },
   { key: "casting",   label: "캐스팅",          icon: Users,        ready: false },
   { key: "locations", label: "로케이션",        icon: MapPin,       ready: false },
   { key: "equipment", label: "장비",            icon: Wrench,       ready: false },
@@ -87,6 +87,37 @@ export function newScene({ projectId, ownerId, sceneNumber }) {
     heading: "", locationType: "INT", locationName: "", timeOfDay: "낮",
     description: "", dialogue: "",
     status: "draft", estimatedMinutes: null,
+  };
+}
+
+// ===== 콘티/샷리스트 (Phase 4) =====
+export const SHOT_SIZES  = ["익스트림 와이드", "와이드", "풀샷", "미디엄", "바스트", "클로즈업", "익스트림 클로즈업"];
+export const SHOT_ANGLES = ["아이레벨", "하이앵글", "로우앵글", "버드아이", "더치앵글"];
+export const SHOT_MOVES  = ["픽스", "팬", "틸트", "달리", "트래킹", "핸드헬드", "짐벌", "크레인", "줌"];
+export const SHOT_STATUS = [
+  { value: "planned", label: "예정",     color: "#A8ABB7" },
+  { value: "ready",   label: "준비완료", color: "#2BD9A0" },
+  { value: "shot",    label: "촬영완료", color: "#FFB84D" },
+];
+export const shotStatus = (v) => SHOT_STATUS.find(s => s.value === v) || SHOT_STATUS[0];
+
+/** Shot 문서 기본값 팩토리 (요청서 8번 Shot 모델의 JS 버전) */
+export function newShot({ projectId, ownerId, sceneId, shotNumber }) {
+  return {
+    projectId, ownerId, sceneId, shotNumber,
+    title: "", description: "",
+    shotSize: null, cameraAngle: null, cameraMovement: null, lens: "",
+    dialogue: "", estimatedSeconds: null, referenceImageUrl: null,
+    status: "planned",
+  };
+}
+
+/** ShootDay 문서 기본값 팩토리 (요청서 10번 ShootDay 모델의 JS 버전) */
+export function newShootDay({ projectId, ownerId, date }) {
+  return {
+    projectId, ownerId, date,          // "YYYY-MM-DD"
+    title: "", callTime: "", wrapTime: "",
+    locationIds: [], sceneIds: [], notes: "",
   };
 }
 

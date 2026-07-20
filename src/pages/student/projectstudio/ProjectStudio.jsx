@@ -7,6 +7,8 @@ import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
 import ProjectDashboard from "./ProjectDashboard";
 import ScriptScreen from "./ScriptScreen";
+import ShotsScreen from "./ShotsScreen";
+import ScheduleScreen from "./ScheduleScreen";
 
 // 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
 // initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
@@ -21,6 +23,7 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   );
 
   const [view, setView] = useState(initialView === "create" ? "create" : "list");
+  const [shotsSceneId, setShotsSceneId] = useState(null); // "이 장면으로 콘티 만들기" 진입 시 초기 장면
   const [showArchived, setShowArchived] = useState(false);
   const [restoringId, setRestoringId] = useState(null);
   useEffect(() => { if (initialView && onConsumed) onConsumed(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -44,9 +47,9 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   if (view === "create") {
     return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
   }
-  // 시나리오 화면 ("script:" + 프로젝트 id)
-  if (typeof view === "string" && view.startsWith("script:")) {
-    const pid = view.slice(7);
+  // 서브 화면 ("script:" | "shots:" | "schedule:" + 프로젝트 id)
+  if (typeof view === "string" && /^(script|shots|schedule):/.test(view)) {
+    const [screen, pid] = [view.split(":")[0], view.split(":")[1]];
     const project = projects.find(p => p.id === pid);
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
     if (!project) {
@@ -64,14 +67,24 @@ export default function ProjectStudio({ initialView, onConsumed }) {
         </div>
       );
     }
-    return <ScriptScreen project={project} onBack={() => setView(pid)} />;
+    if (screen === "shots") {
+      return <ShotsScreen project={project} initialSceneId={shotsSceneId}
+        onBack={() => { setShotsSceneId(null); setView(pid); }} />;
+    }
+    if (screen === "schedule") {
+      return <ScheduleScreen project={project} onBack={() => setView(pid)} />;
+    }
+    return <ScriptScreen project={project} onBack={() => setView(pid)}
+      onOpenShots={(scene) => { setShotsSceneId(scene.id); setView("shots:" + pid); }} />;
   }
   if (view !== "list") {
     const project = projects.find(p => p.id === view);
     // 로딩 중엔 스피너 (생성 직후 스냅샷 도착 전 "없음" 오판 방지)
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
     return <ProjectDashboard project={project} onBack={() => setView("list")}
-      onOpenScript={() => setView("script:" + project.id)} />;
+      onOpenScript={() => setView("script:" + project.id)}
+      onOpenShots={() => { setShotsSceneId(null); setView("shots:" + project.id); }}
+      onOpenSchedule={() => setView("schedule:" + project.id)} />;
   }
 
   // ===== 목록 =====

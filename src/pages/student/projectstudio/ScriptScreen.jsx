@@ -344,7 +344,7 @@ function AnalysisModal({ scene, result, breakdown, uid, onClose }) {
 }
 
 // ===== 시나리오 메인 화면 =====
-export default function ScriptScreen({ project, onBack }) {
+export default function ScriptScreen({ project, onBack, onOpenShots }) {
   const { user } = useAuth();
   const uid = user?.uid;
 
@@ -532,7 +532,7 @@ export default function ScriptScreen({ project, onBack }) {
                       <button onClick={() => setBdScene(s)} style={actionBtn}>
                         <ListTree size={14} /> 브레이크다운
                       </button>
-                      <button onClick={() => showToast("콘티 만들기는 다음 업데이트에 추가돼요!")} style={{ ...actionBtn, opacity: 0.55 }}>
+                      <button onClick={() => onOpenShots && onOpenShots(s)} style={actionBtn}>
                         <Clapperboard size={14} /> 콘티 만들기
                       </button>
                       <button onClick={() => setFormScene(s)} style={actionBtn}>
