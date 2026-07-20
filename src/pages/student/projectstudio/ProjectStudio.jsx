@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, Clapperboard, ChevronRight } from "lucide-react";
+import { Plus, Clapperboard, ChevronRight, ChevronDown, Archive, ArchiveRestore } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
-import { useCollection } from "../../../hooks/useFirestore";
+import { useCollection, updateItem } from "../../../hooks/useFirestore";
 import { Spinner } from "../../../components/UI";
 import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
@@ -20,11 +20,25 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   );
 
   const [view, setView] = useState(initialView === "create" ? "create" : "list");
+  const [showArchived, setShowArchived] = useState(false);
+  const [restoringId, setRestoringId] = useState(null);
   useEffect(() => { if (initialView && onConsumed) onConsumed(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const active = projects
-    .filter(p => p.status !== "archived")
-    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  const byNewest = (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+  const active   = projects.filter(p => p.status !== "archived").sort(byNewest);
+  const archived = projects.filter(p => p.status === "archived").sort(byNewest);
+
+  const restore = async (p) => {
+    if (restoringId) return;
+    setRestoringId(p.id);
+    try {
+      await updateItem("projects", p.id, { status: "active" });
+    } catch (e) {
+      console.warn("project restore error:", e);
+      alert("복구에 실패했어요.");
+    }
+    setRestoringId(null);
+  };
 
   if (view === "create") {
     return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
@@ -107,6 +121,53 @@ export default function ProjectStudio({ initialView, onConsumed }) {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* 보관된 프로젝트 (접기 섹션 — 복구 가능) */}
+      {!loading && archived.length > 0 && (
+        <div style={{ marginTop: 18 }}>
+          <button onClick={() => setShowArchived(v => !v)}
+            style={{
+              display: "flex", alignItems: "center", gap: 7, width: "100%", minHeight: 44,
+              background: "none", border: "none", color: PS.sub, cursor: "pointer",
+              fontSize: 13, fontWeight: 700, padding: "8px 2px", fontFamily: "inherit",
+            }}>
+            <Archive size={15} />
+            보관된 프로젝트 {archived.length}개
+            <ChevronDown size={15} style={{
+              marginLeft: "auto", transition: "transform .15s",
+              transform: showArchived ? "rotate(180deg)" : "none",
+            }} />
+          </button>
+          {showArchived && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 6 }}>
+              {archived.map(p => (
+                <div key={p.id}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 10,
+                    background: PS.surface, border: `1px dashed ${PS.border}`, borderRadius: 14,
+                    padding: "12px 14px", opacity: restoringId === p.id ? 0.55 : 0.85,
+                  }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: PS.sub, wordBreak: "keep-all" }}>{p.title}</div>
+                    <div style={{ fontSize: 11, color: PS.sub, marginTop: 2, opacity: 0.7 }}>
+                      {typeLabel(p.type)} · {stageLabel(p.stage)}
+                    </div>
+                  </div>
+                  <button onClick={() => restore(p)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5, minHeight: 40, flexShrink: 0,
+                      background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`,
+                      borderRadius: 10, color: PS.primaryLight, cursor: "pointer",
+                      fontSize: 12, fontWeight: 700, padding: "8px 12px", fontFamily: "inherit",
+                    }}>
+                    <ArchiveRestore size={14} /> 복구
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
