@@ -205,6 +205,7 @@ export function newLocation({ projectId, ownerId }) {
     name: "", address: "",
     type: "INT",                // INT | EXT | INT_EXT (SCENE_LOCATION_TYPES 재사용)
     contact: "", sceneIds: [], notes: "",
+    photos: [],                 // [{ url, path }] — 헌팅 사진 (팀원 공유)
   };
 }
 

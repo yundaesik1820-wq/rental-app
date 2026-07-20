@@ -1,9 +1,24 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, X, MapPin, Pencil, Trash2, Phone, Map } from "lucide-react";
+import { ArrowLeft, Plus, X, MapPin, Pencil, Trash2, Phone, Map, ImagePlus } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { storage } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import { PS, SCENE_LOCATION_TYPES, locTypeLabel, newLocation } from "./constants";
 import SceneChecklist from "./SceneChecklist";
+
+// 헌팅 사진 업로드 (학생도 쓰는 attachments/ prefix 아래 → Storage 규칙 변경 불필요)
+function uploadLocationPhoto(projectId, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const path = `attachments/projectLocations/${projectId}/${Date.now()}_${file.name}`;
+    const task = uploadBytesResumable(ref(storage, path), file);
+    task.on("state_changed",
+      (snap) => onProgress && onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      async () => resolve({ url: await getDownloadURL(task.snapshot.ref), path }),
+    );
+  });
+}
 
 // ===== 로케이션 추가/수정 모달 (backdrop 닫기 없음) =====
 function LocationFormModal({ loc, scenes, projectId, uid, onClose }) {
@@ -14,8 +29,32 @@ function LocationFormModal({ loc, scenes, projectId, uid, onClose }) {
   const [contact, setContact] = useState(loc?.contact || "");
   const [sceneIds, setSceneIds] = useState(loc?.sceneIds || []);
   const [notes, setNotes] = useState(loc?.notes || "");
+  const [photos, setPhotos] = useState(loc?.photos || []);
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
+  const [upPct, setUpPct] = useState(null); // 사진 업로드 진행률
+
+  const onPickPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("이미지 파일만 올릴 수 있어요."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("10MB 이하 이미지만 올릴 수 있어요."); return; }
+    setUpPct(0);
+    try {
+      const p = await uploadLocationPhoto(projectId, file, setUpPct);
+      setPhotos(prev => [...prev, p]);
+    } catch (err2) {
+      console.warn("photo upload error:", err2);
+      alert("사진 업로드에 실패했어요.");
+    }
+    setUpPct(null);
+  };
+
+  const removePhoto = async (photo) => {
+    setPhotos(prev => prev.filter(p => p.url !== photo.url));
+    if (photo.path) await deleteObject(ref(storage, photo.path)).catch(() => {});
+  };
 
   const save = async () => {
     if (!name.trim()) { setErr("장소 이름을 입력해주세요."); return; }
@@ -23,7 +62,7 @@ function LocationFormModal({ loc, scenes, projectId, uid, onClose }) {
     setBusy(true);
     const data = {
       name: name.trim(), address: address.trim(), type,
-      contact: contact.trim(), sceneIds, notes: notes.trim(),
+      contact: contact.trim(), sceneIds, notes: notes.trim(), photos,
     };
     try {
       if (isEdit) await updateItem("psLocations", loc.id, data);
@@ -96,6 +135,32 @@ function LocationFormModal({ loc, scenes, projectId, uid, onClose }) {
           </div>
 
           <div>
+            <span style={labelStyle}>헌팅 사진</span>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {photos.map(p => (
+                <div key={p.url} style={{ position: "relative", width: 72, height: 72 }}>
+                  <img src={p.url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover",
+                    borderRadius: 10, border: `1px solid ${PS.border}` }} />
+                  <button onClick={() => removePhoto(p)} disabled={busy}
+                    style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: "50%",
+                      background: PS.danger, border: "2px solid " + PS.surface, color: "#fff", cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+              <label style={{ width: 72, height: 72, borderRadius: 10, cursor: upPct != null ? "default" : "pointer",
+                background: PS.elev, border: `1px dashed ${PS.border}`,
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 3,
+                color: PS.sub, fontSize: 10, fontWeight: 700 }}>
+                {upPct != null ? `${upPct}%` : <><ImagePlus size={20} /><span>추가</span></>}
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={onPickPhoto} disabled={upPct != null || busy} />
+              </label>
+            </div>
+            <div style={{ fontSize: 11, color: PS.sub, marginTop: 6 }}>팀원들도 볼 수 있어요 · 10MB 이하</div>
+          </div>
+
+          <div>
             <span style={labelStyle}>사용 장면</span>
             <SceneChecklist scenes={scenes} value={sceneIds} onChange={setSceneIds} disabled={busy} />
           </div>
@@ -137,13 +202,18 @@ export default function LocationScreen({ project, onBack }) {
   const { data: scenes } = useCollection("scenes", null, opts());
 
   const [formLoc, setFormLoc] = useState(null);
+  const [lightbox, setLightbox] = useState(null); // 크게 볼 사진 url
 
   const sorted = [...locs].sort((a, b) => (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0));
   const sceneNo = (id) => scenes.find(s => s.id === id)?.sceneNumber;
 
   const removeLoc = async (l) => {
     if (!window.confirm(`'${l.name}' 로케이션을 삭제할까요?`)) return;
-    try { await deleteItem("psLocations", l.id); }
+    try {
+      await deleteItem("psLocations", l.id);
+      // 헌팅 사진도 Storage에서 정리
+      await Promise.all((l.photos || []).filter(p => p.path).map(p => deleteObject(ref(storage, p.path)).catch(() => {})));
+    }
     catch (e) { console.warn("location delete error:", e); alert("삭제에 실패했어요."); }
   };
 
@@ -213,6 +283,16 @@ export default function LocationScreen({ project, onBack }) {
                     )}
                   </div>
                 </div>
+                {/* 헌팅 사진 */}
+                {(l.photos || []).length > 0 && (
+                  <div style={{ display: "flex", gap: 7, overflowX: "auto", marginTop: 9, WebkitOverflowScrolling: "touch" }}>
+                    {l.photos.map(p => (
+                      <img key={p.url} src={p.url} alt="" onClick={() => setLightbox(p.url)}
+                        style={{ width: 84, height: 84, objectFit: "cover", borderRadius: 10, flexShrink: 0,
+                          border: `1px solid ${PS.border}`, cursor: "pointer" }} />
+                    ))}
+                  </div>
+                )}
                 {l.notes && <div style={{ fontSize: 12, color: PS.sub, marginTop: 7, whiteSpace: "pre-wrap" }}>{l.notes}</div>}
                 <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
                   {map && (
@@ -261,6 +341,21 @@ export default function LocationScreen({ project, onBack }) {
       {formLoc && (
         <LocationFormModal loc={formLoc === "new" ? null : formLoc}
           scenes={scenes} projectId={project.id} uid={uid} onClose={() => setFormLoc(null)} />
+      )}
+
+      {/* 사진 크게 보기 */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)}
+          style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.92)",
+            display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+          <img src={lightbox} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 8 }} />
+          <button onClick={() => setLightbox(null)}
+            style={{ position: "fixed", top: 20, right: 20, width: 42, height: 42, borderRadius: "50%",
+              background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={22} />
+          </button>
+        </div>
       )}
     </div>
   );
