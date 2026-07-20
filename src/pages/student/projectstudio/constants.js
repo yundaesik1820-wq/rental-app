@@ -47,12 +47,12 @@ export const WORKSPACE_MENUS = [
   { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: true },
   { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: true },
   { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: true },
-  { key: "casting",   label: "캐스팅",          icon: Users,        ready: false },
-  { key: "locations", label: "로케이션",        icon: MapPin,       ready: false },
+  { key: "casting",   label: "캐스팅",          icon: Users,        ready: true },
+  { key: "locations", label: "로케이션",        icon: MapPin,       ready: true },
   { key: "equipment", label: "장비",            icon: Wrench,       ready: true },
   { key: "budget",    label: "예산",            icon: Wallet,       ready: true },
   { key: "crew",      label: "팀원",            icon: UserPlus,     ready: true },
-  { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: false },
+  { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: true },
 ];
 
 export const typeLabel  = (v) => PROJECT_TYPES.find(t => t.value === v)?.label || v;
@@ -178,6 +178,54 @@ export function newBudgetItem({ projectId, ownerId, category }) {
 }
 
 export const fmtWon = (n) => (n == null ? "-" : `${Number(n).toLocaleString()}원`);
+
+// ===== 캐스팅 / 로케이션 / 파일 (Phase 7) =====
+export const CAST_STATUS = [
+  { value: "confirmed", label: "확정",    color: "#2BD9A0" },
+  { value: "casting",   label: "섭외 중", color: "#FFB84D" },
+  { value: "candidate", label: "후보",    color: "#7357FF" },
+];
+export const castStatus = (v) => CAST_STATUS.find(s => s.value === v) || CAST_STATUS[0];
+
+/** CastMember 문서 기본값 팩토리 (요청서 16번) */
+export function newCastMember({ projectId, ownerId }) {
+  return {
+    projectId, ownerId,
+    character: "",              // 배역명
+    actorName: "",              // 배우 이름
+    status: "candidate",
+    contact: "", sceneIds: [], notes: "",
+  };
+}
+
+/** Location(psLocations) 문서 기본값 팩토리 (요청서 16번) */
+export function newLocation({ projectId, ownerId }) {
+  return {
+    projectId, ownerId,
+    name: "", address: "",
+    type: "INT",                // INT | EXT | INT_EXT (SCENE_LOCATION_TYPES 재사용)
+    contact: "", sceneIds: [], notes: "",
+  };
+}
+
+export const FILE_CATEGORIES = ["시나리오", "콘티", "참고자료", "음악", "기타"];
+
+/** ProjectFile 문서 기본값 팩토리 (요청서 16번) */
+export function newProjectFile({ projectId, ownerId, name, url, category, size, contentType }) {
+  return {
+    projectId, ownerId,
+    name: name || "", url: url || "",
+    category: category || "기타",
+    size: size || 0, contentType: contentType || "",
+  };
+}
+
+export const fmtBytes = (n) => {
+  if (!n) return "";
+  if (n < 1024) return `${n}B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(0)}KB`;
+  return `${(n / 1024 / 1024).toFixed(1)}MB`;
+};
 
 /**
  * Project 문서 기본값 팩토리 (요청서 16번 Project 모델의 JS 버전)
