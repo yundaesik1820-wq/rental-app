@@ -250,25 +250,29 @@ service cloud.firestore {
     }
 
     // 🎬 Project Studio 하위 데이터
-    // 쓰기: 소유자만 / 읽기: 소유자 + 프로젝트 팀원 + (crewMembers는 본인 초대 항목 — 알림용)
+    // 쓰기·읽기 모두 프로젝트 멤버(소유자 + memberIds)에게 허용 — 참여 팀원도 작업 데이터 편집 가능.
+    // 단 projects 문서(제목/단계/총예산/memberIds)는 위에서 소유자만 쓰기 → 접근권한·소유권은 소유자 통제.
     // 와일드카드지만 아래 목록에 없는 컬렉션엔 아무 권한도 주지 않음.
+    function isPsCol(c) {
+      return c in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+        'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles'];
+    }
     match /{psCol}/{docId} {
-      allow create: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
-        && isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
-        && isLoggedIn()
-        && (resource.data.ownerId == request.auth.uid
-            || resource.data.get('userId', '') == request.auth.uid
+      // 생성: 프로젝트 멤버 + ownerId는 본인(문서 생성자)으로 고정(위조 방지)
+      allow create: if isPsCol(psCol) && isLoggedIn()
+        && request.resource.data.ownerId == request.auth.uid
+        && canAccessProject(request.resource.data.projectId);
+      // 읽기: 프로젝트 멤버 (crewMembers는 본인 초대 항목도 — 알림 대상이 프로젝트 읽기 전 표시)
+      allow read: if isPsCol(psCol) && isLoggedIn()
+        && (resource.data.get('userId', '') == request.auth.uid
             || canAccessProject(resource.data.projectId));
-      allow delete: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
-        && isLoggedIn() && resource.data.ownerId == request.auth.uid;
-      allow update: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
-        && isLoggedIn() && resource.data.ownerId == request.auth.uid
+      // 수정: 프로젝트 멤버 (문서 생성자 ownerId는 변경 불가 — 다른 멤버가 편집해도 원작성자 유지)
+      allow update: if isPsCol(psCol) && isLoggedIn()
+        && canAccessProject(resource.data.projectId)
         && request.resource.data.ownerId == resource.data.ownerId;
+      // 삭제: 프로젝트 멤버
+      allow delete: if isPsCol(psCol) && isLoggedIn()
+        && canAccessProject(resource.data.projectId);
     }
 
   }

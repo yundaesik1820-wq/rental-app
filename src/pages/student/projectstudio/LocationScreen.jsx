@@ -4,7 +4,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebas
 import { storage } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, SCENE_LOCATION_TYPES, locTypeLabel, newLocation } from "./constants";
+import { PS, SCENE_LOCATION_TYPES, locTypeLabel, newLocation, canEditProject } from "./constants";
 import SceneChecklist from "./SceneChecklist";
 
 // 헌팅 사진 업로드 (학생도 쓰는 attachments/ prefix 아래 → Storage 규칙 변경 불필요)
@@ -195,7 +195,7 @@ function LocationFormModal({ loc, scenes, projectId, uid, onClose }) {
 export default function LocationScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid;
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };
   const { data: locs, loading } = useCollection("psLocations", null, opts());

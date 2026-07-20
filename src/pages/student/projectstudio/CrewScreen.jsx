@@ -5,7 +5,7 @@ import { db } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import {
-  PS, CREW_ROLES, CREW_STATUS, crewStatus, newCrewMember, typeLabel, stageLabel,
+  PS, CREW_ROLES, CREW_STATUS, crewStatus, newCrewMember, typeLabel, stageLabel, isProjectOwner,
 } from "./constants";
 import { createCommunityRecruitmentAdapter } from "./adapters";
 
@@ -335,7 +335,7 @@ function RecruitModal({ member, project, scenes, days, profile, onClose, onRegis
 export default function CrewScreen({ project, onBack }) {
   const { user, profile } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid; // 멤버(참여자)는 조회만
+  const canEdit = isProjectOwner(project, uid); // 팀원 관리 = 접근권한 통제 → 소유자만
 
   const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };
   const { data: crew, loading } = useCollection("crewMembers", null, opts());

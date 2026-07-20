@@ -7,7 +7,7 @@ import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import {
   PS, SCENE_LOCATION_TYPES, SCENE_TIMES, SCENE_STATUS,
-  locTypeLabel, sceneStatus, newScene,
+  locTypeLabel, sceneStatus, newScene, canEditProject,
 } from "./constants";
 import { analyzeScene } from "./aiService";
 import SceneBreakdownModal from "./SceneBreakdownModal";
@@ -347,7 +347,7 @@ function AnalysisModal({ scene, result, breakdown, uid, onClose }) {
 export default function ScriptScreen({ project, onBack, onOpenShots }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const { data: scenes, loading } = useCollection(
     "scenes", null,

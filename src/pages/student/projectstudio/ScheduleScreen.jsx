@@ -4,7 +4,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, SCENE_STATUS, sceneStatus, newShootDay } from "./constants";
+import { PS, SCENE_STATUS, sceneStatus, newShootDay, canEditProject } from "./constants";
 
 // ===== 촬영일 추가/수정 모달 (backdrop 닫기 없음) =====
 function DayFormModal({ day, projectId, uid, onClose }) {
@@ -159,7 +159,7 @@ function StatusSheet({ scene, onClose }) {
 export default function ScheduleScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const opts = (extra) => uid ? { where: [["projectId", "==", project.id]], ...extra } : { enabled: false };
   const { data: scenes }     = useCollection("scenes", null, opts());

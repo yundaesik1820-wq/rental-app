@@ -55,6 +55,14 @@ export const WORKSPACE_MENUS = [
   { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: true },
 ];
 
+// 권한 헬퍼
+// - canEditProject: 소유자 + 참여 팀원(memberIds) → 작업 데이터 편집 가능
+// - isProjectOwner: 소유자만 → 프로젝트 설정·팀원 관리·총예산(접근권한/소유권 관련)
+export const canEditProject = (project, uid) =>
+  !!project && !!uid && (project.ownerId === uid || (project.memberIds || []).includes(uid));
+export const isProjectOwner = (project, uid) =>
+  !!project && project.ownerId === uid;
+
 export const typeLabel  = (v) => PROJECT_TYPES.find(t => t.value === v)?.label || v;
 export const typeIcon   = (v) => PROJECT_TYPES.find(t => t.value === v)?.icon || Shapes;
 export const stageLabel = (v) => PROJECT_STAGES.find(s => s.value === v)?.label || v;

@@ -3,7 +3,7 @@ import { ArrowLeft, Plus, X, Camera, ChevronRight, Pencil, Trash2 } from "lucide
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import {
-  PS, SHOT_SIZES, SHOT_ANGLES, SHOT_MOVES, SHOT_STATUS, shotStatus, newShot, locTypeLabel,
+  PS, SHOT_SIZES, SHOT_ANGLES, SHOT_MOVES, SHOT_STATUS, shotStatus, newShot, locTypeLabel, canEditProject,
 } from "./constants";
 
 // ===== 숏 추가/수정 모달 (backdrop 닫기 없음 — X로만) =====
@@ -169,7 +169,7 @@ function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
 export default function ShotsScreen({ project, initialSceneId, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const { data: scenes, loading: scenesLoading } = useCollection(
     "scenes", null,

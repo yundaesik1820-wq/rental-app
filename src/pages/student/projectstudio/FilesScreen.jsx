@@ -4,7 +4,7 @@ import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebas
 import { storage } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, FILE_CATEGORIES, newProjectFile, fmtBytes } from "./constants";
+import { PS, FILE_CATEGORIES, newProjectFile, fmtBytes, canEditProject } from "./constants";
 
 // 학생도 쓰는 검증된 Storage prefix(attachments/) 아래에 저장 → Storage 규칙 변경 불필요
 function uploadFile(projectId, file, onProgress) {
@@ -23,7 +23,7 @@ function uploadFile(projectId, file, onProgress) {
 export default function FilesScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid;
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const { data: files, loading } = useCollection(
     "projectFiles", null,

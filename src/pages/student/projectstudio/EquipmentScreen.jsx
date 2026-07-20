@@ -5,7 +5,7 @@ import {
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCart } from "../../../hooks/useCart.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, newProjectEquipment, equipResStatus } from "./constants";
+import { PS, newProjectEquipment, equipResStatus, canEditProject } from "./constants";
 import { createEquipmentReservationAdapter } from "./adapters";
 
 // ===== 프로젝트 장비 화면 (요청서 11번) =====
@@ -13,7 +13,7 @@ import { createEquipmentReservationAdapter } from "./adapters";
 export default function EquipmentScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
   const { setQty, cartCount } = useCart();
 
   const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };

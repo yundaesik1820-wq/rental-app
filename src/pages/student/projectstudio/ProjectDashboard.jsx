@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { ArrowLeft, CalendarDays, Flag, Settings2, Users } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
-import { PS, typeLabel, typeIcon, stageLabel, WORKSPACE_MENUS } from "./constants";
+import { PS, typeLabel, typeIcon, stageLabel, WORKSPACE_MENUS, canEditProject, isProjectOwner } from "./constants";
 import ProjectTasks from "./ProjectTasks";
 import ProjectEditModal from "./ProjectEditModal";
 import AIManager from "./AIManager";
@@ -9,7 +9,8 @@ import AIManager from "./AIManager";
 // 프로젝트 대시보드 (Phase 2 — 기본 정보 + 할 일 + 워크스페이스 메뉴 + 수정/보관)
 export default function ProjectDashboard({ project, onBack, onOpenScript, onOpenShots, onOpenSchedule, onOpenMenuScreen }) {
   const { user } = useAuth();
-  const canEdit = project ? project.ownerId === user?.uid : false; // 참여 팀원은 조회만
+  const canEdit = canEditProject(project, user?.uid); // 소유자 + 참여 팀원 (할일·워크스페이스 작업)
+  const isOwner = isProjectOwner(project, user?.uid); // 소유자만 (프로젝트 설정)
   const [showEdit, setShowEdit] = useState(false);
   const [menuToast, setMenuToast] = useState("");
   const toastTimer = useRef(null);
@@ -65,7 +66,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
         border: `1px solid ${PS.primary}33`, borderRadius: 18, padding: 18, marginTop: 6,
         position: "relative",
       }}>
-        {canEdit ? (
+        {isOwner ? (
           <button onClick={() => setShowEdit(true)}
             style={{
               position: "absolute", top: 10, right: 10, width: 40, height: 40,

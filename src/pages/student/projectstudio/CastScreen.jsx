@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Plus, X, Users, Pencil, Trash2, Phone } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, CAST_STATUS, castStatus, newCastMember } from "./constants";
+import { PS, CAST_STATUS, castStatus, newCastMember, canEditProject } from "./constants";
 import SceneChecklist from "./SceneChecklist";
 
 // ===== 배역 추가/수정 모달 (backdrop 닫기 없음) =====
@@ -132,7 +132,7 @@ function CastFormModal({ member, scenes, projectId, uid, onClose }) {
 export default function CastScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = project.ownerId === uid;
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원
 
   const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };
   const { data: cast, loading } = useCollection("castMembers", null, opts());
