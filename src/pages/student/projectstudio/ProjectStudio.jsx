@@ -6,6 +6,7 @@ import { Spinner } from "../../../components/UI";
 import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
 import ProjectDashboard from "./ProjectDashboard";
+import ScriptScreen from "./ScriptScreen";
 
 // 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
 // initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
@@ -43,11 +44,34 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   if (view === "create") {
     return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
   }
+  // 시나리오 화면 ("script:" + 프로젝트 id)
+  if (typeof view === "string" && view.startsWith("script:")) {
+    const pid = view.slice(7);
+    const project = projects.find(p => p.id === pid);
+    if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
+    if (!project) {
+      return (
+        <div style={{ padding: "40px 16px", textAlign: "center", color: PS.sub, fontSize: 14 }}>
+          프로젝트를 찾을 수 없어요.
+          <div style={{ marginTop: 14 }}>
+            <button onClick={() => setView("list")}
+              style={{ background: PS.surface, border: `1px solid ${PS.border}`, color: PS.text,
+                borderRadius: 10, padding: "10px 18px", minHeight: 44, fontSize: 13, fontWeight: 700,
+                cursor: "pointer", fontFamily: "inherit" }}>
+              목록으로
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return <ScriptScreen project={project} onBack={() => setView(pid)} />;
+  }
   if (view !== "list") {
     const project = projects.find(p => p.id === view);
     // 로딩 중엔 스피너 (생성 직후 스냅샷 도착 전 "없음" 오판 방지)
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
-    return <ProjectDashboard project={project} onBack={() => setView("list")} />;
+    return <ProjectDashboard project={project} onBack={() => setView("list")}
+      onOpenScript={() => setView("script:" + project.id)} />;
   }
 
   // ===== 목록 =====

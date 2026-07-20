@@ -43,8 +43,8 @@ export const PROJECT_STAGES = [
 // 워크스페이스 빠른 메뉴 (key = 추후 화면 라우팅 키, ready=false면 "준비 중")
 export const WORKSPACE_MENUS = [
   { key: "idea",      label: "기획 노트",       icon: Lightbulb,    ready: false },
-  { key: "script",    label: "시나리오",        icon: FileText,     ready: false },
-  { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: false },
+  { key: "script",    label: "시나리오",        icon: FileText,     ready: true },
+  { key: "breakdown", label: "씬 브레이크다운", icon: ListTree,     ready: true },
   { key: "shots",     label: "콘티 / 샷리스트", icon: Camera,       ready: false },
   { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: false },
   { key: "casting",   label: "캐스팅",          icon: Users,        ready: false },
@@ -58,6 +58,37 @@ export const WORKSPACE_MENUS = [
 export const typeLabel  = (v) => PROJECT_TYPES.find(t => t.value === v)?.label || v;
 export const typeIcon   = (v) => PROJECT_TYPES.find(t => t.value === v)?.icon || Shapes;
 export const stageLabel = (v) => PROJECT_STAGES.find(s => s.value === v)?.label || v;
+
+// ===== 시나리오/장면 (Phase 3) =====
+export const SCENE_LOCATION_TYPES = [
+  { value: "INT",     label: "실내" },
+  { value: "EXT",     label: "야외" },
+  { value: "INT_EXT", label: "실내+야외" },
+];
+export const SCENE_TIMES = ["아침", "낮", "저녁", "밤"];
+export const SCENE_STATUS = [
+  { value: "draft",     label: "초안",     color: "#A8ABB7" },
+  { value: "ready",     label: "준비완료", color: "#2BD9A0" },
+  { value: "scheduled", label: "일정확정", color: "#7357FF" },
+  { value: "completed", label: "촬영완료", color: "#FFB84D" },
+];
+export const BREAKDOWN_DIFFICULTY = [
+  { value: "easy",   label: "쉬움" },
+  { value: "normal", label: "보통" },
+  { value: "hard",   label: "어려움" },
+];
+export const locTypeLabel  = (v) => SCENE_LOCATION_TYPES.find(t => t.value === v)?.label || v;
+export const sceneStatus   = (v) => SCENE_STATUS.find(s => s.value === v) || SCENE_STATUS[0];
+
+/** Scene 문서 기본값 팩토리 (요청서 6번 Scene 모델의 JS 버전) */
+export function newScene({ projectId, ownerId, sceneNumber }) {
+  return {
+    projectId, ownerId, sceneNumber,
+    heading: "", locationType: "INT", locationName: "", timeOfDay: "낮",
+    description: "", dialogue: "",
+    status: "draft", estimatedMinutes: null,
+  };
+}
 
 /**
  * Project 문서 기본값 팩토리 (요청서 16번 Project 모델의 JS 버전)
