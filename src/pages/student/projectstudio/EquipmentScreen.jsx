@@ -13,9 +13,10 @@ import { createEquipmentReservationAdapter } from "./adapters";
 export default function EquipmentScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
   const { setQty, cartCount } = useCart();
 
-  const opts = () => uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false };
+  const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };
   const { data: items, loading } = useCollection("projectEquipments", null, opts());
   const { data: breakdowns } = useCollection("sceneBreakdowns", null, opts());
   const { data: scenes }     = useCollection("scenes", null, opts());
@@ -183,6 +184,7 @@ export default function EquipmentScreen({ project, onBack }) {
       </div>
 
       {/* 직접 추가 */}
+      {canEdit && (
       <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
         <input value={customName} maxLength={40} disabled={busy}
           placeholder="장비 직접 추가 (예: 반사판)"
@@ -200,8 +202,10 @@ export default function EquipmentScreen({ project, onBack }) {
           <Plus size={19} />
         </button>
       </div>
+      )}
 
       {/* 액션 바 */}
+      {canEdit && (
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <button onClick={() => setShowImport(true)} style={actionBtn}>
           <Import size={15} /> 장면에서 가져오기
@@ -210,6 +214,7 @@ export default function EquipmentScreen({ project, onBack }) {
           <Search size={15} /> 학교 장비 검색
         </button>
       </div>
+      )}
 
       {/* 목록 */}
       {loading ? (
@@ -240,6 +245,7 @@ export default function EquipmentScreen({ project, onBack }) {
                     </div>
                   </div>
                   {/* 수량 */}
+                  {canEdit ? (
                   <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
                     <button onClick={() => changeQty(it, -1)}
                       style={{ width: 30, height: 30, borderRadius: 8, background: PS.elev,
@@ -255,12 +261,16 @@ export default function EquipmentScreen({ project, onBack }) {
                       <Plus size={13} />
                     </button>
                   </div>
+                  ) : (
+                    <span style={{ fontSize: 12.5, fontWeight: 800, flexShrink: 0, color: PS.sub }}>{it.quantity || 1}개</span>
+                  )}
                   <span style={{ fontSize: 10.5, fontWeight: 800, color: st.color, flexShrink: 0,
                     background: `${st.color}1A`, border: `1px solid ${st.color}44`,
                     padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
                     {st.label}
                   </span>
                 </div>
+                {canEdit && (
                 <div style={{ display: "flex", gap: 7, marginTop: 9 }}>
                   {linked && (
                     <button onClick={() => addToCart(it)} disabled={busy}
@@ -279,6 +289,7 @@ export default function EquipmentScreen({ project, onBack }) {
                     <Trash2 size={12} /> 삭제
                   </button>
                 </div>
+                )}
               </div>
             );
           })}

@@ -136,10 +136,11 @@ function BudgetFormModal({ item, projectId, uid, onClose }) {
 export default function BudgetScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
 
   const { data: budgetItems, loading } = useCollection(
     "budgetItems", null,
-    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", project.id]] } : { enabled: false }
   );
 
   const [formItem, setFormItem] = useState(null);   // null | "new" | item
@@ -196,6 +197,7 @@ export default function BudgetScreen({ project, onBack }) {
 
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", margin: "6px 0 14px" }}>
         <div style={{ fontSize: 19, fontWeight: 900 }}>예산</div>
+        {canEdit && (
         <button onClick={() => setFormItem("new")}
           style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
             background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
@@ -203,6 +205,7 @@ export default function BudgetScreen({ project, onBack }) {
             padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
           <Plus size={15} /> 항목 추가
         </button>
+        )}
       </div>
 
       {/* 요약 카드 */}
@@ -225,12 +228,14 @@ export default function BudgetScreen({ project, onBack }) {
                   color: "#fff", fontSize: 12, fontWeight: 800, padding: "0 12px",
                   cursor: "pointer", fontFamily: "inherit" }}>저장</button>
             </div>
-          ) : (
+          ) : canEdit ? (
             <button onClick={() => { setLimitInput(limit ?? ""); setEditLimit(true); }}
               style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none",
                 color: PS.text, fontSize: 16, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>
               {limit != null ? fmtWon(limit) : "설정하기"} <Pencil size={12} color={PS.sub} />
             </button>
+          ) : (
+            <span style={{ fontSize: 16, fontWeight: 900 }}>{limit != null ? fmtWon(limit) : "-"}</span>
           )}
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8 }}>
@@ -297,6 +302,7 @@ export default function BudgetScreen({ project, onBack }) {
                         {b.status === "paid" ? "지출" : "예정"}
                       </span>
                     </div>
+                    {canEdit && (
                     <div style={{ display: "flex", gap: 7, marginTop: 8 }}>
                       <button onClick={() => setFormItem(b)}
                         style={{ display: "flex", alignItems: "center", gap: 4, minHeight: 32,
@@ -313,6 +319,7 @@ export default function BudgetScreen({ project, onBack }) {
                         <Trash2 size={11} /> 삭제
                       </button>
                     </div>
+                    )}
                   </div>
                 ))}
               </div>

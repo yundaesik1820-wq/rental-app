@@ -227,21 +227,42 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
-    // 🎬 Project Studio 프로젝트 (본인 소유 문서만 — ownerId 위조 생성 차단)
+    // 🎬 Project Studio — 프로젝트 접근 판정
+    // 소유자이거나, 팀원으로 추가돼 memberIds에 등록된 사용자(입장 권한)
+    function psProject(pid) {
+      return get(/databases/$(database)/documents/projects/$(pid)).data;
+    }
+    function canAccessProject(pid) {
+      return isLoggedIn()
+        && (psProject(pid).ownerId == request.auth.uid
+            || request.auth.uid in psProject(pid).get('memberIds', []));
+    }
+
+    // 🎬 Project Studio 프로젝트 (쓰기는 소유자만 / 읽기는 소유자 + 팀원)
     match /projects/{docId} {
       allow create: if isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read, delete: if isLoggedIn() && resource.data.ownerId == request.auth.uid;
+      allow read: if isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid
+            || request.auth.uid in resource.data.get('memberIds', []));
+      allow delete: if isLoggedIn() && resource.data.ownerId == request.auth.uid;
       allow update: if isLoggedIn() && resource.data.ownerId == request.auth.uid
         && request.resource.data.ownerId == resource.data.ownerId; // 소유권 이전 차단
     }
 
-    // 🎬 Project Studio 하위 데이터 (전부 ownerId 소유 문서 — projects와 동일 규칙)
+    // 🎬 Project Studio 하위 데이터
+    // 쓰기: 소유자만 / 읽기: 소유자 + 프로젝트 팀원 + (crewMembers는 본인 초대 항목 — 알림용)
     // 와일드카드지만 아래 목록에 없는 컬렉션엔 아무 권한도 주지 않음.
     match /{psCol}/{docId} {
       allow create: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
           'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
         && isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
-      allow read, delete: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+      allow read: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
+          'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
+        && isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid
+            || resource.data.get('userId', '') == request.auth.uid
+            || canAccessProject(resource.data.projectId));
+      allow delete: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
           'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems', 'projectFiles']
         && isLoggedIn() && resource.data.ownerId == request.auth.uid;
       allow update: if psCol in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',

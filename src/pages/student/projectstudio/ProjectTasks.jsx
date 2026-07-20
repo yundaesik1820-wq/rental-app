@@ -6,14 +6,15 @@ import { PS } from "./constants";
 
 // 오늘 해야 할 일 — 체크 즉시 Firestore 저장 (요청서 14번 ProjectTask의 Phase 2 축소판)
 // status: "todo" | "done" ("doing"·priority·dueDate 필드는 모델에 있고 UI는 추후)
-export default function ProjectTasks({ projectId }) {
+// canEdit=false(참여 팀원)는 조회만 가능
+export default function ProjectTasks({ projectId, canEdit = true }) {
   const { user } = useAuth();
   const uid = user?.uid;
 
-  // 규칙이 ownerId 검사를 하므로 쿼리에도 ownerId 조건 필수 (equality 2개 — 복합 인덱스 불필요)
+  // projectId 단독 쿼리 — 읽기 허용 여부는 규칙(canAccessProject)이 판정
   const { data: tasks, loading } = useCollection(
     "projectTasks", null,
-    uid ? { where: [["projectId", "==", projectId], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", projectId]] } : { enabled: false }
   );
 
   const [input, setInput] = useState("");
@@ -44,7 +45,7 @@ export default function ProjectTasks({ projectId }) {
   };
 
   const toggle = async (t) => {
-    if (savingId) return;
+    if (savingId || !canEdit) return;
     setSavingId(t.id);
     try {
       await updateItem("projectTasks", t.id, { status: t.status === "done" ? "todo" : "done" });
@@ -79,6 +80,7 @@ export default function ProjectTasks({ projectId }) {
       </div>
 
       {/* 추가 입력 */}
+      {canEdit && (
       <div style={{ display: "flex", gap: 8, marginBottom: tasks.length ? 12 : 0 }}>
         <input value={input} maxLength={80} disabled={busy}
           placeholder="할 일 추가 (예: 시놉시스 초안 작성)"
@@ -101,6 +103,7 @@ export default function ProjectTasks({ projectId }) {
           <Plus size={19} />
         </button>
       </div>
+      )}
 
       {/* 목록 */}
       {loading ? (
@@ -135,13 +138,15 @@ export default function ProjectTasks({ projectId }) {
                     color: done ? PS.sub : PS.text,
                     textDecoration: done ? "line-through" : "none", fontWeight: done ? 500 : 600,
                   }}>{t.title}</span>
-                <button onClick={() => remove(t)}
-                  style={{
-                    background: "none", border: "none", color: PS.sub, cursor: "pointer",
-                    padding: 6, display: "flex", flexShrink: 0,
-                  }}>
-                  <X size={15} />
-                </button>
+                {canEdit && (
+                  <button onClick={() => remove(t)}
+                    style={{
+                      background: "none", border: "none", color: PS.sub, cursor: "pointer",
+                      padding: 6, display: "flex", flexShrink: 0,
+                    }}>
+                    <X size={15} />
+                  </button>
+                )}
               </div>
             );
           })}

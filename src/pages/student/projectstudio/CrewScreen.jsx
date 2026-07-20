@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, Plus, X, UserPlus, Megaphone, Pencil, Trash2, Link2, Phone } from "lucide-react";
+import { ArrowLeft, Plus, X, UserPlus, Megaphone, Pencil, Trash2, Phone, BadgeCheck } from "lucide-react";
+import { getDocs, collection, doc, updateDoc, arrayUnion, arrayRemove } from "firebase/firestore";
+import { db } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import {
@@ -8,20 +10,46 @@ import {
 import { communityRecruitmentAdapter } from "./adapters";
 
 // ===== 팀원 추가/수정 모달 (backdrop 닫기 없음) =====
-function CrewFormModal({ member, projectId, uid, onClose }) {
+// 이름 입력 → 가입 학생 자동완성 (본인 포함, 수기 입력도 허용).
+// 가입 학생을 선택하면 userId가 연동돼 알림 + 프로젝트 입장 권한이 생긴다.
+function CrewFormModal({ member, project, crew, uid, profile, onClose }) {
   const isEdit = !!member;
   const [role, setRole] = useState(member?.role || null);
   const [customRole, setCustomRole] = useState(
     member && !CREW_ROLES.includes(member.role) ? member.role : ""
   );
   const [name, setName]     = useState(member?.name || "");
+  const [userId, setUserId] = useState(member?.userId || null);
   const [status, setStatus] = useState(member?.status || "confirmed");
-  const [contact, setContact]     = useState(member?.contact || "");
-  const [portfolio, setPortfolio] = useState(member?.portfolioUrl || "");
+  const [contact, setContact] = useState(member?.contact || "");
   const [err, setErr]   = useState("");
   const [busy, setBusy] = useState(false);
 
-  const isCustom = role === "기타" || (member && !CREW_ROLES.includes(member.role) && role === member.role);
+  // 가입 사용자 목록 (모달 열릴 때 1회 로드 → 키 입력마다 클라 필터)
+  const [allUsers, setAllUsers] = useState([]);
+  const [showSuggest, setShowSuggest] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    getDocs(collection(db, "users")).then(snap => {
+      if (alive) setAllUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    }).catch(e => console.warn("users load error:", e));
+    return () => { alive = false; };
+  }, []);
+
+  const kw = name.trim().toLowerCase();
+  const suggestions = (!kw || userId) ? [] : allUsers
+    .filter(u =>
+      ((u.role === "student" && u.status === "approved") || u.id === uid) && // 승인된 학생 + 본인(관리자여도)
+      (u.name || "").toLowerCase().includes(kw)
+    )
+    .slice(0, 6);
+
+  const pickUser = (u) => {
+    setName(u.name || "");
+    setUserId(u.id);
+    if (!contact && (u.phone || u.phoneNumber)) setContact(u.phone || u.phoneNumber);
+    setShowSuggest(false);
+  };
 
   const save = async () => {
     const finalRole = role === "기타" ? customRole.trim() : role;
@@ -31,11 +59,28 @@ function CrewFormModal({ member, projectId, uid, onClose }) {
     setBusy(true);
     const data = {
       role: finalRole, name: name.trim(), status,
-      contact: contact.trim(), portfolioUrl: portfolio.trim(),
+      contact: contact.trim(),
+      userId: userId || null,
+      // 알림 문구용 비정규화 (초대받은 쪽이 프로젝트를 읽기 전에 표시)
+      projectTitle: project.title, inviterName: profile?.name || "",
     };
     try {
       if (isEdit) await updateItem("crewMembers", member.id, data);
-      else await addItem("crewMembers", { ...newCrewMember({ projectId, ownerId: uid, role: finalRole }), ...data });
+      else await addItem("crewMembers", { ...newCrewMember({ projectId: project.id, ownerId: uid, role: finalRole }), ...data });
+
+      // 🔑 입장 권한 동기화 (projects.memberIds)
+      const projRef = doc(db, "projects", project.id);
+      if (userId && userId !== uid) {
+        await updateDoc(projRef, { memberIds: arrayUnion(userId) });
+      }
+      const prevUserId = member?.userId;
+      if (isEdit && prevUserId && prevUserId !== userId) {
+        // 바뀐 이전 사용자가 다른 팀원 항목에도 없으면 권한 회수
+        const stillUsed = crew.some(c => c.id !== member.id && c.userId === prevUserId);
+        if (!stillUsed && prevUserId !== uid) {
+          await updateDoc(projRef, { memberIds: arrayRemove(prevUserId) });
+        }
+      }
       onClose();
     } catch (e) {
       console.warn("crew save error:", e);
@@ -78,8 +123,7 @@ function CrewFormModal({ member, projectId, uid, onClose }) {
             <span style={labelStyle}>포지션 <b style={{ color: PS.primaryLight }}>*</b></span>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
               {CREW_ROLES.map(r => (
-                <button key={r} onClick={() => setRole(r)} disabled={busy}
-                  style={chip(role === r || (r !== "기타" && role === r))}>{r}</button>
+                <button key={r} onClick={() => setRole(r)} disabled={busy} style={chip(role === r)}>{r}</button>
               ))}
             </div>
             {role === "기타" && (
@@ -98,24 +142,47 @@ function CrewFormModal({ member, projectId, uid, onClose }) {
             </div>
           </div>
 
-          <div>
+          <div style={{ position: "relative" }}>
             <span style={labelStyle}>이름 {status !== "recruiting" && <b style={{ color: PS.primaryLight }}>*</b>}</span>
             <input style={inputStyle} value={name} maxLength={20} disabled={busy}
-              placeholder={status === "recruiting" ? "모집 중이면 비워도 돼요" : "예) 윤대식"}
-              onChange={e => setName(e.target.value)} />
+              placeholder={status === "recruiting" ? "모집 중이면 비워도 돼요" : "이름 검색 또는 직접 입력"}
+              onChange={e => { setName(e.target.value); setUserId(null); setShowSuggest(true); }}
+              onFocus={() => setShowSuggest(true)} />
+            {userId && (
+              <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 6,
+                fontSize: 11.5, fontWeight: 800, color: PS.success }}>
+                <BadgeCheck size={13} /> 가입 학생 연동됨 — 추가하면 알림과 입장 권한이 생겨요
+              </div>
+            )}
+            {/* 자동완성 드롭다운 */}
+            {showSuggest && suggestions.length > 0 && (
+              <div style={{
+                position: "absolute", left: 0, right: 0, top: "100%", marginTop: 4, zIndex: 20,
+                background: PS.elev, border: `1px solid ${PS.primary}55`, borderRadius: 11,
+                overflow: "hidden", boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+              }}>
+                {suggestions.map(u => (
+                  <button key={u.id} onClick={() => pickUser(u)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", minHeight: 44,
+                      background: "none", border: "none", borderBottom: `1px solid ${PS.border}`,
+                      color: PS.text, fontSize: 13, fontWeight: 700, padding: "9px 13px",
+                      cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    <span>{u.name}</span>
+                    <span style={{ fontSize: 11, color: PS.sub, fontWeight: 600 }}>
+                      {u.studentId || ""}{u.dept ? ` · ${u.dept}` : ""}{u.id === uid ? " · 나" : ""}
+                    </span>
+                    <BadgeCheck size={13} color={PS.primaryLight} style={{ marginLeft: "auto", flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <div>
-              <span style={labelStyle}>연락처 (선택)</span>
-              <input style={inputStyle} value={contact} maxLength={40} disabled={busy}
-                placeholder="전화/카톡ID 등" onChange={e => setContact(e.target.value)} />
-            </div>
-            <div>
-              <span style={labelStyle}>포트폴리오 (선택)</span>
-              <input style={inputStyle} value={portfolio} maxLength={200} disabled={busy}
-                placeholder="URL" onChange={e => setPortfolio(e.target.value)} />
-            </div>
+          <div>
+            <span style={labelStyle}>연락처 (선택)</span>
+            <input style={inputStyle} value={contact} maxLength={40} disabled={busy}
+              placeholder="전화번호 입력 시 바로 전화 걸 수 있어요" inputMode="tel"
+              onChange={e => setContact(e.target.value)} />
           </div>
         </div>
 
@@ -212,10 +279,11 @@ function RecruitModal({ member, project, scenes, days, onClose, onRegistered }) 
 
 // ===== 팀원 화면 =====
 export default function CrewScreen({ project, onBack }) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 멤버(참여자)는 조회만
 
-  const opts = () => uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false };
+  const opts = () => uid ? { where: [["projectId", "==", project.id]] } : { enabled: false };
   const { data: crew, loading } = useCollection("crewMembers", null, opts());
   const { data: scenes } = useCollection("scenes", null, opts());
   const { data: days }   = useCollection("shootDays", null, opts());
@@ -241,8 +309,19 @@ export default function CrewScreen({ project, onBack }) {
 
   const removeMember = async (m) => {
     if (!window.confirm(`${m.role}${m.name ? ` ${m.name}` : ""} 항목을 삭제할까요?`)) return;
-    try { await deleteItem("crewMembers", m.id); }
+    try {
+      await deleteItem("crewMembers", m.id);
+      // 같은 사용자가 다른 항목에 없으면 입장 권한 회수
+      if (m.userId && m.userId !== uid && !crew.some(c => c.id !== m.id && c.userId === m.userId)) {
+        await updateDoc(doc(db, "projects", project.id), { memberIds: arrayRemove(m.userId) });
+      }
+    }
     catch (e) { console.warn("crew delete error:", e); alert("삭제에 실패했어요."); }
+  };
+
+  const telHref = (contact) => {
+    const digits = (contact || "").replace(/[^0-9+]/g, "");
+    return digits.length >= 7 ? `tel:${digits}` : null;
   };
 
   return (
@@ -263,13 +342,15 @@ export default function CrewScreen({ project, onBack }) {
               : "함께할 크루를 정리해보세요"}
           </div>
         </div>
-        <button onClick={() => setFormMember("new")}
-          style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
-            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
-            border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
-            padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
-          <Plus size={15} /> 팀원 추가
-        </button>
+        {canEdit && (
+          <button onClick={() => setFormMember("new")}
+            style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
+              background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+              border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
+              padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+            <Plus size={15} /> 팀원 추가
+          </button>
+        )}
       </div>
 
       {loading ? (
@@ -285,29 +366,38 @@ export default function CrewScreen({ project, onBack }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {sorted.map(m => {
             const st = crewStatus(m.status);
+            const tel = telHref(m.contact);
             return (
               <div key={m.id}
                 style={{ background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 14,
                   padding: "12px 14px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: PS.primaryLight, flexShrink: 0, minWidth: 74 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: PS.primaryLight, flexShrink: 0, minWidth: 60 }}>
                     {m.role}
                   </span>
                   <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700,
-                    color: m.name ? PS.text : PS.sub,
+                    color: m.name ? PS.text : PS.sub, display: "flex", alignItems: "center", gap: 5,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {m.name || "미정"}
+                    {m.userId && <BadgeCheck size={13} color={PS.success} style={{ flexShrink: 0 }} />}
                   </span>
-                  {m.contact && <Phone size={13} color={PS.sub} style={{ flexShrink: 0 }} />}
-                  {m.portfolioUrl && <Link2 size={13} color={PS.sub} style={{ flexShrink: 0 }} />}
                   <span style={{ fontSize: 10.5, fontWeight: 800, color: st.color, flexShrink: 0,
                     background: `${st.color}1A`, border: `1px solid ${st.color}44`,
                     padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
                     {st.label}
                   </span>
                 </div>
-                <div style={{ display: "flex", gap: 7, marginTop: 9 }}>
-                  {m.status === "recruiting" && (
+                <div style={{ display: "flex", gap: 7, marginTop: 9, flexWrap: "wrap" }}>
+                  {tel && (
+                    <a href={tel}
+                      style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                        background: `${PS.success}14`, border: `1px solid ${PS.success}55`, borderRadius: 10,
+                        color: PS.success, fontSize: 11.5, fontWeight: 800, padding: "7px 11px",
+                        textDecoration: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                      <Phone size={13} /> 전화
+                    </a>
+                  )}
+                  {canEdit && m.status === "recruiting" && (
                     <button onClick={() => setRecruitFor(m)}
                       style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
                         background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`, borderRadius: 10,
@@ -316,20 +406,24 @@ export default function CrewScreen({ project, onBack }) {
                       <Megaphone size={13} /> 모집글 미리보기
                     </button>
                   )}
-                  <button onClick={() => setFormMember(m)}
-                    style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
-                      background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
-                      color: PS.text, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
-                      cursor: "pointer", fontFamily: "inherit" }}>
-                    <Pencil size={12} /> 수정
-                  </button>
-                  <button onClick={() => removeMember(m)}
-                    style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
-                      background: PS.elev, border: `1px solid ${PS.danger}44`, borderRadius: 10,
-                      color: PS.danger, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
-                      cursor: "pointer", fontFamily: "inherit" }}>
-                    <Trash2 size={12} /> 삭제
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button onClick={() => setFormMember(m)}
+                        style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                          background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
+                          color: PS.text, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
+                          cursor: "pointer", fontFamily: "inherit" }}>
+                        <Pencil size={12} /> 수정
+                      </button>
+                      <button onClick={() => removeMember(m)}
+                        style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                          background: PS.elev, border: `1px solid ${PS.danger}44`, borderRadius: 10,
+                          color: PS.danger, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
+                          cursor: "pointer", fontFamily: "inherit" }}>
+                        <Trash2 size={12} /> 삭제
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -349,7 +443,8 @@ export default function CrewScreen({ project, onBack }) {
       {/* 모달들 */}
       {formMember && (
         <CrewFormModal member={formMember === "new" ? null : formMember}
-          projectId={project.id} uid={uid} onClose={() => setFormMember(null)} />
+          project={project} crew={crew} uid={uid} profile={profile}
+          onClose={() => setFormMember(null)} />
       )}
       {recruitFor && (
         <RecruitModal member={recruitFor} project={project} scenes={scenes} days={days}

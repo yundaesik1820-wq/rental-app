@@ -1,11 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { ArrowLeft, CalendarDays, Flag, Settings2 } from "lucide-react";
+import { ArrowLeft, CalendarDays, Flag, Settings2, Users } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth.jsx";
 import { PS, typeLabel, typeIcon, stageLabel, WORKSPACE_MENUS } from "./constants";
 import ProjectTasks from "./ProjectTasks";
 import ProjectEditModal from "./ProjectEditModal";
 
 // 프로젝트 대시보드 (Phase 2 — 기본 정보 + 할 일 + 워크스페이스 메뉴 + 수정/보관)
 export default function ProjectDashboard({ project, onBack, onOpenScript, onOpenShots, onOpenSchedule, onOpenMenuScreen }) {
+  const { user } = useAuth();
+  const canEdit = project ? project.ownerId === user?.uid : false; // 참여 팀원은 조회만
   const [showEdit, setShowEdit] = useState(false);
   const [menuToast, setMenuToast] = useState("");
   const toastTimer = useRef(null);
@@ -61,15 +64,26 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
         border: `1px solid ${PS.primary}33`, borderRadius: 18, padding: 18, marginTop: 6,
         position: "relative",
       }}>
-        <button onClick={() => setShowEdit(true)}
-          style={{
-            position: "absolute", top: 10, right: 10, width: 40, height: 40,
+        {canEdit ? (
+          <button onClick={() => setShowEdit(true)}
+            style={{
+              position: "absolute", top: 10, right: 10, width: 40, height: 40,
+              background: "rgba(255,255,255,0.06)", border: `1px solid ${PS.border}`,
+              borderRadius: 11, color: PS.sub, cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}>
+            <Settings2 size={17} />
+          </button>
+        ) : (
+          <span style={{
+            position: "absolute", top: 14, right: 12, display: "flex", alignItems: "center", gap: 4,
+            fontSize: 10.5, fontWeight: 800, color: PS.sub,
             background: "rgba(255,255,255,0.06)", border: `1px solid ${PS.border}`,
-            borderRadius: 11, color: PS.sub, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center",
+            padding: "4px 9px", borderRadius: 999,
           }}>
-          <Settings2 size={17} />
-        </button>
+            <Users size={11} /> 참여 중
+          </span>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, paddingRight: 44 }}>
           <Ic size={16} color={PS.primaryLight} />
@@ -106,7 +120,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
       </div>
 
       {/* 오늘 해야 할 일 */}
-      <ProjectTasks projectId={project.id} />
+      <ProjectTasks projectId={project.id} canEdit={canEdit} />
 
       {/* 워크스페이스 메뉴 */}
       <div style={{ margin: "18px 0 10px", fontSize: 14.5, fontWeight: 800 }}>워크스페이스</div>

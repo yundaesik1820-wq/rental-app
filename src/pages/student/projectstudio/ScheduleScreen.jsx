@@ -159,8 +159,9 @@ function StatusSheet({ scene, onClose }) {
 export default function ScheduleScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
 
-  const opts = (extra) => uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]], ...extra } : { enabled: false };
+  const opts = (extra) => uid ? { where: [["projectId", "==", project.id]], ...extra } : { enabled: false };
   const { data: scenes }     = useCollection("scenes", null, opts());
   const { data: breakdowns } = useCollection("sceneBreakdowns", null, opts());
   const { data: days, loading: daysLoading } = useCollection("shootDays", null, opts());
@@ -179,7 +180,7 @@ export default function ScheduleScreen({ project, onBack }) {
 
   // 장면 ↔ 촬영일 배치 토글
   const toggleScene = async (day, sceneId) => {
-    if (assignBusy) return;
+    if (assignBusy || !canEdit) return;
     setAssignBusy(true);
     const cur = day.sceneIds || [];
     const next = cur.includes(sceneId) ? cur.filter(id => id !== sceneId) : [...cur, sceneId];
@@ -245,7 +246,9 @@ export default function ScheduleScreen({ project, onBack }) {
           </div>
         ) : (
           <>
-            <div style={{ fontSize: 11.5, color: PS.sub, marginBottom: 10 }}>카드를 탭하면 상태를 바꿀 수 있어요 · 옆으로 스크롤</div>
+            <div style={{ fontSize: 11.5, color: PS.sub, marginBottom: 10 }}>
+              {canEdit ? "카드를 탭하면 상태를 바꿀 수 있어요 · 옆으로 스크롤" : "옆으로 스크롤해서 전체 상태를 볼 수 있어요"}
+            </div>
             <div style={{ display: "flex", gap: 10, overflowX: "auto", WebkitOverflowScrolling: "touch",
               margin: "0 -14px", padding: "0 14px 6px" }}>
               {SCENE_STATUS.map(st => {
@@ -267,9 +270,9 @@ export default function ScheduleScreen({ project, onBack }) {
                         const day = dayOfScene(s.id);
                         const min = bd?.estimatedMinutes ?? s.estimatedMinutes;
                         return (
-                          <div key={s.id} onClick={() => setStatusScene(s)}
+                          <div key={s.id} onClick={() => canEdit && setStatusScene(s)}
                             style={{ background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 11,
-                              padding: "10px 11px", cursor: "pointer" }}>
+                              padding: "10px 11px", cursor: canEdit ? "pointer" : "default" }}>
                             <div style={{ fontSize: 12.5, fontWeight: 800, marginBottom: 4, wordBreak: "keep-all" }}>
                               <span style={{ color: PS.primaryLight }}>S#{s.sceneNumber}</span> {s.heading || s.locationName || ""}
                             </div>
@@ -294,15 +297,17 @@ export default function ScheduleScreen({ project, onBack }) {
       {/* ===== 촬영일 ===== */}
       {tab === "days" && (
         <>
-          <button onClick={() => setFormDay("new")}
-            style={{
-              display: "flex", alignItems: "center", gap: 5, minHeight: 42, marginBottom: 12,
-              background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
-              border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
-              padding: "9px 13px", cursor: "pointer", fontFamily: "inherit",
-            }}>
-            <Plus size={15} /> 촬영일 추가
-          </button>
+          {canEdit && (
+            <button onClick={() => setFormDay("new")}
+              style={{
+                display: "flex", alignItems: "center", gap: 5, minHeight: 42, marginBottom: 12,
+                background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+                border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
+                padding: "9px 13px", cursor: "pointer", fontFamily: "inherit",
+              }}>
+              <Plus size={15} /> 촬영일 추가
+            </button>
+          )}
 
           {daysLoading ? (
             <div style={{ padding: "30px 0", textAlign: "center", fontSize: 13, color: PS.sub }}>불러오는 중...</div>
@@ -419,6 +424,7 @@ export default function ScheduleScreen({ project, onBack }) {
                         )}
 
                         {/* 액션 */}
+                        {canEdit && (
                         <div style={{ display: "flex", gap: 7, marginTop: 12 }}>
                           <button onClick={() => setFormDay(day)}
                             style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 38,
@@ -435,6 +441,7 @@ export default function ScheduleScreen({ project, onBack }) {
                             <Trash2 size={13} /> 삭제
                           </button>
                         </div>
+                        )}
                       </div>
                     )}
                   </div>

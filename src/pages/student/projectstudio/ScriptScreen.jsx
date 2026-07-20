@@ -347,14 +347,15 @@ function AnalysisModal({ scene, result, breakdown, uid, onClose }) {
 export default function ScriptScreen({ project, onBack, onOpenShots }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
 
   const { data: scenes, loading } = useCollection(
     "scenes", null,
-    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", project.id]] } : { enabled: false }
   );
   const { data: breakdowns } = useCollection(
     "sceneBreakdowns", null,
-    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", project.id]] } : { enabled: false }
   );
 
   const [expanded, setExpanded]   = useState(null);   // 펼친 장면 id
@@ -419,6 +420,7 @@ export default function ScriptScreen({ project, onBack, onOpenShots }) {
       </div>
 
       {/* 액션 바 */}
+      {canEdit && (
       <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
         <button onClick={() => setFormScene("new")}
           style={{ ...actionBtn, background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
@@ -432,6 +434,7 @@ export default function ScriptScreen({ project, onBack, onOpenShots }) {
           <FileUp size={15} /> 파일
         </button>
       </div>
+      )}
 
       {/* 장면 목록 */}
       {loading ? (
@@ -525,23 +528,31 @@ export default function ScriptScreen({ project, onBack, onOpenShots }) {
 
                     {/* 액션 버튼 */}
                     <div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 13 }}>
-                      <button onClick={() => setAnalysis({ scene: s, result: analyzeScene(s) })}
-                        style={{ ...actionBtn, background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`, color: PS.primaryLight }}>
-                        <Sparkles size={14} /> AI 분석
-                      </button>
-                      <button onClick={() => setBdScene(s)} style={actionBtn}>
-                        <ListTree size={14} /> 브레이크다운
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button onClick={() => setAnalysis({ scene: s, result: analyzeScene(s) })}
+                            style={{ ...actionBtn, background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`, color: PS.primaryLight }}>
+                            <Sparkles size={14} /> AI 분석
+                          </button>
+                          <button onClick={() => setBdScene(s)} style={actionBtn}>
+                            <ListTree size={14} /> 브레이크다운
+                          </button>
+                        </>
+                      )}
                       <button onClick={() => onOpenShots && onOpenShots(s)} style={actionBtn}>
-                        <Clapperboard size={14} /> 콘티 만들기
+                        <Clapperboard size={14} /> {canEdit ? "콘티 만들기" : "콘티 보기"}
                       </button>
-                      <button onClick={() => setFormScene(s)} style={actionBtn}>
-                        <Pencil size={14} /> 수정
-                      </button>
-                      <button onClick={() => removeScene(s)}
-                        style={{ ...actionBtn, border: `1px solid ${PS.danger}44`, color: PS.danger }}>
-                        <Trash2 size={14} /> 삭제
-                      </button>
+                      {canEdit && (
+                        <>
+                          <button onClick={() => setFormScene(s)} style={actionBtn}>
+                            <Pencil size={14} /> 수정
+                          </button>
+                          <button onClick={() => removeScene(s)}
+                            style={{ ...actionBtn, border: `1px solid ${PS.danger}44`, color: PS.danger }}>
+                            <Trash2 size={14} /> 삭제
+                          </button>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}

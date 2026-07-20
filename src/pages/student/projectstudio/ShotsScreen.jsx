@@ -169,14 +169,15 @@ function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
 export default function ShotsScreen({ project, initialSceneId, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
+  const canEdit = project.ownerId === uid; // 참여 팀원은 조회만
 
   const { data: scenes, loading: scenesLoading } = useCollection(
     "scenes", null,
-    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", project.id]] } : { enabled: false }
   );
   const { data: shots } = useCollection(
     "shots", null,
-    uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false }
+    uid ? { where: [["projectId", "==", project.id]] } : { enabled: false }
   );
 
   const [sceneId, setSceneId] = useState(initialSceneId || null);
@@ -218,15 +219,17 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
               {totalSecs > 0 && ` · 약 ${Math.floor(totalSecs / 60) > 0 ? `${Math.floor(totalSecs / 60)}분 ` : ""}${totalSecs % 60 > 0 ? `${totalSecs % 60}초` : ""}`}
             </div>
           </div>
-          <button onClick={() => setFormShot("new")}
-            style={{
-              display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
-              background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
-              border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
-              padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-            }}>
-            <Plus size={15} /> 숏 추가
-          </button>
+          {canEdit && (
+            <button onClick={() => setFormShot("new")}
+              style={{
+                display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
+                background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+                border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
+                padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+              }}>
+              <Plus size={15} /> 숏 추가
+            </button>
+          )}
         </div>
 
         {sceneShots.length === 0 ? (
@@ -280,6 +283,7 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
                       {sh.dialogue}
                     </div>
                   )}
+                  {canEdit && (
                   <div style={{ display: "flex", gap: 7, marginTop: 10 }}>
                     <button onClick={() => setFormShot(sh)}
                       style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 38,
@@ -296,6 +300,7 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
                       <Trash2 size={13} /> 삭제
                     </button>
                   </div>
+                  )}
                 </div>
               );
             })}

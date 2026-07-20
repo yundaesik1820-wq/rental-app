@@ -20,10 +20,17 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   const uid = user?.uid;
 
   // orderBy+where 복합 인덱스를 피하려고 orderField null → 클라에서 정렬
-  const { data: projects, loading } = useCollection(
+  const { data: ownProjects, loading } = useCollection(
     "projects", null,
     uid ? { where: [["ownerId", "==", uid]] } : { enabled: false }
   );
+  // 팀원으로 추가돼 참여 중인 프로젝트 (memberIds)
+  const { data: joinedProjects } = useCollection(
+    "projects", null,
+    uid ? { where: [["memberIds", "array-contains", uid]] } : { enabled: false }
+  );
+  // 병합 (내 프로젝트 우선, id 중복 제거)
+  const projects = [...ownProjects, ...joinedProjects.filter(p => !ownProjects.some(o => o.id === p.id))];
 
   const [view, setView] = useState(initialView === "create" ? "create" : "list");
   const [shotsSceneId, setShotsSceneId] = useState(null); // "이 장면으로 콘티 만들기" 진입 시 초기 장면
@@ -33,7 +40,7 @@ export default function ProjectStudio({ initialView, onConsumed }) {
 
   const byNewest = (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
   const active   = projects.filter(p => p.status !== "archived").sort(byNewest);
-  const archived = projects.filter(p => p.status === "archived").sort(byNewest);
+  const archived = projects.filter(p => p.status === "archived" && p.ownerId === uid).sort(byNewest);
 
   const restore = async (p) => {
     if (restoringId) return;
@@ -156,6 +163,13 @@ export default function ProjectStudio({ initialView, onConsumed }) {
                   <span style={{ fontSize: 11.5, fontWeight: 700, color: PS.primaryLight }}>
                     {typeLabel(p.type)} · {stageLabel(p.stage)}
                   </span>
+                  {p.ownerId !== uid && (
+                    <span style={{ fontSize: 9.5, fontWeight: 800, color: PS.success,
+                      background: `${PS.success}1A`, border: `1px solid ${PS.success}44`,
+                      padding: "2px 7px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                      참여 중
+                    </span>
+                  )}
                   <ChevronRight size={15} color={PS.sub} style={{ marginLeft: "auto" }} />
                 </div>
                 <div style={{ fontSize: 15.5, fontWeight: 800, marginBottom: 10, wordBreak: "keep-all" }}>{p.title}</div>
