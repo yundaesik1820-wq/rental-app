@@ -1,10 +1,25 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, X, Camera, ChevronRight, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, X, Camera, ChevronRight, Pencil, Trash2, ImagePlus } from "lucide-react";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+import { storage } from "../../../firebase";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import {
   PS, SHOT_SIZES, SHOT_ANGLES, SHOT_MOVES, SHOT_STATUS, shotStatus, newShot, locTypeLabel, canEditProject,
 } from "./constants";
+
+// 콘티 참고 이미지 업로드 (검증된 attachments/ prefix)
+function uploadShotRef(projectId, file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const path = `attachments/projectShots/${projectId}/${Date.now()}_${file.name}`;
+    const task = uploadBytesResumable(ref(storage, path), file);
+    task.on("state_changed",
+      (snap) => onProgress && onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      reject,
+      async () => resolve({ url: await getDownloadURL(task.snapshot.ref), path }),
+    );
+  });
+}
 
 // ===== 숏 추가/수정 모달 (backdrop 닫기 없음 — X로만) =====
 function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
@@ -19,8 +34,32 @@ function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
   const [dialogue, setDialogue] = useState(shot?.dialogue || "");
   const [secs, setSecs]   = useState(shot?.estimatedSeconds ?? "");
   const [status, setStatus] = useState(shot?.status || "planned");
+  const [refImg, setRefImg] = useState(shot?.referenceImageUrl || null);
+  const [refPath, setRefPath] = useState(shot?.referenceImagePath || null);
+  const [upPct, setUpPct] = useState(null);
   const [err, setErr]   = useState("");
   const [busy, setBusy] = useState(false);
+
+  const onPickRef = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { alert("이미지 파일만 올릴 수 있어요."); return; }
+    if (file.size > 10 * 1024 * 1024) { alert("10MB 이하 이미지만 올릴 수 있어요."); return; }
+    setUpPct(0);
+    try {
+      const p = await uploadShotRef(scene.projectId, file, setUpPct);
+      // 기존 이미지 있으면 교체 — 이전 파일 정리
+      if (refPath) await deleteObject(ref(storage, refPath)).catch(() => {});
+      setRefImg(p.url); setRefPath(p.path);
+    } catch (e2) { console.warn("ref upload error:", e2); alert("업로드에 실패했어요."); }
+    setUpPct(null);
+  };
+
+  const removeRef = async () => {
+    if (refPath) await deleteObject(ref(storage, refPath)).catch(() => {});
+    setRefImg(null); setRefPath(null);
+  };
 
   const save = async () => {
     if (!String(num) || Number(num) < 1) { setErr("숏 번호는 1 이상이어야 해요."); return; }
@@ -32,6 +71,7 @@ function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
       shotNumber: Number(num), title: title.trim(), description: desc.trim(),
       shotSize: size, cameraAngle: angle, cameraMovement: move, lens: lens.trim(),
       dialogue: dialogue.trim(), estimatedSeconds: secs === "" ? null : Number(secs), status,
+      referenceImageUrl: refImg, referenceImagePath: refPath,
     };
     try {
       if (isEdit) await updateItem("shots", shot.id, data);
@@ -146,6 +186,31 @@ function ShotFormModal({ shot, scene, nextNumber, uid, onClose }) {
               ))}
             </div>
           </div>
+
+          <div>
+            <span style={labelStyle}>참고 이미지 (콘티)</span>
+            {refImg ? (
+              <div style={{ position: "relative", width: "100%", borderRadius: 12, overflow: "hidden",
+                border: `1px solid ${PS.border}` }}>
+                <img src={refImg} alt="" style={{ width: "100%", maxHeight: 220, objectFit: "contain",
+                  background: PS.bg, display: "block" }} />
+                <button onClick={removeRef} disabled={busy}
+                  style={{ position: "absolute", top: 8, right: 8, width: 28, height: 28, borderRadius: "50%",
+                    background: "rgba(0,0,0,0.6)", border: "none", color: "#fff", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <X size={15} />
+                </button>
+              </div>
+            ) : (
+              <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
+                minHeight: 60, borderRadius: 12, cursor: upPct != null ? "default" : "pointer",
+                background: PS.elev, border: `1px dashed ${PS.border}`, color: PS.sub,
+                fontSize: 12.5, fontWeight: 700 }}>
+                {upPct != null ? `업로드 중... ${upPct}%` : <><ImagePlus size={18} /> 콘티/참고 이미지 올리기</>}
+                <input type="file" accept="image/*" style={{ display: "none" }} onChange={onPickRef} disabled={upPct != null || busy} />
+              </label>
+            )}
+          </div>
         </div>
 
         {err && (
@@ -182,6 +247,7 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
 
   const [sceneId, setSceneId] = useState(initialSceneId || null);
   const [formShot, setFormShot] = useState(null); // null | "new" | shot 객체
+  const [lightbox, setLightbox] = useState(null);  // 참고 이미지 크게 보기
 
   const sortedScenes = [...scenes].sort((a, b) => (a.sceneNumber || 0) - (b.sceneNumber || 0));
   const scene = scenes.find(s => s.id === sceneId);
@@ -192,7 +258,10 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
 
   const removeShot = async (sh) => {
     if (!window.confirm(`${sh.shotNumber}번 숏을 삭제할까요?`)) return;
-    try { await deleteItem("shots", sh.id); }
+    try {
+      await deleteItem("shots", sh.id);
+      if (sh.referenceImagePath) await deleteObject(ref(storage, sh.referenceImagePath)).catch(() => {});
+    }
     catch (e) { console.warn("shot delete error:", e); alert("삭제에 실패했어요."); }
   };
 
@@ -272,6 +341,11 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
                       )}
                     </div>
                   )}
+                  {sh.referenceImageUrl && (
+                    <img src={sh.referenceImageUrl} alt="" onClick={() => setLightbox(sh.referenceImageUrl)}
+                      style={{ width: "100%", maxHeight: 180, objectFit: "cover", borderRadius: 10, marginTop: 9,
+                        border: `1px solid ${PS.border}`, cursor: "pointer", display: "block" }} />
+                  )}
                   {sh.title && sh.description && (
                     <div style={{ fontSize: 12.5, color: PS.sub, lineHeight: 1.55, marginTop: 8, whiteSpace: "pre-wrap" }}>
                       {sh.description}
@@ -312,6 +386,20 @@ export default function ShotsScreen({ project, initialSceneId, onBack }) {
             shot={formShot === "new" ? null : formShot}
             scene={scene} nextNumber={nextNumber} uid={uid}
             onClose={() => setFormShot(null)} />
+        )}
+
+        {lightbox && (
+          <div onClick={() => setLightbox(null)}
+            style={{ position: "fixed", inset: 0, zIndex: 9999, background: "rgba(0,0,0,0.92)",
+              display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+            <img src={lightbox} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain", borderRadius: 8 }} />
+            <button onClick={() => setLightbox(null)}
+              style={{ position: "fixed", top: 20, right: 20, width: 42, height: 42, borderRadius: "50%",
+                background: "rgba(255,255,255,0.12)", border: "none", color: "#fff", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <X size={22} />
+            </button>
+          </div>
         )}
       </div>
     );

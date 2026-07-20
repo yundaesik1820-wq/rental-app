@@ -475,6 +475,63 @@ exports.parseTimetableImage = functions
     return { classes };
   });
 
+// ── Project Studio AI 프로덕션 매니저 (Claude) ──────────────
+// 클라이언트가 프로젝트 데이터 요약(context)과 질문(message)을 보내면
+// Claude가 실용적 조언 + 추천 할 일을 구조화 출력으로 반환.
+const PS_ASSISTANT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    answer: { type: "string", description: "한국어 반말로 3~5문장의 실용적 답변" },
+    suggestedTasks: {
+      type: "array",
+      items: { type: "string" },
+      description: "추가하면 좋을 할 일 목록 (없으면 빈 배열). 각 항목은 짧은 문장.",
+    },
+  },
+  required: ["answer", "suggestedTasks"],
+};
+
+exports.projectStudioAssistant = functions
+  .runWith({ secrets: ["ANTHROPIC_API_KEY"], timeoutSeconds: 60, memory: "512MB" })
+  .https.onCall(async (data, context) => {
+    if (!context.auth)
+      throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
+
+    const projectContext = String(data?.context || "").slice(0, 8000);
+    const message = String(data?.message || "").trim().slice(0, 1000);
+    if (!message)
+      throw new functions.https.HttpsError("invalid-argument", "질문이 없습니다.");
+
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const system =
+      "너는 학생 영상 제작을 돕는 '프로덕션 매니저 AI'야. 주어진 프로젝트 데이터만 근거로 " +
+      "구체적이고 실용적인 조언을 한국어 반말로 짧게(3~5문장) 해줘. " +
+      "데이터를 직접 수정하지 말고, 할 일을 추천할 땐 suggestedTasks 배열에 담아(추천할 게 없으면 빈 배열). " +
+      "데이터에 없는 정보는 지어내지 말고 모른다고 해. 촬영 현장·일정·예산·장비·캐스팅 실무 관점으로 답해.";
+
+    let parsed;
+    try {
+      const resp = await client.messages.create({
+        model: "claude-opus-4-8",
+        max_tokens: 2000,
+        system,
+        output_config: { format: { type: "json_schema", schema: PS_ASSISTANT_SCHEMA } },
+        messages: [{ role: "user", content: `[프로젝트 데이터]\n${projectContext}\n\n[질문]\n${message}` }],
+      });
+      const textBlock = (resp.content || []).find((b) => b.type === "text");
+      parsed = JSON.parse(textBlock.text);
+    } catch (e) {
+      console.error("projectStudioAssistant 실패:", e);
+      throw new functions.https.HttpsError("internal", "AI 응답 생성에 실패했어요. 잠시 후 다시 시도해줘.");
+    }
+
+    return {
+      answer: parsed.answer || "",
+      suggestedTasks: Array.isArray(parsed.suggestedTasks) ? parsed.suggestedTasks.slice(0, 8) : [],
+    };
+  });
+
 // ── 매일 오전 9시(KST) 오늘의 퀴즈 자동 등록 ────────────────
 // quizPool에서 아직 안 쓴 문제 하나를 꺼내 quizzes/{오늘날짜}에 등록하고 used 처리.
 async function runDailyQuizPost() {

@@ -2,8 +2,56 @@ import { useState, useRef, useEffect } from "react";
 import { Sparkles, X, Send, Check } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem } from "../../../hooks/useFirestore";
-import { PS } from "./constants";
+import { PS, typeLabel, stageLabel, fmtWon } from "./constants";
 import { answerProjectQuestion } from "./aiService";
+
+// 프로젝트 데이터를 Claude에 보낼 압축 요약으로 (토큰 절약)
+function buildContext(ctx) {
+  const { project, scenes, breakdowns, days, tasks, budget, crew } = ctx;
+  const bdOf = (sid) => breakdowns.find(b => b.sceneId === sid);
+  const L = [];
+  L.push(`프로젝트: ${project.title} (${typeLabel(project.type)}) · 단계 ${stageLabel(project.stage)} · 진행 ${project.progress || 0}%`);
+  if (project.expectedShootDate) L.push(`예상 촬영일 ${project.expectedShootDate}, 완성일 ${project.expectedCompletionDate || "미정"}`);
+  if (project.budgetLimit != null) L.push(`총 예산 ${fmtWon(project.budgetLimit)}`);
+
+  const sortedScenes = [...scenes].sort((a, b) => (a.sceneNumber || 0) - (b.sceneNumber || 0));
+  L.push(`\n[장면 ${scenes.length}개]`);
+  sortedScenes.slice(0, 30).forEach(s => {
+    const bd = bdOf(s.id);
+    const min = bd?.estimatedMinutes ?? s.estimatedMinutes;
+    L.push(`S#${s.sceneNumber} ${s.heading || s.locationName || ""} · 장소 ${s.locationName || "미정"} · ${s.timeOfDay || ""} · 상태 ${s.status || "draft"}${min ? ` · ${min}분` : ""}${bd ? " · 브레이크다운O" : " · 브레이크다운X"}`);
+  });
+
+  const allProps = [...new Set(breakdowns.flatMap(b => b.propNames || []))];
+  const allEquip = [...new Set(breakdowns.flatMap(b => b.equipmentNames || []))];
+  if (allProps.length) L.push(`\n소품: ${allProps.join(", ")}`);
+  if (allEquip.length) L.push(`장비: ${allEquip.join(", ")}`);
+
+  if (days.length) {
+    L.push(`\n[촬영일 ${days.length}개]`);
+    [...days].sort((a, b) => (a.date || "").localeCompare(b.date || "")).forEach(d => {
+      const names = (d.sceneIds || []).map(id => scenes.find(s => s.id === id)?.sceneNumber).filter(Boolean).map(n => `S#${n}`);
+      L.push(`${d.date}${d.title ? ` (${d.title})` : ""}${d.callTime ? ` ${d.callTime}~${d.wrapTime || "?"}` : ""} · 장면 ${names.join(",") || "없음"}`);
+    });
+  }
+
+  const doneTasks = tasks.filter(t => t.status === "done").length;
+  L.push(`\n[할 일] ${doneTasks}/${tasks.length} 완료`);
+  tasks.filter(t => t.status !== "done").slice(0, 15).forEach(t => L.push(`- ${t.title}`));
+
+  if (budget.length) {
+    const planned = budget.reduce((s, b) => s + (b.plannedAmount || 0), 0);
+    const actual = budget.reduce((s, b) => s + (b.actualAmount ?? b.plannedAmount ?? 0), 0);
+    L.push(`\n[예산] 예정 ${fmtWon(planned)} · 집행기준 ${fmtWon(actual)}${project.budgetLimit != null ? ` · 남음 ${fmtWon(project.budgetLimit - actual)}` : ""}`);
+    budget.slice(0, 15).forEach(b => L.push(`- ${b.category} ${b.title}: ${fmtWon(b.plannedAmount)}${b.status === "paid" ? " (지출)" : ""}`));
+  }
+
+  if (crew.length) {
+    L.push(`\n[팀원 ${crew.length}명]`);
+    crew.slice(0, 20).forEach(c => L.push(`- ${c.role}: ${c.name || "미정"} (${c.status})`));
+  }
+  return L.join("\n");
+}
 
 const QUICK = [
   "촬영 준비 상태 알려줘",
@@ -33,22 +81,42 @@ export default function AIManager({ project, canEdit }) {
   ]);
   const [input, setInput] = useState("");
   const [applyingId, setApplyingId] = useState(null);
+  const [thinking, setThinking] = useState(false);
   const scrollRef = useRef(null);
   const bump = useRef(0);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [msgs, open]);
+  }, [msgs, open, thinking]);
 
   const ctx = { project, scenes, breakdowns, days, tasks, budget, crew };
 
-  const ask = (text) => {
+  const ask = async (text) => {
     const q = (text ?? input).trim();
-    if (!q) return;
+    if (!q || thinking) return;
     setInput("");
-    const res = answerProjectQuestion(ctx, q);
-    const id = `m${bump.current++}`;
-    setMsgs(m => [...m, { role: "user", text: q }, { role: "ai", text: res.text, proposal: res.proposal, id }]);
+    setMsgs(m => [...m, { role: "user", text: q }]);
+    setThinking(true);
+    try {
+      // 실제 Claude API 호출 (Cloud Function)
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const fn = httpsCallable(getFunctions(undefined, "us-central1"), "projectStudioAssistant");
+      const { data } = await fn({ context: buildContext(ctx), message: q });
+      const id = `m${bump.current++}`;
+      const suggested = Array.isArray(data.suggestedTasks) ? data.suggestedTasks.filter(Boolean) : [];
+      // 이미 있는 할 일은 제안에서 제외
+      const existing = new Set(tasks.map(t => t.title));
+      const fresh = suggested.filter(t => !existing.has(t));
+      const proposal = fresh.length ? { type: "addTasks", tasks: fresh, label: `할 일 ${fresh.length}개 추가` } : null;
+      setMsgs(m => [...m, { role: "ai", text: data.answer || "(응답 없음)", proposal, id }]);
+    } catch (e) {
+      console.warn("AI assistant error, 규칙기반 폴백:", e);
+      // API 실패 시 규칙 기반으로 폴백 (오프라인/함수 미배포에도 동작)
+      const res = answerProjectQuestion(ctx, q);
+      const id = `m${bump.current++}`;
+      setMsgs(m => [...m, { role: "ai", text: res.text, proposal: res.proposal, id }]);
+    }
+    setThinking(false);
   };
 
   // 변경 제안 적용 (사용자가 눌러야만 실행)
@@ -110,7 +178,7 @@ export default function AIManager({ project, canEdit }) {
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 14.5, fontWeight: 900 }}>AI 프로덕션 매니저</div>
-                <div style={{ fontSize: 11, color: PS.sub }}>규칙 기반 · 프로젝트 데이터를 읽어요</div>
+                <div style={{ fontSize: 11, color: PS.sub }}>Claude AI · 프로젝트 데이터를 읽어요</div>
               </div>
               <button onClick={() => setOpen(false)}
                 style={{ background: "none", border: "none", color: PS.sub, cursor: "pointer", padding: 8, display: "flex" }}>
@@ -157,32 +225,40 @@ export default function AIManager({ project, canEdit }) {
                   </div>
                 </div>
               ))}
+              {thinking && (
+                <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, padding: "11px 14px", borderRadius: 15,
+                    background: PS.surface, border: `1px solid ${PS.border}`, color: PS.sub, fontSize: 13, fontWeight: 600 }}>
+                    <Sparkles size={14} color={PS.primaryLight} /> 생각 중...
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 빠른 질문 */}
             <div style={{ display: "flex", gap: 7, overflowX: "auto", padding: "8px 14px", flexShrink: 0,
               WebkitOverflowScrolling: "touch", borderTop: `1px solid ${PS.border}` }}>
               {QUICK.map(q => (
-                <button key={q} onClick={() => ask(q)}
+                <button key={q} onClick={() => ask(q)} disabled={thinking}
                   style={{ flexShrink: 0, minHeight: 34, background: PS.surface, border: `1px solid ${PS.border}`,
                     borderRadius: 999, color: PS.sub, fontSize: 11.5, fontWeight: 700, padding: "6px 12px",
-                    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>{q}</button>
+                    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", opacity: thinking ? 0.5 : 1 }}>{q}</button>
               ))}
             </div>
 
             {/* 입력 */}
             <div style={{ display: "flex", gap: 8, padding: "10px 14px 18px", flexShrink: 0 }}>
-              <input value={input} placeholder="질문을 입력해보세요"
+              <input value={input} placeholder="질문을 입력해보세요" disabled={thinking}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === "Enter") ask(); }}
                 style={{ flex: 1, minWidth: 0, minHeight: 46, boxSizing: "border-box",
                   background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 13,
                   color: PS.text, fontSize: 14, padding: "11px 14px", outline: "none", fontFamily: "inherit" }} />
-              <button onClick={() => ask()} disabled={!input.trim()}
+              <button onClick={() => ask()} disabled={!input.trim() || thinking}
                 style={{ width: 46, minHeight: 46, flexShrink: 0, borderRadius: 13, cursor: "pointer",
-                  background: input.trim() ? PS.primary : PS.surface,
-                  border: `1px solid ${input.trim() ? PS.primary : PS.border}`,
-                  color: input.trim() ? "#fff" : PS.sub,
+                  background: (input.trim() && !thinking) ? PS.primary : PS.surface,
+                  border: `1px solid ${(input.trim() && !thinking) ? PS.primary : PS.border}`,
+                  color: (input.trim() && !thinking) ? "#fff" : PS.sub,
                   display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <Send size={18} />
               </button>
