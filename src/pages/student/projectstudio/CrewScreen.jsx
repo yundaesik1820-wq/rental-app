@@ -206,6 +206,7 @@ function CrewFormModal({ member, project, crew, uid, profile, onClose }) {
 // ===== 모집글 미리보기 모달 (요청서 12번 — 프로젝트 정보 자동 입력 → 커뮤니티 실제 등록) =====
 function RecruitModal({ member, project, scenes, days, profile, onClose, onRegistered }) {
   const [busy, setBusy] = useState(false);
+  const [editing, setEditing] = useState(false);
   const alreadyPosted = !!member.recruitPostId;
 
   const locations = [...new Set(scenes.map(s => s.locationName).filter(Boolean))];
@@ -213,27 +214,29 @@ function RecruitModal({ member, project, scenes, days, profile, onClose, onRegis
   const shootDate = dates[0] || project.expectedShootDate;
   const totalMin = scenes.reduce((sum, s) => sum + (s.estimatedMinutes || 0), 0);
 
-  const lines = [
+  // 자동 채워지는 요약 정보(구조화 필드로 등록됨 — 읽기 전용)
+  const metaLines = [
     `🎬 [${typeLabel(project.type)}] ${project.title}`,
-    ``,
     `📌 모집 포지션: ${member.role}`,
     shootDate ? `📅 촬영 예정일: ${shootDate}${dates.length > 1 ? ` 외 ${dates.length - 1}일` : ""}` : null,
     locations.length > 0 ? `📍 촬영 장소: ${locations.join(", ")}` : null,
     totalMin > 0 ? `⏱ 예상 촬영 시간: 약 ${Math.ceil(totalMin / 60)}시간` : null,
     `📈 프로젝트 진행: ${stageLabel(project.stage)} · ${Math.max(0, Math.min(100, project.progress || 0))}%`,
-    ``,
-    project.description ? `${project.description}` : `함께 작품을 완성할 ${member.role} 팀원을 찾고 있어요!`,
-    ``,
-    `관심 있으신 분은 댓글이나 쪽지 주세요 🙌`,
   ].filter(v => v !== null);
+
+  // 소개글 — 수정 가능 (실제 글의 본문/로그라인으로 저장됨)
+  const defaultIntro = `${(project.description || "").trim() || `함께 작품을 완성할 ${member.role} 팀원을 찾고 있어요!`}\n\n관심 있으신 분은 댓글이나 지원버튼으로 연락주세요!`;
+  const [intro, setIntro] = useState(defaultIntro);
 
   const register = async () => {
     if (alreadyPosted) return;
+    if (!intro.trim()) { alert("소개글을 입력해주세요."); return; }
     setBusy(true);
     try {
       const adapter = createCommunityRecruitmentAdapter({ profile });
       const { postId } = await adapter.createRecruitmentPost(project, member.role, {
         shootDate, extraDays: Math.max(0, dates.length - 1), locations, totalMinutes: totalMin,
+        intro: intro.trim(),
       });
       // 중복 등록 방지 — 팀원 항목에 생성된 글 id 기록
       await updateItem("crewMembers", member.id, { recruitPostId: postId });
@@ -267,23 +270,62 @@ function RecruitModal({ member, project, scenes, days, profile, onClose, onRegis
           프로젝트 정보가 자동으로 채워졌어요
         </div>
 
+        {/* 자동 요약 (읽기 전용) */}
         <div style={{ background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 13,
-          padding: "14px 15px", fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
-          {lines.join("\n")}
+          padding: "13px 15px", fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
+          {metaLines.join("\n")}
         </div>
+
+        {/* 소개글 (수정 가능) */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "14px 0 7px" }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, color: PS.sub }}>소개글</span>
+          {!alreadyPosted && (
+            <button onClick={() => setEditing(e => !e)}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none",
+                color: PS.primaryLight, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
+              <Pencil size={12} /> {editing ? "미리보기" : "수정"}
+            </button>
+          )}
+        </div>
+        {editing ? (
+          <textarea value={intro} maxLength={1000} disabled={busy} rows={6} autoFocus
+            onChange={e => setIntro(e.target.value)}
+            style={{ width: "100%", boxSizing: "border-box", resize: "vertical",
+              background: PS.elev, border: `1px solid ${PS.primary}66`, borderRadius: 12,
+              color: PS.text, fontSize: 13.5, padding: "12px 14px", outline: "none",
+              fontFamily: "inherit", lineHeight: 1.65 }} />
+        ) : (
+          <div style={{ background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 12,
+            padding: "13px 15px", fontSize: 13.5, lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "keep-all",
+            color: intro.trim() ? PS.text : PS.sub }}>
+            {intro.trim() || "소개글을 입력해주세요."}
+          </div>
+        )}
 
         <div style={{ fontSize: 11.5, color: PS.sub, marginTop: 10, lineHeight: 1.55 }}>
           등록하면 커뮤니티 <b style={{ color: PS.primaryLight }}>크루 메이커스</b>에 협업모집 글로 올라가요.
         </div>
 
-        <button onClick={register} disabled={busy || alreadyPosted}
-          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: alreadyPosted ? "default" : "pointer", marginTop: 12,
-            background: alreadyPosted ? PS.elev : `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
-            border: alreadyPosted ? `1px solid ${PS.border}` : "none",
-            color: alreadyPosted ? PS.success : "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
-            opacity: busy ? 0.7 : 1 }}>
-          {alreadyPosted ? "✓ 이미 커뮤니티에 등록됨" : busy ? "등록 중..." : "크루 메이커스에 모집글 등록"}
-        </button>
+        {/* 하단 버튼: [수정] [등록] */}
+        <div style={{ display: "flex", gap: 9, marginTop: 12 }}>
+          {!alreadyPosted && (
+            <button onClick={() => setEditing(e => !e)} disabled={busy}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                minHeight: 48, padding: "0 18px", borderRadius: 12, cursor: "pointer",
+                background: "transparent", border: `1px solid ${PS.border}`, color: PS.text,
+                fontSize: 13.5, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap" }}>
+              <Pencil size={14} /> {editing ? "완료" : "수정"}
+            </button>
+          )}
+          <button onClick={register} disabled={busy || alreadyPosted}
+            style={{ flex: 1, minHeight: 48, borderRadius: 12, cursor: alreadyPosted ? "default" : "pointer",
+              background: alreadyPosted ? PS.elev : `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+              border: alreadyPosted ? `1px solid ${PS.border}` : "none",
+              color: alreadyPosted ? PS.success : "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+              opacity: busy ? 0.7 : 1 }}>
+            {alreadyPosted ? "✓ 이미 커뮤니티에 등록됨" : busy ? "등록 중..." : "크루 메이커스에 등록"}
+          </button>
+        </div>
       </div>
     </div>
   );

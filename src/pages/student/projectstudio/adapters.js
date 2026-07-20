@@ -55,8 +55,11 @@ export function createCommunityRecruitmentAdapter({ profile }) {
      * @returns { postId }
      */
     async createRecruitmentPost(project, crewRole, opts = {}) {
-      const { shootDate = "", extraDays = 0, locations = [], totalMinutes = 0, deadline = "" } = opts;
-      const intro = (project.description || "").trim() || `함께 작품을 완성할 ${crewRole} 팀원을 찾고 있어요!`;
+      const { shootDate = "", extraDays = 0, locations = [], totalMinutes = 0, deadline = "", intro: introOverride } = opts;
+      // 작성자가 미리보기에서 수정한 소개글이 있으면 그걸 우선 사용
+      const intro = (introOverride || "").trim()
+        || (project.description || "").trim()
+        || `함께 작품을 완성할 ${crewRole} 팀원을 찾고 있어요!`;
       const scheduleStr = shootDate ? `${shootDate}${extraDays > 0 ? ` 외 ${extraDays}일` : ""}` : "";
       const runtimeStr = totalMinutes > 0 ? `약 ${Math.ceil(totalMinutes / 60)}시간 촬영 예상` : "";
 
