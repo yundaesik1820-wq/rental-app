@@ -9,6 +9,9 @@ import ProjectDashboard from "./ProjectDashboard";
 import ScriptScreen from "./ScriptScreen";
 import ShotsScreen from "./ShotsScreen";
 import ScheduleScreen from "./ScheduleScreen";
+import CrewScreen from "./CrewScreen";
+import EquipmentScreen from "./EquipmentScreen";
+import BudgetScreen from "./BudgetScreen";
 
 // 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
 // initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
@@ -47,8 +50,8 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   if (view === "create") {
     return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
   }
-  // 서브 화면 ("script:" | "shots:" | "schedule:" + 프로젝트 id)
-  if (typeof view === "string" && /^(script|shots|schedule):/.test(view)) {
+  // 서브 화면 ("script:" | "shots:" | "schedule:" | "crew:" | "equipment:" | "budget:" + 프로젝트 id)
+  if (typeof view === "string" && /^(script|shots|schedule|crew|equipment|budget):/.test(view)) {
     const [screen, pid] = [view.split(":")[0], view.split(":")[1]];
     const project = projects.find(p => p.id === pid);
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
@@ -74,6 +77,15 @@ export default function ProjectStudio({ initialView, onConsumed }) {
     if (screen === "schedule") {
       return <ScheduleScreen project={project} onBack={() => setView(pid)} />;
     }
+    if (screen === "crew") {
+      return <CrewScreen project={project} onBack={() => setView(pid)} />;
+    }
+    if (screen === "equipment") {
+      return <EquipmentScreen project={project} onBack={() => setView(pid)} />;
+    }
+    if (screen === "budget") {
+      return <BudgetScreen project={project} onBack={() => setView(pid)} />;
+    }
     return <ScriptScreen project={project} onBack={() => setView(pid)}
       onOpenShots={(scene) => { setShotsSceneId(scene.id); setView("shots:" + pid); }} />;
   }
@@ -84,7 +96,8 @@ export default function ProjectStudio({ initialView, onConsumed }) {
     return <ProjectDashboard project={project} onBack={() => setView("list")}
       onOpenScript={() => setView("script:" + project.id)}
       onOpenShots={() => { setShotsSceneId(null); setView("shots:" + project.id); }}
-      onOpenSchedule={() => setView("schedule:" + project.id)} />;
+      onOpenSchedule={() => setView("schedule:" + project.id)}
+      onOpenMenuScreen={(key) => setView(key + ":" + project.id)} />;
   }
 
   // ===== 목록 =====

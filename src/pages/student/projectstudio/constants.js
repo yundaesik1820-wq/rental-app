@@ -49,9 +49,9 @@ export const WORKSPACE_MENUS = [
   { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: true },
   { key: "casting",   label: "캐스팅",          icon: Users,        ready: false },
   { key: "locations", label: "로케이션",        icon: MapPin,       ready: false },
-  { key: "equipment", label: "장비",            icon: Wrench,       ready: false },
-  { key: "budget",    label: "예산",            icon: Wallet,       ready: false },
-  { key: "crew",      label: "팀원",            icon: UserPlus,     ready: false },
+  { key: "equipment", label: "장비",            icon: Wrench,       ready: true },
+  { key: "budget",    label: "예산",            icon: Wallet,       ready: true },
+  { key: "crew",      label: "팀원",            icon: UserPlus,     ready: true },
   { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: false },
 ];
 
@@ -120,6 +120,64 @@ export function newShootDay({ projectId, ownerId, date }) {
     locationIds: [], sceneIds: [], notes: "",
   };
 }
+
+// ===== 팀원/장비/예산 (Phase 5) =====
+// 크루 포지션 (Community.jsx CREW_POSITIONS와 동일 축 — 모집글 연동 대비)
+export const CREW_ROLES = [
+  "제작/기획", "연출/작가", "촬영", "조명", "동시녹음/음향", "미술/소품/세트",
+  "분장/의상", "편집/D.I", "음악/사운드 후반", "배우/출연", "운송", "기타",
+];
+export const CREW_STATUS = [
+  { value: "confirmed",  label: "확정",   color: "#2BD9A0" },
+  { value: "invited",    label: "섭외 중", color: "#FFB84D" },
+  { value: "recruiting", label: "모집 중", color: "#7357FF" },
+];
+export const crewStatus = (v) => CREW_STATUS.find(s => s.value === v) || CREW_STATUS[0];
+
+/** CrewMember 문서 기본값 팩토리 (요청서 12번) */
+export function newCrewMember({ projectId, ownerId, role }) {
+  return {
+    projectId, ownerId, userId: null,
+    name: "", role, status: "confirmed",
+    contact: "", portfolioUrl: "",
+  };
+}
+
+// 예약 상태 (요청서 11번 reservationStatus)
+export const EQUIP_RESERVATION_STATUS = [
+  { value: "not_requested", label: "미신청",   color: "#A8ABB7" },
+  { value: "added_to_cart", label: "장바구니", color: "#7357FF" },
+  { value: "reserved",      label: "예약됨",   color: "#2BD9A0" },
+  { value: "unavailable",   label: "대여불가", color: "#FF5364" },
+];
+export const equipResStatus = (v) => EQUIP_RESERVATION_STATUS.find(s => s.value === v) || EQUIP_RESERVATION_STATUS[0];
+
+/** ProjectEquipment 문서 기본값 팩토리 (요청서 11번) */
+export function newProjectEquipment({ projectId, ownerId, customName, equipmentModel }) {
+  return {
+    projectId, ownerId,
+    equipmentId: null,                       // 학교 장비 개체 id는 예약 시 배정 — MVP는 모델명 연동
+    equipmentModel: equipmentModel || null,  // 학교 장비 모델명 (장바구니 연동 키)
+    customName: customName || null,          // 직접 입력 장비명
+    quantity: 1, sceneIds: [], shootDayIds: [],
+    reservationStatus: "not_requested",
+  };
+}
+
+// 예산 카테고리 (요청서 13번)
+export const BUDGET_CATEGORIES = ["장비", "로케이션", "미술", "의상", "교통", "식비", "출연료", "인건비", "후반작업", "기타"];
+
+/** BudgetItem 문서 기본값 팩토리 (요청서 13번) */
+export function newBudgetItem({ projectId, ownerId, category }) {
+  return {
+    projectId, ownerId, category,
+    title: "", plannedAmount: 0, actualAmount: null,
+    status: "planned",                       // planned | paid
+    notes: "",
+  };
+}
+
+export const fmtWon = (n) => (n == null ? "-" : `${Number(n).toLocaleString()}원`);
 
 /**
  * Project 문서 기본값 팩토리 (요청서 16번 Project 모델의 JS 버전)

@@ -5,7 +5,7 @@ import ProjectTasks from "./ProjectTasks";
 import ProjectEditModal from "./ProjectEditModal";
 
 // 프로젝트 대시보드 (Phase 2 — 기본 정보 + 할 일 + 워크스페이스 메뉴 + 수정/보관)
-export default function ProjectDashboard({ project, onBack, onOpenScript, onOpenShots, onOpenSchedule }) {
+export default function ProjectDashboard({ project, onBack, onOpenScript, onOpenShots, onOpenSchedule, onOpenMenuScreen }) {
   const [showEdit, setShowEdit] = useState(false);
   const [menuToast, setMenuToast] = useState("");
   const toastTimer = useRef(null);
@@ -36,6 +36,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
     if (m.key === "script" || m.key === "breakdown") { onOpenScript && onOpenScript(); return; }
     if (m.key === "shots") { onOpenShots && onOpenShots(); return; }
     if (m.key === "schedule") { onOpenSchedule && onOpenSchedule(); return; }
+    if (["crew", "equipment", "budget"].includes(m.key)) { onOpenMenuScreen && onOpenMenuScreen(m.key); return; }
     if (!m.ready) {
       setMenuToast(`${m.label}는 다음 업데이트에 추가돼요!`);
       clearTimeout(toastTimer.current);

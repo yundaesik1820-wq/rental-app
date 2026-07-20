@@ -1,0 +1,361 @@
+import { useState, useRef, useEffect } from "react";
+import { ArrowLeft, Plus, X, UserPlus, Megaphone, Pencil, Trash2, Link2, Phone } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth.jsx";
+import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
+import {
+  PS, CREW_ROLES, CREW_STATUS, crewStatus, newCrewMember, typeLabel, stageLabel,
+} from "./constants";
+import { communityRecruitmentAdapter } from "./adapters";
+
+// ===== 팀원 추가/수정 모달 (backdrop 닫기 없음) =====
+function CrewFormModal({ member, projectId, uid, onClose }) {
+  const isEdit = !!member;
+  const [role, setRole] = useState(member?.role || null);
+  const [customRole, setCustomRole] = useState(
+    member && !CREW_ROLES.includes(member.role) ? member.role : ""
+  );
+  const [name, setName]     = useState(member?.name || "");
+  const [status, setStatus] = useState(member?.status || "confirmed");
+  const [contact, setContact]     = useState(member?.contact || "");
+  const [portfolio, setPortfolio] = useState(member?.portfolioUrl || "");
+  const [err, setErr]   = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const isCustom = role === "기타" || (member && !CREW_ROLES.includes(member.role) && role === member.role);
+
+  const save = async () => {
+    const finalRole = role === "기타" ? customRole.trim() : role;
+    if (!finalRole) { setErr("포지션을 선택해주세요."); return; }
+    if (status !== "recruiting" && !name.trim()) { setErr("이름을 입력해주세요. (모집 중이면 비워도 돼요)"); return; }
+    setErr("");
+    setBusy(true);
+    const data = {
+      role: finalRole, name: name.trim(), status,
+      contact: contact.trim(), portfolioUrl: portfolio.trim(),
+    };
+    try {
+      if (isEdit) await updateItem("crewMembers", member.id, data);
+      else await addItem("crewMembers", { ...newCrewMember({ projectId, ownerId: uid, role: finalRole }), ...data });
+      onClose();
+    } catch (e) {
+      console.warn("crew save error:", e);
+      setErr("저장에 실패했어요. 잠시 후 다시 시도해주세요.");
+      setBusy(false);
+    }
+  };
+
+  const inputStyle = {
+    width: "100%", boxSizing: "border-box", minHeight: 42,
+    background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
+    color: PS.text, fontSize: 13.5, padding: "9px 12px", outline: "none", fontFamily: "inherit",
+  };
+  const labelStyle = { fontSize: 12.5, fontWeight: 700, color: PS.sub, marginBottom: 6, display: "block" };
+  const chip = (on) => ({
+    padding: "7px 11px", minHeight: 34, borderRadius: 999, cursor: "pointer",
+    background: on ? PS.primary : PS.elev, border: `1px solid ${on ? PS.primary : PS.border}`,
+    color: on ? "#fff" : PS.sub, fontSize: 11.5, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap",
+  });
+
+  return (
+    <div
+      style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div
+        style={{ width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto",
+          background: PS.surface, borderRadius: "20px 20px 0 0",
+          border: `1px solid ${PS.border}`, borderBottom: "none",
+          padding: "18px 18px 28px", color: PS.text, boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <span style={{ fontSize: 16, fontWeight: 900 }}>{isEdit ? "팀원 수정" : "팀원 추가"}</span>
+          <button onClick={onClose} disabled={busy}
+            style={{ background: "none", border: "none", color: PS.sub, cursor: "pointer", padding: 8, display: "flex" }}>
+            <X size={19} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <span style={labelStyle}>포지션 <b style={{ color: PS.primaryLight }}>*</b></span>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {CREW_ROLES.map(r => (
+                <button key={r} onClick={() => setRole(r)} disabled={busy}
+                  style={chip(role === r || (r !== "기타" && role === r))}>{r}</button>
+              ))}
+            </div>
+            {role === "기타" && (
+              <input style={{ ...inputStyle, marginTop: 8 }} value={customRole} maxLength={20} disabled={busy}
+                placeholder="포지션 직접 입력" onChange={e => setCustomRole(e.target.value)} />
+            )}
+          </div>
+
+          <div>
+            <span style={labelStyle}>상태</span>
+            <div style={{ display: "flex", gap: 6 }}>
+              {CREW_STATUS.map(s => (
+                <button key={s.value} onClick={() => setStatus(s.value)} disabled={busy}
+                  style={{ ...chip(status === s.value), flex: 1 }}>{s.label}</button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span style={labelStyle}>이름 {status !== "recruiting" && <b style={{ color: PS.primaryLight }}>*</b>}</span>
+            <input style={inputStyle} value={name} maxLength={20} disabled={busy}
+              placeholder={status === "recruiting" ? "모집 중이면 비워도 돼요" : "예) 윤대식"}
+              onChange={e => setName(e.target.value)} />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <div>
+              <span style={labelStyle}>연락처 (선택)</span>
+              <input style={inputStyle} value={contact} maxLength={40} disabled={busy}
+                placeholder="전화/카톡ID 등" onChange={e => setContact(e.target.value)} />
+            </div>
+            <div>
+              <span style={labelStyle}>포트폴리오 (선택)</span>
+              <input style={inputStyle} value={portfolio} maxLength={200} disabled={busy}
+                placeholder="URL" onChange={e => setPortfolio(e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {err && (
+          <div style={{ background: `${PS.danger}14`, border: `1px solid ${PS.danger}55`, color: PS.danger,
+            borderRadius: 11, padding: "10px 13px", fontSize: 13, fontWeight: 600, marginTop: 14 }}>{err}</div>
+        )}
+
+        <button onClick={save} disabled={busy}
+          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: "pointer", marginTop: 18,
+            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: "none", color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+            opacity: busy ? 0.7 : 1 }}>
+          {busy ? "저장 중..." : isEdit ? "수정 저장" : "팀원 추가"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ===== 모집글 미리보기 모달 (요청서 12번 — 프로젝트 정보 자동 입력, mock 등록) =====
+function RecruitModal({ member, project, scenes, days, onClose, onRegistered }) {
+  const [busy, setBusy] = useState(false);
+
+  const locations = [...new Set(scenes.map(s => s.locationName).filter(Boolean))];
+  const dates = days.map(d => d.date).sort();
+  const shootDate = dates[0] || project.expectedShootDate;
+  const totalMin = scenes.reduce((sum, s) => sum + (s.estimatedMinutes || 0), 0);
+
+  const lines = [
+    `🎬 [${typeLabel(project.type)}] ${project.title}`,
+    ``,
+    `📌 모집 포지션: ${member.role}`,
+    shootDate ? `📅 촬영 예정일: ${shootDate}${dates.length > 1 ? ` 외 ${dates.length - 1}일` : ""}` : null,
+    locations.length > 0 ? `📍 촬영 장소: ${locations.join(", ")}` : null,
+    totalMin > 0 ? `⏱ 예상 촬영 시간: 약 ${Math.ceil(totalMin / 60)}시간` : null,
+    `📈 프로젝트 진행: ${stageLabel(project.stage)} · ${Math.max(0, Math.min(100, project.progress || 0))}%`,
+    ``,
+    project.description ? `${project.description}` : `함께 작품을 완성할 ${member.role} 팀원을 찾고 있어요!`,
+    ``,
+    `관심 있으신 분은 댓글이나 쪽지 주세요 🙌`,
+  ].filter(v => v !== null);
+
+  const register = async () => {
+    setBusy(true);
+    try {
+      await communityRecruitmentAdapter.createRecruitmentPost(project.id, member.role);
+      onRegistered();
+    } catch (e) {
+      console.warn("recruit mock error:", e);
+      alert("등록 준비에 실패했어요.");
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div onClick={onClose}
+      style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
+        backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ width: "100%", maxWidth: 560, maxHeight: "88vh", overflowY: "auto",
+          background: PS.surface, borderRadius: "20px 20px 0 0",
+          border: `1px solid ${PS.border}`, borderBottom: "none",
+          padding: "18px 18px 28px", color: PS.text, boxSizing: "border-box" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
+          <Megaphone size={16} color={PS.primaryLight} />
+          <span style={{ fontSize: 16, fontWeight: 900 }}>크루 모집글 미리보기</span>
+          <button onClick={onClose} disabled={busy}
+            style={{ background: "none", border: "none", color: PS.sub, cursor: "pointer",
+              padding: 8, display: "flex", marginLeft: "auto" }}>
+            <X size={19} />
+          </button>
+        </div>
+        <div style={{ fontSize: 12, color: PS.sub, marginBottom: 14 }}>
+          프로젝트 정보가 자동으로 채워졌어요
+        </div>
+
+        <div style={{ background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 13,
+          padding: "14px 15px", fontSize: 13, lineHeight: 1.75, whiteSpace: "pre-wrap", wordBreak: "keep-all" }}>
+          {lines.join("\n")}
+        </div>
+
+        <button onClick={register} disabled={busy}
+          style={{ width: "100%", minHeight: 48, borderRadius: 12, cursor: "pointer", marginTop: 16,
+            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: "none", color: "#fff", fontSize: 14, fontWeight: 800, fontFamily: "inherit",
+            opacity: busy ? 0.7 : 1 }}>
+          {busy ? "준비 중..." : "모집글 초안 저장 (커뮤니티 등록은 곧 제공)"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ===== 팀원 화면 =====
+export default function CrewScreen({ project, onBack }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+
+  const opts = () => uid ? { where: [["projectId", "==", project.id], ["ownerId", "==", uid]] } : { enabled: false };
+  const { data: crew, loading } = useCollection("crewMembers", null, opts());
+  const { data: scenes } = useCollection("scenes", null, opts());
+  const { data: days }   = useCollection("shootDays", null, opts());
+
+  const [formMember, setFormMember] = useState(null); // null | "new" | member
+  const [recruitFor, setRecruitFor] = useState(null); // 모집글 미리보기 대상 member
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef(null);
+  useEffect(() => () => clearTimeout(toastTimer.current), []);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2600);
+  };
+
+  // 포지션 순서 → 등록순
+  const sorted = [...crew].sort((a, b) => {
+    const ai = CREW_ROLES.indexOf(a.role), bi = CREW_ROLES.indexOf(b.role);
+    return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi)
+      || (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+  });
+
+  const removeMember = async (m) => {
+    if (!window.confirm(`${m.role}${m.name ? ` ${m.name}` : ""} 항목을 삭제할까요?`)) return;
+    try { await deleteItem("crewMembers", m.id); }
+    catch (e) { console.warn("crew delete error:", e); alert("삭제에 실패했어요."); }
+  };
+
+  return (
+    <div style={{ padding: "4px 2px 24px", color: PS.text }}>
+      <button onClick={onBack}
+        style={{ background: "none", border: "none", color: PS.sub, cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 5, fontSize: 13, fontWeight: 600,
+          padding: "8px 4px", minHeight: 44, fontFamily: "inherit" }}>
+        <ArrowLeft size={17} /> {project.title}
+      </button>
+
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", margin: "6px 0 14px" }}>
+        <div>
+          <div style={{ fontSize: 19, fontWeight: 900 }}>팀원</div>
+          <div style={{ fontSize: 12, color: PS.sub, marginTop: 3 }}>
+            {crew.length > 0
+              ? `확정 ${crew.filter(m => m.status === "confirmed").length} · 섭외 중 ${crew.filter(m => m.status === "invited").length} · 모집 중 ${crew.filter(m => m.status === "recruiting").length}`
+              : "함께할 크루를 정리해보세요"}
+          </div>
+        </div>
+        <button onClick={() => setFormMember("new")}
+          style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 42, flexShrink: 0,
+            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: "none", borderRadius: 11, color: "#fff", fontSize: 12.5, fontWeight: 800,
+            padding: "9px 13px", cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+          <Plus size={15} /> 팀원 추가
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: "30px 0", textAlign: "center", fontSize: 13, color: PS.sub }}>불러오는 중...</div>
+      ) : sorted.length === 0 ? (
+        <div style={{ background: PS.surface, border: `1px dashed ${PS.border}`, borderRadius: 18,
+          padding: "38px 20px", textAlign: "center" }}>
+          <UserPlus size={28} color={PS.sub} style={{ marginBottom: 10 }} />
+          <div style={{ fontSize: 14.5, fontWeight: 800, marginBottom: 5 }}>아직 팀원이 없어요</div>
+          <div style={{ fontSize: 12.5, color: PS.sub }}>포지션별로 확정 팀원과 모집할 자리를 정리해보세요.</div>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {sorted.map(m => {
+            const st = crewStatus(m.status);
+            return (
+              <div key={m.id}
+                style={{ background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 14,
+                  padding: "12px 14px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: PS.primaryLight, flexShrink: 0, minWidth: 74 }}>
+                    {m.role}
+                  </span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700,
+                    color: m.name ? PS.text : PS.sub,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {m.name || "미정"}
+                  </span>
+                  {m.contact && <Phone size={13} color={PS.sub} style={{ flexShrink: 0 }} />}
+                  {m.portfolioUrl && <Link2 size={13} color={PS.sub} style={{ flexShrink: 0 }} />}
+                  <span style={{ fontSize: 10.5, fontWeight: 800, color: st.color, flexShrink: 0,
+                    background: `${st.color}1A`, border: `1px solid ${st.color}44`,
+                    padding: "3px 8px", borderRadius: 999, whiteSpace: "nowrap" }}>
+                    {st.label}
+                  </span>
+                </div>
+                <div style={{ display: "flex", gap: 7, marginTop: 9 }}>
+                  {m.status === "recruiting" && (
+                    <button onClick={() => setRecruitFor(m)}
+                      style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                        background: `${PS.primary}1A`, border: `1px solid ${PS.primary}55`, borderRadius: 10,
+                        color: PS.primaryLight, fontSize: 11.5, fontWeight: 800, padding: "7px 11px",
+                        cursor: "pointer", fontFamily: "inherit" }}>
+                      <Megaphone size={13} /> 모집글 미리보기
+                    </button>
+                  )}
+                  <button onClick={() => setFormMember(m)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                      background: PS.elev, border: `1px solid ${PS.border}`, borderRadius: 10,
+                      color: PS.text, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
+                      cursor: "pointer", fontFamily: "inherit" }}>
+                    <Pencil size={12} /> 수정
+                  </button>
+                  <button onClick={() => removeMember(m)}
+                    style={{ display: "flex", alignItems: "center", gap: 5, minHeight: 36,
+                      background: PS.elev, border: `1px solid ${PS.danger}44`, borderRadius: 10,
+                      color: PS.danger, fontSize: 11.5, fontWeight: 700, padding: "7px 11px",
+                      cursor: "pointer", fontFamily: "inherit" }}>
+                    <Trash2 size={12} /> 삭제
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* 토스트 */}
+      {toast && (
+        <div style={{ position: "fixed", left: "50%", bottom: 96, transform: "translateX(-50%)",
+          background: "rgba(23,26,35,0.97)", border: `1px solid ${PS.border}`,
+          color: PS.text, fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap",
+          padding: "10px 16px", borderRadius: 999, zIndex: 300,
+          boxShadow: "0 4px 20px rgba(0,0,0,0.5)" }}>{toast}</div>
+      )}
+
+      {/* 모달들 */}
+      {formMember && (
+        <CrewFormModal member={formMember === "new" ? null : formMember}
+          projectId={project.id} uid={uid} onClose={() => setFormMember(null)} />
+      )}
+      {recruitFor && (
+        <RecruitModal member={recruitFor} project={project} scenes={scenes} days={days}
+          onClose={() => setRecruitFor(null)}
+          onRegistered={() => { setRecruitFor(null); showToast("모집글 초안이 준비됐어요! 커뮤니티 등록은 곧 제공돼요."); }} />
+      )}
+    </div>
+  );
+}
