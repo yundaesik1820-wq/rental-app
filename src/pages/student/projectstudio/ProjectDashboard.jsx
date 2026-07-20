@@ -66,7 +66,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
         border: `1px solid ${PS.primary}33`, borderRadius: 18, padding: 18, marginTop: 6,
         position: "relative",
       }}>
-        {isOwner ? (
+        {canEdit && (
           <button onClick={() => setShowEdit(true)}
             style={{
               position: "absolute", top: 10, right: 10, width: 40, height: 40,
@@ -76,9 +76,10 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
             }}>
             <Settings2 size={17} />
           </button>
-        ) : (
+        )}
+        {!isOwner && (
           <span style={{
-            position: "absolute", top: 14, right: 12, display: "flex", alignItems: "center", gap: 4,
+            position: "absolute", top: 14, right: canEdit ? 58 : 12, display: "flex", alignItems: "center", gap: 4,
             fontSize: 10.5, fontWeight: 800, color: PS.sub,
             background: "rgba(255,255,255,0.06)", border: `1px solid ${PS.border}`,
             padding: "4px 9px", borderRadius: 999,
@@ -160,6 +161,7 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
       {showEdit && (
         <ProjectEditModal
           project={project}
+          isOwner={isOwner}
           onClose={() => setShowEdit(false)}
           onArchived={() => { setShowEdit(false); onBack(); }}
         />

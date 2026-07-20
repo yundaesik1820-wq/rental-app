@@ -4,7 +4,7 @@ import { updateItem } from "../../../hooks/useFirestore";
 import { PS, PROJECT_TYPES, PROJECT_STAGES } from "./constants";
 
 // 프로젝트 수정 모달 — 제목/유형/날짜/단계/진행률 + 보관(soft delete)
-export default function ProjectEditModal({ project, onClose, onArchived }) {
+export default function ProjectEditModal({ project, isOwner = true, onClose, onArchived }) {
   const [title, setTitle] = useState(project.title || "");
   const [type, setType]   = useState(project.type);
   const [stage, setStage] = useState(project.stage || "idea");
@@ -154,15 +154,17 @@ export default function ProjectEditModal({ project, onClose, onArchived }) {
         )}
 
         <div style={{ display: "flex", gap: 9, marginTop: 18 }}>
-          <button onClick={archive} disabled={busy}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-              minHeight: 48, padding: "0 16px", borderRadius: 12, cursor: "pointer",
-              background: "transparent", border: `1px solid ${PS.danger}55`, color: PS.danger,
-              fontSize: 13, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap",
-            }}>
-            <Archive size={15} /> 보관
-          </button>
+          {isOwner && (
+            <button onClick={archive} disabled={busy}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                minHeight: 48, padding: "0 16px", borderRadius: 12, cursor: "pointer",
+                background: "transparent", border: `1px solid ${PS.danger}55`, color: PS.danger,
+                fontSize: 13, fontWeight: 700, fontFamily: "inherit", whiteSpace: "nowrap",
+              }}>
+              <Archive size={15} /> 보관
+            </button>
+          )}
           <button onClick={save} disabled={busy}
             style={{
               flex: 1, minHeight: 48, borderRadius: 12, cursor: "pointer",

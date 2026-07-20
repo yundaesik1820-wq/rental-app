@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, Plus, X, Wallet, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../../hooks/useFirestore";
-import { PS, BUDGET_CATEGORIES, newBudgetItem, fmtWon, canEditProject, isProjectOwner } from "./constants";
+import { PS, BUDGET_CATEGORIES, newBudgetItem, fmtWon, canEditProject } from "./constants";
 
 // ===== 예산 항목 추가/수정 모달 (backdrop 닫기 없음) =====
 function BudgetFormModal({ item, projectId, uid, onClose }) {
@@ -136,8 +136,7 @@ function BudgetFormModal({ item, projectId, uid, onClose }) {
 export default function BudgetScreen({ project, onBack }) {
   const { user } = useAuth();
   const uid = user?.uid;
-  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원 (예산 항목)
-  const isOwner = isProjectOwner(project, uid);  // 소유자만 (총 예산 = projects 문서)
+  const canEdit = canEditProject(project, uid); // 소유자 + 참여 팀원 (예산 항목·총예산 모두)
 
   const { data: budgetItems, loading } = useCollection(
     "budgetItems", null,
@@ -229,7 +228,7 @@ export default function BudgetScreen({ project, onBack }) {
                   color: "#fff", fontSize: 12, fontWeight: 800, padding: "0 12px",
                   cursor: "pointer", fontFamily: "inherit" }}>저장</button>
             </div>
-          ) : isOwner ? (
+          ) : canEdit ? (
             <button onClick={() => { setLimitInput(limit ?? ""); setEditLimit(true); }}
               style={{ display: "flex", alignItems: "center", gap: 5, background: "none", border: "none",
                 color: PS.text, fontSize: 16, fontWeight: 900, cursor: "pointer", fontFamily: "inherit" }}>

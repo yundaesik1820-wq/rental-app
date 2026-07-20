@@ -238,15 +238,21 @@ service cloud.firestore {
             || request.auth.uid in psProject(pid).get('memberIds', []));
     }
 
-    // 🎬 Project Studio 프로젝트 (쓰기는 소유자만 / 읽기는 소유자 + 팀원)
+    // 🎬 Project Studio 프로젝트
+    // 읽기·수정: 소유자 + 참여 팀원(memberIds) — 팀원도 설정·팀원구성 편집 가능
+    // 단 status(보관/복구)는 소유자만, ownerId(소유권)는 불변, 삭제는 소유자만.
     match /projects/{docId} {
       allow create: if isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
       allow read: if isLoggedIn()
         && (resource.data.ownerId == request.auth.uid
             || request.auth.uid in resource.data.get('memberIds', []));
       allow delete: if isLoggedIn() && resource.data.ownerId == request.auth.uid;
-      allow update: if isLoggedIn() && resource.data.ownerId == request.auth.uid
-        && request.resource.data.ownerId == resource.data.ownerId; // 소유권 이전 차단
+      allow update: if isLoggedIn()
+        && (resource.data.ownerId == request.auth.uid
+            || request.auth.uid in resource.data.get('memberIds', []))
+        && request.resource.data.ownerId == resource.data.ownerId              // 소유권 이전 차단
+        && (resource.data.ownerId == request.auth.uid                          // 소유자는 전체 수정(보관 포함)
+            || request.resource.data.status == resource.data.status);          // 팀원은 status(보관/복구) 변경 불가
     }
 
     // 🎬 Project Studio 하위 데이터
