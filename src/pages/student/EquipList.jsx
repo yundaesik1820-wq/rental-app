@@ -258,10 +258,10 @@ export default function EquipList({ setTab }) {
             <div key={c.name} role="button" onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
               style={{ textAlign:"center", cursor:"pointer" }}>
               <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto", overflow:"hidden",
-                background: on ? C.navy : C.surface, border:`1px solid ${on ? C.navy : C.border}`, transition:"all .15s", boxShadow: on ? `0 4px 12px ${C.navy}40` : "none" }}>
+                background: on ? "linear-gradient(135deg,#3b82f6,#7c3aed)" : C.surface, border:`1px solid ${on ? "#3b82f6" : C.border}`, transition:"all .15s", boxShadow: on ? "0 4px 12px rgba(59,130,246,0.4)" : "none" }}>
                 <CatIcon c={c} />
               </div>
-              <div style={{ fontSize:11, color: on ? C.text : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
+              <div style={{ fontSize:11, color: on ? "#7e9dff" : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
             </div>
           );
         })}
