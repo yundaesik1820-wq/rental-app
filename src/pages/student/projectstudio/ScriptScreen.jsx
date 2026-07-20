@@ -65,10 +65,11 @@ function SceneFormModal({ scene, nextNumber, projectId, uid, onClose }) {
   });
 
   return (
-    <div onClick={onClose}
+    // 입력 모달 — 실수로 바깥 탭 시 작성 내용이 날아가지 않도록 backdrop 닫기 없음 (X로만 닫기)
+    <div
       style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
         backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div onClick={e => e.stopPropagation()}
+      <div
         style={{ width: "100%", maxWidth: 560, maxHeight: "90vh", overflowY: "auto",
           background: PS.surface, borderRadius: "20px 20px 0 0",
           border: `1px solid ${PS.border}`, borderBottom: "none",
@@ -198,10 +199,11 @@ function PasteModal({ projectId, uid, nextNumber, onClose }) {
   };
 
   return (
-    <div onClick={onClose}
+    // 입력 모달 — backdrop 닫기 없음 (X로만 닫기)
+    <div
       style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
         backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-      <div onClick={e => e.stopPropagation()}
+      <div
         style={{ width: "100%", maxWidth: 560, background: PS.surface, borderRadius: "20px 20px 0 0",
           border: `1px solid ${PS.border}`, borderBottom: "none",
           padding: "18px 18px 28px", color: PS.text, boxSizing: "border-box" }}>

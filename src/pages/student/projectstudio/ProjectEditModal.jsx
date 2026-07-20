@@ -56,12 +56,13 @@ export default function ProjectEditModal({ project, onClose, onArchived }) {
   const labelStyle = { fontSize: 12.5, fontWeight: 700, color: PS.sub, marginBottom: 6, display: "block" };
 
   return (
-    <div onClick={onClose}
+    // 입력 모달 — backdrop 닫기 없음 (X로만 닫기)
+    <div
       style={{
         position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.75)",
         backdropFilter: "blur(4px)", display: "flex", alignItems: "flex-end", justifyContent: "center",
       }}>
-      <div onClick={e => e.stopPropagation()}
+      <div
         style={{
           width: "100%", maxWidth: 560, maxHeight: "88vh", overflowY: "auto",
           background: PS.surface, borderRadius: "20px 20px 0 0",
