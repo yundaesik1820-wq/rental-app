@@ -331,6 +331,41 @@ exports.onUserApproved = functions.firestore
     );
   });
 
+// ── 프로젝트 스튜디오 팀원 초대 알림 ──────────────────────────
+// crewMembers 문서에 가입 학생(userId)이 연동되면 그 학생에게 푸시.
+// 앱 내 알림 벨은 클라이언트 buildAlerts가 별도로 처리 → 여기선 푸시만 담당.
+function crewInviteMessage(d) {
+  const projectTitle = d.projectTitle || "프로젝트";
+  const role = d.role || "팀원";
+  const inviter = d.inviterName ? `${d.inviterName}님이 ` : "";
+  return {
+    title: "프로젝트에 초대됐어요 🎬",
+    body: `${inviter}'${projectTitle}' 프로젝트의 ${role} 팀원으로 추가했어요! 프로젝트 스튜디오에서 확인해보세요.`,
+  };
+}
+
+exports.onCrewMemberInvite = functions.firestore
+  .document("crewMembers/{crewId}")
+  .onCreate(async (snap) => {
+    const d = snap.data();
+    // 가입 학생이 연동됐고, 소유자 본인을 자기 프로젝트에 넣은 게 아닐 때만
+    if (!d.userId || d.userId === d.ownerId) return;
+    const msg = crewInviteMessage(d);
+    await sendFCM(d.userId, msg.title, msg.body);
+  });
+
+// 수정으로 연동 학생이 새로 바뀐 경우(수기 → 가입학생, 또는 다른 학생으로 교체)에도 발송
+exports.onCrewMemberReassign = functions.firestore
+  .document("crewMembers/{crewId}")
+  .onUpdate(async (change) => {
+    const before = change.before.data();
+    const after  = change.after.data();
+    if (!after.userId || after.userId === after.ownerId) return;
+    if (before.userId === after.userId) return; // 사람이 안 바뀌면 스킵
+    const msg = crewInviteMessage(after);
+    await sendFCM(after.userId, msg.title, msg.body);
+  });
+
 // ── 관리자 수동 알림 (제목/내용 직접 입력해서 발송) ──────────
 // 호출 예: sendCustomAlert({ title, body, target: "all" })            → 승인된 학생 전체
 //          sendCustomAlert({ title, body, target: "25237001, 25237002" }) → 특정 학번 여러 명(쉼표 구분)
