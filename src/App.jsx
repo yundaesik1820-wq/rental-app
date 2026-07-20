@@ -26,6 +26,7 @@ import AdminInquiry  from "./pages/admin/Inquiry";
 import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
 import License          from "./pages/student/License.jsx";
 import Community     from "./pages/student/Community.jsx";
+import ProjectStudio from "./pages/student/projectstudio/ProjectStudio.jsx";
 import SNSManager    from "./pages/admin/SNSManager";
 import ExternalRental from "./pages/admin/ExternalRental";
 import RepairManager from "./pages/admin/RepairManager";
@@ -328,6 +329,7 @@ function AppContent() {
   useFCM(profile?.uid);
   const [tab,       setTab]       = useState("home");
   const [communityRoom, setCommunityRoom] = useState(null);
+  const [psView, setPsView] = useState(null); // Project Studio 진입 시 초기 화면 ("create" = 배너 진입)
   // 알림 클릭 시 실제 글까지 여는 딥링크 타깃 { postId?, articleId?, noticeId? }
   const [notifTarget, setNotifTarget] = useState(null);
   const [themeMode, setThemeMode] = useState(getThemeMode());
@@ -399,7 +401,8 @@ function AppContent() {
         case "repair":   return <RepairManager />;
         case "community":
           // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
-          return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
+          return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
+        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} />;
         default:         return <Dashboard setTab={setTab} />;
       }
     } else {
@@ -410,7 +413,8 @@ function AppContent() {
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
-        case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} />;
+        case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
+        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} />;
         case "mypage":   return <StudentMyPage key={mypageKey} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
         default:         return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
       }

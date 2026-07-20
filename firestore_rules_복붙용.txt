@@ -227,5 +227,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // 🎬 Project Studio 프로젝트 (본인 소유 문서만 — ownerId 위조 생성 차단)
+    match /projects/{docId} {
+      allow create: if isLoggedIn() && request.resource.data.ownerId == request.auth.uid;
+      allow read, delete: if isLoggedIn() && resource.data.ownerId == request.auth.uid;
+      allow update: if isLoggedIn() && resource.data.ownerId == request.auth.uid
+        && request.resource.data.ownerId == resource.data.ownerId; // 소유권 이전 차단
+    }
+
   }
 }

@@ -7,7 +7,7 @@ import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, CalendarPlus, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart, Clapperboard
 } from "lucide-react";
 
 const ADMIN_NAV = [
@@ -23,6 +23,7 @@ const ADMIN_NAV = [
   { id: "sns",      icon: Share2,        label: "SNS 관리"  },
   { id: "external", icon: Store,         label: "외부 렌탈샵" },
   { id: "settings", icon: Settings,      label: "설정"      },
+  { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 커뮤니티 배너로 진입
 ];
 
 const STU_NAV = [
@@ -34,6 +35,7 @@ const STU_NAV = [
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
   { id: "calendar",  icon: ShoppingCart,  label: "예약내역" },
   { id: "mypage",    icon: UserCircle,    label: "내 정보" },
+  { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 하단바 X — 커뮤니티 배너로 진입 (헤더 제목용)
 ];
 
 // 학생 하단바 아이콘 (목업 기준: 홈/예약내역/장비예약(FAB)/커뮤니티/더보기)

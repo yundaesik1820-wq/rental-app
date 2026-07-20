@@ -235,7 +235,7 @@ function posLabel(pos) {
   return pos.count ? `${pos.role} ${pos.count}명` : pos.role;
 }
 
-export default function Community({ onExit, onNotif, initialRoom, initialPostId, initialArticleId, onRoomConsumed }) {
+export default function Community({ onExit, onNotif, initialRoom, initialPostId, initialArticleId, onRoomConsumed, onOpenProjectStudio }) {
   const { profile } = useAuth();
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
@@ -1017,8 +1017,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               `linear-gradient(150deg, ${room.color}26 0%, ${room.color}0D 46%, #121216 100%)`;
             return (
               <>
-                {/* 프로젝트 시작 배너 (이미지) → 크루 메이커스 진입 */}
-                <div onClick={() => openRoom(ROOMS.find(r => r.id === "crew"))}
+                {/* 프로젝트 시작 배너 (이미지) → Project Studio (prop 없으면 크루 메이커스 폴백) */}
+                <div onClick={() => onOpenProjectStudio ? onOpenProjectStudio() : openRoom(ROOMS.find(r => r.id === "crew"))}
                   style={{
                     marginBottom:14, cursor:"pointer", borderRadius:18, overflow:"hidden",
                     border:"1px solid #26262b", lineHeight:0, position:"relative",

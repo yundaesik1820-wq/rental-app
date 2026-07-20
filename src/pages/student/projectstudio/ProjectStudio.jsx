@@ -1,0 +1,114 @@
+import { useState, useEffect } from "react";
+import { Plus, Clapperboard, ChevronRight } from "lucide-react";
+import { useAuth } from "../../../hooks/useAuth.jsx";
+import { useCollection } from "../../../hooks/useFirestore";
+import { Spinner } from "../../../components/UI";
+import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
+import ProjectCreate from "./ProjectCreate";
+import ProjectDashboard from "./ProjectDashboard";
+
+// 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
+// initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
+export default function ProjectStudio({ initialView, onConsumed }) {
+  const { user } = useAuth();
+  const uid = user?.uid;
+
+  // orderBy+where 복합 인덱스를 피하려고 orderField null → 클라에서 정렬
+  const { data: projects, loading } = useCollection(
+    "projects", null,
+    uid ? { where: [["ownerId", "==", uid]] } : { enabled: false }
+  );
+
+  const [view, setView] = useState(initialView === "create" ? "create" : "list");
+  useEffect(() => { if (initialView && onConsumed) onConsumed(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const active = projects
+    .filter(p => p.status !== "archived")
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+  if (view === "create") {
+    return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)} />;
+  }
+  if (view !== "list") {
+    const project = projects.find(p => p.id === view);
+    // 로딩 중엔 스피너 (생성 직후 스냅샷 도착 전 "없음" 오판 방지)
+    if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
+    return <ProjectDashboard project={project} onBack={() => setView("list")} />;
+  }
+
+  // ===== 목록 =====
+  return (
+    <div style={{ padding: "4px 2px 24px", color: PS.text }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "10px 0 16px" }}>
+        <div>
+          <div style={{ fontSize: 19, fontWeight: 900 }}>내 프로젝트</div>
+          <div style={{ fontSize: 12.5, color: PS.sub, marginTop: 3 }}>아이디어부터 완성까지 한 곳에서</div>
+        </div>
+        <button onClick={() => setView("create")}
+          style={{
+            display: "flex", alignItems: "center", gap: 5, minHeight: 44,
+            background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+            border: "none", borderRadius: 12, color: "#fff", fontSize: 13, fontWeight: 800,
+            padding: "10px 14px", cursor: "pointer", fontFamily: "inherit",
+            boxShadow: `0 3px 14px ${PS.primary}50`, whiteSpace: "nowrap",
+          }}>
+          <Plus size={16} /> 새 프로젝트
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>
+      ) : active.length === 0 ? (
+        <div style={{
+          background: PS.surface, border: `1px dashed ${PS.border}`, borderRadius: 18,
+          padding: "40px 20px", textAlign: "center",
+        }}>
+          <Clapperboard size={30} color={PS.sub} style={{ marginBottom: 10 }} />
+          <div style={{ fontSize: 15, fontWeight: 800, marginBottom: 5 }}>아직 프로젝트가 없어요</div>
+          <div style={{ fontSize: 13, color: PS.sub, marginBottom: 18 }}>첫 작품 아이디어를 프로젝트로 만들어보세요.</div>
+          <button onClick={() => setView("create")}
+            style={{
+              background: `linear-gradient(135deg, ${PS.primary} 0%, #5a3fe0 100%)`,
+              border: "none", borderRadius: 12, color: "#fff", fontSize: 13.5, fontWeight: 800,
+              padding: "12px 20px", minHeight: 46, cursor: "pointer", fontFamily: "inherit",
+              boxShadow: `0 3px 14px ${PS.primary}50`,
+            }}>
+            새 프로젝트 시작
+          </button>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {active.map(p => {
+            const Ic = typeIcon(p.type);
+            const progress = Math.max(0, Math.min(100, p.progress || 0));
+            return (
+              <div key={p.id} onClick={() => setView(p.id)}
+                style={{
+                  background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 16,
+                  padding: "15px 16px", cursor: "pointer",
+                }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <Ic size={14} color={PS.primaryLight} />
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: PS.primaryLight }}>
+                    {typeLabel(p.type)} · {stageLabel(p.stage)}
+                  </span>
+                  <ChevronRight size={15} color={PS.sub} style={{ marginLeft: "auto" }} />
+                </div>
+                <div style={{ fontSize: 15.5, fontWeight: 800, marginBottom: 10, wordBreak: "keep-all" }}>{p.title}</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ flex: 1, height: 6, borderRadius: 999, background: PS.elev, overflow: "hidden" }}>
+                    <div style={{
+                      width: `${progress}%`, height: "100%", borderRadius: 999,
+                      background: `linear-gradient(90deg, ${PS.primary}, ${PS.primaryLight})`,
+                    }} />
+                  </div>
+                  <span style={{ fontSize: 11.5, color: PS.sub, fontWeight: 700 }}>{progress}%</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
