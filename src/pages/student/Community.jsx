@@ -917,10 +917,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
-            <div style={{ display:"flex", flexDirection:"column", gap:5 }}>
-              <span style={{ fontSize:23, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
-              <span style={{ fontSize:12.5, color:"#8a8a92", fontWeight:500, lineHeight:1 }}>함께 만들고, 배우고, 나눠보세요</span>
-            </div>
+            <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <button onClick={() => setShowSearch(true)}
                 style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4" }}>
