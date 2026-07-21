@@ -917,7 +917,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
-            <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>에브리타임</span>
+            <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <button onClick={() => setShowSearch(true)}
                 style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4" }}>
@@ -1029,40 +1029,45 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", opacity:0.45 }} />
                 </div>
 
-                {/* 최근 게시글 (자유+질문, 최신순 3개) */}
+                {/* 에브리타임(자유) / 질문 — 2열 최신글 카드 */}
                 {(() => {
-                  const recent = [...posts]
-                    .filter(p => p.category === "자유" || p.category === "질문")
+                  const cRoom = ROOMS.find(r => r.id === "community");
+                  const latest = (category) => [...posts]
+                    .filter(p => p.category === category)
                     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
                     .slice(0, 3);
-                  const goAll = () => openRoom(ROOMS.find(r => r.id === "community"));
-                  return (
-                    <div>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
-                        <span style={{ fontSize:14, fontWeight:800, color:"#fafaf9", letterSpacing:"-0.01em" }}>최근 게시글</span>
-                        <span onClick={goAll} style={{ fontSize:12.5, color:"#8a8a92", fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:1 }}>
-                          전체보기 <ChevronRight size={14} color="#8a8a92" />
+                  const goCat = (c) => {
+                    if (cRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(cRoom); return; }
+                    setSelectedRoom("community"); setCat(c); setPage(1); setSearch("");
+                  };
+                  const FeedCard = ({ title, ic, titleColor, list, onMore }) => (
+                    <div style={{
+                      background:"linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.05) 40%, #101018 100%)",
+                      border:"1px solid rgba(124,58,237,0.22)", borderRadius:18, padding:15, minHeight:148,
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:14, fontWeight:800, letterSpacing:"-0.02em", color:titleColor }}>
+                          <span style={{ fontSize:15 }}>{ic}</span>{title}
+                        </div>
+                        <span onClick={onMore} style={{ display:"flex", alignItems:"center", gap:1, fontSize:11, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                          전체보기 <ChevronRight size={13} color="#8a8a92" />
                         </span>
                       </div>
-                      {recent.length === 0 ? (
-                        <div style={{ textAlign:"center", padding:"34px 0", color:"#6b6b74", fontSize:13, background:"#121216", borderRadius:14, border:"1px solid #26262b" }}>
-                          아직 게시글이 없어요
+                      {list.length === 0 ? (
+                        <div style={{ padding:"20px 0", textAlign:"center", color:"#6b6b74", fontSize:12 }}>아직 글이 없어요</div>
+                      ) : list.map((p, i) => (
+                        <div key={p.id} onClick={() => openPost(p)}
+                          style={{ display:"flex", alignItems:"center", gap:8, padding:"5.5px 0", cursor:"pointer" }}>
+                          <span style={{ fontSize:13, fontWeight:800, color:"#7e9dff", minWidth:13 }}>{i + 1}</span>
+                          <span style={{ flex:1, fontSize:12, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
                         </div>
-                      ) : (
-                        <div style={{ background:"#121216", borderRadius:14, border:"1px solid #26262b", overflow:"hidden" }}>
-                          {recent.map((p, i) => (
-                            <div key={p.id} onClick={() => openPost(p)}
-                              style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px",
-                                borderBottom: i < recent.length - 1 ? "1px solid #26262b" : "none", cursor:"pointer" }}>
-                              <span style={{ fontSize:10, background:"rgba(220,38,38,0.12)", border:"1px solid rgba(220,38,38,0.35)", borderRadius:4, padding:"1px 6px", color:"#f87171", flexShrink:0, fontWeight:600 }}>
-                                {p.category}
-                              </span>
-                              <span style={{ fontSize:13, fontWeight:500, color:"#e7e5e4", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-                              <span style={{ fontSize:11, color:"#f87171", flexShrink:0, fontWeight:600 }}>♥ {p.likes || 0}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                      ))}
+                    </div>
+                  );
+                  return (
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <FeedCard title="에브리타임" ic="💬" titleColor="#7e9dff" list={latest("자유")} onMore={() => goCat("자유")} />
+                      <FeedCard title="질문" ic="❓" titleColor="#fb7185" list={latest("질문")} onMore={() => goCat("질문")} />
                     </div>
                   );
                 })()}
