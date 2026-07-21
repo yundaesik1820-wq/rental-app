@@ -1045,8 +1045,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                   );
                   return (
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <FeedCard title="에브리타임" titleColor="#7e9dff" list={latest("자유")} onMore={() => goCat("자유")} />
-                      <FeedCard title="질문" titleColor="#fb7185" list={latest("질문")} onMore={() => goCat("질문")} />
+                      <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
+                      <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                     </div>
                   );
                 })()}
