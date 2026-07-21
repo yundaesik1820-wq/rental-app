@@ -133,7 +133,7 @@ export default function ProjectCreate({ onBack, onCreated, onStartAI }) {
                     padding: "9px 4px", minHeight: 38, borderRadius: 999, cursor: "pointer",
                     background: on ? PS.primary : PS.surface,
                     border: `1px solid ${on ? PS.primary : PS.border}`,
-                    color: on ? "#fff" : PS.sub, fontSize: 10, fontWeight: 700, letterSpacing: "-0.04em",
+                    color: on ? "#fff" : PS.sub, fontSize: 9, fontWeight: 700, letterSpacing: "-0.05em",
                     fontFamily: "inherit", whiteSpace: "nowrap",
                   }}>{s.label}</button>
               );
