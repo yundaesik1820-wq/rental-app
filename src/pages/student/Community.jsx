@@ -974,7 +974,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
 
       {/* 🎬 룸 분기 화면 (selectedRoom === null) */}
       {!selectedRoom && (
-        <div style={{ marginTop:20 }}>
+        <div style={{ marginTop:4 }}>
           {(() => {
             const openRoom = (room) => {
               if (room.studentOnly && isProfOrTeacher) { setBlockedRoom(room); return; }
