@@ -123,16 +123,17 @@ export default function ProjectCreate({ onBack, onCreated, onStartAI }) {
         </div>
         <div>
           <span style={labelStyle}>현재 진행 단계</span>
-          <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: 5 }}>
             {PROJECT_STAGES.map(s => {
               const on = stage === s.value;
               return (
                 <button key={s.value} onClick={() => setStage(s.value)} disabled={busy}
                   style={{
-                    padding: "9px 13px", minHeight: 38, borderRadius: 999, cursor: "pointer",
+                    flex: 1, minWidth: 0, textAlign: "center",
+                    padding: "9px 4px", minHeight: 38, borderRadius: 999, cursor: "pointer",
                     background: on ? PS.primary : PS.surface,
                     border: `1px solid ${on ? PS.primary : PS.border}`,
-                    color: on ? "#fff" : PS.sub, fontSize: 12.5, fontWeight: 700,
+                    color: on ? "#fff" : PS.sub, fontSize: 10, fontWeight: 700, letterSpacing: "-0.04em",
                     fontFamily: "inherit", whiteSpace: "nowrap",
                   }}>{s.label}</button>
               );

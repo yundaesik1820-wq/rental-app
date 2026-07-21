@@ -33,7 +33,6 @@ export const PROJECT_TYPES = [
 // 진행 단계 (value = Firestore 저장값)
 export const PROJECT_STAGES = [
   { value: "idea",           label: "아이디어" },
-  { value: "planning",       label: "기획" },
   { value: "preproduction",  label: "프리프로덕션" },
   { value: "production",     label: "프로덕션" },
   { value: "postproduction", label: "포스트프로덕션" },
