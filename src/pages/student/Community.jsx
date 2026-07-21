@@ -44,13 +44,13 @@ function containsBadWord(text) {
 // 🚨 신고 누적 시 자동 숨김 임계값 (이 수 이상 신고되면 작성자·관리자 외에는 안 보임)
 const REPORT_HIDE_THRESHOLD = 5;
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
-const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "협업모집", "작품공유", "스탭프로필", "클래스"];
+const ANON_CATS   = ["자유", "질문", "강의", "작품공유"]; // 익명
 const REAL_CATS   = ["정보", "취업", "공모전", "협업모집", "스탭프로필", "클래스"]; // 실명
 // 카드형 리스트(com.png) 카테고리별 액센트 색
 const CAT_COLOR = {
   "자유":"#f4718a", "질문":"#60a5fa", "강의":"#c084fc", "정보":"#34d399",
-  "취업":"#22d3ee", "공모전":"#fb923c", "새내기":"#4ade80",
+  "취업":"#22d3ee", "공모전":"#fb923c",
   "작품공유":"#a78bfa", "협업모집":"#fbbf24", "스탭프로필":"#f472b6", "클래스":"#38bdf8",
 };
 const catAccent = (c) => CAT_COLOR[c] || "#9ca3af";
@@ -73,7 +73,7 @@ const ROOMS = [
     color:"#dc2626",
     colorBg:"rgba(220,38,38,0.15)",
     borderStyle:"solid",
-    categories:["자유", "질문", "새내기"],
+    categories:["자유", "질문"],
   },
   {
     id:"knowledge", studentOnly:true,
@@ -865,11 +865,11 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   };
 
   const catColor = (c) => {
-    const m = { "자유":C.blue, "질문":C.orange, "강의":C.purple, "정보":C.green, "취업":C.teal, "새내기":C.orange };
+    const m = { "자유":C.blue, "질문":C.orange, "강의":C.purple, "정보":C.green, "취업":C.teal };
     return m[c] || C.muted;
   };
   const catBg = (c) => {
-    const m = { "자유":C.blueLight, "질문":C.orangeLight, "강의":C.purpleLight, "정보":C.greenLight, "취업":C.tealLight, "새내기":C.orangeLight };
+    const m = { "자유":C.blueLight, "질문":C.orangeLight, "강의":C.purpleLight, "정보":C.greenLight, "취업":C.tealLight };
     return m[c] || C.bg;
   };
   // 카테고리에 따라 익명/실명 판단
