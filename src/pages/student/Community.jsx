@@ -47,6 +47,13 @@ const REPORT_HIDE_THRESHOLD = 5;
 const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
 const REAL_CATS   = ["정보", "취업", "공모전", "협업모집", "스탭프로필", "클래스"]; // 실명
+// 카드형 리스트(com.png) 카테고리별 액센트 색
+const CAT_COLOR = {
+  "자유":"#f4718a", "질문":"#60a5fa", "강의":"#c084fc", "정보":"#34d399",
+  "취업":"#22d3ee", "공모전":"#fb923c", "새내기":"#4ade80",
+  "작품공유":"#a78bfa", "협업모집":"#fbbf24", "스탭프로필":"#f472b6", "클래스":"#38bdf8",
+};
+const catAccent = (c) => CAT_COLOR[c] || "#9ca3af";
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -1446,43 +1453,46 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           );
         }
 
-        // ===== A 스타일: 일반 글 카드 =====
+        // ===== com.png: 카드형 리스트 =====
+        const accent = catAccent(p.category);
+        const thumb = p.images?.[0];
         return (
           <div key={p.id} onClick={() => openPost(p)}
-            style={{
-              background:CINEMA.surface, borderLeft:`3px solid ${CINEMA.red}`,
-              borderRadius:6, padding:"11px 12px", marginBottom:9, cursor:"pointer",
-              border:`1px solid ${CINEMA.border}`, borderLeftWidth:3, borderLeftColor:CINEMA.red,
-            }}>
-            <div style={{ display:"flex", gap:6, marginBottom:6, alignItems:"center" }}>
-              <span style={{ background:CINEMA.redBg, color:CINEMA.redBright, fontSize:9, padding:"2px 7px", borderRadius:3, fontWeight:700, letterSpacing:"0.05em", flexShrink:0 }}>
-                {p.category}
-              </span>
-              <span style={{ fontSize:9, color:CINEMA.mutedDim, marginLeft:"auto", flexShrink:0 }}>
-                {formatDate(p.createdAt)}
-              </span>
-            </div>
-            <div style={{ fontSize:13, fontWeight:600, color:CINEMA.text, marginBottom:6, lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-              {isLecture ? p.lectureName : p.title}
-            </div>
-            {isLecture ? (
-              <div style={{ fontSize:11, color:CINEMA.muted, marginBottom:6 }}>
-                👨‍🏫 {p.professor}
-                {p.schedule && <span style={{ marginLeft:10 }}>🕐 {p.schedule}</span>}
-                {avgRating && <span style={{ marginLeft:10, color:CINEMA.gold, fontWeight:700 }}>★ {avgRating}</span>}
+            style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:14, padding:14, marginBottom:11, cursor:"pointer" }}>
+            <div style={{ display:"flex", gap:12 }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <span style={{ display:"inline-block", background:accent+"28", color:accent, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:5, marginBottom:8 }}>
+                  {p.category}
+                </span>
+                <div style={{ fontSize:15.5, fontWeight:800, color:CINEMA.text, lineHeight:1.3, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                  {isLecture ? p.lectureName : p.title}
+                </div>
+                {isLecture ? (
+                  <div style={{ fontSize:12, color:CINEMA.muted }}>
+                    👨‍🏫 {p.professor}
+                    {avgRating && <span style={{ marginLeft:10, color:CINEMA.gold, fontWeight:700 }}>★ {avgRating}</span>}
+                  </div>
+                ) : p.content ? (
+                  <div style={{ fontSize:12.5, color:CINEMA.muted, lineHeight:1.45, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
+                    {p.content}
+                  </div>
+                ) : null}
               </div>
-            ) : (
-              p.content && (
-                <div style={{ fontSize:12, color:CINEMA.muted, marginBottom:7, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{(p.content || "").split("\n")[0]}</div>
-              )
-            )}
-            <div style={{ fontSize:10, color:CINEMA.muted, display:"flex", gap:10, alignItems:"center" }}>
-              <span>{displayName(p)}</span>
-              <span style={{ marginLeft:"auto", display:"flex", gap:10, alignItems:"center" }}>
+              {thumb && (
+                <div style={{ position:"relative", width:82, height:82, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#1a1a1f" }}>
+                  <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  {p.images.length > 1 && (
+                    <span style={{ position:"absolute", right:5, bottom:5, background:"rgba(0,0,0,0.7)", color:"#fff", fontSize:9, padding:"1px 5px", borderRadius:4 }}>📷 {p.images.length}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <div style={{ display:"flex", alignItems:"center", marginTop:11 }}>
+              <span style={{ fontSize:11, color:CINEMA.mutedDim }}>{formatDate(p.createdAt)}</span>
+              <span style={{ marginLeft:"auto", display:"flex", gap:11, fontSize:11, color:CINEMA.muted, alignItems:"center" }}>
                 <span>👁 {p.views||0}</span>
                 {!isLecture && <span style={{ color:CINEMA.redBright }}>♥ {p.likes||0}</span>}
                 <span>💬 {pComments.length}</span>
-                {p.images?.length > 0 && <span>📷 {p.images.length}</span>}
               </span>
             </div>
           </div>
