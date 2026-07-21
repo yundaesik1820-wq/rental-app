@@ -1040,34 +1040,36 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     if (cRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(cRoom); return; }
                     setSelectedRoom("community"); setCat(c); setPage(1); setSearch("");
                   };
-                  const FeedCard = ({ title, ic, titleColor, list, onMore }) => (
-                    <div style={{
-                      background:"linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.05) 40%, #101018 100%)",
-                      border:"1px solid rgba(124,58,237,0.22)", borderRadius:18, padding:15, minHeight:148,
-                    }}>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6, fontSize:14, fontWeight:800, letterSpacing:"-0.02em", color:titleColor }}>
-                          <span style={{ fontSize:15 }}>{ic}</span>{title}
-                        </div>
-                        <span onClick={onMore} style={{ display:"flex", alignItems:"center", gap:1, fontSize:11, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
-                          전체보기 <ChevronRight size={13} color="#8a8a92" />
+                  const FeedCard = ({ title, titleColor, list, onMore }) => (
+                    <div>
+                      {/* 제목행 — 박스 바깥 */}
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
+                        <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:titleColor }}>{title}</span>
+                        <span onClick={onMore} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                          전체보기 <ChevronRight size={12} color="#8a8a92" />
                         </span>
                       </div>
-                      {list.length === 0 ? (
-                        <div style={{ padding:"20px 0", textAlign:"center", color:"#6b6b74", fontSize:12 }}>아직 글이 없어요</div>
-                      ) : list.map((p, i) => (
-                        <div key={p.id} onClick={() => openPost(p)}
-                          style={{ display:"flex", alignItems:"center", gap:8, padding:"5.5px 0", cursor:"pointer" }}>
-                          <span style={{ fontSize:13, fontWeight:800, color:"#7e9dff", minWidth:13 }}>{i + 1}</span>
-                          <span style={{ flex:1, fontSize:12, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-                        </div>
-                      ))}
+                      {/* 리스트 박스 */}
+                      <div style={{
+                        background:"linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.05) 40%, #101018 100%)",
+                        border:"1px solid rgba(124,58,237,0.22)", borderRadius:16, padding:"11px 13px",
+                      }}>
+                        {list.length === 0 ? (
+                          <div style={{ padding:"14px 0", textAlign:"center", color:"#6b6b74", fontSize:11 }}>아직 글이 없어요</div>
+                        ) : list.map((p, i) => (
+                          <div key={p.id} onClick={() => openPost(p)}
+                            style={{ display:"flex", alignItems:"center", gap:7, padding:"4.5px 0", cursor:"pointer" }}>
+                            <span style={{ fontSize:11.5, fontWeight:800, color:"#7e9dff", minWidth:12 }}>{i + 1}</span>
+                            <span style={{ flex:1, fontSize:11, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   );
                   return (
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <FeedCard title="에브리타임" ic="💬" titleColor="#7e9dff" list={latest("자유")} onMore={() => goCat("자유")} />
-                      <FeedCard title="질문" ic="❓" titleColor="#fb7185" list={latest("질문")} onMore={() => goCat("질문")} />
+                      <FeedCard title="에브리타임" titleColor="#7e9dff" list={latest("자유")} onMore={() => goCat("자유")} />
+                      <FeedCard title="질문" titleColor="#fb7185" list={latest("질문")} onMore={() => goCat("질문")} />
                     </div>
                   );
                 })()}
