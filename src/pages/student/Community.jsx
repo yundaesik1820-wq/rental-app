@@ -917,7 +917,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
-            <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>커뮤니티</span>
+            <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1 }}>에브리타임</span>
             <div style={{ display:"flex", alignItems:"center", gap:16 }}>
               <button onClick={() => setShowSearch(true)}
                 style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4" }}>
@@ -1029,37 +1029,43 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", opacity:0.45 }} />
                 </div>
 
-                {/* 8개 세로형 네온 카드 (2열) */}
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                  {ROOMS.map(room => {
-                    const locked = room.studentOnly && isProfOrTeacher;
-                    return (
-                      <div key={room.id} onClick={() => openRoom(room)}
-                        style={{
-                          background: cardBg(room), border:`1px solid ${room.color}33`,
-                          borderRadius:20, padding:"20px 16px 15px", cursor:"pointer",
-                          display:"flex", flexDirection:"column", minHeight:168,
-                          transition:"transform 0.15s", opacity: locked ? 0.55 : 1,
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-                        onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-                      >
-                        <div style={{ height:64, display:"flex", alignItems:"flex-start" }}>
-                          <NeonIcon room={room} />
-                        </div>
-                        <div style={{ marginTop:"auto" }}>
-                          <div style={{ fontSize:16.5, fontWeight:900, color:"#fafaf9", marginBottom:4, lineHeight:1.2, wordBreak:"keep-all" }}>{room.title}</div>
-                          <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                            <span style={{ fontSize:11.5, color:"#8a8a92", fontWeight:500 }}>
-                              {locked ? "Students Only" : room.subEn}
-                            </span>
-                            <ChevronRight size={15} color="#6b6b74" style={{ flexShrink:0 }} />
-                          </div>
-                        </div>
+                {/* 최근 게시글 (자유+질문, 최신순 3개) */}
+                {(() => {
+                  const recent = [...posts]
+                    .filter(p => p.category === "자유" || p.category === "질문")
+                    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0))
+                    .slice(0, 3);
+                  const goAll = () => openRoom(ROOMS.find(r => r.id === "community"));
+                  return (
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:10 }}>
+                        <span style={{ fontSize:14, fontWeight:800, color:"#fafaf9", letterSpacing:"-0.01em" }}>최근 게시글</span>
+                        <span onClick={goAll} style={{ fontSize:12.5, color:"#8a8a92", fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:1 }}>
+                          전체보기 <ChevronRight size={14} color="#8a8a92" />
+                        </span>
                       </div>
-                    );
-                  })}
-                </div>
+                      {recent.length === 0 ? (
+                        <div style={{ textAlign:"center", padding:"34px 0", color:"#6b6b74", fontSize:13, background:"#121216", borderRadius:14, border:"1px solid #26262b" }}>
+                          아직 게시글이 없어요
+                        </div>
+                      ) : (
+                        <div style={{ background:"#121216", borderRadius:14, border:"1px solid #26262b", overflow:"hidden" }}>
+                          {recent.map((p, i) => (
+                            <div key={p.id} onClick={() => openPost(p)}
+                              style={{ display:"flex", alignItems:"center", gap:10, padding:"13px 14px",
+                                borderBottom: i < recent.length - 1 ? "1px solid #26262b" : "none", cursor:"pointer" }}>
+                              <span style={{ fontSize:10, background:"rgba(220,38,38,0.12)", border:"1px solid rgba(220,38,38,0.35)", borderRadius:4, padding:"1px 6px", color:"#f87171", flexShrink:0, fontWeight:600 }}>
+                                {p.category}
+                              </span>
+                              <span style={{ fontSize:13, fontWeight:500, color:"#e7e5e4", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                              <span style={{ fontSize:11, color:"#f87171", flexShrink:0, fontWeight:600 }}>♥ {p.likes || 0}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
               </>
             );
