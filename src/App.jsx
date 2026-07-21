@@ -405,7 +405,7 @@ function AppContent() {
         case "community":
           // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
           return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
-        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} />;
+        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         default:         return <Dashboard setTab={setTab} />;
       }
     } else {
@@ -417,7 +417,7 @@ function AppContent() {
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
-        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} />;
+        case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
         default:         return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
       }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Plus, Clapperboard, ChevronRight, ChevronDown, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Clapperboard, ChevronLeft, ChevronRight, ChevronDown, Archive, ArchiveRestore } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
 import { useCollection, updateItem } from "../../../hooks/useFirestore";
 import { Spinner } from "../../../components/UI";
@@ -20,7 +20,7 @@ import IdeaNotesScreen from "./IdeaNotesScreen";
 
 // 🎬 Project Studio 진입점 — view: "list" | "create" | 프로젝트 id
 // initialView: 커뮤니티 배너 진입 시 "create" (App.jsx에서 전달, onConsumed로 소비)
-export default function ProjectStudio({ initialView, onConsumed }) {
+export default function ProjectStudio({ initialView, onConsumed, onExit }) {
   const { user } = useAuth();
   const uid = user?.uid;
 
@@ -37,7 +37,7 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   // 병합 (내 프로젝트 우선, id 중복 제거)
   const projects = [...ownProjects, ...joinedProjects.filter(p => !ownProjects.some(o => o.id === p.id))];
 
-  const [view, setView] = useState(initialView === "create" ? "create" : "list");
+  const [view, setView] = useState(initialView === "create" ? null : "list"); // null = 진입 판단 대기
   const [aiBasic, setAiBasic] = useState(null); // AI 생성 진입 시 기본 정보
   const [shotsSceneId, setShotsSceneId] = useState(null); // "이 장면으로 콘티 만들기" 진입 시 초기 장면
   const [showArchived, setShowArchived] = useState(false);
@@ -47,6 +47,11 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   const byNewest = (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
   const active   = projects.filter(p => p.status !== "archived").sort(byNewest);
   const archived = projects.filter(p => p.status === "archived" && p.ownerId === uid).sort(byNewest);
+
+  // 진입 판단: "create"로 진입했어도 진행 중 프로젝트가 있으면 목록, 없으면 새 프로젝트로
+  useEffect(() => {
+    if (view === null && !loading) setView(active.length > 0 ? "list" : "create");
+  }, [view, loading, active.length]);
 
   const restore = async (p) => {
     if (restoringId) return;
@@ -60,6 +65,9 @@ export default function ProjectStudio({ initialView, onConsumed }) {
     setRestoringId(null);
   };
 
+  if (view === null) {
+    return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
+  }
   if (view === "create") {
     return <ProjectCreate onBack={() => setView("list")} onCreated={(id) => setView(id)}
       onStartAI={(basic) => { setAiBasic(basic); setView("aicreate"); }} />;
@@ -133,9 +141,17 @@ export default function ProjectStudio({ initialView, onConsumed }) {
   return (
     <div style={{ padding: "4px 2px 24px", color: PS.text }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "10px 0 16px" }}>
-        <div>
-          <div style={{ fontSize: 19, fontWeight: 900 }}>내 프로젝트</div>
-          <div style={{ fontSize: 12.5, color: PS.sub, marginTop: 3 }}>아이디어부터 완성까지 한 곳에서</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+          {onExit && (
+            <button onClick={onExit}
+              style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", color: PS.text, flexShrink: 0 }}>
+              <ChevronLeft size={24} strokeWidth={2.2} />
+            </button>
+          )}
+          <div>
+            <div style={{ fontSize: 19, fontWeight: 900 }}>내 프로젝트</div>
+            <div style={{ fontSize: 12.5, color: PS.sub, marginTop: 3 }}>아이디어부터 완성까지 한 곳에서</div>
+          </div>
         </div>
         <button onClick={() => setView("create")}
           style={{

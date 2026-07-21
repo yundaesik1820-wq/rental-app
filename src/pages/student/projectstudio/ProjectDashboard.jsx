@@ -111,6 +111,44 @@ export default function ProjectDashboard({ project, onBack, onOpenScript, onOpen
           }} />
         </div>
 
+        {/* 진행 단계 스텝 (반응형 한 줄) */}
+        {(() => {
+          const STAGE_STEPS = [
+            { v: "idea", label: "아이디어" },
+            { v: "preproduction", label: "프리프로덕션" },
+            { v: "production", label: "프로덕션" },
+            { v: "postproduction", label: "포스트프로덕션" },
+            { v: "completed", label: "완료" },
+          ];
+          const curStage = project.stage === "planning" ? "idea" : project.stage;
+          const stepIdx = Math.max(0, STAGE_STEPS.findIndex(s => s.v === curStage));
+          return (
+            <div style={{ display: "flex", marginTop: 16 }}>
+              {STAGE_STEPS.map((s, i) => {
+                const done = i <= stepIdx;
+                const current = i === stepIdx;
+                return (
+                  <div key={s.v} style={{ flex: 1, minWidth: 0, position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    {i < STAGE_STEPS.length - 1 && (
+                      <div style={{ position: "absolute", top: 5, left: "50%", width: "100%", height: 2, background: i < stepIdx ? PS.primary : PS.elev, zIndex: 0 }} />
+                    )}
+                    <div style={{
+                      width: 11, height: 11, borderRadius: "50%", marginBottom: 6, zIndex: 1,
+                      background: done ? PS.primary : PS.elev,
+                      border: `2px solid ${done ? PS.primary : PS.elev}`,
+                      boxShadow: current ? `0 0 0 3px ${PS.primary}40` : "none",
+                    }} />
+                    <div style={{
+                      fontSize: 8.5, letterSpacing: "-0.04em", whiteSpace: "nowrap", lineHeight: 1,
+                      color: done ? PS.primaryLight : PS.sub, fontWeight: done ? 700 : 400,
+                    }}>{s.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
+
         {/* 날짜 */}
         <div style={{ display: "flex", gap: 14, marginTop: 14, fontSize: 12.5, color: PS.sub }}>
           <span style={{ display: "flex", alignItems: "center", gap: 5 }}>
