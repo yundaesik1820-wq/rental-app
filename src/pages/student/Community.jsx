@@ -210,13 +210,13 @@ function YtThumb({ id, alt = "", style }) {
   ];
   if (stage >= urls.length) {
     // hqdefault까지 실패하면 hqdefault를 그냥 표시 (거의 항상 존재함)
-    return <img src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt={alt} style={style} />;
+    return <img loading="lazy" decoding="async" src={`https://img.youtube.com/vi/${id}/hqdefault.jpg`} alt={alt} style={style} />;
   }
   const handleLoad = (e) => {
     // 유튜브 더미 회색 이미지는 120px → 다음(더 낮은) 화질로
     if (e.currentTarget.naturalWidth <= 121 && stage < urls.length) setStage(s => s + 1);
   };
-  return <img src={urls[stage]} alt={alt} onLoad={handleLoad} onError={() => setStage(s => s + 1)} style={style} />;
+  return <img loading="lazy" decoding="async" src={urls[stage]} alt={alt} onLoad={handleLoad} onError={() => setStage(s => s + 1)} style={style} />;
 }
 
 // 모집 마감일 → 남은 일수 (양수: 남음, 0: 당일, 음수: 마감)
@@ -262,13 +262,13 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   //    무효 처리해서 padding이 통째로 0이 되는 버그가 있음 → 헤더가 상태바에 겹침.
   //    probe 엘리먼트의 실제 렌더 높이를 읽어 픽셀 값으로 박으면 파싱 이슈를 완전히 우회.
   //    최소 48px 바닥값은 네이티브 앱에서만 — 웹/PWA는 상태바가 없으니 0부터 시작.
-  const SAFE_FLOOR = Capacitor.isNativePlatform() ? 48 : 0;
+  const SAFE_FLOOR = Capacitor.isNativePlatform() ? 24 : 0;
   const [safeTop, setSafeTop] = useState(SAFE_FLOOR);
   useEffect(() => {
     const measure = () => {
       const probe = document.createElement("div");
       probe.style.cssText =
-        "position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
+        "position:fixed;top:0;left:-9999px;width:0;height:env(safe-area-inset-top,0px);visibility:hidden;pointer-events:none;";
       document.documentElement.appendChild(probe);
       const measured = probe.getBoundingClientRect().height || 0;
       probe.remove();
@@ -1328,7 +1328,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               style={{ background:CINEMA.surfaceAlt, borderRadius:8, overflow:"hidden", cursor:"pointer", border:`1px solid ${CINEMA.border}` }}>
               <div style={{ aspectRatio:"1/1", background:CINEMA.surface, display:"flex", alignItems:"center", justifyContent:"center" }}>
                 {p.profileImage
-                  ? <img src={p.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                  ? <img loading="lazy" decoding="async" src={p.profileImage} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   : <span style={{ fontSize:24, color:CINEMA.mutedDim }}>🙋</span>}
               </div>
               <div style={{ padding:"7px 8px" }}>
@@ -1903,7 +1903,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           {selPost.images?.length > 0 && (
             <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))", gap:8, marginBottom:20, paddingBottom:20, borderBottom:`1px solid ${CINEMA.border}` }}>
               {selPost.images.map((url, i) => (
-                <img key={i} src={url} alt={`첨부${i+1}`} onClick={() => setSelImage(url)}
+                <img loading="lazy" decoding="async" key={i} src={url} alt={`첨부${i+1}`} onClick={() => setSelImage(url)}
                   style={{ width:"100%", height:180, borderRadius:8, objectFit:"cover", cursor:"pointer", border:`1px solid ${CINEMA.border}`, display:"block" }} />
               ))}
             </div>
@@ -2657,7 +2657,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:8 }}>
                 {writeForm.images.map((url, i) => (
                   <div key={i} style={{ position:"relative", paddingTop:"75%", borderRadius:8, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg }}>
-                    <img src={url} alt={`첨부${i+1}`} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
+                    <img loading="lazy" decoding="async" src={url} alt={`첨부${i+1}`} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />
                     <button onClick={() => setWriteForm(p=>({...p, images:p.images.filter((_,j)=>j!==i)}))}
                       style={{ position:"absolute", top:3, right:3, background:C.red, color:"#fff", border:"none", borderRadius:"50%", width:20, height:20, cursor:"pointer", fontSize:11, fontWeight:700 }}>✕</button>
                   </div>

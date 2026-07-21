@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import { getThemeMode, setTheme, C } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { CartProvider } from "./hooks/useCart.jsx";
@@ -12,33 +12,33 @@ import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
 
-// Admin pages
-import Dashboard  from "./pages/admin/Dashboard";
-import Equipment  from "./pages/admin/Equipment";
-import Rental     from "./pages/admin/Rental";
-import Students   from "./pages/admin/Students";
-import CalendarPage from "./pages/admin/Calendar";
-import Stats      from "./pages/admin/Stats";
+// Admin pages (lazy — 초기 번들에서 분리, 진입 시 로드)
+const Dashboard  = lazy(() => import("./pages/admin/Dashboard"));
+const Equipment  = lazy(() => import("./pages/admin/Equipment"));
+const Rental     = lazy(() => import("./pages/admin/Rental"));
+const Students   = lazy(() => import("./pages/admin/Students"));
+const CalendarPage = lazy(() => import("./pages/admin/Calendar"));
+const Stats      = lazy(() => import("./pages/admin/Stats"));
 import GroupHub   from "./components/GroupHub";
-import Notices    from "./pages/admin/Notices";
-import Settings   from "./pages/admin/Settings";
-import AdminInquiry  from "./pages/admin/Inquiry";
-import LicenseAdmin  from "./pages/admin/LicenseAdmin.jsx";
-import License          from "./pages/student/License.jsx";
-import Community     from "./pages/student/Community.jsx";
-import ProjectStudio from "./pages/student/projectstudio/ProjectStudio.jsx";
-import SNSManager    from "./pages/admin/SNSManager";
-import ExternalRental from "./pages/admin/ExternalRental";
-import RepairManager from "./pages/admin/RepairManager";
+const Notices    = lazy(() => import("./pages/admin/Notices"));
+const Settings   = lazy(() => import("./pages/admin/Settings"));
+const AdminInquiry  = lazy(() => import("./pages/admin/Inquiry"));
+const LicenseAdmin  = lazy(() => import("./pages/admin/LicenseAdmin.jsx"));
+const License          = lazy(() => import("./pages/student/License.jsx"));
+const Community     = lazy(() => import("./pages/student/Community.jsx"));
+const ProjectStudio = lazy(() => import("./pages/student/projectstudio/ProjectStudio.jsx"));
+const SNSManager    = lazy(() => import("./pages/admin/SNSManager"));
+const ExternalRental = lazy(() => import("./pages/admin/ExternalRental"));
+const RepairManager = lazy(() => import("./pages/admin/RepairManager"));
 
-// Student pages
-import StudentHome    from "./pages/student/Home";
-import EquipList      from "./pages/student/EquipList";
-import History        from "./pages/student/History";
-import Reserve        from "./pages/student/Reserve";
-import Profile         from "./pages/student/Profile";
-import StudentInquiry from "./pages/student/Inquiry";
-import FriendManager  from "./pages/student/FriendManager";
+// Student pages (lazy)
+const StudentHome    = lazy(() => import("./pages/student/Home"));
+const EquipList      = lazy(() => import("./pages/student/EquipList"));
+const History        = lazy(() => import("./pages/student/History"));
+const Reserve        = lazy(() => import("./pages/student/Reserve"));
+const Profile         = lazy(() => import("./pages/student/Profile"));
+const StudentInquiry = lazy(() => import("./pages/student/Inquiry"));
+const FriendManager  = lazy(() => import("./pages/student/FriendManager"));
 
 // Shared
 import { useCollection } from "./hooks/useFirestore";
@@ -431,7 +431,9 @@ function AppContent() {
     <>
       <Layout tab={tab} setTab={setTab} notifCount={notifCount} onNotif={() => setShowNotif(true)}
         onSameTab={(id) => { if (id === "mypage") setMypageKey(k => k + 1); }}>
-        {renderPage()}
+        <Suspense fallback={<div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"60px 0" }}><Spinner /></div>}>
+          {renderPage()}
+        </Suspense>
       </Layout>
       {showNotif && (
         <NotifPanel

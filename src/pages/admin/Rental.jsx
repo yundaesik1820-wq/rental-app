@@ -936,7 +936,7 @@ ${r.attachments?.length > 0 ? `
                     {photos.length > 0 && (
                       <div style={{ display:"flex", gap:6, marginBottom:8, flexWrap:"wrap" }}>
                         {photos.map((url, idx) => (
-                          <img key={idx} src={url} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }}
+                          <img loading="lazy" decoding="async" key={idx} src={url} alt="" style={{ width:60, height:60, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }}
                             onClick={() => setPhotoModal({ photos, idx })} />
                         ))}
                       </div>
@@ -980,7 +980,7 @@ ${r.attachments?.length > 0 ? `
               </div>
               <div style={{ display:"flex", gap:6 }}>
                 {r.returnPhotos.map((url, idx) => (
-                  <img key={idx} src={url} alt="" onClick={() => setPhotoModal({ photos: r.returnPhotos, idx })}
+                  <img loading="lazy" decoding="async" key={idx} src={url} alt="" onClick={() => setPhotoModal({ photos: r.returnPhotos, idx })}
                     style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${C.border}`, cursor:"pointer" }} />
                 ))}
               </div>

@@ -463,7 +463,7 @@ ${r.attachments?.length > 0 ? `
                     <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                       {(r.returnPhotos || []).map((url, idx) => (
                         <div key={idx} style={{ position:"relative" }}>
-                          <img src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
+                          <img loading="lazy" decoding="async" src={url} alt="" onClick={() => setPhotoLightbox({ photos:r.returnPhotos, idx })}
                             style={{ width:64, height:64, objectFit:"cover", borderRadius:8, border:`1px solid ${BD}`, cursor:"pointer" }} />
                           {r.status === "대여중" && (
                             <button onClick={() => deleteReturnPhoto(r.id, r.returnPhotos, idx)}

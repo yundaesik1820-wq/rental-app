@@ -47,7 +47,7 @@ function MultiImageUploader({ values = [], onChange, max = 4 }) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 8 }}>
           {values.map((url, i) => (
             <div key={i} style={{ position: "relative", paddingTop: "75%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
-              <img src={url} alt={`사진${i+1}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
+              <img loading="lazy" decoding="async" src={url} alt={`사진${i+1}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
               <button onClick={() => onChange(values.filter((_, j) => j !== i))} style={{ position: "absolute", top: 4, right: 4, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>✕</button>
             </div>
           ))}
@@ -187,7 +187,7 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
       {/* 썸네일 */}
       <div style={{ width:42, height:42, borderRadius:8, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
         {thumb
-          ? <img src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+          ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
           : <span style={{ fontSize:18 }}>📷</span>
         }
       </div>
@@ -248,7 +248,7 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
         {/* 썸네일 */}
         <div style={{ width:42, height:42, borderRadius:8, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
           {thumb
-            ? <img src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+            ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
             : <span style={{ fontSize:18 }}>📷</span>
           }
         </div>

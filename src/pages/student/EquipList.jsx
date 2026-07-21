@@ -229,7 +229,7 @@ export default function EquipList({ setTab }) {
               style={{ minWidth:"100%", height:"100%", cursor: (s.link||s.pdfKeyword||s.url) ? "pointer" : "default",
                 ...(s.img ? {} : { background:s.grad, padding:"20px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:14 }) }}>
               {s.img ? (
-                <img src={s.img} alt={s.title||""} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                <img loading="lazy" decoding="async" src={s.img} alt={s.title||""} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
               ) : (<>
                 <div>
                   <div style={{ fontSize:16, fontWeight:800, color:"#fff" }}>{s.title}</div>
@@ -324,7 +324,7 @@ export default function EquipList({ setTab }) {
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                     {photos.length > 0 && (
                       <div style={{ width:48, height:48, borderRadius:9, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
-                        <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                        <img loading="lazy" decoding="async" src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
                     <div style={{ flex:1, minWidth:0 }}>
@@ -395,7 +395,7 @@ export default function EquipList({ setTab }) {
                   <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                     {photos.length > 0 && (
                       <div style={{ width:48, height:48, borderRadius:9, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0 }}>
-                        <img src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+                        <img loading="lazy" decoding="async" src={photos[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
                       </div>
                     )}
                     <div style={{ flex:1, minWidth:0 }}>
