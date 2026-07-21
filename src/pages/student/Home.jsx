@@ -1348,7 +1348,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
     { emoji:"🎬", title:"장비 목록", desc:"대여 가능한 장비를 미리 확인할 수 있어요!" },
     { emoji:"📋", title:"예약 신청", desc:"초보자 가이드와 함께 장비를 골라보거나, 직접 선택할 수 있어요!" },
     { emoji:"📅", title:"대여이력/캘린더", desc:"내 대여 기록과 전체 대여 일정을 캘린더로 확인해요!" },
-    { emoji:"💬", title:"에브리타임", desc:"자유·강의·장터 등 다양한 게시판으로 소통해요!" },
+    { emoji:"💬", title:"에브리타임", desc:"자유·질문·강의 등 다양한 게시판으로 소통해요!" },
     { emoji:"👤", title:"내정보/문의", desc:"내 프로필 설정과 문의를 여기서 할 수 있어요!" },
   ];
         const step  = steps[onboardStep];

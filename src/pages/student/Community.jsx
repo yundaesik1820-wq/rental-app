@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
-import { Search, Bell, ChevronRight, MessageCircle, SatelliteDish, BookOpen, ShoppingCart, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
+import { Search, Bell, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -17,7 +17,6 @@ import FovCalc from "../../components/FovCalc";
 import ScripterTool from "../../components/ScripterTool";
 import SunSeeker from "../../components/SunSeeker";
 import ResourceHub from "../../components/ResourceHub";
-import ScenePatch from "../../components/ScenePatch";
 
 // 🚫 욕설/혐오 표현 필터 (Apple App Store 가이드라인 1.2 — UGC 욕설 필터링 요건)
 // 학교 커뮤니티 운영 정책에 맞게 아래 목록을 자유롭게 추가/삭제하세요.
@@ -45,9 +44,9 @@ function containsBadWord(text) {
 // 🚨 신고 누적 시 자동 숨김 임계값 (이 수 이상 신고되면 작성자·관리자 외에는 안 보임)
 const REPORT_HIDE_THRESHOLD = 5;
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "팝니다", "삽니다", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "새내기", "협업모집", "작품공유", "스탭프로필", "클래스"];
 const ANON_CATS   = ["자유", "질문", "강의", "새내기", "작품공유"]; // 익명
-const REAL_CATS   = ["정보", "취업", "공모전", "팝니다", "삽니다", "협업모집", "스탭프로필", "클래스"]; // 실명
+const REAL_CATS   = ["정보", "취업", "공모전", "협업모집", "스탭프로필", "클래스"]; // 실명
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -70,19 +69,6 @@ const ROOMS = [
     categories:["자유", "질문", "새내기"],
   },
   {
-    id:"scenepatch",
-    number:"02",
-    icon:"📡",
-    subtitle:"SCENEPATCH",
-    subEn:"Scene Patch",
-    title:"씬스패치",
-    desc:"영상계열 단독 소식",
-    color:"#ED1B2F",
-    colorBg:"rgba(237,27,47,0.15)",
-    borderStyle:"solid",
-    categories:["단독", "포착", "현장"],
-  },
-  {
     id:"knowledge", studentOnly:true,
     number:"03",
     icon:"📚",
@@ -94,19 +80,6 @@ const ROOMS = [
     colorBg:"rgba(6,182,212,0.15)",
     borderStyle:"solid",
     categories:["강의", "정보", "취업", "공모전"],
-  },
-  {
-    id:"marketplace",
-    number:"04",
-    icon:"🛒",
-    subtitle:"MARKETPLACE",
-    subEn:"Marketplace",
-    title:"중고 장터",
-    desc:"학생들 간 거래 게시판",
-    color:"#10b981",
-    colorBg:"rgba(16,185,129,0.15)",
-    borderStyle:"solid",
-    categories:["팔니다", "삽니다"],
   },
   {
     id:"crew",
@@ -165,9 +138,7 @@ const ROOMS = [
 // 🎬 룸 → 라인 아이콘 (목업 00.png 디자인)
 const ROOM_ICON = {
   community:   MessageCircle,
-  scenepatch:  SatelliteDish,
   knowledge:   BookOpen,
-  marketplace: ShoppingCart,
   crew:        Users,
   tools:       Clapperboard,
   boxoffice:   Video,
@@ -454,7 +425,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       if (writeForm.lessons.length === 0) { alert("영상을 1개 이상 추가해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
-      if (writeForm.category === "장터" && writeForm.images.length === 0) return;
     }
     if (writeForm.category === NEWBIE_CAT && !isNewbie && profile?.role !== "admin") {
       alert(`새내기 게시판은 ${newbiePrefix}학번 신입생만 이용할 수 있어요!`);
@@ -888,11 +858,11 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   };
 
   const catColor = (c) => {
-    const m = { "자유":C.blue, "질문":C.orange, "강의":C.purple, "정보":C.green, "취업":C.teal, "장터":C.yellow, "새내기":C.orange };
+    const m = { "자유":C.blue, "질문":C.orange, "강의":C.purple, "정보":C.green, "취업":C.teal, "새내기":C.orange };
     return m[c] || C.muted;
   };
   const catBg = (c) => {
-    const m = { "자유":C.blueLight, "질문":C.orangeLight, "강의":C.purpleLight, "정보":C.greenLight, "취업":C.tealLight, "장터":C.yellowLight, "새내기":C.orangeLight };
+    const m = { "자유":C.blueLight, "질문":C.orangeLight, "강의":C.purpleLight, "정보":C.greenLight, "취업":C.tealLight, "새내기":C.orangeLight };
     return m[c] || C.bg;
   };
   // 카테고리에 따라 익명/실명 판단
@@ -1219,11 +1189,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         <ResourceHub onBack={() => setSelectedTool(null)} />
       )}
 
-      {/* 📡 씬스패치 피드 */}
-      {selectedRoom === "scenepatch" && <ScenePatch initialArticleId={deepArticleId} onConsumed={() => setDeepArticleId(null)} />}
-
-      {/* 게시판 룸들 (community, knowledge, marketplace, boxoffice) */}
-      {selectedRoom && selectedRoom !== "tools" && selectedRoom !== "scenepatch" && (
+      {/* 게시판 룸들 (community, knowledge, boxoffice) */}
+      {selectedRoom && selectedRoom !== "tools" && (
         <>
       {selectedRoom === "boxoffice" ? (
         <BoxOfficeView posts={posts} onOpen={openPost} onPlay={setFsVideo} />
@@ -1256,7 +1223,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
         {currentRoom?.id === "community" && "🔒 익명 게시판"}
         {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
-        {currentRoom?.id === "marketplace" && "✅ 실명으로 게시"}
         {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
       </div>
 
@@ -2659,13 +2625,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
               이미지 첨부{" "}
               <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
-              {writeForm.category === "장터" && <span style={{ color:C.red, fontWeight:600, fontSize:11 }}> · 필수</span>}
             </div>
-            {writeForm.category === "장터" && (
-              <div style={{ fontSize:11, color:C.muted, marginBottom:6 }}>
-                📦 장터 게시판은 제품 사진을 최소 1장 이상 업로드해야 글 작성이 가능해요
-              </div>
-            )}
             {writeForm.images.length > 0 && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:8 }}>
                 {writeForm.images.map((url, i) => (
@@ -2725,8 +2685,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 ? writeForm.staffRoles.length === 0
                 : writeForm.category === "클래스"
                 ? !writeForm.title.trim() || writeForm.lessons.length === 0
-                : !writeForm.title.trim() || !writeForm.content.trim() ||
-                  (writeForm.category === "장터" && writeForm.images.length === 0))
+                : !writeForm.title.trim() || !writeForm.content.trim())
             }>
               {submitting ? "게시 중..." : "게시하기"}
             </Btn>
@@ -2776,7 +2735,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         )}
 
         {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 (클래스는 조교·관리자만) */}
-        {selectedRoom && selectedRoom !== "tools" && selectedRoom !== "scenepatch" && !(selectedRoom === "class" && !canUseRealName) && (
+        {selectedRoom && selectedRoom !== "tools" && !(selectedRoom === "class" && !canUseRealName) && (
         <button
           onClick={() => {
             const defaultCat = (currentRoom?.categories?.includes(cat) ? cat : currentRoom?.categories?.[0]) || "자유";

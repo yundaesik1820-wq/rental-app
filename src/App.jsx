@@ -53,7 +53,7 @@ function notifLabel(r) {
 
 // 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
 function buildAlerts(isAdmin, profile, data) {
-  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], articles=[], communityPosts=[], communityComments=[], friendRequests=[], crewInvites=[] } = data || {};
+  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], communityPosts=[], communityComments=[], friendRequests=[], crewInvites=[] } = data || {};
   const CC = NOTIF_CC, L = notifLabel;
   const today    = new Date().toISOString().slice(0,10);
   const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
@@ -87,10 +87,9 @@ function buildAlerts(isAdmin, profile, data) {
   alerts.push(
     ...crewInvites.filter(c=>c.userId===uid && c.ownerId!==uid).map(c=>({ id:`프로젝트초대_${c.id}`, cat:"프로젝트", color:CC.purple, bg:CC.purpleLight, icon:"🎬", title:`'${c.projectTitle||"프로젝트"}' ${c.role} 팀원으로 추가됐어요!`, desc:c.inviterName?`${c.inviterName}님의 프로젝트 · 프로젝트 스튜디오에서 확인`:"프로젝트 스튜디오에서 확인", time:c.createdAt, tab:"projectstudio" })),
   );
-  // SNS 알림 (공통) — 새 씬스패치 기사 + 내 글에 달린 댓글
+  // SNS 알림 (공통) — 내 글에 달린 댓글
   const myPostIds = new Set(communityPosts.filter(p=>p.authorId===uid).map(p=>p.id));
   alerts.push(
-    ...articles.filter(a=>a.authorUid!==uid).map(a=>({ id:`기사_${a.id}`, cat:"SNS", color:CC.purple, bg:CC.purpleLight, icon:"📰", title:`새 기사: ${a.title||"제목 없음"}`, desc:a.tag||"씬스패치", time:a.createdAt, room:"scenepatch", articleId:a.id })),
     ...communityComments.filter(c=>myPostIds.has(c.postId) && c.authorId!==uid).map(c=>({ id:`댓글_${c.id}`, cat:"SNS", color:CC.teal, bg:CC.tealLight, icon:"💬", title:"내 글에 새 댓글이 달렸어요", desc:(c.content||"").slice(0,40), time:c.createdAt, tab:"community", postId:c.postId })),
   );
   // 30일 윈도우 + 최신순 정렬
@@ -99,7 +98,7 @@ function buildAlerts(isAdmin, profile, data) {
   return alerts.filter(a => { if (a.cat === "공지") return true; const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
-function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests, crewInvites }) {
+function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
   // 등장/퇴장 애니메이션 — 다음 프레임에 enter=true로 슬라이드 인, 닫을 땐 먼저 슬라이드 아웃 후 언마운트
@@ -172,7 +171,6 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
     if (a.cat === "친구")     return { tab: "mypage", mypageView: "friends" };
     if (a.cat === "프로젝트") return { tab: "projectstudio" };
     if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
-    if (a.cat === "SNS" && a.articleId) return { tab: "community", room: "scenepatch", articleId: a.articleId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
     if (a.cat === "SNS")      return { tab: "community" };
     if (a.cat === "회원")     return { tab: "students", userId: a.userId };
@@ -181,7 +179,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   };
   const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
 
-  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests, crewInvites });
+  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites });
   const unreadIn = (g) => allAlerts.filter(a => !seenIds.has(a.id) && (g === "전체" || groupOf(a) === g)).length;
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
@@ -354,7 +352,6 @@ function AppContent() {
   const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
   const { data: notices }          = useCollection("notices",          "createdAt");
   const { data: licenseSchedules } = useCollection("licenseSchedules", "date");
-  const { data: articles }          = useCollection("scenepatchArticles", "createdAt");
   // 알림용: 커뮤니티 전체가 아니라 "내 글 / 내 글에 달린 댓글"만 구독 (데이터·비용 절감)
   // orderBy 생략 + where 단독 → 복합 인덱스 불필요. buildAlerts가 자체 정렬함.
   const _uid = profile?.uid || "";
@@ -383,7 +380,7 @@ function AppContent() {
   const notSeen = (id) => !seenNotifIds.has(id);
 
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
-  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, articles, communityPosts, communityComments, friendRequests, crewInvites }).filter(a => notSeen(a.id)).length;
+  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites }).filter(a => notSeen(a.id)).length;
 
   const renderPage = () => {
     if (isAdmin) {
@@ -451,7 +448,6 @@ function AppContent() {
           pwResets={pwResets}
           notices={notices}
           licenseSchedules={licenseSchedules}
-          articles={articles}
           communityPosts={communityPosts}
           communityComments={communityComments}
           friendRequests={friendRequests}
