@@ -1041,7 +1041,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     setSelectedRoom("community"); setCat(c); setPage(1); setSearch("");
                   };
                   const FeedCard = ({ title, titleColor, list, onMore }) => (
-                    <div>
+                    <div style={{ minWidth:0 }}>
                       {/* 제목행 — 박스 바깥 */}
                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
                         <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:titleColor }}>{title}</span>
@@ -1059,8 +1059,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         ) : list.map((p, i) => (
                           <div key={p.id} onClick={() => openPost(p)}
                             style={{ display:"flex", alignItems:"center", gap:7, padding:"4.5px 0", cursor:"pointer" }}>
-                            <span style={{ fontSize:11.5, fontWeight:800, color:"#7e9dff", minWidth:12 }}>{i + 1}</span>
-                            <span style={{ flex:1, fontSize:11, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                            <span style={{ fontSize:11.5, fontWeight:800, color:"#7e9dff", minWidth:12, flexShrink:0 }}>{i + 1}</span>
+                            <span style={{ flex:1, minWidth:0, fontSize:11, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
                           </div>
                         ))}
                       </div>
