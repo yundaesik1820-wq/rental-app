@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
-import { Search, Bell, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
+import { Search, Bell, ChevronLeft, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -907,49 +907,34 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             </div>
           </div>
         ) : (
-          <div data-cinema="1" style={{
+          <div style={{
             position:"sticky", top:0, zIndex:50,
-            background:"linear-gradient(180deg, rgba(10,10,10,0.98) 0%, rgba(10,10,10,0.85) 80%, rgba(10,10,10,0) 100%)",
-            backdropFilter:"blur(8px)",
-            paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 18, paddingLeft: 18,
+            background:"#0a0a0a",
+            paddingTop: safeTop + 14, paddingRight: 18, paddingBottom: 16, paddingLeft: 18,
             display:"flex", alignItems:"center", justifyContent:"space-between",
-            borderBottom:`1px solid ${currentRoom ? currentRoom.color + "33" : "rgba(220,38,38,0.2)"}`,
           }}>
-            <button onClick={() => {
-                if (selectedTool) {
-                  setSelectedTool(null);
-                } else {
-                  setSelectedRoom(null);
-                  setSelectedTool(null);
-                }
-              }}
-              style={{
-                background:`${currentRoom ? currentRoom.color : "#dc2626"}1A`,
-                border:`1px solid ${currentRoom ? currentRoom.color : "#dc2626"}4D`,
-                color:"#fafaf9", fontSize:12, fontWeight:600,
-                padding:"7px 14px", borderRadius:8, cursor:"pointer",
-                display:"flex", alignItems:"center", gap:6,
-              }}>
-              <span style={{ color: currentRoom ? currentRoom.color : "#dc2626" }}>←</span>
-              {selectedTool ? "도구" : "ROOMS"}
-            </button>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ color: currentRoom ? currentRoom.color : "#dc2626", fontSize:10, fontWeight:700, letterSpacing:"0.2em" }}>● REC</span>
-              <span style={{ color:"#fafaf9", fontSize:14, fontWeight:900, letterSpacing:"0.1em" }}>
-                {selectedTool === "slate" ? "SLATE"
-                  : selectedTool === "live-exposure" ? "LIVE EXPOSURE"
-                  : selectedTool === "exposure-calc" ? "EXPOSURE CALC"
-                  : selectedTool === "dof" ? "DOF"
-                  : selectedTool === "color-temp" ? "COLOR TEMP"
-                  : selectedTool === "fov" ? "FOV"
-                  : selectedTool === "scripter" ? "SCRIPTER"
-                  : selectedTool === "sun" ? "SUN SEEKER"
-                  : selectedTool === "resources" ? "RESOURCES"
-                  : currentRoom ? currentRoom.title
-                  : "ZZOTKYO"}
+            <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
+              <button onClick={() => {
+                  if (selectedTool) { setSelectedTool(null); }
+                  else { setSelectedRoom(null); setSelectedTool(null); }
+                }}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#fafaf9", flexShrink:0 }}>
+                <ChevronLeft size={24} strokeWidth={2.2} />
+              </button>
+              <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                {selectedTool ? "도구" : currentRoom ? currentRoom.title : "커뮤니티"}
               </span>
             </div>
-            <div style={{ width:80 }} /> {/* 우측 여백 균형 */}
+            <div style={{ display:"flex", alignItems:"center", gap:16, flexShrink:0 }}>
+              <button onClick={() => setShowSearch(true)}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4" }}>
+                <Search size={20} strokeWidth={2} />
+              </button>
+              <button onClick={() => onNotif && onNotif()}
+                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#e7e5e4", position:"relative" }}>
+                <Bell size={20} strokeWidth={2} />
+              </button>
+            </div>
           </div>
         )}
 
