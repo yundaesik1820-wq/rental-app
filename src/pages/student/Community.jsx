@@ -1255,27 +1255,31 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           ).slice(0, 3);
         if (top3.length === 0) return null;
         return (
-          <div style={{ background:CINEMA.surfaceAlt, borderRadius:10, padding:"12px 14px", marginBottom:16, border:`1px dashed ${CINEMA.gold}` }}>
-            <div style={{ fontSize:11, fontWeight:700, color:CINEMA.gold, marginBottom:10, letterSpacing:"0.2em", fontFamily:"'Courier New', monospace" }}>
-              ★ BOX OFFICE · TOP 3
-            </div>
-            {top3.map((p, i) => (
-              <div key={p.id} onClick={() => openPost(p)}
-                style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 0", borderBottom: i<2?`1px solid rgba(251,191,36,0.15)`:"none", cursor:"pointer" }}>
-                <span style={{ fontSize:15, fontWeight:900, color:["#fbbf24","#a8a29e","#cd7c3a"][i], minWidth:20, fontFamily:"'Courier New', monospace" }}>
-                  {["01","02","03"][i]}
-                </span>
-                <span style={{ fontSize:10, background:CINEMA.goldBg, border:`1px solid ${CINEMA.gold}60`, borderRadius:4, padding:"1px 6px", color:CINEMA.gold, flexShrink:0, fontWeight:600 }}>
-                  {p.category}
-                </span>
-                <span style={{ fontSize:12, fontWeight:600, color:CINEMA.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-                <div style={{ display:"flex", gap:8, fontSize:10, color:CINEMA.muted, flexShrink:0 }}>
-                  <span>👁 {p.views||0}</span>
-                  <span style={{ color: CINEMA.redBright }}>♥ {p.likes||0}</span>
-                  <span>💬 {postComments(p.id).length}</span>
+          <div style={{ position:"relative", width:"100%", aspectRatio:"1967 / 799",
+              backgroundImage:"url(/boxoffice-banner.png)", backgroundSize:"100% 100%",
+              backgroundRepeat:"no-repeat", borderRadius:12, marginBottom:16 }}>
+            {/* 빈 필름릴 무대 위에 인기글 3줄을 얹음 (상단 26%는 박힌 타이틀 자리) */}
+            <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column",
+                justifyContent:"flex-end", padding:"12% 6% 4%", boxSizing:"border-box" }}>
+              {top3.map((p, i) => (
+                <div key={p.id} onClick={() => openPost(p)}
+                  style={{ display:"flex", alignItems:"center", gap:8, flex:1, minHeight:0,
+                    borderTop: i>0 ? "1px solid rgba(255,255,255,0.08)" : "none", cursor:"pointer" }}>
+                  <span style={{ fontSize:14, fontWeight:900, color:["#fbbf24","#d6d3cc","#cd7c3a"][i], minWidth:18, fontFamily:"'Courier New', monospace", textShadow:"0 1px 3px rgba(0,0,0,0.85)" }}>
+                    {["01","02","03"][i]}
+                  </span>
+                  <span style={{ fontSize:10, background:CINEMA.goldBg, border:`1px solid ${CINEMA.gold}60`, borderRadius:4, padding:"1px 6px", color:CINEMA.gold, flexShrink:0, fontWeight:600 }}>
+                    {p.category}
+                  </span>
+                  <span style={{ fontSize:12, fontWeight:600, color:CINEMA.text, flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", textShadow:"0 1px 3px rgba(0,0,0,0.85)" }}>{p.title}</span>
+                  <div style={{ display:"flex", gap:8, fontSize:10, color:CINEMA.muted, flexShrink:0, textShadow:"0 1px 3px rgba(0,0,0,0.85)" }}>
+                    <span>👁 {p.views||0}</span>
+                    <span style={{ color: CINEMA.redBright }}>♥ {p.likes||0}</span>
+                    <span>💬 {postComments(p.id).length}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         );
       })()}
