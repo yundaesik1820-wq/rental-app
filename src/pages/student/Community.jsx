@@ -229,8 +229,8 @@ function getDday(deadline) {
   return Math.round((end - today) / 86400000);
 }
 
-/* 🏆 공모전 정보 캐러셀 — 4초 자동 넘김 + 손 스와이프(스냅), 만지는 동안 자동 정지 */
-function ContestCarousel({ list, onOpen }) {
+/* 🎠 공용 자동 캐러셀 — 4초 자동 넘김 + 손 스와이프(스냅), 끝나면 오른쪽으로 무한 루프 */
+function AutoCarousel({ list, accent, renderSlide }) {
   const trackRef = useRef(null);
   const pausedRef = useRef(false);
   const resumeTimer = useRef(null);
@@ -274,48 +274,86 @@ function ContestCarousel({ list, onOpen }) {
     setIdx(Math.min(list.length - 1, Math.round(el.scrollLeft / w)));
   };
 
-  const fmt = (d) => (d || "").split("-").join(".");
-
   return (
     <div>
       <style>{`.contest-swipe::-webkit-scrollbar{display:none}.contest-swipe{scrollbar-width:none;-ms-overflow-style:none}`}</style>
       <div ref={trackRef} className="contest-swipe" onScroll={onScroll}
         onTouchStart={pause} onTouchEnd={resume} onTouchCancel={resume}
         style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", borderRadius:16 }}>
-        {slides.map((p, si) => {
-          const dday = getDday(p.deadline);
-          return (
-            <div key={si === list.length ? `${p.id}-clone` : p.id} onClick={() => onOpen(p)}
-              style={{ flexShrink:0, width:"100%", scrollSnapAlign:"start", boxSizing:"border-box", cursor:"pointer" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(249,115,22,0.05) 40%, #101018 100%)", border:"1px solid rgba(251,146,60,0.25)", borderRadius:16, padding:"10px 12px" }}>
-                {/* 좌: 공모전 이미지 */}
-                <div style={{ width:100, height:76, borderRadius:10, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  {p.images?.[0]
-                    ? <img loading="lazy" decoding="async" src={p.images[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                    : <span style={{ fontSize:24, opacity:0.5 }}>🏆</span>}
-                </div>
-                {/* 우: 이름 / 기간 / D-day */}
-                <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:5 }}>
-                  <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{p.title}</div>
-                  <div style={{ fontSize:11, color:"#8a8a92" }}>{fmt(p.contestStart)} ~ {fmt(p.deadline)}</div>
-                  <span style={{ alignSelf:"flex-start", background:"#fb923c", color:"#0a0a0a", fontSize:9.5, fontWeight:700, padding:"2px 8px", borderRadius:5 }}>
-                    {dday === 0 ? "D-DAY" : `D-${dday}`}
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        {slides.map((p, si) => (
+          <div key={si === list.length ? `${p.id}-clone` : p.id}
+            style={{ flexShrink:0, width:"100%", scrollSnapAlign:"start", boxSizing:"border-box" }}>
+            {renderSlide(p)}
+          </div>
+        ))}
       </div>
       {/* 인디케이터 점 */}
       {list.length > 1 && (
         <div style={{ display:"flex", justifyContent:"center", gap:5, marginTop:7 }}>
           {list.map((_, i) => (
-            <span key={i} style={{ width: i === idx ? 14 : 5, height:5, borderRadius:3, background: i === idx ? "#fb923c" : "rgba(255,255,255,0.18)", transition:"all 0.25s" }} />
+            <span key={i} style={{ width: i === idx ? 14 : 5, height:5, borderRadius:3, background: i === idx ? accent : "rgba(255,255,255,0.18)", transition:"all 0.25s" }} />
           ))}
         </div>
       )}
     </div>
+  );
+}
+
+/* 🏆 공모전 카드 캐러셀 */
+function ContestCarousel({ list, onOpen }) {
+  const fmt = (d) => (d || "").split("-").join(".");
+  return (
+    <AutoCarousel list={list} accent="#fb923c" renderSlide={(p) => {
+      const dday = getDday(p.deadline);
+      return (
+        <div onClick={() => onOpen(p)}
+          style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(249,115,22,0.05) 40%, #101018 100%)", border:"1px solid rgba(251,146,60,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
+          {/* 좌: 공모전 이미지 */}
+          <div style={{ width:100, height:76, borderRadius:10, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {p.images?.[0]
+              ? <img loading="lazy" decoding="async" src={p.images[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+              : <span style={{ fontSize:24, opacity:0.5 }}>🏆</span>}
+          </div>
+          {/* 우: 이름 / 기간 / D-day */}
+          <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:5 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{p.title}</div>
+            <div style={{ fontSize:11, color:"#8a8a92" }}>{fmt(p.contestStart)} ~ {fmt(p.deadline)}</div>
+            <span style={{ alignSelf:"flex-start", background:"#fb923c", color:"#0a0a0a", fontSize:9.5, fontWeight:700, padding:"2px 8px", borderRadius:5 }}>
+              {dday === 0 ? "D-DAY" : `D-${dday}`}
+            </span>
+          </div>
+        </div>
+      );
+    }} />
+  );
+}
+
+/* 🎬 오늘의 추천작 카드 캐러셀 */
+function WorkCarousel({ list, onOpen }) {
+  return (
+    <AutoCarousel list={list} accent="#a855f7" renderSlide={(p) => {
+      const ytId = getYouTubeId(p.ytUrl);
+      return (
+        <div onClick={() => onOpen(p)}
+          style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(168,85,247,0.10) 0%, rgba(124,58,237,0.05) 40%, #101018 100%)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
+          {/* 좌: 썸네일 */}
+          <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
+            <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+              <div style={{ width:28, height:20, borderRadius:5, background:"rgba(220,38,38,0.92)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <span style={{ color:"#fff", fontSize:9, marginLeft:1 }}>▶</span>
+              </div>
+            </div>
+          </div>
+          {/* 우: 제목 / 크레딧 / 러닝타임 */}
+          <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:4 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+            {p.credits && <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🎬 {p.credits}</div>}
+            {p.runtime && <div style={{ fontSize:11, color:"#8a8a92" }}>⏱ {p.runtime}</div>}
+          </div>
+        </div>
+      );
+    }} />
   );
 }
 
@@ -1275,32 +1313,20 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         const seedStr = `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`;
                         let seed = 0;
                         for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+                        // 시드 셔플로 매일 3개 선정 (모두에게 같은 순서, 자정마다 교체)
                         const sorted = [...works].sort((a, b) => (a.id > b.id ? 1 : -1));
-                        const pick = sorted[seed % sorted.length];
-                        const ytId = getYouTubeId(pick.ytUrl);
+                        const rand = (() => { let s = seed || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+                        for (let i = sorted.length - 1; i > 0; i--) {
+                          const j = Math.floor(rand() * (i + 1));
+                          [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+                        }
+                        const picks = sorted.slice(0, 3);
                         return (
                           <div style={{ marginTop:14 }}>
                             <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
                               <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#a855f7" }}>오늘의 추천작</span>
                             </div>
-                            <div onClick={() => openPost(pick)}
-                              style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(168,85,247,0.10) 0%, rgba(124,58,237,0.05) 40%, #101018 100%)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
-                              {/* 좌: 썸네일 */}
-                              <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
-                                <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-                                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                  <div style={{ width:28, height:20, borderRadius:5, background:"rgba(220,38,38,0.92)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                    <span style={{ color:"#fff", fontSize:9, marginLeft:1 }}>▶</span>
-                                  </div>
-                                </div>
-                              </div>
-                              {/* 우: 제목 / 크레딧 / 러닝타임 */}
-                              <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:4 }}>
-                                <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pick.title}</div>
-                                {pick.credits && <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🎬 {pick.credits}</div>}
-                                {pick.runtime && <div style={{ fontSize:11, color:"#8a8a92" }}>⏱ {pick.runtime}</div>}
-                              </div>
-                            </div>
+                            <WorkCarousel list={picks} onOpen={openPost} />
                           </div>
                         );
                       })()}
