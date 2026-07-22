@@ -44,13 +44,13 @@ function containsBadWord(text) {
 // 🚨 신고 누적 시 자동 숨김 임계값 (이 수 이상 신고되면 작성자·관리자 외에는 안 보임)
 const REPORT_HIDE_THRESHOLD = 5;
 
-const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "협업모집", "작품공유", "스탭프로필", "클래스"];
-const ANON_CATS   = ["자유", "질문", "강의", "작품공유"]; // 익명
-const REAL_CATS   = ["정보", "취업", "공모전", "협업모집", "스탭프로필", "클래스"]; // 실명
+const CATEGORIES  = ["전체", "자유", "질문", "강의", "정보", "취업", "공모전", "기타", "협업모집", "작품공유", "스탭프로필", "클래스"];
+const ANON_CATS   = ["자유", "질문", "강의", "작품공유", "정보", "공모전", "기타"]; // 익명
+const REAL_CATS   = ["협업모집", "스탭프로필", "클래스"]; // 실명
 // 카드형 리스트(com.png) 카테고리별 액센트 색
 const CAT_COLOR = {
   "자유":"#f4718a", "질문":"#60a5fa", "강의":"#c084fc", "정보":"#34d399",
-  "취업":"#22d3ee", "공모전":"#fb923c",
+  "취업":"#22d3ee", "공모전":"#fb923c", "기타":"#94a3b8",
   "작품공유":"#a78bfa", "협업모집":"#fbbf24", "스탭프로필":"#f472b6", "클래스":"#38bdf8",
 };
 const catAccent = (c) => CAT_COLOR[c] || "#9ca3af";
@@ -91,11 +91,11 @@ const ROOMS = [
     subtitle:"KNOWLEDGE",
     subEn:"Info Share",
     title:"정보 공유",
-    desc:"강의·정보·취업·공모전",
+    desc:"정보·공모전·기타",
     color:"#06b6d4",
     colorBg:"rgba(6,182,212,0.15)",
     borderStyle:"solid",
-    categories:["강의", "정보", "취업", "공모전"],
+    categories:["정보", "공모전", "기타"],
   },
   {
     id:"crew",
@@ -1044,11 +1044,55 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                       </div>
                     </div>
                   );
-                  return (
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                      <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
-                      <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
+                  const goInfo = () => {
+                    const kRoom = ROOMS.find(r => r.id === "knowledge");
+                    if (kRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(kRoom); return; }
+                    setSelectedRoom("knowledge"); setCat("정보"); setPage(1); setSearch("");
+                  };
+                  const InfoFeed = ({ list, onMore }) => (
+                    <div style={{ marginTop:14 }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
+                        <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#34d399" }}>정보 최신글</span>
+                        <span onClick={onMore} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                          전체보기 <ChevronRight size={12} color="#8a8a92" />
+                        </span>
+                      </div>
+                      <div style={{ background:"linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.05) 40%, #101018 100%)", border:"1px solid rgba(124,58,237,0.22)", borderRadius:16, padding:"5px 12px" }}>
+                        {list.length === 0 ? (
+                          <div style={{ padding:"18px 0", textAlign:"center", color:"#6b6b74", fontSize:11 }}>아직 글이 없어요</div>
+                        ) : list.map((p, i) => {
+                          const thumb = p.images?.[0];
+                          return (
+                            <div key={p.id} onClick={() => openPost(p)}
+                              style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop: i>0 ? "1px solid rgba(255,255,255,0.06)" : "none", cursor:"pointer" }}>
+                              <div style={{ width:52, height:52, borderRadius:9, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                {thumb
+                                  ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                                  : <span style={{ fontSize:19, opacity:0.5 }}>📄</span>}
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{p.title}</div>
+                                <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName(p)}</div>
+                              </div>
+                              <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0, fontSize:10.5, color:"#8a8a92" }}>
+                                <span>👁 {p.views||0}</span>
+                                <span>💬 {postComments(p.id).length}</span>
+                                <span style={{ minWidth:40, textAlign:"right" }}>{formatDate(p.createdAt)}</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
+                  );
+                  return (
+                    <>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                        <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
+                        <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
+                      </div>
+                      <InfoFeed list={latest("정보")} onMore={goInfo} />
+                    </>
                   );
                 })()}
 
@@ -1230,7 +1274,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       </div>
       {(currentRoom?.id === "knowledge" || currentRoom?.id === "crew") && (
         <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
-          {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
+          {currentRoom?.id === "knowledge" && "정보 · 공모전 · 기타 (모두 익명)"}
           {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
         </div>
       )}
