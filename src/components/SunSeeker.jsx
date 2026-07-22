@@ -13,7 +13,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
  * 태양 계산: SunCalc 알고리즘(MIT) 내장 — 외부 의존성 없음
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 const C = {

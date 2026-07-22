@@ -1096,8 +1096,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                                   : <span style={{ fontSize:19, opacity:0.5 }}>📄</span>}
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:12, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{p.title}</div>
-                                <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName(p)}</div>
+                                <div style={{ fontSize:12, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
                               </div>
                               <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0, fontSize:10.5, color:"#8a8a92" }}>
                                 <span>👁 {p.views||0}</span>

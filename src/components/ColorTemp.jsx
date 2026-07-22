@@ -13,7 +13,7 @@ import { useState, useMemo } from "react";
  *   양수 → CTO 계열(색온도 낮춤),  음수 → CTB 계열(색온도 높임)
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 const C = {

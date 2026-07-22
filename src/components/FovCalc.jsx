@@ -13,7 +13,7 @@ import { useState, useMemo } from "react";
  *   crop factor = 43.27 / sensor_diagonal
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 const C = {

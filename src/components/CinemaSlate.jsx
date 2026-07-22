@@ -11,7 +11,7 @@ import { createPortal } from "react-dom";
  * - 글꼴: 한국어 고딕(Pretendard/Noto Sans), 라벨만 모노
  */
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', -apple-system, 'Segoe UI', sans-serif";
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 
 export default function CinemaSlate({ onBack }) {
   // ─── localStorage 키 ──────────────────────

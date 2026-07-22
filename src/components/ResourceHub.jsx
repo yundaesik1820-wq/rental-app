@@ -11,7 +11,7 @@ import { useState, useMemo } from "react";
  * ※ 라이선스는 변동될 수 있어 보수적으로 표기. 사용 전 각 사이트 확인 권장.
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 const C = {

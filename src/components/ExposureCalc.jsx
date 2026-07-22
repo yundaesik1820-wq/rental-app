@@ -7,7 +7,7 @@ import { useState, useMemo } from "react";
  * 탭 2 — 등가 노출 환산: 한 값 변경 시 다른 값 자동 환산
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 const C = {

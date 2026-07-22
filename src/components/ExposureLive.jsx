@@ -20,7 +20,7 @@ import { createPortal } from "react-dom";
  * - 전후 카메라 전환
  */
 
-const FONT_MONO   = "'Courier New', ui-monospace, monospace";
+const FONT_MONO   = "'Noto Sans KR', sans-serif";
 const FONT_GOTHIC = "Pretendard, 'Noto Sans KR', sans-serif";
 
 // 사용자 정의 폴스컬러 매핑
