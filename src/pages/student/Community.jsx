@@ -1546,6 +1546,15 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 <span style={{ display:"inline-block", background:accent+"28", color:accent, fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:5, marginBottom:8 }}>
                   {p.category}
                 </span>
+                {p.category === "공모전" && p.deadline && (() => {
+                  const dday = getDday(p.deadline);
+                  const closed = dday !== null && dday < 0;
+                  return (
+                    <span style={{ display:"inline-block", background: closed ? "#444" : "#fb923c", color: closed ? "#fff" : "#0a0a0a", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:5, marginBottom:8, marginLeft:5, verticalAlign:"top" }}>
+                      {closed ? "마감" : dday === 0 ? "D-DAY" : `D-${dday}`}
+                    </span>
+                  );
+                })()}
                 <div style={{ fontSize:15.5, fontWeight:800, color:CINEMA.text, lineHeight:1.3, marginBottom:6, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>
                   {isLecture ? p.lectureName : p.title}
                 </div>
