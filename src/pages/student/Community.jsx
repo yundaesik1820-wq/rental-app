@@ -1601,8 +1601,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 <div style={{ position:"relative" }}>
                   <button onClick={() => setPostMenu(v => !v)} aria-label="더보기"
                     style={{ background:"none", border:"none", color:CINEMA.muted, cursor:"pointer", padding:"4px 4px", display:"flex", alignItems:"center" }}>
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                      <path d="M4 6h16M4 12h16M4 18h16" />
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                      <circle cx="12" cy="5" r="1.6" /><circle cx="12" cy="12" r="1.6" /><circle cx="12" cy="19" r="1.6" />
                     </svg>
                   </button>
                   {postMenu && (
@@ -1943,15 +1943,15 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               <div style={{ display:"flex", justifyContent:"center", margin:"22px 0 18px" }}>
                 <div style={{ display:"flex", alignItems:"stretch", background:CINEMA.surface, border:`1px solid ${liked ? CINEMA.red : CINEMA.borderRed}`, borderRadius:26, boxShadow: liked ? "0 0 16px rgba(220,38,38,0.25)" : "none", overflow:"hidden" }}>
                   <button onClick={() => toggleLike("post", selPost)} style={{ ...seg, color: liked ? CINEMA.redBright : CINEMA.muted, fontWeight:700 }}>
-                    <span style={{ fontSize:15 }}>👍</span> {selPost.likes||0}
+                    <span style={{ fontSize:15, filter: liked ? "none" : "grayscale(1) opacity(0.6)" }}>👍</span> {selPost.likes||0}
                   </button>
                   {divider}
                   <div style={{ ...seg, cursor:"default", color:CINEMA.muted, fontWeight:600 }}>
-                    <span style={{ fontSize:14 }}>💬</span> {postComments(selPost.id).length}
+                    <span style={{ fontSize:14, filter:"grayscale(1) opacity(0.6)" }}>💬</span> {postComments(selPost.id).length}
                   </div>
                   {divider}
                   <button onClick={() => toggleDislike("post", selPost)} style={{ ...seg, color: disliked ? CINEMA.text : CINEMA.mutedDim, fontWeight:600 }}>
-                    <span style={{ fontSize:14 }}>👎</span> {selPost.dislikes||0}
+                    <span style={{ fontSize:14, filter: disliked ? "none" : "grayscale(1) opacity(0.6)" }}>👎</span> {selPost.dislikes||0}
                   </button>
                 </div>
               </div>
@@ -1989,7 +1989,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     }}>
                       {isMemoComment ? "🏛️ " : ""}{displayCommentName(c, selPost.category)}
                     </span>
-                    <span style={{ fontSize:11, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>{formatDate(c.createdAt)}</span>
+                    <span style={{ fontSize:13, color:CINEMA.mutedDim }}>{formatDate(c.createdAt)}</span>
                   </div>
                   {selPost.category === LECTURE_CAT && c.rating > 0 && (
                     <div style={{ fontSize:12, color:CINEMA.gold, marginBottom:3 }}>
@@ -2002,12 +2002,12 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                   <button onClick={() => toggleLike("comment", c)}
                     style={{ background:"none", border:"none", fontSize:12,
                       color: cLiked ? CINEMA.redBright : CINEMA.mutedDim, cursor:"pointer", fontWeight:600, padding:0 }}>
-                    {cLiked ? "♥" : "♡"} {c.likes||0}
+                    <span style={{ filter: cLiked ? "none" : "grayscale(1) opacity(0.6)" }}>👍</span> {c.likes||0}
                   </button>
                   <button onClick={() => toggleDislike("comment", c)}
                     style={{ background:"none", border:"none", fontSize:12,
                       color: cDisliked ? CINEMA.text : CINEMA.mutedDim, cursor:"pointer", fontWeight:500, padding:0 }}>
-                    👎 {c.dislikes||0}
+                    <span style={{ filter: cDisliked ? "none" : "grayscale(1) opacity(0.6)" }}>👎</span> {c.dislikes||0}
                   </button>
                   {canMenu && (
                     <button onClick={() => setCmtMenu(cmtMenu === c.id ? null : c.id)}
