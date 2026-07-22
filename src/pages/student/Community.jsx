@@ -2342,36 +2342,33 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       {/* 글쓰기 모달 */}
       {showWrite && (
         <Modal onClose={() => setShowWrite(false)} width={540} cinema>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:18 }}>
-            <span style={{ color:CINEMA.red, fontSize:10, fontWeight:700, letterSpacing:"0.3em", fontFamily:"'Courier New', monospace" }}>● REC</span>
-            <span style={{ fontSize:18, fontWeight:800, color:CINEMA.text, letterSpacing:"0.05em" }}>새 글 작성</span>
+          <div style={{ marginBottom:20 }}>
+            <span style={{ fontSize:23, fontWeight:800, color:CINEMA.text }}>새 글 작성</span>
           </div>
 
           {/* 카테고리 선택 */}
           <div style={{ marginBottom:14 }}>
-            <div style={{ fontSize:10, fontWeight:700, color:CINEMA.muted, marginBottom:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.25em" }}>CATEGORY</div>
-            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+            <div style={{ fontSize:13, fontWeight:700, color:CINEMA.muted, marginBottom:10 }}>카테고리</div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
               {(currentRoom?.categories || []).map(c => {
                 const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
                 const active = writeForm.category === c;
-                const roomColor = currentRoom?.color || CINEMA.red;
                 return (
                   <button key={c} onClick={() => !isLocked && setWriteForm(p=>({...p, category:c}))}
                     style={{
-                      padding:"6px 13px", borderRadius:14,
-                      border:`1px solid ${active ? roomColor : CINEMA.border}`,
-                      background: active ? roomColor : CINEMA.surface,
+                      padding:"10px 22px", borderRadius:12,
+                      border:`1.5px solid ${active ? "transparent" : CINEMA.border}`,
+                      background: active ? "linear-gradient(135deg,#5b8def,#7c3aed)" : "transparent",
                       color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
-                      fontSize:11, fontWeight: active ? 700 : 500,
+                      fontSize:14, fontWeight:700,
+                      boxShadow: active ? "0 0 14px rgba(124,58,237,0.35)" : "none",
                       cursor: isLocked ? "not-allowed" : "pointer",
+                      transition:"all 0.15s",
                     }}>
                     {c === NEWBIE_CAT && "🌱"}{c}{isLocked && " 🔒"}
                   </button>
                 );
               })}
-            </div>
-            <div style={{ fontSize:10, color:CINEMA.mutedDim, marginTop:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>
-              {REAL_CATS.includes(writeForm.category) ? "✅ 실명으로 게시됩니다" : "🔒 익명으로 게시됩니다"}
             </div>
             {/* 관리자(슈퍼/조교)만 - 익명 게시판에서 실명 모드 선택 가능 */}
             {canUseRealName && !REAL_CATS.includes(writeForm.category) && writeForm.category !== LECTURE_CAT && (
@@ -2691,7 +2688,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               }} />
           </div>}
 
-          <div style={{ background:C.yellowLight, borderRadius:10, padding:"10px 14px", fontSize:12, color:"#92400E", marginBottom:16 }}>
+          <div style={{ fontSize:12, color:CINEMA.mutedDim, marginBottom:16, paddingLeft:2, lineHeight:1.5 }}>
             {writeForm.category === LECTURE_CAT
               ? "⚠️ 익명으로 게시되며, 학생들이 댓글로 후기를 남길 수 있어요."
               : writeForm.category === "작품공유"
@@ -2706,9 +2703,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               ? "⚠️ 실명으로 게시되며, 게시 후 수정·삭제가 불가합니다."
               : "⚠️ 익명으로 게시되며, 게시 후 수정·삭제가 불가합니다."}
           </div>
-          <div style={{ display:"flex", gap:10 }}>
-            <Btn onClick={() => setShowWrite(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={submitPost} color={C.navy} full disabled={submitting ||
+          {(() => {
+            const disabled = submitting ||
               (writeForm.category === LECTURE_CAT
                 ? !writeForm.lectureName.trim() || !writeForm.professor.trim()
                 : writeForm.category === "작품공유"
@@ -2719,11 +2715,20 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 ? writeForm.staffRoles.length === 0
                 : writeForm.category === "클래스"
                 ? !writeForm.title.trim() || writeForm.lessons.length === 0
-                : !writeForm.title.trim() || !writeForm.content.trim())
-            }>
-              {submitting ? "게시 중..." : "게시하기"}
-            </Btn>
-          </div>
+                : !writeForm.title.trim() || !writeForm.content.trim());
+            return (
+              <div style={{ display:"flex", gap:10 }}>
+                <button onClick={() => setShowWrite(false)}
+                  style={{ flex:1, background:"transparent", border:`1.5px solid ${CINEMA.border}`, borderRadius:12, color:CINEMA.muted, fontSize:15, fontWeight:700, padding:"13px", cursor:"pointer", fontFamily:"inherit" }}>
+                  취소
+                </button>
+                <button onClick={submitPost} disabled={disabled}
+                  style={{ flex:1, background:"linear-gradient(135deg,#5b8def,#7c3aed)", border:"none", borderRadius:12, color:"#fff", fontSize:15, fontWeight:700, padding:"13px", cursor: disabled?"not-allowed":"pointer", boxShadow: disabled?"none":"0 0 16px rgba(124,58,237,0.35)", opacity: disabled?0.5:1, fontFamily:"inherit" }}>
+                  {submitting ? "게시 중..." : "게시하기"}
+                </button>
+              </div>
+            );
+          })()}
         </Modal>
       )}
     </div>
