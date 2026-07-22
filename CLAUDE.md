@@ -124,7 +124,7 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
 - 가운데 **장비예약 = 볼록 그라데이션 FAB**(CalendarPlus, 텍스트 z-index 최상단). `STU_BAR_ICON` 맵으로 아이콘 지정(예약내역=ClipboardList 등).
 - 선택 탭: **그라데이션 stroke 아이콘**(`<Icon stroke="url(#navGrad)">` + 숨은 `<linearGradient id=navGrad>`) + **밑줄 팝인**(`navUnderlinePop`, 이동 없음). 비활성 아이콘은 **흰색**(`color="#fff"` — `stroke={undefined}` 주면 획이 사라져 투명해지는 버그 있었음).
 - 모션: tap-spring(누름 바운스). 활성색 블루.
-- ⚠️ **z-index 함정**: 하단바 `zIndex:250`으로 올림. Community 루트가 `position:fixed zIndex:200`이라 FAB를 덮었음. Community의 풀스크린 모달(이미지뷰어 9999·영상 99999)은 z-200 컨테이너 **밖 형제**라 250 위로 그대로 뜸. 단 z-200 컨테이너 **안에 중첩된** 모달(blockedRoom 등)은 전역 200레벨이라 250 하단바에 살짝 가림(경미).
+- ⚠️ **z-index 함정**: 하단바 `zIndex:250`으로 올림. Community 루트가 `position:fixed zIndex:200`이라 FAB를 덮었음. Community의 풀스크린 모달(이미지뷰어 9999·영상 99999)은 z-200 컨테이너 **밖 형제**라 250 위로 그대로 뜸. 단 z-200 컨테이너 **안에 중첩된** 모달(blockedRoom 등)은 전역 200레벨이라 250 하단바에 살짝 가림(경미). 슬레이터는 이 함정 + 모바일 전역 `* { max-width:100% }`(Layout)가 회전 래퍼를 캡핑해 회전 화면이 뭉개지는 문제까지 겹쳐서 `createPortal(body)` + 인라인 `maxWidth:none`으로 수정(bfdbeb3). **풀스크린 도구가 또 깨지면 같은 패턴 의심할 것** — ExposureLive 등 다른 풀스크린 도구는 아직 z-200 안에 중첩.
 
 ### 네이티브 앱 느낌 (`index.html`)
 - 전역 `user-select:none` + `-webkit-touch-callout:none` + `img -webkit-user-drag:none` + `contextmenu` preventDefault → 롱프레스 이미지저장/텍스트복사 차단. **input/textarea/contenteditable은 예외**(선택·붙여넣기 유지).
