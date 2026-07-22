@@ -54,6 +54,12 @@ const CAT_COLOR = {
   "작품공유":"#a78bfa", "협업모집":"#fbbf24", "스탭프로필":"#f472b6", "클래스":"#38bdf8",
 };
 const catAccent = (c) => CAT_COLOR[c] || "#9ca3af";
+// 게시글 상세 액센트 톤 (자유=빨강 / 질문=파랑, 나머지는 빨강 기본)
+const POST_ACCENT = {
+  red:  { solid:"#dc2626", bright:"#ef4444", border:"rgba(220,38,38,0.3)",  glow:"rgba(220,38,38,0.25)" },
+  blue: { solid:"#2563eb", bright:"#60a5fa", border:"rgba(37,99,235,0.35)", glow:"rgba(59,130,246,0.30)" },
+};
+const postAccent = (cat) => cat === "질문" ? POST_ACCENT.blue : POST_ACCENT.red;
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -1572,7 +1578,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       {selPost && (
         <Modal onClose={() => setSelPost(null)} width={600} cinema>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-            <span style={{ background:CINEMA.red, color:"#fff", borderRadius:8, padding:"6px 15px", fontSize:13, fontWeight:700, letterSpacing:"0.02em" }}>
+            <span style={{ background:postAccent(selPost.category).solid, color:"#fff", borderRadius:8, padding:"6px 15px", fontSize:13, fontWeight:700, letterSpacing:"0.02em" }}>
               {selPost.category}
             </span>
             <div style={{ display:"flex", gap:6 }}>
@@ -1937,12 +1943,13 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (() => {
             const liked = (selPost.likedBy||[]).includes(profile?.uid);
             const disliked = (selPost.dislikedBy||[]).includes(profile?.uid);
+            const acc = postAccent(selPost.category);
             const seg = { display:"flex", alignItems:"center", gap:8, background:"none", border:"none", padding:"11px 24px", cursor:"pointer", fontSize:14 };
             const divider = <div style={{ width:1, background:"rgba(255,255,255,0.09)", margin:"9px 0" }} />;
             return (
               <div style={{ display:"flex", justifyContent:"center", margin:"22px 0 18px" }}>
-                <div style={{ display:"flex", alignItems:"stretch", background:CINEMA.surface, border:`1px solid ${liked ? CINEMA.red : CINEMA.borderRed}`, borderRadius:26, boxShadow: liked ? "0 0 16px rgba(220,38,38,0.25)" : "none", overflow:"hidden" }}>
-                  <button onClick={() => toggleLike("post", selPost)} style={{ ...seg, color: liked ? CINEMA.redBright : CINEMA.muted, fontWeight:700 }}>
+                <div style={{ display:"flex", alignItems:"stretch", background:CINEMA.surface, border:`1px solid ${liked ? acc.solid : acc.border}`, borderRadius:26, boxShadow: liked ? `0 0 16px ${acc.glow}` : "none", overflow:"hidden" }}>
+                  <button onClick={() => toggleLike("post", selPost)} style={{ ...seg, color: liked ? acc.bright : CINEMA.muted, fontWeight:700 }}>
                     <span style={{ fontSize:15, filter: liked ? "none" : "grayscale(1) opacity(0.6)" }}>👍</span> {selPost.likes||0}
                   </button>
                   {divider}
@@ -1963,13 +1970,14 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           {/* 댓글 헤더 */}
           <div style={{ borderTop:`1px solid ${CINEMA.border}`, paddingTop:18, marginBottom:14 }}>
             <span style={{ fontSize:15, fontWeight:800, color:CINEMA.text }}>
-              댓글 <span style={{ color:CINEMA.redBright }}>{postComments(selPost.id).length}</span>
+              댓글 <span style={{ color:postAccent(selPost.category).bright }}>{postComments(selPost.id).length}</span>
             </span>
           </div>
           {postComments(selPost.id).map(c => {
             const isMemoComment = c.useRealName && (c.adminRoleAtWrite === "super" || c.adminRoleAtWrite === "assistant");
             const cLiked = (c.likedBy||[]).includes(profile?.uid);
             const cDisliked = (c.dislikedBy||[]).includes(profile?.uid);
+            const acc = postAccent(selPost.category);
             const canMenu = c.authorId !== profile?.uid || isSuper;
             const menuBtn = { display:"block", width:"100%", textAlign:"left", background:"none", border:"none", fontSize:12.5, cursor:"pointer", padding:"10px 14px", fontFamily:"inherit" };
             return (
@@ -2001,7 +2009,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 <div style={{ display:"flex", alignItems:"center", gap:13, flexShrink:0 }}>
                   <button onClick={() => toggleLike("comment", c)}
                     style={{ background:"none", border:"none", fontSize:12,
-                      color: cLiked ? CINEMA.redBright : CINEMA.mutedDim, cursor:"pointer", fontWeight:600, padding:0 }}>
+                      color: cLiked ? acc.bright : CINEMA.mutedDim, cursor:"pointer", fontWeight:600, padding:0 }}>
                     <span style={{ filter: cLiked ? "none" : "grayscale(1) opacity(0.6)" }}>👍</span> {c.likes||0}
                   </button>
                   <button onClick={() => toggleDislike("comment", c)}
@@ -2049,7 +2057,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               </div>
             </div>
           )}
-          <div style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.borderRed}`, borderRadius:12, padding:"8px 8px 10px 14px", marginTop:14 }}>
+          <div style={{ background:CINEMA.surface, border:`1px solid ${postAccent(selPost.category).border}`, borderRadius:12, padding:"8px 8px 10px 14px", marginTop:14 }}>
             {/* 관리자(슈퍼/조교) 실명 체크박스 — 익명 게시판 + 강의 아닐 때만 */}
             {canUseRealName && !REAL_CATS.includes(selPost.category) && selPost.category !== LECTURE_CAT && (
               <label style={{ display:"flex", alignItems:"center", gap:6, margin:"2px 0 8px", padding:"5px 8px", background:CINEMA.surfaceAlt, borderRadius:6, cursor:"pointer", border:`1px solid ${CINEMA.gold}` }}>
@@ -2070,7 +2078,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
                 style={{ flex:1, minWidth:0, background:"none", border:"none", color:CINEMA.text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
               <button onClick={() => submitComment(selPost.id)} disabled={submitting || !commentText.trim()}
-                style={{ flexShrink:0, background:CINEMA.red, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
+                style={{ flexShrink:0, background:postAccent(selPost.category).solid, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
                 등록
               </button>
             </div>
