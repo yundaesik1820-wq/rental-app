@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * 🎥 LIVE 노출 도우미
@@ -335,7 +336,8 @@ export default function ExposureLive({ onBack }) {
     </button>
   );
 
-  return (
+  // ⚠️ createPortal(body): 커뮤니티 z-200 fixed 컨테이너 안에 중첩되면 하단바(z 250)가 위에 뜸 (슬레이터와 동일 패턴)
+  return createPortal(
     <div style={{
       position: "fixed", inset: 0, zIndex: 9000,
       background: "#000",
@@ -585,6 +587,7 @@ export default function ExposureLive({ onBack }) {
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react";
+import { createPortal } from "react-dom";
 
 /* ============================================================
    스크립터 — 스크립트 용지 위에 펜으로 작성 + 작품 폴더 관리
@@ -203,7 +204,8 @@ function ScriptEditor({ C, script, onBack, onSave }) {
     onBack();
   };
 
-  return (
+  // ⚠️ createPortal(body): 커뮤니티 z-200 fixed 컨테이너 안에 중첩되면 하단바(z 250)가 위에 뜸 (슬레이터와 동일 패턴)
+  return createPortal(
     <div style={{ position: "fixed", inset: 0, zIndex: 9500, background: C.bg, display: "flex", flexDirection: "column" }}>
       <div style={{
         flexShrink: 0, zIndex: 10, background: C.surface,
@@ -246,7 +248,8 @@ function ScriptEditor({ C, script, onBack, onSave }) {
         ))}
         <button onClick={addPage} style={addBtn(C)}>+ 페이지 추가</button>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
