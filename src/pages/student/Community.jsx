@@ -1210,17 +1210,17 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         {[...(currentRoom?.id === "crew" || currentRoom?.id === "class" ? [] : ["전체"]), ...(currentRoom?.categories || [])].map(c => {
           const isLocked = c === NEWBIE_CAT && !isNewbie && profile?.role !== "admin";
           const active = cat === c;
-          const roomColor = currentRoom?.color || CINEMA.red;
           const labelMap = { "협업모집":"🤝 협업 모집", "스탭프로필":"🙋 스탭 프로필" };
           return (
             <button key={c} onClick={() => { setCat(c); setPage(1); }}
               style={{ padding:"6px 14px", borderRadius:14,
-                border:`1px solid ${active ? roomColor : CINEMA.border}`,
-                background: active ? roomColor : CINEMA.surface,
+                border:`1px solid ${active ? "transparent" : CINEMA.border}`,
+                background: active ? "linear-gradient(135deg,#5b8def,#7c3aed)" : CINEMA.surface,
                 color: active ? "#fff" : (isLocked ? CINEMA.mutedDim : CINEMA.muted),
                 fontSize:11, fontWeight: active ? 700 : 500, cursor:"pointer",
                 whiteSpace:"nowrap", flexShrink:0,
                 display:"flex", alignItems:"center", gap:3,
+                boxShadow: active ? "0 0 12px rgba(124,58,237,0.35)" : "none",
                 transition:"all 0.15s",
               }}>
               {c === NEWBIE_CAT && "🌱"}{labelMap[c] || c}{isLocked && " 🔒"}
@@ -2788,9 +2788,9 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           style={{
             position:"fixed", bottom: navH + 16, right:18,
             width:60, height:60, borderRadius:18,
-            background: currentRoom?.color || CINEMA.red, border:"none",
+            background: "linear-gradient(135deg,#5b8def,#7c3aed)", border:"none",
             color:"#fff", fontSize:26, fontWeight:900,
-            boxShadow:`0 6px 20px ${currentRoom?.color || CINEMA.red}80, 0 0 0 1px rgba(255,255,255,0.05)`,
+            boxShadow:"0 6px 20px rgba(124,58,237,0.5), 0 0 0 1px rgba(255,255,255,0.05)",
             cursor:"pointer", zIndex:95,
             display:"flex", alignItems:"center", justifyContent:"center",
             transition:"transform 0.15s",
