@@ -338,6 +338,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const staffImgRef = useRef(null);
   const [search, setSearch]           = useState("");
   const [searchScope, setSearchScope] = useState("title"); // "title" | "content"
+  const [cmtMenu, setCmtMenu]         = useState(null); // 열린 댓글 ⋮ 메뉴 id
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
 
@@ -1570,7 +1571,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       {selPost && (
         <Modal onClose={() => setSelPost(null)} width={600} cinema>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-            <span style={{ background:CINEMA.redBg, color:CINEMA.redBright, borderRadius:4, padding:"3px 9px", fontSize:10, fontWeight:700, letterSpacing:"0.05em" }}>
+            <span style={{ background:CINEMA.red, color:"#fff", borderRadius:8, padding:"6px 15px", fontSize:13, fontWeight:700, letterSpacing:"0.02em" }}>
               {selPost.category}
             </span>
             <div style={{ display:"flex", gap:6 }}>
@@ -1888,17 +1889,17 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             </div>
           ) : (
             <div>
-              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:8, lineHeight:1.3 }}>{selPost.title}</div>
-              <div style={{ display:"flex", gap:12, fontSize:11, color:CINEMA.muted, marginBottom:18, fontFamily:"'Courier New', monospace" }}>
+              <div style={{ fontSize:24, fontWeight:800, color:CINEMA.text, marginBottom:10, lineHeight:1.25 }}>{selPost.title}</div>
+              <div style={{ display:"flex", gap:9, fontSize:13, color:CINEMA.muted, marginBottom:20 }}>
                 <span style={{ color: selPost.useRealName ? CINEMA.gold : CINEMA.muted }}>
                   {selPost.useRealName ? "🏛️ " : ""}{displayName(selPost)}
                 </span>
                 <span>·</span>
                 <span>{formatDate(selPost.createdAt)}</span>
                 <span>·</span>
-                <span>👁 {selPost.views||0}</span>
+                <span>조회 {selPost.views||0}</span>
               </div>
-              <div style={{ fontSize:14, color:CINEMA.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+              <div style={{ fontSize:15, color:CINEMA.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
             </div>
           )}
           {selPost.images?.length > 0 && (
@@ -1910,41 +1911,41 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             </div>
           )}
 
-          {/* 추천/비추천 - 작품공유·협업모집 제외 */}
-          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (
-          <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:16 }}>
-            <button onClick={() => toggleLike("post", selPost)}
-              style={{
-                background:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBg : CINEMA.surface,
-                border:`1px solid ${(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.red : CINEMA.border}`,
-                borderRadius:20, padding:"6px 20px", fontSize:13,
-                color:(selPost.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.muted,
-                cursor:"pointer", fontWeight:700,
-              }}>
-              ♥ {selPost.likes||0}
-            </button>
-            <button onClick={() => toggleDislike("post", selPost)}
-              style={{
-                background:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.surface : CINEMA.surface,
-                border:`1px solid ${(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.muted : CINEMA.border}`,
-                borderRadius:20, padding:"6px 20px", fontSize:13,
-                color:(selPost.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
-                cursor:"pointer", fontWeight:600,
-              }}>
-              👎 {selPost.dislikes||0}
-            </button>
-          </div>
-          )}
+          {/* 리액션 알약 (♥ 추천 | 👎 비추 | 💬 댓글수) - 작품공유·협업모집·스탭·클래스 제외 */}
+          {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (() => {
+            const liked = (selPost.likedBy||[]).includes(profile?.uid);
+            const disliked = (selPost.dislikedBy||[]).includes(profile?.uid);
+            const seg = { display:"flex", alignItems:"center", gap:8, background:"none", border:"none", padding:"11px 24px", cursor:"pointer", fontSize:14 };
+            const divider = <div style={{ width:1, background:"rgba(255,255,255,0.09)", margin:"9px 0" }} />;
+            return (
+              <div style={{ display:"flex", justifyContent:"center", margin:"22px 0 18px" }}>
+                <div style={{ display:"flex", alignItems:"stretch", background:CINEMA.surface, border:`1px solid ${liked ? CINEMA.red : CINEMA.borderRed}`, borderRadius:26, boxShadow: liked ? "0 0 16px rgba(220,38,38,0.25)" : "none", overflow:"hidden" }}>
+                  <button onClick={() => toggleLike("post", selPost)} style={{ ...seg, color: liked ? CINEMA.redBright : CINEMA.muted, fontWeight:700 }}>
+                    <span style={{ fontSize:15 }}>{liked ? "♥" : "♡"}</span> {selPost.likes||0}
+                  </button>
+                  {divider}
+                  <button onClick={() => toggleDislike("post", selPost)} style={{ ...seg, color: disliked ? CINEMA.text : CINEMA.mutedDim, fontWeight:600 }}>
+                    <span style={{ fontSize:14 }}>👎</span> {selPost.dislikes||0}
+                  </button>
+                  {divider}
+                  <div style={{ ...seg, cursor:"default", color:CINEMA.muted, fontWeight:600 }}>
+                    <span style={{ fontSize:14 }}>💬</span> {postComments(selPost.id).length}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* 🚨 신고 / 🚫 차단 - 본인 글 제외, 모든 카테고리 노출 */}
           {selPost.authorId !== profile?.uid && (
-            <div style={{ display:"flex", justifyContent:"center", gap:16, marginBottom:16 }}>
+            <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:18, marginBottom:22 }}>
               <button onClick={() => reportItem("post", selPost)}
-                style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:"4px 8px", fontFamily:"inherit" }}>
-                🚨 신고
+                style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:CINEMA.muted, fontSize:13, cursor:"pointer", padding:"4px 6px", fontFamily:"inherit" }}>
+                <span style={{ color:CINEMA.redBright }}>⚠️</span> 신고
               </button>
+              <div style={{ width:1, height:12, background:CINEMA.border }} />
               <button onClick={() => blockUser(selPost.authorId, displayName(selPost))}
-                style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:11, cursor:"pointer", textDecoration:"underline", padding:"4px 8px", fontFamily:"inherit" }}>
+                style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:CINEMA.muted, fontSize:13, cursor:"pointer", padding:"4px 6px", fontFamily:"inherit" }}>
                 🚫 차단
               </button>
             </div>
@@ -1952,73 +1953,76 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
 
           {/* 댓글 영역 - 작품공유 제외 */}
           {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (<>
-          {/* 댓글 헤더 - 시네마 톤 */}
-          <div style={{
-            fontSize:10, fontWeight:700, color:CINEMA.red, marginBottom:10,
-            fontFamily:"'Courier New', monospace", letterSpacing:"0.25em",
-            paddingBottom:6, borderBottom:`1px solid ${CINEMA.border}`,
-          }}>
-            ── COMMENTS · {postComments(selPost.id).length} ──
+          {/* 댓글 헤더 */}
+          <div style={{ borderTop:`1px solid ${CINEMA.border}`, paddingTop:18, marginBottom:14 }}>
+            <span style={{ fontSize:15, fontWeight:800, color:CINEMA.text }}>
+              댓글 <span style={{ color:CINEMA.redBright }}>{postComments(selPost.id).length}</span>
+            </span>
           </div>
           {postComments(selPost.id).map(c => {
             const isMemoComment = c.useRealName && (c.adminRoleAtWrite === "super" || c.adminRoleAtWrite === "assistant");
+            const cLiked = (c.likedBy||[]).includes(profile?.uid);
+            const cDisliked = (c.dislikedBy||[]).includes(profile?.uid);
+            const canMenu = c.authorId !== profile?.uid || isSuper;
+            const menuBtn = { display:"block", width:"100%", textAlign:"left", background:"none", border:"none", fontSize:12.5, cursor:"pointer", padding:"10px 14px", fontFamily:"inherit" };
             return (
               <div key={c.id} style={{
-                background: isMemoComment ? CINEMA.surfaceAlt : "transparent",
-                border: isMemoComment ? `1px dashed ${CINEMA.gold}` : "none",
-                borderBottom: isMemoComment ? `1px dashed ${CINEMA.gold}` : `1px solid ${CINEMA.border}`,
-                borderRadius: isMemoComment ? 6 : 0,
-                padding: isMemoComment ? "9px 10px" : "8px 4px",
-                marginBottom: isMemoComment ? 8 : 0,
+                position:"relative",
+                background: isMemoComment ? CINEMA.surfaceAlt : CINEMA.surface,
+                border: `1px ${isMemoComment ? "dashed "+CINEMA.gold : "solid "+CINEMA.border}`,
+                borderRadius:12, padding:"12px 14px", marginBottom:10,
+                display:"flex", gap:10, alignItems:"center",
               }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
-                  <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:5 }}>
                     <span style={{
-                      fontSize:11, fontWeight:700,
+                      fontSize:13, fontWeight:700,
                       color: isMemoComment ? CINEMA.gold : CINEMA.text,
                       fontFamily: isMemoComment ? "'Courier New', monospace" : "inherit",
                     }}>
                       {isMemoComment ? "🏛️ " : ""}{displayCommentName(c, selPost.category)}
                     </span>
-                    <span style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>{formatDate(c.createdAt)}</span>
+                    <span style={{ fontSize:11, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>{formatDate(c.createdAt)}</span>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <button onClick={() => toggleLike("comment", c)}
-                      style={{ background:"none", border:"none", fontSize:11,
-                        color:(c.likedBy||[]).includes(profile?.uid) ? CINEMA.redBright : CINEMA.mutedDim,
-                        cursor:"pointer", fontWeight:600, padding:0 }}>
-                      ♥ {c.likes||0}
-                    </button>
-                    <button onClick={() => toggleDislike("comment", c)}
-                      style={{ background:"none", border:"none", fontSize:11,
-                        color:(c.dislikedBy||[]).includes(profile?.uid) ? CINEMA.text : CINEMA.mutedDim,
-                        cursor:"pointer", fontWeight:500, padding:0 }}>
-                      👎 {c.dislikes||0}
-                    </button>
-                    {c.authorId !== profile?.uid && (<>
-                      <button onClick={() => reportItem("comment", c)}
-                        style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
-                        신고
-                      </button>
-                      <button onClick={() => blockUser(c.authorId, displayCommentName(c, selPost.category))}
-                        style={{ background:"none", border:"none", color:CINEMA.mutedDim, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
-                        차단
-                      </button>
-                    </>)}
-                    {isSuper && (
-                      <button onClick={() => adminDeleteComment(c.id)}
-                        style={{ background:"none", border:"none", color:CINEMA.red, fontSize:10, cursor:"pointer", fontWeight:600, padding:0 }}>
-                        삭제
-                      </button>
-                    )}
-                  </div>
+                  {selPost.category === LECTURE_CAT && c.rating > 0 && (
+                    <div style={{ fontSize:12, color:CINEMA.gold, marginBottom:3 }}>
+                      {"★".repeat(c.rating)}{"☆".repeat(5-c.rating)} <span style={{ fontSize:10, color:CINEMA.mutedDim, marginLeft:4 }}>({c.rating}/5)</span>
+                    </div>
+                  )}
+                  <div style={{ fontSize:13.5, color:CINEMA.text, lineHeight:1.55, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
                 </div>
-                {selPost.category === LECTURE_CAT && c.rating > 0 && (
-                  <div style={{ fontSize:12, color:CINEMA.gold, marginBottom:3 }}>
-                    {"★".repeat(c.rating)}{"☆".repeat(5-c.rating)} <span style={{ fontSize:10, color:CINEMA.mutedDim, marginLeft:4 }}>({c.rating}/5)</span>
-                  </div>
+                <div style={{ display:"flex", alignItems:"center", gap:13, flexShrink:0 }}>
+                  <button onClick={() => toggleLike("comment", c)}
+                    style={{ background:"none", border:"none", fontSize:12,
+                      color: cLiked ? CINEMA.redBright : CINEMA.mutedDim, cursor:"pointer", fontWeight:600, padding:0 }}>
+                    {cLiked ? "♥" : "♡"} {c.likes||0}
+                  </button>
+                  <button onClick={() => toggleDislike("comment", c)}
+                    style={{ background:"none", border:"none", fontSize:12,
+                      color: cDisliked ? CINEMA.text : CINEMA.mutedDim, cursor:"pointer", fontWeight:500, padding:0 }}>
+                    👎 {c.dislikes||0}
+                  </button>
+                  {canMenu && (
+                    <button onClick={() => setCmtMenu(cmtMenu === c.id ? null : c.id)}
+                      style={{ background:"none", border:"none", fontSize:16, color:CINEMA.mutedDim, cursor:"pointer", padding:"0 2px", lineHeight:1 }}>
+                      ⋮
+                    </button>
+                  )}
+                </div>
+                {cmtMenu === c.id && (
+                  <>
+                    <div onClick={() => setCmtMenu(null)} style={{ position:"fixed", inset:0, zIndex:10 }} />
+                    <div style={{ position:"absolute", top:40, right:12, zIndex:11, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:10, overflow:"hidden", minWidth:108, boxShadow:"0 6px 20px rgba(0,0,0,0.5)" }}>
+                      {c.authorId !== profile?.uid && (<>
+                        <button onClick={() => { reportItem("comment", c); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text }}>🚨 신고</button>
+                        <button onClick={() => { blockUser(c.authorId, displayCommentName(c, selPost.category)); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text, borderTop:`1px solid ${CINEMA.border}` }}>🚫 차단</button>
+                      </>)}
+                      {isSuper && (
+                        <button onClick={() => { adminDeleteComment(c.id); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.redBright, borderTop: c.authorId !== profile?.uid ? `1px solid ${CINEMA.border}` : "none" }}>삭제</button>
+                      )}
+                    </div>
+                  </>
                 )}
-                <div style={{ fontSize:13, color:CINEMA.text, lineHeight:1.55, wordBreak:"break-word", whiteSpace:"pre-wrap" }}>{c.content}</div>
               </div>
             );
           })}
@@ -2038,13 +2042,10 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               </div>
             </div>
           )}
-          <div style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.borderRed}`, borderRadius:10, padding:"10px 14px", marginTop:8 }}>
-            <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
-              style={{ width:"100%", background:"none", border:"none", color:CINEMA.text, fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", marginBottom:6 }} />
+          <div style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.borderRed}`, borderRadius:12, padding:"8px 8px 10px 14px", marginTop:14 }}>
             {/* 관리자(슈퍼/조교) 실명 체크박스 — 익명 게시판 + 강의 아닐 때만 */}
             {canUseRealName && !REAL_CATS.includes(selPost.category) && selPost.category !== LECTURE_CAT && (
-              <label style={{ display:"flex", alignItems:"center", gap:6, marginBottom:6, padding:"5px 8px", background:CINEMA.surfaceAlt, borderRadius:6, cursor:"pointer", border:`1px solid ${CINEMA.gold}` }}>
+              <label style={{ display:"flex", alignItems:"center", gap:6, margin:"2px 0 8px", padding:"5px 8px", background:CINEMA.surfaceAlt, borderRadius:6, cursor:"pointer", border:`1px solid ${CINEMA.gold}` }}>
                 <input
                   type="checkbox"
                   checked={commentUseRealName}
@@ -2057,13 +2058,19 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 </span>
               </label>
             )}
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <span style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace" }}>
-                {commentUseRealName && canUseRealName && selPost.category !== LECTURE_CAT
-                  ? `🏛️ ${profile?.name || "관리자"}(${adminRoleLabel}) 실명으로 게시됩니다`
-                  : (REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다")}
-              </span>
-              <Btn onClick={() => submitComment(selPost.id)} color={C.navy} disabled={submitting || !commentText.trim()} small>등록</Btn>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <input placeholder={selPost.category===LECTURE_CAT?"수강 후기를 남겨주세요...":"댓글을 입력하세요..."} value={commentText} onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
+                style={{ flex:1, minWidth:0, background:"none", border:"none", color:CINEMA.text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              <button onClick={() => submitComment(selPost.id)} disabled={submitting || !commentText.trim()}
+                style={{ flexShrink:0, background:CINEMA.red, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
+                등록
+              </button>
+            </div>
+            <div style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace", marginTop:6, paddingLeft:2 }}>
+              {commentUseRealName && canUseRealName && selPost.category !== LECTURE_CAT
+                ? `🏛️ ${profile?.name || "관리자"}(${adminRoleLabel}) 실명으로 게시됩니다`
+                : (REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다")}
             </div>
           </div>
           </>)}
