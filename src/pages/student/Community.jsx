@@ -151,6 +151,20 @@ const ROOMS = [
   },
 ];
 
+// 🎞️ 필름도구 스와이프 박스 — 이미지 전용 (public/film-tools/*.png, 480×240 제작 → 160×80 표시)
+//    윗줄 5개 + 아랫줄 4개, 가로 스냅 스와이프. 클릭 시 해당 도구 바로 진입.
+const FILM_TOOL_BOXES = [
+  { key:"slate",         img:"/film-tools/slate.png" },
+  { key:"scripter",      img:"/film-tools/scripter.png" },
+  { key:"live-exposure", img:"/film-tools/live-exposure.png" },
+  { key:"exposure-calc", img:"/film-tools/exposure-calc.png" },
+  { key:"dof",           img:"/film-tools/dof.png" },
+  { key:"color-temp",    img:"/film-tools/color-temp.png" },
+  { key:"fov",           img:"/film-tools/fov.png" },
+  { key:"sun",           img:"/film-tools/sun.png" },
+  { key:"resources",     img:"/film-tools/resources.png" },
+];
+
 // 🎬 룸 → 라인 아이콘 (목업 00.png 디자인)
 const ROOM_ICON = {
   community:   MessageCircle,
@@ -941,7 +955,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
               <button onClick={() => {
-                  if (selectedTool) { setSelectedTool(null); }
+                  // 도구 룸 그리드가 없어져서 도구에서 뒤로가기 = 루트 직행
+                  if (selectedTool) { setSelectedTool(null); setSelectedRoom(null); }
                   else { setSelectedRoom(null); setSelectedTool(null); }
                 }}
                 style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#fafaf9", flexShrink:0 }}>
@@ -1102,6 +1117,34 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                       </div>
                       <InfoFeed list={[...posts].filter(p => (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
+
+                      {/* 🎞️ 필름도구 — 이미지 박스 가로 스와이프 (윗줄 5 + 아랫줄 4) */}
+                      <div style={{ marginTop:14 }}>
+                        <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
+                          <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#fbbf24" }}>필름도구</span>
+                        </div>
+                        <style>{`.ft-swipe::-webkit-scrollbar{display:none}.ft-swipe{scrollbar-width:none;-ms-overflow-style:none}`}</style>
+                        <div className="ft-swipe" style={{
+                          display:"grid", gridTemplateRows:"repeat(2, 80px)", gap:8,
+                          overflowX:"auto", WebkitOverflowScrolling:"touch",
+                          scrollSnapType:"x mandatory", touchAction:"pan-x pan-y",
+                        }}>
+                          {FILM_TOOL_BOXES.map((t, i) => (
+                            <div key={t.key}
+                              onClick={() => { setSelectedRoom("tools"); setSelectedTool(t.key); }}
+                              style={{
+                                gridRow: i < 5 ? 1 : 2, gridColumn: (i < 5 ? i : i - 5) + 1,
+                                width:160, height:80, borderRadius:14, overflow:"hidden", cursor:"pointer",
+                                scrollSnapAlign:"start", flexShrink:0,
+                                background:"#17171c", border:"1px solid rgba(255,255,255,0.07)",
+                              }}>
+                              <img loading="lazy" decoding="async" src={t.img} alt=""
+                                style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
+                                onError={e => { e.currentTarget.style.opacity = 0; }} />
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </>
                   );
                 })()}
@@ -1157,98 +1200,54 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         </div>
       )}
 
-      {/* 🛠️ 필름 도구 룸 */}
-      {selectedRoom === "tools" && !selectedTool && (
-        <div style={{ marginTop:18 }}>
-          {/* 안내 */}
-          <div style={{ textAlign:"center", marginBottom:18, padding:"0 8px" }}>
-            <div style={{ fontFamily:"'Courier New', monospace", fontSize:10, color:"#fbbf24", letterSpacing:"0.35em", fontWeight:700, marginBottom:5 }}>
-              FILM TOOLS
-            </div>
-            <div style={{ fontSize:13, color:"#a8a29e" }}>촬영 현장에서 쓰는 실용 도구들</div>
-          </div>
-
-          {/* 도구 카드 그리드 */}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:9 }}>
-            <ToolCard icon="🎬" label="SLATE" title="전자식 슬레이터" desc="타임코드 · CLAP" onClick={() => setSelectedTool("slate")} />
-            <ToolCard icon="📝" label="SCRIPT" title="스크립터" desc="씬·테이크 기록" onClick={() => setSelectedTool("scripter")} />
-            <ToolCard icon="🎥" label="LIVE EXPOSURE" title="라이브 노출" desc="폴스컬러 · 제브라" onClick={() => setSelectedTool("live-exposure")} />
-            <ToolCard icon="📷" label="EXPOSURE CALC" title="노출 계산기" desc="180° 셔터 · 등가환산" onClick={() => setSelectedTool("exposure-calc")} />
-            <ToolCard icon="📐" label="DOF" title="피사계 심도" desc="DOF 계산" onClick={() => setSelectedTool("dof")} />
-            <ToolCard icon="🌡️" label="COLOR TEMP" title="색온도 계산기" desc="WB · 젤 계산" onClick={() => setSelectedTool("color-temp")} />
-            <ToolCard icon="🔭" label="FOV" title="렌즈 화각" desc="화각 · 역계산" onClick={() => setSelectedTool("fov")} />
-            <ToolCard icon="🌅" label="SUN SEEKER" title="태양 위치" desc="골든아워·일출일몰" onClick={() => setSelectedTool("sun")} />
-
-            {/* 자료 큐레이션 (가로형, 통일 디자인) */}
-            <div onClick={() => setSelectedTool("resources")}
-              style={{
-                gridColumn:"span 2",
-                background:"#1a1a1a", border:"1px solid #2a2a2a", borderLeft:"3px solid #fbbf24",
-                borderRadius:6, padding:"14px", cursor:"pointer",
-                transition:"transform 0.15s",
-              }}
-              onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
-              onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
-            >
-              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <div style={{ fontSize:28 }}>📚</div>
-                <div style={{ flex:1 }}>
-                  <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>RESOURCES</div>
-                  <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>자료 큐레이션</div>
-                  <div style={{ fontSize:9, color:"#a8a29e", marginTop:2 }}>무료 음원·효과음·LUT·폰트·영상·아이콘</div>
-                </div>
-                <div style={{ fontSize:14, color:"#fbbf24" }}>→</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 🛠️ 필름 도구 룸 그리드 제거됨 (2026-07-22) — 루트의 필름도구 이미지 박스 스와이프가 대체.
+          진입: 루트 박스 클릭 → 도구 직행 / 뒤로가기 → 루트 복귀 */}
 
       {/* 🎬 슬레이터 본체 표시 */}
       {selectedRoom === "tools" && selectedTool === "slate" && (
         <div style={{ marginTop:8 }}>
-          <CinemaSlate onBack={() => setSelectedTool(null)} />
+          <CinemaSlate onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
         </div>
       )}
 
       {/* 🎥 LIVE 노출 도우미 표시 */}
       {selectedRoom === "tools" && selectedTool === "live-exposure" && (
-        <ExposureLive onBack={() => setSelectedTool(null)} />
+        <ExposureLive onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 📷 노출 계산기 (이론) */}
       {selectedRoom === "tools" && selectedTool === "exposure-calc" && (
-        <ExposureCalc onBack={() => setSelectedTool(null)} />
+        <ExposureCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 📐 DOF 계산기 */}
       {selectedRoom === "tools" && selectedTool === "dof" && (
-        <DofCalc onBack={() => setSelectedTool(null)} />
+        <DofCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 🌡️ 색온도 계산기 */}
       {selectedRoom === "tools" && selectedTool === "color-temp" && (
-        <ColorTemp onBack={() => setSelectedTool(null)} />
+        <ColorTemp onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 🔭 렌즈 화각 */}
       {selectedRoom === "tools" && selectedTool === "fov" && (
-        <FovCalc onBack={() => setSelectedTool(null)} />
+        <FovCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 📝 스크립터 */}
       {selectedRoom === "tools" && selectedTool === "scripter" && (
-        <ScripterTool C={C} onBack={() => setSelectedTool(null)} />
+        <ScripterTool C={C} onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 🌅 태양 위치 */}
       {selectedRoom === "tools" && selectedTool === "sun" && (
-        <SunSeeker onBack={() => setSelectedTool(null)} />
+        <SunSeeker onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 📚 자료 큐레이션 */}
       {selectedRoom === "tools" && selectedTool === "resources" && (
-        <ResourceHub onBack={() => setSelectedTool(null)} />
+        <ResourceHub onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
       )}
 
       {/* 게시판 룸들 (community, knowledge, boxoffice) */}
@@ -3048,31 +3047,3 @@ function YouTubeEmbed({ url }) {
 }
 
 /** 🛠️ 도구 카드 (필름 도구 룸) */
-function ToolCard({ icon, label, title, desc, comingSoon, onClick }) {
-  return (
-    <div onClick={comingSoon ? undefined : onClick}
-      onMouseEnter={e => { if (!comingSoon) e.currentTarget.style.transform = "translateY(-2px)"; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
-      style={{
-        background:"#1a1a1a",
-        border:"1px solid #2a2a2a",
-        borderLeft: comingSoon ? "1px solid #2a2a2a" : "3px solid #fbbf24",
-        borderRadius:6, padding:"16px 12px",
-        cursor: comingSoon ? "not-allowed" : "pointer",
-        textAlign:"center", minHeight:130, opacity: comingSoon ? 0.5 : 1,
-        display:"flex", flexDirection:"column", justifyContent:"center",
-        position:"relative", transition:"transform 0.15s",
-      }}>
-      {comingSoon && (
-        <div style={{
-          position:"absolute", top:6, right:8,
-          fontSize:8, color:"#71706b", fontFamily:"'Courier New', monospace", letterSpacing:"0.15em",
-        }}>SOON</div>
-      )}
-      <div style={{ fontSize:40, marginBottom:6 }}>{icon}</div>
-      <div style={{ fontFamily:"'Courier New', monospace", fontSize:8, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:2 }}>{label}</div>
-      <div style={{ fontSize:13, fontWeight:800, color:"#fafaf9" }}>{title}</div>
-      <div style={{ fontSize:9, color:"#a8a29e", marginTop:3 }}>{desc}</div>
-    </div>
-  );
-}
