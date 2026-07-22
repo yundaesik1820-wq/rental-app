@@ -2778,7 +2778,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           }}
           aria-label="글쓰기"
           style={{
-            position:"fixed", bottom:"calc(20px + env(safe-area-inset-bottom, 0px))", right:18,
+            position:"fixed", bottom: navH + 16, right:18,
             width:60, height:60, borderRadius:18,
             background: currentRoom?.color || CINEMA.red, border:"none",
             color:"#fff", fontSize:26, fontWeight:900,
