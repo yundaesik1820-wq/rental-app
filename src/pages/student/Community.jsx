@@ -54,12 +54,15 @@ const CAT_COLOR = {
   "작품공유":"#a78bfa", "협업모집":"#fbbf24", "스탭프로필":"#f472b6", "클래스":"#38bdf8",
 };
 const catAccent = (c) => CAT_COLOR[c] || "#9ca3af";
-// 게시글 상세 액센트 톤 (자유=빨강 / 질문=파랑, 나머지는 빨강 기본)
+// 게시글 상세 액센트 톤 — 앱 파랑→보라 그라데이션으로 통일 (카테고리 무관)
 const POST_ACCENT = {
-  red:  { solid:"#dc2626", bright:"#ef4444", border:"rgba(220,38,38,0.3)",  glow:"rgba(220,38,38,0.25)" },
-  blue: { solid:"#2563eb", bright:"#60a5fa", border:"rgba(37,99,235,0.35)", glow:"rgba(59,130,246,0.30)" },
+  gradient: "linear-gradient(135deg,#5b8def,#7c3aed)",
+  solid:    "#7c3aed",              // 그라데이션 못 쓰는 곳(테두리)용 단색
+  bright:   "#7e9dff",              // 활성 텍스트색
+  border:   "rgba(124,58,237,0.35)",
+  glow:     "rgba(124,58,237,0.30)",
 };
-const postAccent = (cat) => cat === "질문" ? POST_ACCENT.blue : POST_ACCENT.red;
+const postAccent = () => POST_ACCENT;
 const LECTURE_CAT = "강의"; // 강의 전용
 const NEWBIE_CAT  = "새내기"; // 새내기 전용
 // 크루 메이커스 모집 포지션 (드롭다운)
@@ -1573,7 +1576,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       {selPost && (
         <Modal onClose={() => setSelPost(null)} width={600} cinema>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:10 }}>
-            <span style={{ background:postAccent(selPost.category).solid, color:"#fff", borderRadius:8, padding:"6px 15px", fontSize:13, fontWeight:700, letterSpacing:"0.02em" }}>
+            <span style={{ background:postAccent(selPost.category).gradient, color:"#fff", borderRadius:8, padding:"6px 15px", fontSize:13, fontWeight:700, letterSpacing:"0.02em" }}>
               {selPost.category}
             </span>
             <div style={{ display:"flex", gap:6 }}>
@@ -2073,7 +2076,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(selPost.id); }}}
                 style={{ flex:1, minWidth:0, background:"none", border:"none", color:CINEMA.text, fontSize:14, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
               <button onClick={() => submitComment(selPost.id)} disabled={submitting || !commentText.trim()}
-                style={{ flexShrink:0, background:postAccent(selPost.category).solid, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
+                style={{ flexShrink:0, background:postAccent(selPost.category).gradient, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
                 등록
               </button>
             </div>
