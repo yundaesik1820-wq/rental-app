@@ -1266,6 +1266,44 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                           ))}
                         </div>
                       </div>
+
+                      {/* 🎬 오늘의 추천작 — 매일 00시 기준 날짜 시드 랜덤 (모두에게 같은 작품) */}
+                      {(() => {
+                        const works = posts.filter(p => p.category === "작품공유" && getYouTubeId(p.ytUrl));
+                        if (works.length === 0) return null;
+                        const t = new Date();
+                        const seedStr = `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`;
+                        let seed = 0;
+                        for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+                        const sorted = [...works].sort((a, b) => (a.id > b.id ? 1 : -1));
+                        const pick = sorted[seed % sorted.length];
+                        const ytId = getYouTubeId(pick.ytUrl);
+                        return (
+                          <div style={{ marginTop:14 }}>
+                            <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
+                              <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#a855f7" }}>오늘의 추천작</span>
+                            </div>
+                            <div onClick={() => openPost(pick)}
+                              style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(168,85,247,0.10) 0%, rgba(124,58,237,0.05) 40%, #101018 100%)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
+                              {/* 좌: 썸네일 */}
+                              <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
+                                <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                                <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                  <div style={{ width:28, height:20, borderRadius:5, background:"rgba(220,38,38,0.92)", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                                    <span style={{ color:"#fff", fontSize:9, marginLeft:1 }}>▶</span>
+                                  </div>
+                                </div>
+                              </div>
+                              {/* 우: 제목 / 크레딧 / 러닝타임 */}
+                              <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:4 }}>
+                                <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{pick.title}</div>
+                                {pick.credits && <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🎬 {pick.credits}</div>}
+                                {pick.runtime && <div style={{ fontSize:11, color:"#8a8a92" }}>⏱ {pick.runtime}</div>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </>
                   );
                 })()}
