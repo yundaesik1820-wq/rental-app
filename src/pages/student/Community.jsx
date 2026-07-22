@@ -1282,10 +1282,9 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           );
         })}
       </div>
-      {(currentRoom?.id === "knowledge" || currentRoom?.id === "crew") && (
+      {currentRoom?.id === "crew" && (
         <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
-          {currentRoom?.id === "knowledge" && "정보 · 공모전 · 기타 (모두 익명)"}
-          {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
+          🤝 함께할 팀원·스태프를 모집해보세요
         </div>
       )}
 
