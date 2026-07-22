@@ -1321,10 +1321,18 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                           [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
                         }
                         const picks = sorted.slice(0, 3);
+                        const goBoxoffice = () => {
+                          const bRoom = ROOMS.find(r => r.id === "boxoffice");
+                          if (bRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(bRoom); return; }
+                          setSelectedRoom("boxoffice"); setPage(1); setSearch("");
+                        };
                         return (
                           <div style={{ marginTop:14 }}>
-                            <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
                               <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#a855f7" }}>오늘의 추천작</span>
+                              <span onClick={goBoxoffice} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                                전체보기 <ChevronRight size={12} color="#8a8a92" />
+                              </span>
                             </div>
                             <WorkCarousel list={picks} onOpen={openPost} />
                           </div>
