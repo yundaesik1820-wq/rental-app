@@ -12,33 +12,57 @@ import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
 
+// lazy 청크 로드 실패(배포로 옛 해시 소실·WebView 네트워크 순간끊김) 대비:
+// 몇 번 재시도 후에도 실패하면 새로고침 1회로 최신 청크를 받아 복구. (검은 화면 먹통 방지)
+function lazyRetry(factory, retries = 2, delay = 350) {
+  return lazy(() => new Promise((resolve, reject) => {
+    const attempt = (n) => {
+      factory().then(resolve).catch((err) => {
+        if (n < retries) { setTimeout(() => attempt(n + 1), delay * (n + 1)); return; }
+        // 재시도 소진 → 대개 배포로 청크 해시가 바뀐 케이스. 최근에 리로드한 적 없으면 1회 새로고침.
+        try {
+          const KEY = "chunk_reload_ts";
+          const last = Number(sessionStorage.getItem(KEY) || 0);
+          if (Date.now() - last > 10000) {
+            sessionStorage.setItem(KEY, String(Date.now()));
+            window.location.reload();
+            return; // 리로드 진행 중 — pending 유지
+          }
+        } catch {}
+        reject(err); // 이미 최근에 리로드했는데도 실패 → ErrorBoundary가 처리
+      });
+    };
+    attempt(0);
+  }));
+}
+
 // Admin pages (lazy — 초기 번들에서 분리, 진입 시 로드)
-const Dashboard  = lazy(() => import("./pages/admin/Dashboard"));
-const Equipment  = lazy(() => import("./pages/admin/Equipment"));
-const Rental     = lazy(() => import("./pages/admin/Rental"));
-const Students   = lazy(() => import("./pages/admin/Students"));
-const CalendarPage = lazy(() => import("./pages/admin/Calendar"));
-const Stats      = lazy(() => import("./pages/admin/Stats"));
+const Dashboard  = lazyRetry(() => import("./pages/admin/Dashboard"));
+const Equipment  = lazyRetry(() => import("./pages/admin/Equipment"));
+const Rental     = lazyRetry(() => import("./pages/admin/Rental"));
+const Students   = lazyRetry(() => import("./pages/admin/Students"));
+const CalendarPage = lazyRetry(() => import("./pages/admin/Calendar"));
+const Stats      = lazyRetry(() => import("./pages/admin/Stats"));
 import GroupHub   from "./components/GroupHub";
-const Notices    = lazy(() => import("./pages/admin/Notices"));
-const Settings   = lazy(() => import("./pages/admin/Settings"));
-const AdminInquiry  = lazy(() => import("./pages/admin/Inquiry"));
-const LicenseAdmin  = lazy(() => import("./pages/admin/LicenseAdmin.jsx"));
-const License          = lazy(() => import("./pages/student/License.jsx"));
-const Community     = lazy(() => import("./pages/student/Community.jsx"));
-const ProjectStudio = lazy(() => import("./pages/student/projectstudio/ProjectStudio.jsx"));
-const SNSManager    = lazy(() => import("./pages/admin/SNSManager"));
-const ExternalRental = lazy(() => import("./pages/admin/ExternalRental"));
-const RepairManager = lazy(() => import("./pages/admin/RepairManager"));
+const Notices    = lazyRetry(() => import("./pages/admin/Notices"));
+const Settings   = lazyRetry(() => import("./pages/admin/Settings"));
+const AdminInquiry  = lazyRetry(() => import("./pages/admin/Inquiry"));
+const LicenseAdmin  = lazyRetry(() => import("./pages/admin/LicenseAdmin.jsx"));
+const License          = lazyRetry(() => import("./pages/student/License.jsx"));
+const Community     = lazyRetry(() => import("./pages/student/Community.jsx"));
+const ProjectStudio = lazyRetry(() => import("./pages/student/projectstudio/ProjectStudio.jsx"));
+const SNSManager    = lazyRetry(() => import("./pages/admin/SNSManager"));
+const ExternalRental = lazyRetry(() => import("./pages/admin/ExternalRental"));
+const RepairManager = lazyRetry(() => import("./pages/admin/RepairManager"));
 
 // Student pages (lazy)
-const StudentHome    = lazy(() => import("./pages/student/Home"));
-const EquipList      = lazy(() => import("./pages/student/EquipList"));
-const History        = lazy(() => import("./pages/student/History"));
-const Reserve        = lazy(() => import("./pages/student/Reserve"));
-const Profile         = lazy(() => import("./pages/student/Profile"));
-const StudentInquiry = lazy(() => import("./pages/student/Inquiry"));
-const FriendManager  = lazy(() => import("./pages/student/FriendManager"));
+const StudentHome    = lazyRetry(() => import("./pages/student/Home"));
+const EquipList      = lazyRetry(() => import("./pages/student/EquipList"));
+const History        = lazyRetry(() => import("./pages/student/History"));
+const Reserve        = lazyRetry(() => import("./pages/student/Reserve"));
+const Profile         = lazyRetry(() => import("./pages/student/Profile"));
+const StudentInquiry = lazyRetry(() => import("./pages/student/Inquiry"));
+const FriendManager  = lazyRetry(() => import("./pages/student/FriendManager"));
 
 // Shared
 import { useCollection } from "./hooks/useFirestore";
@@ -458,14 +482,53 @@ function AppContent() {
   );
 }
 
+// 렌더 중 어떤 에러가 나도 앱 전체가 검은 화면으로 죽지 않게 잡아주는 안전망.
+// 청크 로드 실패는 새로고침 1회로 자동 복구, 그 외 에러는 복구 버튼 표시.
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false }; }
+  static getDerivedStateFromError() { return { hasError: true }; }
+  componentDidCatch(error) {
+    const msg = String((error && error.message) || error || "");
+    const isChunk = (error && error.name === "ChunkLoadError") ||
+      /dynamically imported module|module script failed|Loading chunk|Failed to fetch/i.test(msg);
+    if (isChunk) {
+      try {
+        const KEY = "eb_reload_ts";
+        const last = Number(sessionStorage.getItem(KEY) || 0);
+        if (Date.now() - last > 10000) {
+          sessionStorage.setItem(KEY, String(Date.now()));
+          window.location.reload();
+        }
+      } catch {}
+    }
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, padding:24, background:"#0B0B0E", color:"#ECECEE", textAlign:"center" }}>
+          <div style={{ fontSize:15, fontWeight:700 }}>일시적인 문제로 화면을 불러오지 못했어요.</div>
+          <div style={{ fontSize:13, color:"#8A8A92" }}>잠시 후 다시 시도해 주세요.</div>
+          <button onClick={() => window.location.reload()}
+            style={{ marginTop:4, background:"#FFFFFF", color:"#0B0B0E", border:"none", borderRadius:10, padding:"11px 24px", fontSize:14, fontWeight:700, cursor:"pointer" }}>
+            다시 시도
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
-    <UpdateGate>
-      <AuthProvider>
-        <CartProvider>
-          <AppContent />
-        </CartProvider>
-      </AuthProvider>
-    </UpdateGate>
+    <ErrorBoundary>
+      <UpdateGate>
+        <AuthProvider>
+          <CartProvider>
+            <AppContent />
+          </CartProvider>
+        </AuthProvider>
+      </UpdateGate>
+    </ErrorBoundary>
   );
 }
