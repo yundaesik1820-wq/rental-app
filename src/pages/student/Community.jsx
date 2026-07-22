@@ -1074,8 +1074,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                           const thumb = p.images?.[0];
                           return (
                             <div key={p.id} onClick={() => openPost(p)}
-                              style={{ display:"flex", alignItems:"center", gap:11, padding:"9px 0", borderTop: i>0 ? "1px solid rgba(255,255,255,0.06)" : "none", cursor:"pointer" }}>
-                              <div style={{ width:52, height:52, borderRadius:9, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              style={{ display:"flex", alignItems:"center", gap:11, padding:"6px 0", borderTop: i>0 ? "1px solid rgba(255,255,255,0.06)" : "none", cursor:"pointer" }}>
+                              <div style={{ width:46, height:46, borderRadius:9, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
                                 {thumb
                                   ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                                   : <span style={{ fontSize:19, opacity:0.5 }}>📄</span>}
