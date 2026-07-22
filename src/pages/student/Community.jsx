@@ -299,6 +299,32 @@ function AutoCarousel({ list, accent, renderSlide }) {
   );
 }
 
+/* 🎓 필름 클래스 카드 캐러셀 */
+function ClassCarousel({ list, onOpen }) {
+  return (
+    <AutoCarousel list={list} accent="#6366f1" renderSlide={(p) => {
+      const ytId = getYouTubeId(p.lessons?.[0]?.url);
+      return (
+        <div onClick={() => onOpen(p)}
+          style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(99,102,241,0.10) 0%, rgba(79,70,229,0.05) 40%, #101018 100%)", border:"1px solid rgba(99,102,241,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
+          {/* 좌: 첫 강의 썸네일 */}
+          <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {ytId
+              ? <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+              : <span style={{ fontSize:24, opacity:0.5 }}>🎓</span>}
+          </div>
+          {/* 우: 강좌명 / 분야·부제 / n강 */}
+          <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:4 }}>
+            <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+            {p.classField && <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.classField}</div>}
+            <div style={{ fontSize:11, color:"#818cf8", fontWeight:700 }}>{(p.lessons||[]).length}강</div>
+          </div>
+        </div>
+      );
+    }} />
+  );
+}
+
 /* 🏆 공모전 카드 캐러셀 */
 function ContestCarousel({ list, onOpen }) {
   const fmt = (d) => (d || "").split("-").join(".");
@@ -1335,6 +1361,39 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                               </span>
                             </div>
                             <WorkCarousel list={picks} onOpen={openPost} />
+                          </div>
+                        );
+                      })()}
+
+                      {/* 🎓 필름 클래스 — 매일 00시 기준 3개 캐러셀 (오늘의 추천작과 동일 규칙) */}
+                      {(() => {
+                        const classes = posts.filter(p => p.category === "클래스");
+                        if (classes.length === 0) return null;
+                        const t = new Date();
+                        const seedStr = `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`;
+                        let seed = 0;
+                        for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
+                        const sorted = [...classes].sort((a, b) => (a.id > b.id ? 1 : -1));
+                        const rand = (() => { let s = (seed ^ 0x9e3779b9) || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
+                        for (let i = sorted.length - 1; i > 0; i--) {
+                          const j = Math.floor(rand() * (i + 1));
+                          [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
+                        }
+                        const picks = sorted.slice(0, 3);
+                        const goClass = () => {
+                          const clRoom = ROOMS.find(r => r.id === "class");
+                          if (clRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(clRoom); return; }
+                          setSelectedRoom("class"); setCat("클래스"); setPage(1); setSearch("");
+                        };
+                        return (
+                          <div style={{ marginTop:14 }}>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
+                              <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#6366f1" }}>필름 클래스</span>
+                              <span onClick={goClass} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                                전체보기 <ChevronRight size={12} color="#8a8a92" />
+                              </span>
+                            </div>
+                            <ClassCarousel list={picks} onOpen={openPost} />
                           </div>
                         );
                       })()}
