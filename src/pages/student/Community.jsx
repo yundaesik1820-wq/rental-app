@@ -1228,13 +1228,20 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       <div style={{ display:"flex", alignItems:"center", background:CINEMA.surface,
           border:`1px solid ${CINEMA.border}`, borderRadius:10,
           marginBottom:16, boxSizing:"border-box" }}>
-        <select value={searchScope} onChange={e => { setSearchScope(e.target.value); setPage(1); }}
-          style={{ background:"transparent", border:"none", borderRight:`1px solid ${CINEMA.border}`,
-            color:CINEMA.muted, fontSize:13, fontFamily:"inherit", outline:"none",
-            padding:"10px 10px", cursor:"pointer", flexShrink:0 }}>
-          <option value="title" style={{ background:CINEMA.surface }}>제목</option>
-          <option value="content" style={{ background:CINEMA.surface }}>내용</option>
-        </select>
+        <div style={{ position:"relative", display:"flex", alignItems:"center", flexShrink:0, borderRight:`1px solid ${CINEMA.border}` }}>
+          <select value={searchScope} onChange={e => { setSearchScope(e.target.value); setPage(1); }}
+            style={{ appearance:"none", WebkitAppearance:"none", MozAppearance:"none",
+              background:"transparent", border:"none", color:CINEMA.muted, fontSize:13,
+              fontFamily:"inherit", outline:"none", padding:"10px 34px 10px 12px", cursor:"pointer" }}>
+            <option value="title" style={{ background:CINEMA.surface }}>제목</option>
+            <option value="content" style={{ background:CINEMA.surface }}>내용</option>
+          </select>
+          {/* 커스텀 화살표 — 텍스트는 그대로, 화살표만 구분선에서 살짝 떨어뜨림 */}
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={CINEMA.muted} strokeWidth={2.5}
+            style={{ position:"absolute", right:16, pointerEvents:"none" }}>
+            <path d="m6 9 6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </div>
         <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
           style={{ flex:1, minWidth:0, background:"transparent", border:"none", color:CINEMA.text,
             padding:"10px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
@@ -1255,7 +1262,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           ).slice(0, 3);
         if (top3.length === 0) return null;
         return (
-          <div style={{ position:"relative", width:"100%", aspectRatio:"1967 / 799",
+          <div style={{ position:"relative", width:"100%", aspectRatio:"1891 / 746",
               backgroundImage:"url(/boxoffice-banner.png)", backgroundSize:"100% 100%",
               backgroundRepeat:"no-repeat", borderRadius:12, marginBottom:16 }}>
             {/* 빈 필름릴 무대 위에 인기글 3줄을 얹음 (상단 26%는 박힌 타이틀 자리) */}
