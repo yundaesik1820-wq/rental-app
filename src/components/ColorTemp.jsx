@@ -107,13 +107,12 @@ export default function ColorTemp({ onBack }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14, padding: "0 2px" }}>
         <button onClick={onBack}
           style={{
-            background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)",
-            color: C.text, fontSize: 12, fontWeight: 600,
-            padding: "7px 14px", borderRadius: 8, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 5, fontFamily: FONT_GOTHIC,
+            background: "none", border: "none",
+            color: C.gold, fontSize: 26, fontWeight: 600, lineHeight: 1,
+            padding: "2px 10px 2px 0", cursor: "pointer",
             touchAction: "manipulation",
           }}>
-          <span style={{ color: C.gold }}>←</span> 도구
+          ‹
         </button>
         <span style={{ color: C.gold, fontSize: 10, fontWeight: 700, letterSpacing: "0.2em", fontFamily: FONT_MONO }}>
           🌡️ COLOR TEMP

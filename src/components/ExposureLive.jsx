@@ -356,13 +356,12 @@ export default function ExposureLive({ onBack }) {
       }}>
         <button onClick={onBack}
           style={{
-            background: "rgba(251,191,36,0.1)",
-            border: "1px solid rgba(251,191,36,0.3)",
-            color: "#fafaf9", fontSize: 11, fontWeight: 600,
-            padding: "6px 12px", borderRadius: 8, cursor: "pointer",
-            display: "flex", alignItems: "center", gap: 5,
+            background: "none", border: "none",
+            color: "#fbbf24", fontSize: 26, fontWeight: 600, lineHeight: 1,
+            padding: "2px 10px 2px 0", cursor: "pointer",
+            touchAction: "manipulation",
           }}>
-          <span style={{ color: "#fbbf24" }}>←</span> 도구
+          ‹
         </button>
         <span style={{
           color: "#fbbf24", fontSize: 10, fontWeight: 700,

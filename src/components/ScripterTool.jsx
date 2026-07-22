@@ -610,7 +610,7 @@ async function shareFolder(folder, _ignored, C) {
 function Header({ C, title, onBack }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-      <button onClick={onBack} style={iconBtn(C)}>←</button>
+      <button onClick={onBack} style={{ background: "none", border: "none", color: C.text, fontSize: 26, fontWeight: 600, lineHeight: 1, padding: "2px 10px 2px 0", cursor: "pointer", touchAction: "manipulation" }}>‹</button>
       <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>{title}</div>
     </div>
   );

@@ -137,10 +137,21 @@ export default function CinemaSlate({ onBack }) {
 
   // ─── CLAP! 사운드 ──────────────────────────
   // 🎵 MP3 우선 재생, 실패 시 합성 사운드 fallback
+  // 진입 시 미리 로드해둬야 스냅 시점에 지연 없이 바로 남
+  const clapAudioRef = useRef(null);
+  useEffect(() => {
+    try {
+      const a = new Audio("/sounds/clap.mp3");
+      a.preload = "auto";
+      a.volume = 1.0;
+      clapAudioRef.current = a;
+    } catch (e) { /* fallback이 처리 */ }
+  }, []);
   const playClapSound = () => {
     try {
-      const audio = new Audio("/sounds/clap.mp3");
+      const audio = clapAudioRef.current || new Audio("/sounds/clap.mp3");
       audio.volume = 1.0;
+      audio.currentTime = 0;
       audio.play().catch(err => {
         console.warn("clap.mp3 재생 실패, 합성 사운드로 대체:", err);
         playSynthClap();
@@ -198,15 +209,15 @@ export default function CinemaSlate({ onBack }) {
   };
 
   const handleClap = () => {
-    // 즉시: 빛 번쩍임 + 진동 + 슬레이트 애니메이션 시작
-    setShowFlash(true);
-    if (navigator.vibrate) navigator.vibrate([180, 30, 80]);
+    // 즉시: 슬레이트 애니메이션만 시작
     setClapping(c => c + 1);
-    setTimeout(() => setShowFlash(false), 220);
 
-    // 슬레이트가 닫히는 순간에 소리 재생 (애니메이션 SNAP 시점)
+    // 닫히는 SNAP 시점(clapperSnap 0.7s의 ~68%)에 빛·진동·소리를 동시에
     setTimeout(() => {
+      setShowFlash(true);
+      if (navigator.vibrate) navigator.vibrate([180, 30, 80]);
       playClapSound();
+      setTimeout(() => setShowFlash(false), 220);
     }, 480);
   };
 
@@ -276,14 +287,12 @@ export default function CinemaSlate({ onBack }) {
       }}>
         <button onClick={onBack}
           style={{
-            background:"rgba(251,191,36,0.1)",
-            border:"1px solid rgba(251,191,36,0.3)",
-            color: C.text, fontSize:11, fontWeight:600,
-            padding:"6px 12px", borderRadius:8, cursor:"pointer",
-            display:"flex", alignItems:"center", gap:5,
-            fontFamily: FONT_GOTHIC,
+            background:"none", border:"none",
+            color:"#fbbf24", fontSize:26, fontWeight:600, lineHeight:1,
+            padding:"2px 10px 2px 0", cursor:"pointer",
+            touchAction:"manipulation",
           }}>
-          <span style={{ color:"#fbbf24" }}>←</span> 도구
+          ‹
         </button>
         <span style={{ color:"#fbbf24", fontSize:10, fontWeight:700, letterSpacing:"0.2em", fontFamily:FONT_MONO }}>
           🎬 SLATE
@@ -655,17 +664,17 @@ function HandwritingCanvas({ C, inverted, portrait }) {
   const getPos = (e) => {
     const canvas = canvasRef.current;
     const ne = e.nativeEvent || e;
-    // Pointer 이벤트의 offsetX/Y는 브라우저가 회전(transform)·스케일·위치를 모두
-    // 역계산해 요소 로컬 좌표로 제공하므로, 부모가 rotate(90deg)여도 정확하다.
-    // ctx가 dpr만큼 scale 돼 있어 CSS px(offset) 좌표를 그대로 쓰면 된다.
-    let x = ne.offsetX, y = ne.offsetY;
-    if (x == null || y == null) {
-      // 폴백 (구형): rect 기준 단순 매핑
-      const rect = canvas.getBoundingClientRect();
-      const cx = ne.clientX ?? 0, cy = ne.clientY ?? 0;
-      x = cx - rect.left; y = cy - rect.top;
+    // ⚠️ offsetX/Y는 회전(transform)된 요소에서 브라우저마다 계산이 다름(특히 iOS WebKit은
+    // 역회전을 안 해줌) → 세로폰에서 터치 지점과 다른 곳에 그려지던 버그.
+    // clientX/Y(뷰포트 좌표)를 직접 역회전 매핑하면 기기·브라우저 무관하게 정확하다.
+    const rect = canvas.getBoundingClientRect();
+    const cx = ne.clientX ?? 0, cy = ne.clientY ?? 0;
+    if (portrait) {
+      // 부모 래퍼가 rotate(90deg): 로컬 +x = 화면 아래 방향, 로컬 +y = 화면 왼쪽 방향
+      // 로컬 (0,0)은 회전된 AABB의 우상단 → x = clientY - top, y = right - clientX
+      return { x: cy - rect.top, y: rect.right - cx };
     }
-    return { x, y };
+    return { x: cx - rect.left, y: cy - rect.top };
   };
 
   const startDraw = (e) => {
