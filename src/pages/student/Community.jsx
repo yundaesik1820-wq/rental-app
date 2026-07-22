@@ -236,6 +236,9 @@ function ContestCarousel({ list, onOpen }) {
   const resumeTimer = useRef(null);
   const [idx, setIdx] = useState(0);
 
+  // 끝 뒤에 첫 장 복제를 붙여 항상 오른쪽으로 이어지는 무한 루프
+  const slides = list.length > 1 ? [...list, list[0]] : list;
+
   // 자동 넘김 — 현재 스크롤 위치 기준으로 다음 장 (수동 스와이프 후에도 자연스럽게 이어짐)
   useEffect(() => {
     if (list.length < 2) return;
@@ -243,7 +246,7 @@ function ContestCarousel({ list, onOpen }) {
       const el = trackRef.current;
       if (!el || pausedRef.current || !el.clientWidth) return;
       const cur = Math.round(el.scrollLeft / el.clientWidth);
-      el.scrollTo({ left: ((cur + 1) % list.length) * el.clientWidth, behavior: "smooth" });
+      el.scrollTo({ left: Math.min(cur + 1, list.length) * el.clientWidth, behavior: "smooth" });
     }, 4000);
     return () => clearInterval(id);
   }, [list.length]);
@@ -261,7 +264,14 @@ function ContestCarousel({ list, onOpen }) {
   const onScroll = () => {
     const el = trackRef.current;
     if (!el || !el.clientWidth) return;
-    setIdx(Math.min(list.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
+    const w = el.clientWidth;
+    // 복제 슬라이드(마지막)에 완전히 도달하면 진짜 첫 장으로 순간이동 — 똑같이 보여서 티 안 남
+    if (list.length > 1 && el.scrollLeft >= list.length * w - 1) {
+      el.scrollTo({ left: 0, behavior: "auto" });
+      setIdx(0);
+      return;
+    }
+    setIdx(Math.min(list.length - 1, Math.round(el.scrollLeft / w)));
   };
 
   const fmt = (d) => (d || "").split("-").join(".");
@@ -272,10 +282,10 @@ function ContestCarousel({ list, onOpen }) {
       <div ref={trackRef} className="contest-swipe" onScroll={onScroll}
         onTouchStart={pause} onTouchEnd={resume} onTouchCancel={resume}
         style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", borderRadius:16 }}>
-        {list.map(p => {
+        {slides.map((p, si) => {
           const dday = getDday(p.deadline);
           return (
-            <div key={p.id} onClick={() => onOpen(p)}
+            <div key={si === list.length ? `${p.id}-clone` : p.id} onClick={() => onOpen(p)}
               style={{ flexShrink:0, width:"100%", scrollSnapAlign:"start", boxSizing:"border-box", cursor:"pointer" }}>
               <div style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(249,115,22,0.05) 40%, #101018 100%)", border:"1px solid rgba(251,146,60,0.25)", borderRadius:16, padding:"10px 12px" }}>
                 {/* 좌: 공모전 이미지 */}

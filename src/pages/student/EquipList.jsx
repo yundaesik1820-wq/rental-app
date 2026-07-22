@@ -153,13 +153,25 @@ export default function EquipList({ setTab }) {
   const [expandedSet, setExpandedSet] = useState(null);
   const [showDescModel, setShowDescModel] = useState(null); // 설명 보기
   const [photoIdx, setPhotoIdx] = useState({});
-  // 🎞️ 히어로 자동 슬라이드 (3.5초마다)
+  // 🎞️ 히어로 자동 슬라이드 (3.5초마다) — 끝 뒤에 첫 장 복제를 붙여 항상 오른쪽으로 이어지는 무한 루프
   const [heroIdx, setHeroIdx] = useState(0);
+  const [heroNoAnim, setHeroNoAnim] = useState(false);
   useEffect(() => {
     if (HERO_SLIDES.length <= 1) return;
-    const t = setInterval(() => setHeroIdx(i => (i + 1) % HERO_SLIDES.length), 3500);
+    const t = setInterval(() => setHeroIdx(i => i + 1), 3500);
     return () => clearInterval(t);
   }, []);
+  // 복제 슬라이드(마지막)에 도달하면 슬라이드 애니메이션이 끝난 뒤 진짜 첫 장으로 순간이동 (티 안 남)
+  useEffect(() => {
+    if (heroIdx !== HERO_SLIDES.length) return;
+    const t = setTimeout(() => { setHeroNoAnim(true); setHeroIdx(0); }, 580);
+    return () => clearTimeout(t);
+  }, [heroIdx]);
+  useEffect(() => {
+    if (!heroNoAnim) return;
+    const t = setTimeout(() => setHeroNoAnim(false), 50);
+    return () => clearTimeout(t);
+  }, [heroNoAnim]);
 
   // 단품 / 세트 분리
   const unitEquips = equipments.filter(e => !e.isSet);
@@ -216,8 +228,8 @@ export default function EquipList({ setTab }) {
     <div style={{ paddingBottom: cartCount > 0 ? 96 : 0 }}>
       {/* 🎞️ 자동 슬라이드 히어로 (내용은 상단 HERO_SLIDES에서 수정) */}
       <div style={{ position:"relative", borderRadius:16, overflow:"hidden", marginBottom:18, aspectRatio:"3 / 1", minHeight:96 }}>
-        <div style={{ display:"flex", height:"100%", transition:"transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
-          {HERO_SLIDES.map((s, i) => (
+        <div style={{ display:"flex", height:"100%", transition: heroNoAnim ? "none" : "transform .55s cubic-bezier(.4,0,.2,1)", transform:`translateX(-${heroIdx*100}%)` }}>
+          {(HERO_SLIDES.length > 1 ? [...HERO_SLIDES, HERO_SLIDES[0]] : HERO_SLIDES).map((s, i) => (
             <div key={i} onClick={() => {
                 if (s.url) { window.open(s.url, "_blank", "noopener,noreferrer"); return; }
                 if (s.pdfKeyword) {
@@ -244,7 +256,7 @@ export default function EquipList({ setTab }) {
           <div style={{ position:"absolute", bottom:10, left:0, right:0, display:"flex", gap:5, justifyContent:"center" }}>
             {HERO_SLIDES.map((_, i) => (
               <div key={i} onClick={() => setHeroIdx(i)}
-                style={{ width: i===heroIdx?16:6, height:6, borderRadius:99, background: i===heroIdx?"#fff":"rgba(255,255,255,0.45)", transition:"all .3s", cursor:"pointer" }} />
+                style={{ width: i===heroIdx%HERO_SLIDES.length?16:6, height:6, borderRadius:99, background: i===heroIdx%HERO_SLIDES.length?"#fff":"rgba(255,255,255,0.45)", transition:"all .3s", cursor:"pointer" }} />
             ))}
           </div>
         )}
