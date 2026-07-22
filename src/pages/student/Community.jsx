@@ -1543,11 +1543,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             style={{ background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:6, padding:"6px 10px", fontSize:12, color:page===totalPages?CINEMA.mutedDim:CINEMA.muted, cursor:page===totalPages?"not-allowed":"pointer" }}>»</button>
         </div>
       )}
-      {allFiltered.length > 0 && (
-        <div style={{ fontSize:10, color:CINEMA.mutedDim, textAlign:"center", marginTop:8, fontFamily:"'Courier New', monospace", letterSpacing:"0.1em" }}>
-          {(page-1)*PAGE_SIZE+1}~{Math.min(page*PAGE_SIZE, allFiltered.length)} / 전체 {allFiltered.length}개
-        </div>
-      )}
         </>
       )}
         </>
