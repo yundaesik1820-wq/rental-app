@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 
 /**
  * 🎬 전자식 시네마 슬레이터 v3 (가로 모드)
@@ -455,16 +456,21 @@ export default function CinemaSlate({ onBack }) {
   );
 
   // ─── 풀스크린 + 자동 가로 ─────────────────
-  return (
+  // ⚠️ createPortal(body): 커뮤니티 z-200 fixed 컨테이너 안에 중첩되면 전역 스택이 200 레벨로 갇혀
+  //    하단바(z 250)가 슬레이트 위에 뜸 → body 직속으로 탈출 (z 9000이 실제로 최상위가 되게)
+  // ⚠️ maxWidth:"none": Layout 모바일 전역 규칙 `* { max-width:100% }`이 회전 래퍼(폭=화면높이)를
+  //    화면폭으로 캡핑해 회전 화면이 정사각형으로 뭉개짐 → 인라인으로 무력화 (인라인 > 전역 CSS)
+  return createPortal(
     <div ref={rootRef} style={{
       position:"fixed", inset:0, zIndex:9000,
       background:"#000",
       overflow:"hidden",
+      maxWidth:"none",
     }}>
       {portrait ? (
         <div style={{
           position:"absolute", top:0, left:`${box.w}px`,
-          width:`${box.h}px`, height:`${box.w}px`,
+          width:`${box.h}px`, height:`${box.w}px`, maxWidth:"none",
           transformOrigin:"top left",
           transform:"rotate(90deg)",
         }}>
@@ -518,7 +524,8 @@ export default function CinemaSlate({ onBack }) {
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body
   );
 }
 
