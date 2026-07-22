@@ -337,6 +337,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const imgInputRef = useRef(null);
   const staffImgRef = useRef(null);
   const [search, setSearch]           = useState("");
+  const [searchScope, setSearchScope] = useState("title"); // "title" | "content"
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
 
@@ -393,8 +394,12 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       if (cat !== "전체" && p.category !== cat) return false;
       // 전체 탭에서는 강의 게시판 글 제외 (정보 룸에서는 강의 보이게)
       if (cat === "전체" && p.category === LECTURE_CAT && currentRoom?.id !== "knowledge") return false;
-      if (search && !p.title.includes(search) && !(p.content||"").includes(search) &&
-          !(p.lectureName||"").includes(search) && !(p.professor||"").includes(search)) return false;
+      if (search) {
+        const inTitle   = p.title.includes(search) || (p.lectureName||"").includes(search) || (p.professor||"").includes(search);
+        const inContent = (p.content||"").includes(search);
+        if (searchScope === "title"   && !inTitle)   return false;
+        if (searchScope === "content" && !inContent) return false;
+      }
       return true;
     })
     .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0));
@@ -1212,18 +1217,29 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           );
         })}
       </div>
-      <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
-        {currentRoom?.id === "community" && "🔒 익명 게시판"}
-        {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
-        {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
-      </div>
+      {(currentRoom?.id === "knowledge" || currentRoom?.id === "crew") && (
+        <div style={{ fontSize:10, color:CINEMA.mutedDim, marginBottom:12, letterSpacing:"0.05em" }}>
+          {currentRoom?.id === "knowledge" && "강의는 익명 · 정보·취업·공모전은 실명"}
+          {currentRoom?.id === "crew" && "🤝 함께할 팀원·스태프를 모집해보세요"}
+        </div>
+      )}
 
-      {/* 검색 - 시네마 톤 */}
-      <input placeholder="🔍 제목, 내용 검색" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-        style={{ display:"block", width:"100%", background:CINEMA.surface,
-          border:`1px solid ${CINEMA.border}`, borderRadius:10, color:CINEMA.text,
-          padding:"10px 16px", fontSize:13, fontFamily:"inherit", outline:"none",
-          marginBottom:16, boxSizing:"border-box" }} />
+      {/* 검색 - 시네마 톤 (좌측 제목/내용 드롭다운 · 우측 아이콘) */}
+      <div style={{ display:"flex", alignItems:"center", background:CINEMA.surface,
+          border:`1px solid ${CINEMA.border}`, borderRadius:10,
+          marginBottom:16, boxSizing:"border-box" }}>
+        <select value={searchScope} onChange={e => { setSearchScope(e.target.value); setPage(1); }}
+          style={{ background:"transparent", border:"none", borderRight:`1px solid ${CINEMA.border}`,
+            color:CINEMA.muted, fontSize:13, fontFamily:"inherit", outline:"none",
+            padding:"10px 10px", cursor:"pointer", flexShrink:0 }}>
+          <option value="title" style={{ background:CINEMA.surface }}>제목</option>
+          <option value="content" style={{ background:CINEMA.surface }}>내용</option>
+        </select>
+        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
+          style={{ flex:1, minWidth:0, background:"transparent", border:"none", color:CINEMA.text,
+            padding:"10px 12px", fontSize:13, fontFamily:"inherit", outline:"none" }} />
+        <Search size={18} color={CINEMA.muted} strokeWidth={2} style={{ flexShrink:0, marginRight:12 }} />
+      </div>
 
       {/* 인기 게시글 TOP3 - 커뮤니티 룸에서만 표시 */}
       {selectedRoom === "community" && (() => {
