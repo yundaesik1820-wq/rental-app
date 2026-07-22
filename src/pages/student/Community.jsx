@@ -339,6 +339,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const [search, setSearch]           = useState("");
   const [searchScope, setSearchScope] = useState("title"); // "title" | "content"
   const [cmtMenu, setCmtMenu]         = useState(null); // 열린 댓글 ⋮ 메뉴 id
+  const [postMenu, setPostMenu]       = useState(false); // 글 신고/차단 삼선 메뉴
   const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
 
@@ -1596,6 +1597,27 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 </>
               )}
               {isSuper && <Btn onClick={() => adminDeletePost(selPost.id)} color={C.red} small>관리자삭제</Btn>}
+              {selPost.authorId !== profile?.uid && (
+                <div style={{ position:"relative" }}>
+                  <button onClick={() => setPostMenu(v => !v)} aria-label="더보기"
+                    style={{ background:"none", border:"none", color:CINEMA.muted, cursor:"pointer", padding:"4px 4px", display:"flex", alignItems:"center" }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                      <path d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                  </button>
+                  {postMenu && (
+                    <>
+                      <div onClick={() => setPostMenu(false)} style={{ position:"fixed", inset:0, zIndex:10 }} />
+                      <div style={{ position:"absolute", top:32, right:0, zIndex:11, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:10, overflow:"hidden", minWidth:108, boxShadow:"0 6px 20px rgba(0,0,0,0.5)" }}>
+                        <button onClick={() => { reportItem("post", selPost); setPostMenu(false); }}
+                          style={{ display:"block", width:"100%", textAlign:"left", background:"none", border:"none", color:CINEMA.text, fontSize:12.5, cursor:"pointer", padding:"10px 14px", fontFamily:"inherit" }}>신고</button>
+                        <button onClick={() => { blockUser(selPost.authorId, displayName(selPost)); setPostMenu(false); }}
+                          style={{ display:"block", width:"100%", textAlign:"left", background:"none", border:"none", color:CINEMA.text, fontSize:12.5, cursor:"pointer", padding:"10px 14px", borderTop:`1px solid ${CINEMA.border}`, fontFamily:"inherit" }}>차단</button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           {selPost.category === LECTURE_CAT ? (
@@ -1889,7 +1911,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             </div>
           ) : (
             <div>
-              <div style={{ fontSize:24, fontWeight:800, color:CINEMA.text, marginBottom:10, lineHeight:1.25 }}>{selPost.title}</div>
+              <div style={{ fontSize:20, fontWeight:800, color:CINEMA.text, marginBottom:10, lineHeight:1.3 }}>{selPost.title}</div>
               <div style={{ display:"flex", gap:9, fontSize:13, color:CINEMA.muted, marginBottom:20 }}>
                 <span style={{ color: selPost.useRealName ? CINEMA.gold : CINEMA.muted }}>
                   {selPost.useRealName ? "🏛️ " : ""}{displayName(selPost)}
@@ -1911,7 +1933,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             </div>
           )}
 
-          {/* 리액션 알약 (♥ 추천 | 👎 비추 | 💬 댓글수) - 작품공유·협업모집·스탭·클래스 제외 */}
+          {/* 리액션 알약 (👍 추천 | 💬 댓글수 | 👎 비추) - 작품공유·협업모집·스탭·클래스 제외 */}
           {selPost.category !== "작품공유" && selPost.category !== "협업모집" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (() => {
             const liked = (selPost.likedBy||[]).includes(profile?.uid);
             const disliked = (selPost.dislikedBy||[]).includes(profile?.uid);
@@ -1921,35 +1943,20 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               <div style={{ display:"flex", justifyContent:"center", margin:"22px 0 18px" }}>
                 <div style={{ display:"flex", alignItems:"stretch", background:CINEMA.surface, border:`1px solid ${liked ? CINEMA.red : CINEMA.borderRed}`, borderRadius:26, boxShadow: liked ? "0 0 16px rgba(220,38,38,0.25)" : "none", overflow:"hidden" }}>
                   <button onClick={() => toggleLike("post", selPost)} style={{ ...seg, color: liked ? CINEMA.redBright : CINEMA.muted, fontWeight:700 }}>
-                    <span style={{ fontSize:15 }}>{liked ? "♥" : "♡"}</span> {selPost.likes||0}
-                  </button>
-                  {divider}
-                  <button onClick={() => toggleDislike("post", selPost)} style={{ ...seg, color: disliked ? CINEMA.text : CINEMA.mutedDim, fontWeight:600 }}>
-                    <span style={{ fontSize:14 }}>👎</span> {selPost.dislikes||0}
+                    <span style={{ fontSize:15 }}>👍</span> {selPost.likes||0}
                   </button>
                   {divider}
                   <div style={{ ...seg, cursor:"default", color:CINEMA.muted, fontWeight:600 }}>
                     <span style={{ fontSize:14 }}>💬</span> {postComments(selPost.id).length}
                   </div>
+                  {divider}
+                  <button onClick={() => toggleDislike("post", selPost)} style={{ ...seg, color: disliked ? CINEMA.text : CINEMA.mutedDim, fontWeight:600 }}>
+                    <span style={{ fontSize:14 }}>👎</span> {selPost.dislikes||0}
+                  </button>
                 </div>
               </div>
             );
           })()}
-
-          {/* 🚨 신고 / 🚫 차단 - 본인 글 제외, 모든 카테고리 노출 */}
-          {selPost.authorId !== profile?.uid && (
-            <div style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:18, marginBottom:22 }}>
-              <button onClick={() => reportItem("post", selPost)}
-                style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:CINEMA.muted, fontSize:13, cursor:"pointer", padding:"4px 6px", fontFamily:"inherit" }}>
-                <span style={{ color:CINEMA.redBright }}>⚠️</span> 신고
-              </button>
-              <div style={{ width:1, height:12, background:CINEMA.border }} />
-              <button onClick={() => blockUser(selPost.authorId, displayName(selPost))}
-                style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:CINEMA.muted, fontSize:13, cursor:"pointer", padding:"4px 6px", fontFamily:"inherit" }}>
-                🚫 차단
-              </button>
-            </div>
-          )}
 
           {/* 댓글 영역 - 작품공유 제외 */}
           {selPost.category !== "작품공유" && selPost.category !== "스탭프로필" && selPost.category !== "클래스" && (<>
@@ -2014,8 +2021,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                     <div onClick={() => setCmtMenu(null)} style={{ position:"fixed", inset:0, zIndex:10 }} />
                     <div style={{ position:"absolute", top:40, right:12, zIndex:11, background:CINEMA.surface, border:`1px solid ${CINEMA.border}`, borderRadius:10, overflow:"hidden", minWidth:108, boxShadow:"0 6px 20px rgba(0,0,0,0.5)" }}>
                       {c.authorId !== profile?.uid && (<>
-                        <button onClick={() => { reportItem("comment", c); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text }}>🚨 신고</button>
-                        <button onClick={() => { blockUser(c.authorId, displayCommentName(c, selPost.category)); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text, borderTop:`1px solid ${CINEMA.border}` }}>🚫 차단</button>
+                        <button onClick={() => { reportItem("comment", c); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text }}>신고</button>
+                        <button onClick={() => { blockUser(c.authorId, displayCommentName(c, selPost.category)); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.text, borderTop:`1px solid ${CINEMA.border}` }}>차단</button>
                       </>)}
                       {isSuper && (
                         <button onClick={() => { adminDeleteComment(c.id); setCmtMenu(null); }} style={{ ...menuBtn, color:CINEMA.redBright, borderTop: c.authorId !== profile?.uid ? `1px solid ${CINEMA.border}` : "none" }}>삭제</button>
@@ -2066,11 +2073,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 style={{ flexShrink:0, background:CINEMA.red, border:"none", borderRadius:9, color:"#fff", fontSize:14, fontWeight:700, padding:"11px 22px", cursor:"pointer", opacity:(submitting || !commentText.trim())?0.5:1 }}>
                 등록
               </button>
-            </div>
-            <div style={{ fontSize:10, color:CINEMA.mutedDim, fontFamily:"'Courier New', monospace", marginTop:6, paddingLeft:2 }}>
-              {commentUseRealName && canUseRealName && selPost.category !== LECTURE_CAT
-                ? `🏛️ ${profile?.name || "관리자"}(${adminRoleLabel}) 실명으로 게시됩니다`
-                : (REAL_CATS.includes(selPost.category) ? "실명으로 게시됩니다" : "익명으로 게시됩니다")}
             </div>
           </div>
           </>)}
