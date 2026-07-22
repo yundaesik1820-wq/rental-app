@@ -229,6 +229,86 @@ function getDday(deadline) {
   return Math.round((end - today) / 86400000);
 }
 
+/* 🏆 공모전 정보 캐러셀 — 4초 자동 넘김 + 손 스와이프(스냅), 만지는 동안 자동 정지 */
+function ContestCarousel({ list, onOpen }) {
+  const trackRef = useRef(null);
+  const pausedRef = useRef(false);
+  const resumeTimer = useRef(null);
+  const [idx, setIdx] = useState(0);
+
+  // 자동 넘김 — 현재 스크롤 위치 기준으로 다음 장 (수동 스와이프 후에도 자연스럽게 이어짐)
+  useEffect(() => {
+    if (list.length < 2) return;
+    const id = setInterval(() => {
+      const el = trackRef.current;
+      if (!el || pausedRef.current || !el.clientWidth) return;
+      const cur = Math.round(el.scrollLeft / el.clientWidth);
+      el.scrollTo({ left: ((cur + 1) % list.length) * el.clientWidth, behavior: "smooth" });
+    }, 4000);
+    return () => clearInterval(id);
+  }, [list.length]);
+
+  const pause = () => {
+    pausedRef.current = true;
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+  };
+  const resume = () => {
+    if (resumeTimer.current) clearTimeout(resumeTimer.current);
+    resumeTimer.current = setTimeout(() => { pausedRef.current = false; }, 4000);
+  };
+  useEffect(() => () => { if (resumeTimer.current) clearTimeout(resumeTimer.current); }, []);
+
+  const onScroll = () => {
+    const el = trackRef.current;
+    if (!el || !el.clientWidth) return;
+    setIdx(Math.min(list.length - 1, Math.round(el.scrollLeft / el.clientWidth)));
+  };
+
+  const fmt = (d) => (d || "").split("-").join(".");
+
+  return (
+    <div>
+      <style>{`.contest-swipe::-webkit-scrollbar{display:none}.contest-swipe{scrollbar-width:none;-ms-overflow-style:none}`}</style>
+      <div ref={trackRef} className="contest-swipe" onScroll={onScroll}
+        onTouchStart={pause} onTouchEnd={resume} onTouchCancel={resume}
+        style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", borderRadius:16 }}>
+        {list.map(p => {
+          const dday = getDday(p.deadline);
+          return (
+            <div key={p.id} onClick={() => onOpen(p)}
+              style={{ flexShrink:0, width:"100%", scrollSnapAlign:"start", boxSizing:"border-box", cursor:"pointer" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(249,115,22,0.05) 40%, #101018 100%)", border:"1px solid rgba(251,146,60,0.25)", borderRadius:16, padding:"10px 12px" }}>
+                {/* 좌: 공모전 이미지 */}
+                <div style={{ width:100, height:76, borderRadius:10, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {p.images?.[0]
+                    ? <img loading="lazy" decoding="async" src={p.images[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                    : <span style={{ fontSize:24, opacity:0.5 }}>🏆</span>}
+                </div>
+                {/* 우: 이름 / 기간 / D-day */}
+                <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:5 }}>
+                  <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{p.title}</div>
+                  <div style={{ fontSize:11, color:"#8a8a92" }}>{fmt(p.contestStart)} ~ {fmt(p.deadline)}</div>
+                  <span style={{ alignSelf:"flex-start", background:"#fb923c", color:"#0a0a0a", fontSize:9.5, fontWeight:700, padding:"2px 8px", borderRadius:5 }}>
+                    {dday === 0 ? "D-DAY" : `D-${dday}`}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      {/* 인디케이터 점 */}
+      {list.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", gap:5, marginTop:7 }}>
+          {list.map((_, i) => (
+            <span key={i} style={{ width: i === idx ? 14 : 5, height:5, borderRadius:3, background: i === idx ? "#fb923c" : "rgba(255,255,255,0.18)", transition:"all 0.25s" }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // 포지션 표시: {role, count} 객체 또는 기존 문자열 모두 지원
 function posLabel(pos) {
   if (typeof pos === "string") return pos;
@@ -1125,6 +1205,30 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                       </div>
                       <InfoFeed list={[...posts].filter(p => p.category !== "공모전" && (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
 
+                      {/* 🏆 공모전 정보 — 자동 슬라이드 캐러셀 (마감 안 지난 것만, 임박순) */}
+                      {(() => {
+                        const contests = [...posts]
+                          .filter(p => p.category === "공모전" && p.deadline && getDday(p.deadline) >= 0)
+                          .sort((a, b) => getDday(a.deadline) - getDday(b.deadline));
+                        if (contests.length === 0) return null;
+                        const goContest = () => {
+                          const kRoom = ROOMS.find(r => r.id === "knowledge");
+                          if (kRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(kRoom); return; }
+                          setSelectedRoom("knowledge"); setCat("공모전"); setPage(1); setSearch("");
+                        };
+                        return (
+                          <div style={{ marginTop:14 }}>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
+                              <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#fb923c" }}>공모전 정보</span>
+                              <span onClick={goContest} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                                전체보기 <ChevronRight size={12} color="#8a8a92" />
+                              </span>
+                            </div>
+                            <ContestCarousel list={contests} onOpen={openPost} />
+                          </div>
+                        );
+                      })()}
+
                       {/* 🎞️ 필름도구 — 이미지 박스 가로 스와이프 (윗줄 5 + 아랫줄 4) */}
                       <div style={{ marginTop:14 }}>
                         <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
@@ -1550,7 +1654,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                   const dday = getDday(p.deadline);
                   const closed = dday !== null && dday < 0;
                   return (
-                    <span style={{ display:"inline-block", background: closed ? "#444" : "#fb923c", color: closed ? "#fff" : "#0a0a0a", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:5, marginBottom:8, marginLeft:5, verticalAlign:"top" }}>
+                    <span style={{ display:"inline-block", background: closed ? "#444" : "#fb923c", color: closed ? "#fff" : "#0a0a0a", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:5, marginBottom:8, marginLeft:5 }}>
                       {closed ? "마감" : dday === 0 ? "D-DAY" : `D-${dday}`}
                     </span>
                   );
