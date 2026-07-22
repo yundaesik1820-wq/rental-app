@@ -1123,7 +1123,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
                         <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                       </div>
-                      <InfoFeed list={[...posts].filter(p => (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
+                      <InfoFeed list={[...posts].filter(p => p.category !== "공모전" && (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
 
                       {/* 🎞️ 필름도구 — 이미지 박스 가로 스와이프 (윗줄 5 + 아랫줄 4) */}
                       <div style={{ marginTop:14 }}>
