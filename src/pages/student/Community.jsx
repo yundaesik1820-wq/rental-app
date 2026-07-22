@@ -348,7 +348,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const [writeForm, setWriteForm] = useState({ title:"", content:"", category:"자유", images:[],
     lectureName:"", professor:"", schedule:"", useRealName:false,
     ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" }); // 강의/작품공유/크루 전용 필드 + 관리자 실명모드
+    positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", contestStart:"", contestUrl:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" }); // 강의/작품공유/크루/공모전 전용 필드 + 관리자 실명모드
   const [commentRating, setCommentRating] = useState(0); // 별점
   const [showEdit,    setShowEdit]    = useState(false); // 수정 모달
   const [editForm,    setEditForm]    = useState({ title:"", content:"", ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"", positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
@@ -455,6 +455,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     const isCrewPost = writeForm.category === "협업모집";
     const isStaffPost = writeForm.category === "스탭프로필";
     const isClassPost = writeForm.category === "클래스";
+    const isContestPost = writeForm.category === "공모전";
     // 카테고리별 유효성 검사
     if (isLecturePost) {
       if (!writeForm.lectureName.trim() || !writeForm.professor.trim()) return;
@@ -470,6 +471,10 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       if (!canUseRealName) { alert("강좌 등록은 조교·관리자만 가능해요."); return; }
       if (!writeForm.title.trim()) { alert("강좌명을 입력해주세요."); return; }
       if (writeForm.lessons.length === 0) { alert("영상을 1개 이상 추가해주세요."); return; }
+    } else if (isContestPost) {
+      if (!writeForm.title.trim()) return;
+      if (!writeForm.contestStart || !writeForm.deadline) { alert("시작일자와 종료일자를 입력해주세요."); return; }
+      if ((writeForm.images || []).length === 0) { alert("공모전 이미지를 1장 이상 첨부해주세요."); return; }
     } else {
       if (!writeForm.title.trim() || !writeForm.content.trim()) return;
     }
@@ -494,7 +499,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     const useRealNameFinal = canUseRealName && writeForm.useRealName && !isLecture;
     await addItem("communityPosts", {
       title:       isLecture ? writeForm.lectureName.trim() : isStaffPost ? (profile?.name || "") : writeForm.title.trim(),
-      content:     isLecture ? "" : writeForm.content,
+      content:     isLecture || isContestPost ? "" : writeForm.content,
       category:    writeForm.category,
       authorId:    profile?.uid || "",
       authorName:  profile?.name || "",
@@ -518,8 +523,11 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
       crewPlace:   isCrewPost ? writeForm.crewPlace.trim() : "",
       crewPay:     isCrewPost ? writeForm.crewPay.trim() : "",
       crewGenre:   isCrewPost ? writeForm.crewGenre.trim() : "",
-      deadline:    isCrewPost ? writeForm.deadline : "",
+      deadline:    isCrewPost || isContestPost ? writeForm.deadline : "",
       applicants:  [],
+      // 공모전 전용 필드
+      contestStart: isContestPost ? writeForm.contestStart : "",
+      contestUrl:   isContestPost ? writeForm.contestUrl.trim() : "",
       // 스탭 프로필 전용 필드
       profileImage:  isStaffPost ? writeForm.profileImage : "",
       staffRoles:    isStaffPost ? writeForm.staffRoles : [],
@@ -544,7 +552,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     });
     setWriteForm({ title:"", content:"", category:"자유", images:[], newbieBlocked:false, lectureName:"", professor:"", schedule:"", useRealName:false,
       ytUrl:"", oneLiner:"", genres:[], genreInput:"", runtime:"", prodDate:"", credits:"",
-      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
+      positions:[], positionInput:"", positionSelect:"", positionCount:"", crewLogline:"", crewDirector:"", crewSchedule:"", crewPlace:"", crewPay:"", crewGenre:"", deadline:"", contestStart:"", contestUrl:"", profileImage:"", staffRoles:[], staffRoleSelect:"", staffRoleInput:"", staffMajor:"", staffContact:"", classDesc:"", classField:"", channelUrl:"", lessons:[], lessonTitle:"", lessonUrl:"", lessonDuration:"" });
     setShowWrite(false);
     setSubmitting(false);
   };
@@ -1976,7 +1984,34 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 <span>·</span>
                 <span>조회 {selPost.views||0}</span>
               </div>
-              <div style={{ fontSize:15, color:CINEMA.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>
+              {/* 공모전: 접수 기간 + 홈페이지 링크 */}
+              {selPost.category === "공모전" && (selPost.contestStart || selPost.deadline || selPost.contestUrl) && (
+                <div style={{ marginBottom: selPost.images?.length>0?12:20 }}>
+                  {(selPost.contestStart || selPost.deadline) && (() => {
+                    const dday = getDday(selPost.deadline);
+                    const closed = dday !== null && dday < 0;
+                    return (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", marginBottom: selPost.contestUrl ? 12 : 0 }}>
+                        {selPost.deadline && (
+                          <span style={{ background: closed ? "#444" : "#fb923c", color: closed ? "#fff" : "#0a0a0a", fontSize:10, fontWeight:700, padding:"3px 9px", borderRadius:5 }}>
+                            {closed ? "마감" : dday === 0 ? "D-DAY" : `D-${dday}`}
+                          </span>
+                        )}
+                        <span style={{ fontSize:13, color:CINEMA.text, fontWeight:600 }}>
+                          📅 {(selPost.contestStart || "").split("-").join(".")} ~ {(selPost.deadline || "").split("-").join(".")}
+                        </span>
+                      </div>
+                    );
+                  })()}
+                  {selPost.contestUrl && (
+                    <button onClick={() => window.open(selPost.contestUrl, "_blank", "noopener,noreferrer")}
+                      style={{ width:"100%", background:"linear-gradient(135deg,#fb923c,#f97316)", border:"none", borderRadius:10, color:"#0a0a0a", fontSize:14, fontWeight:800, padding:"12px", cursor:"pointer" }}>
+                      🔗 공모전 홈페이지 바로가기
+                    </button>
+                  )}
+                </div>
+              )}
+              {selPost.content && <div style={{ fontSize:15, color:CINEMA.text, lineHeight:1.8, marginBottom: selPost.images?.length>0?12:20, whiteSpace:"pre-wrap" }}>{selPost.content}</div>}
             </div>
           )}
           {selPost.images?.length > 0 && (
@@ -2695,6 +2730,30 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 </div>
               </div>
             </div>
+          ) : writeForm.category === "공모전" ? (
+            <div>
+              <Inp label="제목 *" placeholder="예: 제5회 ○○ 단편영화 공모전" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
+              {/* 접수 기간 */}
+              <div style={{ display:"flex", gap:10, marginBottom:8 }}>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>시작일자 *</div>
+                  <input type="date" value={writeForm.contestStart} onChange={e => setWriteForm(p=>({...p,contestStart:e.target.value}))}
+                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                </div>
+                <div style={{ flex:1 }}>
+                  <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:5 }}>종료일자 *</div>
+                  <input type="date" value={writeForm.deadline} min={writeForm.contestStart || undefined} onChange={e => setWriteForm(p=>({...p,deadline:e.target.value}))}
+                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box", colorScheme:"dark" }} />
+                </div>
+              </div>
+              {writeForm.deadline && getDday(writeForm.deadline) !== null && (
+                <div style={{ fontSize:11, color: getDday(writeForm.deadline) < 0 ? C.red : C.muted, marginBottom:12 }}>
+                  {getDday(writeForm.deadline) < 0 ? "이미 지난 날짜예요 (마감으로 표시됩니다)" : getDday(writeForm.deadline) === 0 ? "오늘 마감 (D-DAY)" : `마감까지 D-${getDday(writeForm.deadline)}`}
+                </div>
+              )}
+              <div style={{ marginBottom:4 }} />
+              <Inp label="공모전 링크" placeholder="https://... (공모전 홈페이지)" value={writeForm.contestUrl} onChange={e => setWriteForm(p=>({...p,contestUrl:e.target.value}))} />
+            </div>
           ) : (
             <div>
               <Inp label="제목 *" placeholder="제목을 입력하세요" value={writeForm.title} onChange={e => setWriteForm(p=>({...p,title:e.target.value}))} />
@@ -2708,8 +2767,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
           {/* 이미지 첨부 - 강의·작품공유·협업모집 게시판 제외 */}
           {writeForm.category !== LECTURE_CAT && writeForm.category !== "작품공유" && writeForm.category !== "협업모집" && writeForm.category !== "스탭프로필" && writeForm.category !== "클래스" && <div style={{ marginBottom:14 }}>
             <div style={{ fontSize:12, fontWeight:600, color:C.text, marginBottom:4 }}>
-              이미지 첨부{" "}
-              <span style={{ color:C.muted, fontWeight:400 }}>(최대 3장)</span>
+              이미지 첨부{writeForm.category === "공모전" ? " *" : ""}{" "}
+              <span style={{ color:C.muted, fontWeight:400 }}>{writeForm.category === "공모전" ? "(1장 이상 필수 · 최대 3장)" : "(최대 3장)"}</span>
             </div>
             {writeForm.images.length > 0 && (
               <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:6, marginBottom:8 }}>
@@ -2769,6 +2828,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                 ? writeForm.staffRoles.length === 0
                 : writeForm.category === "클래스"
                 ? !writeForm.title.trim() || writeForm.lessons.length === 0
+                : writeForm.category === "공모전"
+                ? !writeForm.title.trim() || !writeForm.contestStart || !writeForm.deadline || writeForm.images.length === 0
                 : !writeForm.title.trim() || !writeForm.content.trim());
             return (
               <div style={{ display:"flex", gap:10 }}>
