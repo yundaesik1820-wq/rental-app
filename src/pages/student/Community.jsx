@@ -375,6 +375,16 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     const d = new Date(ts.seconds * 1000);
     return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
+  // 상대 시간 표기 (방금/분/시간/일 전, 그보다 오래되면 날짜)
+  const timeAgo = (ts) => {
+    if (!ts?.seconds) return "";
+    const diff = Math.floor(Date.now()/1000) - ts.seconds;
+    if (diff < 60) return "방금 전";
+    if (diff < 3600) return `${Math.floor(diff/60)}분 전`;
+    if (diff < 86400) return `${Math.floor(diff/3600)}시간 전`;
+    if (diff < 86400*7) return `${Math.floor(diff/86400)}일 전`;
+    return formatDate(ts);
+  };
 
   // 카테고리 기반 이름 표시
   const displayName = (post) => {
@@ -1071,13 +1081,13 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                                   : <span style={{ fontSize:19, opacity:0.5 }}>📄</span>}
                               </div>
                               <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:13, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{p.title}</div>
+                                <div style={{ fontSize:12, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginBottom:3 }}>{p.title}</div>
                                 <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{displayName(p)}</div>
                               </div>
                               <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0, fontSize:10.5, color:"#8a8a92" }}>
                                 <span>👁 {p.views||0}</span>
                                 <span>💬 {postComments(p.id).length}</span>
-                                <span style={{ minWidth:40, textAlign:"right" }}>{formatDate(p.createdAt)}</span>
+                                <span style={{ minWidth:46, textAlign:"right" }}>{timeAgo(p.createdAt)}</span>
                               </div>
                             </div>
                           );
@@ -1091,7 +1101,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
                         <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                       </div>
-                      <InfoFeed list={latest("정보")} onMore={goInfo} />
+                      <InfoFeed list={[...posts].filter(p => (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
                     </>
                   );
                 })()}
