@@ -73,6 +73,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 자주 묻는 질문 — 학생은 읽기만, 등록/수정/삭제는 관리자
+    match /faqs/{docId} {
+      allow read: if isLoggedIn();
+      allow write: if isAdmin();
+    }
+
     match /noticeComments/{docId} {
       allow read: if isLoggedIn();
       allow create: if isLoggedIn();
