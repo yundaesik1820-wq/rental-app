@@ -1,6 +1,6 @@
 // 이 앱 번들의 버전. 릴리스마다 여기 값을 올린다 (iOS MARKETING_VERSION / Android versionName 과 맞춤).
 // 번들이 통째로 고정 배포되므로, 이 상수 = 실제 실행 중인 앱의 버전.
-export const APP_VERSION = "1.0.12";
+export const APP_VERSION = "1.0.13";
 
 // config/appVersion 문서에서 플랫폼 전용 필드를 골라 읽는다.
 //   pickPlatformVersion(cfg, "minVersion", "ios") → cfg.minVersionIos ?? cfg.minVersion
