@@ -9,7 +9,7 @@ import Login from "./pages/Login";
 import UpdateGate from "./components/UpdateGate";
 import { Spinner, Avatar } from "./components/UI";
 import { APP_VERSION } from "./appVersion";
-import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Pencil, Sparkles, ChevronRight } from "lucide-react";
+import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Sparkles, ChevronRight } from "lucide-react";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
@@ -319,17 +319,13 @@ function StudentMyPage({ view, setView, initialView, onConsumed }) {
             <div style={{ padding:3, borderRadius:"50%", background:"linear-gradient(135deg,#3b82f6,#7c3aed)", boxShadow:"0 0 20px rgba(124,58,237,0.45)" }}>
               <Avatar name={profile?.name || "학생"} size={70} />
             </div>
-            <button onClick={() => setView("profile")} aria-label="프로필 수정"
-              style={{ position:"absolute", bottom:-2, right:-2, width:27, height:27, borderRadius:"50%", background:"#2a2a3d", border:"1px solid rgba(255,255,255,0.28)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
-              <Pencil size={12} color="#c7c9d4" />
-            </button>
           </div>
           <div style={{ minWidth:0 }}>
             <div style={{ fontSize:21, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{profile?.name || "학생"}</div>
             <div style={{ fontSize:13, color:"#a8adc4", marginTop:4 }}>{[profile?.studentId, profile?.dept].filter(Boolean).join(" · ")}</div>
             <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:10, padding:"6px 14px", borderRadius:20, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.12)" }}>
-              <Sparkles size={12} color="#a78bfa" />
-              <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.08em", color:"#c4b5fd" }}>KBAS MEMBER</span>
+              <Clapperboard size={12} color="#a78bfa" />
+              <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.08em", color:"#c4b5fd" }}>LV{licNum} 라이선스</span>
             </div>
           </div>
         </div>
