@@ -80,6 +80,7 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
 - **더보기 헤더** (2026-07-23): `StudentMyPage`의 `view` state는 **App이 소유**(`mypageView`) — Layout에 `headerTitle`/`onHeaderBack` prop으로 전달되어 헤더에 하위 메뉴 이름 + ‹ 뒤로가기 표시. 메뉴 루트에선 탭 라벨 "더보기"(STU_NAV). 탭 이탈 시 자동 초기화.
 - 하단 탭바: `position:fixed, bottom:0`, paddingBottom 고정 8px, `main` padding-bottom 고정 70px. **safe-area env 계산 안 씀(모든 기기 동일).**
 - 상단은 노치 보호로 `padding-top: max(env(safe-area-inset-top), 24px)` 유지.
+- ⚠️ **전역 `button { min-height: 36px }`** (`Layout.jsx:293`, 모바일 미디어쿼리) — `min-height`는 인라인 `height`를 항상 이김. 작은 버튼(토글 트랙·칩·아이콘 버튼)이 36px로 부풀어도 인라인 `height`만 고쳐선 안 바뀜. **인라인 `minHeight`를 같이 줘야 함.** (시간표 공개 토글이 이걸로 원보다 커 보였던 이력)
 
 ---
 
