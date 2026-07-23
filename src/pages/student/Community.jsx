@@ -3210,15 +3210,21 @@ function FullscreenPlayer({ videoId, onClose }) {
   );
 }
 
-/** 🎥 박스오피스 — 넷플릭스 스타일 작품 브라우징 */
-function WorkCard({ p, rank, onOpen }) {
+/** 🎥 박스오피스 — 넷플릭스 스타일 작품 브라우징 (블루 리디자인) */
+const BO_BLUE = "#3b82f6";
+const boIsNew = p => p.createdAt?.seconds && (Date.now()/1000 - p.createdAt.seconds) < 7*86400;
+
+function WorkCard({ p, rank, onOpen, showNew }) {
   const ytId = getYouTubeId(p.ytUrl);
   return (
-    <div onClick={() => onOpen(p)} style={{ flex:"0 0 150px", cursor:"pointer" }}>
-      <div style={{ position:"relative", aspectRatio:"16/9", background:"#1a1a1a", borderRadius:7, overflow:"hidden", marginBottom:6 }}>
+    <div onClick={() => onOpen(p)} style={{ flex:"0 0 150px", cursor:"pointer", minWidth:0 }}>
+      <div style={{ position:"relative", aspectRatio:"16/9", background:"#10152a", borderRadius:10, overflow:"hidden", marginBottom:6, border:"1px solid rgba(59,130,246,0.35)", boxShadow:"0 0 12px rgba(59,130,246,0.12)" }}>
         <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
         {rank != null && (
-          <span style={{ position:"absolute", top:5, left:5, background: rank===1 ? "#dc2626" : "rgba(0,0,0,0.72)", color:"#fff", fontSize:13, fontWeight:700, width:22, height:22, borderRadius:5, display:"flex", alignItems:"center", justifyContent:"center", fontFamily:"'Courier New', monospace" }}>{rank}</span>
+          <span style={{ position:"absolute", left:7, bottom:1, fontSize:40, fontWeight:800, lineHeight:1, color:"#fff", textShadow:"0 2px 10px rgba(0,0,0,0.85)", fontFamily:"'Courier New', monospace" }}>{rank}</span>
+        )}
+        {showNew && boIsNew(p) && (
+          <span style={{ position:"absolute", top:5, left:5, background:"#ef4444", color:"#fff", fontSize:8, fontWeight:700, padding:"2px 6px", borderRadius:4, letterSpacing:"0.05em" }}>NEW</span>
         )}
         {p.runtime && <span style={{ position:"absolute", bottom:4, right:4, background:"rgba(0,0,0,0.8)", color:"#fff", fontSize:9, padding:"1px 5px", borderRadius:3 }}>{p.runtime}</span>}
       </div>
@@ -3227,18 +3233,21 @@ function WorkCard({ p, rank, onOpen }) {
   );
 }
 
-function CarouselRow({ title, badge, items, onOpen, ranked }) {
+function CarouselRow({ title, badge, items, onOpen, ranked, showNew, onAll }) {
   const ref = useRef(null);
   if (!items.length) return null;
   return (
     <div style={{ marginBottom:4 }}>
-      <div style={{ padding:"16px 12px 8px", fontSize:14, fontWeight:600, color:"#fafaf9", display:"flex", alignItems:"center", gap:8 }}>
-        {badge && <span style={{ background:"#dc2626", color:"#fff", fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:3, fontFamily:"'Courier New', monospace" }}>TOP 10</span>}
-        {title}
+      <div style={{ padding:"16px 12px 8px", display:"flex", alignItems:"center", gap:7 }}>
+        <span style={{ fontSize:14.5, fontWeight:700, color:"#fafaf9" }}>{title}</span>
+        {badge && <span style={{ fontSize:13.5, fontWeight:800, color:"#7e9dff", letterSpacing:"0.02em" }}>TOP 10</span>}
+        {onAll && (
+          <span onClick={onAll} style={{ marginLeft:"auto", fontSize:11, color:"#8a8fa3", cursor:"pointer" }}>전체 보기 ›</span>
+        )}
       </div>
       <div style={{ position:"relative" }}>
         <div ref={ref} className="bo-car" style={{ display:"flex", gap:8, overflowX:"auto", padding:"0 12px 12px" }}>
-          {items.map((p, i) => <WorkCard key={p.id} p={p} rank={ranked ? i+1 : null} onOpen={onOpen} />)}
+          {items.map((p, i) => <WorkCard key={p.id} p={p} rank={ranked ? i+1 : null} onOpen={onOpen} showNew={showNew} />)}
         </div>
         {items.length > 2 && (
           <div onClick={() => ref.current?.scrollBy({ left:-300, behavior:"smooth" })} className="bo-arrow"
@@ -3263,6 +3272,7 @@ function BoxOfficeView({ posts, onOpen, onPlay }) {
   const byViews = [...works].sort((a,b) => (b.views||0) - (a.views||0)).slice(0, 10);
   const heroItems = byDate.slice(0, 5);   // 최신 5개 자동 슬라이드
   const [heroIdx, setHeroIdx] = useState(0);
+  const [allView, setAllView] = useState(null);   // { title, items, ranked, showNew } — 섹션 전체 보기
   useEffect(() => {
     if (heroItems.length <= 1) return;
     const t = setInterval(() => setHeroIdx(i => (i + 1) % heroItems.length), 5000);
@@ -3276,7 +3286,7 @@ function BoxOfficeView({ posts, onOpen, onPlay }) {
 
   if (works.length === 0) {
     return (
-      <div style={{ background:"#0a0a0a", borderRadius:10, margin:"14px 0 0", padding:"60px 20px", textAlign:"center", color:"#71706b" }}>
+      <div style={{ background:"linear-gradient(180deg,#0c1124 0%,#0a0a12 100%)", borderRadius:10, margin:"14px 0 0", padding:"60px 20px", textAlign:"center", color:"#71706b" }}>
         <div style={{ fontSize:48, opacity:0.3, marginBottom:12 }}>🎬</div>
         <div style={{ fontSize:13, fontFamily:"'Courier New', monospace", letterSpacing:"0.15em", marginBottom:6 }}>NO FILMS YET</div>
         <div style={{ fontSize:12 }}>첫 작품을 올려보세요</div>
@@ -3284,45 +3294,69 @@ function BoxOfficeView({ posts, onOpen, onPlay }) {
     );
   }
 
+  // 전체 보기 — 그리드 목록
+  if (allView) {
+    return (
+      <div style={{ background:"linear-gradient(180deg,#0c1124 0%,#0a0a12 100%)", borderRadius:10, margin:"14px 0 0", padding:"14px 12px" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:14 }}>
+          <span onClick={() => setAllView(null)} style={{ color:"#fafaf9", fontSize:20, lineHeight:1, cursor:"pointer", padding:"0 4px" }}>‹</span>
+          <span style={{ fontSize:15, fontWeight:700, color:"#fafaf9" }}>{allView.title}</span>
+          <span style={{ fontSize:11, color:"#8a8fa3" }}>{allView.items.length}편</span>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(2, 1fr)", gap:10 }}>
+          {allView.items.map((p, i) => (
+            <WorkCard key={p.id} p={p} rank={allView.ranked ? i+1 : null} onOpen={onOpen} showNew={allView.showNew} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const hero = heroItems[heroIdx] || byDate[0];
   const heroYt = getYouTubeId(hero.ytUrl);
   return (
-    <div style={{ background:"#0a0a0a", borderRadius:10, overflow:"hidden", margin:"14px 0 0", paddingBottom:14 }}>
+    <div style={{ background:"linear-gradient(180deg,#0c1124 0%,#0a0a12 100%)", borderRadius:10, overflow:"hidden", margin:"14px 0 0", paddingBottom:14 }}>
       <style>{`.bo-car::-webkit-scrollbar{display:none}.bo-car{scrollbar-width:none;-ms-overflow-style:none;scroll-behavior:smooth}.bo-arrow{transition:background 0.15s}.bo-arrow:active{background:rgba(0,0,0,0.78)}@keyframes boFade{from{opacity:.35}to{opacity:1}}`}</style>
 
-      {/* 히어로 — 최신작 자동 슬라이드 */}
-      <div onClick={() => onOpen(hero)} style={{ position:"relative", aspectRatio:"16/9", background:"#1a1a1a", cursor:"pointer" }}>
-        <div key={heroIdx} style={{ position:"absolute", inset:0, animation:"boFade .6s ease" }}>
-          {heroYt && <YtThumb id={heroYt} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
-          <div style={{ position:"absolute", left:0, right:0, bottom:0, padding:"16px 14px", background:"rgba(0,0,0,0.55)" }}>
-            <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#fbbf24", letterSpacing:"0.25em", fontWeight:700, marginBottom:5 }}>FEATURED · 이번 주 작품</div>
-            <div style={{ fontSize:19, fontWeight:600, color:"#fafaf9", marginBottom:4, lineHeight:1.25 }}>{hero.title}</div>
-            <div style={{ fontSize:11, color:"#a8a29e", marginBottom:11 }}>
+      {/* 히어로 — 최신작 자동 슬라이드, 이미지가 배경으로 페이드 */}
+      <div onClick={() => onOpen(hero)} style={{ cursor:"pointer" }}>
+        <div key={heroIdx} style={{ animation:"boFade .6s ease" }}>
+          <div style={{ position:"relative", aspectRatio:"16/10", background:"#10152a" }}>
+            {heroYt && <YtThumb id={heroYt} style={{ position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover" }} />}
+            <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg, rgba(12,17,36,0) 35%, rgba(12,17,36,0.6) 72%, #0c1124 100%)" }} />
+          </div>
+          <div style={{ position:"relative", marginTop:-54, padding:"0 14px", zIndex:1 }}>
+            <div style={{ fontFamily:"'Courier New', monospace", fontSize:9, color:"#a78bfa", letterSpacing:"0.25em", fontWeight:700, marginBottom:6 }}>FEATURED</div>
+            <div style={{ fontSize:22, fontWeight:700, color:"#fafaf9", marginBottom:5, lineHeight:1.2 }}>{hero.title}</div>
+            <div style={{ fontSize:11, color:"#a8adc4", marginBottom:6 }}>
               {[(hero.genres||[]).join(" · "), hero.runtime, hero.prodDate].filter(Boolean).join(" · ")}
             </div>
-            <div style={{ display:"flex", gap:8 }}>
+            {hero.oneLiner && (
+              <div style={{ fontSize:11.5, color:"#c6cadb", marginBottom:12, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{hero.oneLiner}</div>
+            )}
+            <div style={{ display:"flex", alignItems:"center", gap:10, marginTop: hero.oneLiner ? 0 : 12 }}>
               <button onClick={(e) => { e.stopPropagation(); onPlay(heroYt); }}
-                style={{ background:"#dc2626", color:"#fff", fontSize:12, fontWeight:600, padding:"7px 18px", borderRadius:6, border:"none", cursor:"pointer" }}>▶ 재생</button>
+                style={{ background:"linear-gradient(90deg,#3b82f6,#7c3aed)", color:"#fff", fontSize:13, fontWeight:700, padding:"10px 26px", borderRadius:12, border:"none", cursor:"pointer", boxShadow:"0 4px 16px rgba(88,101,242,0.35)" }}>▶ 재생하기</button>
               <button onClick={(e) => { e.stopPropagation(); onOpen(hero); }}
-                style={{ background:"rgba(255,255,255,0.16)", color:"#fafaf9", fontSize:12, padding:"7px 14px", borderRadius:6, border:"none", cursor:"pointer" }}>ⓘ 정보</button>
+                style={{ width:38, height:38, borderRadius:"50%", background:"rgba(255,255,255,0.12)", color:"#fafaf9", fontSize:15, border:"1px solid rgba(255,255,255,0.18)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>ⓘ</button>
             </div>
           </div>
         </div>
-        {/* 슬라이드 점 인디케이터 */}
-        {heroItems.length > 1 && (
-          <div style={{ position:"absolute", top:10, right:12, display:"flex", gap:5 }}>
-            {heroItems.map((_, i) => (
-              <span key={i} onClick={(e) => { e.stopPropagation(); setHeroIdx(i); }}
-                style={{ width: i===heroIdx ? 18 : 6, height:6, borderRadius:3, background: i===heroIdx ? "#fff" : "rgba(255,255,255,0.45)", transition:"all .25s", cursor:"pointer" }} />
-            ))}
-          </div>
-        )}
       </div>
+      {/* 슬라이드 점 인디케이터 — 히어로 아래 중앙 */}
+      {heroItems.length > 1 && (
+        <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:14 }}>
+          {heroItems.map((_, i) => (
+            <span key={i} onClick={() => setHeroIdx(i)}
+              style={{ width: i===heroIdx ? 18 : 6, height:6, borderRadius:3, background: i===heroIdx ? BO_BLUE : "rgba(255,255,255,0.25)", transition:"all .25s", cursor:"pointer" }} />
+          ))}
+        </div>
+      )}
 
-      <CarouselRow title="🆕 최신작" items={byDate} onOpen={onOpen} />
-      <CarouselRow title="인기작" badge items={byViews} onOpen={onOpen} ranked />
+      <CarouselRow title="최신작" items={byDate} onOpen={onOpen} showNew onAll={() => setAllView({ title:"최신작", items:byDate, showNew:true })} />
+      <CarouselRow title="인기작" badge items={byViews} onOpen={onOpen} ranked onAll={() => setAllView({ title:"인기작 TOP 10", items:byViews, ranked:true })} />
       {genreRows.map(([g, arr]) => (
-        <CarouselRow key={g} title={`🎬 ${g}`} items={arr} onOpen={onOpen} />
+        <CarouselRow key={g} title={g} items={arr} onOpen={onOpen} onAll={() => setAllView({ title:g, items:arr })} />
       ))}
     </div>
   );
