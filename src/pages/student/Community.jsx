@@ -1,14 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Capacitor } from "@capacitor/core";
-import { Search, Bell, ChevronLeft, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap } from "lucide-react";
+import { Search, Bell, ChevronLeft, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap, Star } from "lucide-react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { serverTimestamp } from "firebase/firestore";
+import { serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
 import CinemaSlate from "../../components/CinemaSlate";
 import ExposureLive from "../../components/ExposureLive";
 import ExposureCalc from "../../components/ExposureCalc";
@@ -408,6 +408,14 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     setRoomSplash({ src, phase:"in" });
     roomSplashTimers.current.push(setTimeout(() => setRoomSplash({ src, phase:"out" }), 900));
     roomSplashTimers.current.push(setTimeout(() => setRoomSplash(null), 1500));
+  };
+  // ⭐ 크루 북마크 — users/{uid}.crewBookmarks 배열 (seenNotifs와 같은 패턴, 낙관적 로컬 갱신)
+  const [crewBookmarks, setCrewBookmarks] = useState(profile?.crewBookmarks || []);
+  const toggleCrewBookmark = (e, postId) => {
+    e.stopPropagation();
+    const on = crewBookmarks.includes(postId);
+    setCrewBookmarks(prev => on ? prev.filter(id => id !== postId) : [...prev, postId]);
+    if (profile?.uid) updateItem("users", profile.uid, { crewBookmarks: on ? arrayRemove(postId) : arrayUnion(postId) }).catch(() => {});
   };
   const [showSearch, setShowSearch] = useState(false); // 헤더 검색(추후 구현 — 현재 자리만)
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
@@ -1302,6 +1310,84 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
                         <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                       </div>
+
+                      {/* 🤝 크루 메이커스 — 모집중 공고 가로 캐러셀 (마감 지난 글 제외, 최신순 6개) */}
+                      {(() => {
+                        const crews = [...posts]
+                          .filter(p => p.category === "협업모집")
+                          .filter(p => { const d = getDday(p.deadline); return d === null || d >= 0; })
+                          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
+                          .slice(0, 6);
+                        if (crews.length === 0) return null;
+                        const goCrew = () => {
+                          const cRoom = ROOMS.find(r => r.id === "crew");
+                          if (cRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(cRoom); return; }
+                          setSelectedRoom("crew"); setCat("협업모집"); setPage(1); setSearch("");
+                        };
+                        const CHIP_COLORS = ["#ef4444","#f97316","#22c55e","#3b82f6","#a855f7","#eab308"];
+                        return (
+                          <div style={{ marginTop:14 }}>
+                            <style>{`.crew-swipe::-webkit-scrollbar{display:none}.crew-swipe{scrollbar-width:none;-ms-overflow-style:none}`}</style>
+                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
+                              <span style={{ display:"flex", alignItems:"baseline", gap:6, minWidth:0 }}>
+                                <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#f97316", flexShrink:0 }}>크루 메이커스</span>
+                                <span style={{ fontSize:10, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>함께할 크루를 찾아보세요!</span>
+                              </span>
+                              <span onClick={goCrew} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
+                                전체보기 <ChevronRight size={12} color="#8a8a92" />
+                              </span>
+                            </div>
+                            <div className="crew-swipe" style={{ display:"flex", gap:10, overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:4 }}>
+                              {crews.map(p => {
+                                const dday = getDday(p.deadline);
+                                const urgent = dday !== null && dday <= 3;
+                                const tot = (p.positions||[]).reduce((s,v) => s + (parseInt(typeof v === "object" ? v.count : 0, 10) || 0), 0);
+                                const cur = (p.applicants||[]).length;
+                                const full = tot > 0 && cur >= tot;
+                                const thumb = p.images?.[0];
+                                const marked = crewBookmarks.includes(p.id);
+                                return (
+                                  <div key={p.id} onClick={() => openPost(p)}
+                                    style={{ flex:"0 0 185px", background:"#131318", border:"1px solid rgba(255,255,255,0.08)", borderRadius:14, overflow:"hidden", cursor:"pointer" }}>
+                                    <div style={{ position:"relative", height:86, background:"linear-gradient(135deg,#1c1c26,#101014)" }}>
+                                      {thumb
+                                        ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
+                                        : <div style={{ width:"100%", height:"100%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, opacity:0.4 }}>🎬</div>}
+                                      <span style={{ position:"absolute", top:7, left:7, background: urgent ? "#f97316" : "#ef4444", color:"#fff", fontSize:8.5, fontWeight:800, padding:"2.5px 8px", borderRadius:20 }}>{urgent ? "마감임박" : "모집중"}</span>
+                                      <span onClick={(e) => toggleCrewBookmark(e, p.id)}
+                                        style={{ position:"absolute", top:5, right:5, width:26, height:26, borderRadius:"50%", background:"rgba(0,0,0,0.45)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                                        <Star size={14} color={marked ? "#facc15" : "#fff"} fill={marked ? "#facc15" : "none"} />
+                                      </span>
+                                    </div>
+                                    <div style={{ padding:"9px 10px 10px" }}>
+                                      <div style={{ fontSize:12, fontWeight:700, color:"#e7e5e4", marginBottom:7, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
+                                      {(p.positions||[]).length > 0 && (
+                                        <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
+                                          {(p.positions||[]).slice(0,3).map((v, i) => {
+                                            const c = CHIP_COLORS[i % CHIP_COLORS.length];
+                                            const role = (typeof v === "string" ? v : v.role || "").split("/")[0];
+                                            return <span key={i} style={{ background:c+"22", color:c, fontSize:9, fontWeight:700, padding:"2px 7px", borderRadius:5 }}>{role}</span>;
+                                          })}
+                                          {(p.positions||[]).length > 3 && <span style={{ fontSize:9, color:"#8a8a92", alignSelf:"center" }}>+{(p.positions||[]).length-3}</span>}
+                                        </div>
+                                      )}
+                                      <div style={{ fontSize:10, color:"#8a8a92", display:"flex", flexDirection:"column", gap:3, marginBottom:8 }}>
+                                        {p.crewSchedule && <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>📅 {p.crewSchedule}</span>}
+                                        {p.crewPlace && <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>📍 {p.crewPlace}</span>}
+                                      </div>
+                                      <div style={{ display:"flex", alignItems:"center", gap:6, paddingTop:8, borderTop:"1px solid rgba(255,255,255,0.07)" }}>
+                                        <span style={{ fontSize:10.5, fontWeight:600, color:"#b8b8c0", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{p.crewDirector || p.authorName || "익명"}</span>
+                                        {tot > 0 && <span style={{ fontSize:10, fontWeight:700, color: full ? "#facc15" : "#8a8a92", flexShrink:0 }}>👥 {cur} / {tot}</span>}
+                                      </div>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })()}
+
                       <InfoFeed list={[...posts].filter(p => p.category !== "공모전" && (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
 
                       {/* 🏆 공모전 정보 — 자동 슬라이드 캐러셀 (마감 안 지난 것만, 임박순) */}
