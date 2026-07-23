@@ -328,7 +328,7 @@ function FriendTile({ count, reqCount, onOpen }) {
   );
 }
 
-export default function StudentHome({ setTab, onOpenFriends }) {
+export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
@@ -1098,6 +1098,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
                             return (
                               <div key={f.id}>
                                 <div style={{ display:"flex", alignItems:"center", gap:6, background:f._pinned?"rgba(20,184,166,0.14)":TT.line, borderRadius:10, padding:"8px 12px", border:f._pinned?`1px solid ${C.teal}40`:`1px solid ${TT.border}` }}>
+                                  <Avatar name={f._name || "?"} size={28} src={photoMap?.[fid]} />
                                   <div style={{ flex:1, minWidth:0 }}>
                                     <span style={{ fontSize:12, fontWeight:700, color:C.text }}>{f._name}</span>
                                     {f._pinned && <span style={{ fontSize:9, color:C.teal, marginLeft:4 }}>📌</span>}
@@ -1282,7 +1283,7 @@ export default function StudentHome({ setTab, onOpenFriends }) {
                   const canDelete = c.authorId === profile?.uid;
                   return (
                     <div key={c.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <Avatar name={c.authorName || "?"} size={34} />
+                      <Avatar name={c.authorName || "?"} size={34} src={photoMap?.[c.authorId]} />
                       <div style={{ flex: 1, background: C.bg, borderRadius: 12, padding: "10px 14px", border: `1px solid ${C.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>

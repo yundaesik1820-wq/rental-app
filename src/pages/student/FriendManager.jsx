@@ -4,11 +4,11 @@ import { db } from "../../firebase";
 import { C } from "../../theme";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
-import { Empty, Btn } from "../../components/UI";
+import { Empty, Btn, Avatar } from "../../components/UI";
 
 // 친구관리 콘트롤타워 — 친구 추가 / 받은 요청 수락·거절 / 내 친구 목록
 // friends·friendRequests 데이터 모델은 기존 그대로 재사용 (Home.jsx / PetGame.jsx 로직 추출)
-export default function FriendManager() {
+export default function FriendManager({ photoMap }) {
   const { profile } = useAuth();
   const { data: friends }        = useCollection("friends");
   const { data: friendRequests } = useCollection("friendRequests");
@@ -93,7 +93,7 @@ export default function FriendManager() {
   const friendList = myFriends
     .map(f => {
       const isMine = f.userId === uid;
-      return { ...f, _name: isMine ? f.friendName : f.userName, _sid: isMine ? f.friendStudentId : f.userStudentId };
+      return { ...f, _fid: isMine ? f.friendId : f.userId, _name: isMine ? f.friendName : f.userName, _sid: isMine ? f.friendStudentId : f.userStudentId };
     })
     .filter(f => !search || f._name?.includes(search) || f._sid?.includes(search.trim()))
     .sort((a, b) => (a._name || "").localeCompare(b._name || "", "ko"));
@@ -143,6 +143,7 @@ export default function FriendManager() {
         <div style={{ display:"flex", flexDirection:"column", gap:6, marginBottom:20 }}>
           {receivedRequests.map(r => (
             <div key={r.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+              <Avatar name={r.fromName || "?"} size={34} src={photoMap?.[r.fromId]} />
               <div style={{ flex:1, minWidth:0 }}>
                 <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{r.fromName}</span>
                 <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{r.fromStudentId}</span>
@@ -177,6 +178,7 @@ export default function FriendManager() {
         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
           {friendList.map(f => (
             <div key={f.id} style={{ display:"flex", alignItems:"center", gap:8, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 12px" }}>
+              <Avatar name={f._name || "?"} size={34} src={photoMap?.[f._fid]} />
               <div style={{ flex:1, minWidth:0 }}>
                 <span style={{ fontSize:13, fontWeight:700, color:C.text }}>{f._name}</span>
                 <span style={{ fontSize:11, color:C.muted, marginLeft:6 }}>{f._sid}</span>

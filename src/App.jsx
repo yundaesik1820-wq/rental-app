@@ -270,13 +270,13 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 // 학생용 더보기 — ejqhrl.png 목업 리디자인 (2026-07-23, 블루·퍼플 액센트)
 // view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
 const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", license:"라이선스", notices:"공지사항", settings:"설정" };
-function StudentMyPage({ view, setView, initialView, onConsumed }) {
+function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   const { profile, logout } = useAuth();
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
   React.useEffect(() => { if (initialView) { setView(initialView); onConsumed?.(); } }, [initialView]);
 
   if (view === "profile")  return <Profile />;
-  if (view === "friends")  return <FriendManager />;
+  if (view === "friends")  return <FriendManager photoMap={photoMap} />;
   if (view === "inquiry")  return <StudentInquiry />;
   if (view === "license")  return <License />;
   if (view === "notices")  return <Notices isAdmin={false} />;
@@ -497,6 +497,10 @@ function AppContent() {
 
   const notSeen = (id) => !seenNotifIds.has(id);
 
+  // uid → 프로필 사진 URL 맵 — 이미 구독 중인 allUsers 재활용 (친구목록·댓글 아바타용)
+  const photoMap = {};
+  for (const u of allUsers) if (u.photoURL) photoMap[u.id] = u.photoURL;
+
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
   const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites }).filter(a => notSeen(a.id)).length;
 
@@ -528,7 +532,7 @@ function AppContent() {
       }
     } else {
       switch (tab) {
-        case "home":     return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
         case "equip":    return <EquipList setTab={setTab} />;
         case "reserve":  return <Reserve setTab={setTab} />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
@@ -536,8 +540,8 @@ function AppContent() {
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
-        case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
-        default:         return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
+        default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
       }
     }
   };
