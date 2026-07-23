@@ -397,17 +397,17 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
-  // 🎬 박스오피스 스플래시 — 오늘의 추천작 전체보기 진입 연출 (null | "in" | "out")
-  const [boSplash, setBoSplash] = useState(null);
-  const boSplashTimers = useRef([]);
+  // 🎬 룸 진입 스플래시 — 전체보기 진입 연출 (null | { src, phase: "in"|"out" })
+  const [roomSplash, setRoomSplash] = useState(null);
+  const roomSplashTimers = useRef([]);
   useEffect(() => {
-    const img = new Image(); img.src = "/boxoffice-splash.webp";   // 미리 로드 (첫 진입 지연 방지)
-    return () => boSplashTimers.current.forEach(clearTimeout);
+    ["/boxoffice-splash.webp", "/class-splash.webp"].forEach(src => { const img = new Image(); img.src = src; });   // 미리 로드 (첫 진입 지연 방지)
+    return () => roomSplashTimers.current.forEach(clearTimeout);
   }, []);
-  const runBoSplash = () => {
-    setBoSplash("in");
-    boSplashTimers.current.push(setTimeout(() => setBoSplash("out"), 900));
-    boSplashTimers.current.push(setTimeout(() => setBoSplash(null), 1500));
+  const runRoomSplash = (src) => {
+    setRoomSplash({ src, phase:"in" });
+    roomSplashTimers.current.push(setTimeout(() => setRoomSplash({ src, phase:"out" }), 900));
+    roomSplashTimers.current.push(setTimeout(() => setRoomSplash(null), 1500));
   };
   const [showSearch, setShowSearch] = useState(false); // 헤더 검색(추후 구현 — 현재 자리만)
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
@@ -1092,14 +1092,14 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
 
   return (
     <>
-      {/* 🎬 박스오피스 스플래시 오버레이 — z-200 컨테이너 함정 회피용 createPortal(body) */}
-      {boSplash && createPortal(
+      {/* 🎬 룸 진입 스플래시 오버레이 — z-200 컨테이너 함정 회피용 createPortal(body) */}
+      {roomSplash && createPortal(
         <div style={{
           position:"fixed", inset:0, zIndex:100000, background:"#0a0a12",
-          opacity: boSplash === "out" ? 0 : 1, transition:"opacity .6s ease",
-          pointerEvents: boSplash === "out" ? "none" : "auto",
+          opacity: roomSplash.phase === "out" ? 0 : 1, transition:"opacity .6s ease",
+          pointerEvents: roomSplash.phase === "out" ? "none" : "auto",
         }}>
-          <img src="/boxoffice-splash.webp" alt=""
+          <img src={roomSplash.src} alt=""
             style={{ width:"100%", height:"100%", maxWidth:"none", objectFit:"cover", display:"block" }} />
         </div>,
         document.body
@@ -1375,7 +1375,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         const goBoxoffice = () => {
                           const bRoom = ROOMS.find(r => r.id === "boxoffice");
                           if (bRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(bRoom); return; }
-                          runBoSplash();
+                          runRoomSplash("/boxoffice-splash.webp");
                           setSelectedRoom("boxoffice"); setPage(1); setSearch("");
                         };
                         return (
@@ -1409,6 +1409,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         const goClass = () => {
                           const clRoom = ROOMS.find(r => r.id === "class");
                           if (clRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(clRoom); return; }
+                          runRoomSplash("/class-splash.webp");
                           setSelectedRoom("class"); setCat("클래스"); setPage(1); setSearch("");
                         };
                         return (
