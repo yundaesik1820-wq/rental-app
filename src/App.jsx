@@ -8,7 +8,7 @@ import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import UpdateGate from "./components/UpdateGate";
 import { Spinner, Avatar } from "./components/UI";
-import { APP_VERSION, compareVersions } from "./appVersion";
+import { APP_VERSION, compareVersions, pickPlatformVersion } from "./appVersion";
 import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Sparkles, ChevronRight } from "lucide-react";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
@@ -471,8 +471,11 @@ function StudentSettings() {
     try {
       const snap = await getDoc(doc(db, "config", "appVersion"));
       const cfg = snap.exists() ? snap.data() : null;
-      // latestVersion 이 있으면 그걸로, 없으면 강제 업데이트 기준선(minVersion)으로 폴백
-      const latest = cfg?.latestVersion || cfg?.minVersion || null;
+      // 이 기기 플랫폼의 최신 버전 → 공용 latestVersion → 강제 업데이트 기준선 순으로 폴백.
+      // iOS/Android 는 심사 기간이 달라 스토어 버전이 어긋나므로 플랫폼별 값을 우선 본다.
+      const latest =
+        pickPlatformVersion(cfg, "latestVersion", platform) ||
+        pickPlatformVersion(cfg, "minVersion", platform);
       if (!latest)      setUpd({ tone: "sub",  msg: "버전 정보를 확인할 수 없어요" });
       else if (compareVersions(APP_VERSION, latest) < 0)
                         setUpd({ tone: "new",  msg: `새 버전 ${latest} 이 나왔어요`, latest });

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase";
 import { C } from "../theme";
-import { APP_VERSION, compareVersions } from "../appVersion";
+import { APP_VERSION, compareVersions, pickPlatformVersion } from "../appVersion";
 
 // 현재 플랫폼 ('ios' | 'android' | 'web')
 function getPlatform() {
@@ -42,12 +42,15 @@ export default function UpdateGate({ children }) {
   }, []);
 
   const platform = getPlatform();
+  // 강제 업데이트 기준선 — minVersionIos / minVersionAndroid 가 있으면 그걸,
+  // 없으면 기존 공용 minVersion 을 씀 (한쪽 스토어만 심사가 늦어도 반대편이 안 막히게)
+  const minVersion = pickPlatformVersion(cfg, "minVersion", platform);
   const needUpdate =
     isNative() &&
     cfg &&
     cfg.enabled !== false &&
-    cfg.minVersion &&
-    compareVersions(APP_VERSION, cfg.minVersion) < 0;
+    minVersion &&
+    compareVersions(APP_VERSION, minVersion) < 0;
 
   if (!needUpdate) return children;
 
