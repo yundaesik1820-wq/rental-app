@@ -3,15 +3,15 @@ import { getThemeMode, setTheme, C } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { CartProvider } from "./hooks/useCart.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
-import { useFCM, getNotifPermissionState, enableNotifications } from "./hooks/useFCM.js";
+import { useFCM, getNotifPermissionState, enableNotifications, getFcmTokenOnce } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import UpdateGate from "./components/UpdateGate";
 import { Spinner, Avatar } from "./components/UI";
-import { APP_VERSION } from "./appVersion";
+import { APP_VERSION, compareVersions } from "./appVersion";
 import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Sparkles, ChevronRight } from "lucide-react";
 import { db } from "./firebase";
-import { doc, updateDoc, arrayUnion } from "firebase/firestore";
+import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
 
 // lazy 청크 로드 실패(배포로 옛 해시 소실·WebView 네트워크 순간끊김) 대비:
@@ -368,13 +368,32 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
 }
 
 // 학생용 설정 — 더보기 › 설정 (푸시 알림 상태 + 앱 정보)
+// 설정 화면 팔레트 — 더보기 계열(#121218 카드)과 동일, 액센트는 설정 타일 tint(#9ca3af)가
+// 무채색이라 상태색만 History.jsx PAL 값을 씀
+const SET = {
+  card:  "#121218", card2: "#0B0B0E",
+  border:"rgba(255,255,255,0.07)", line: "rgba(255,255,255,0.06)",
+  text:  "#F1F5F9", sub: "#64748B", subLight: "#a8adc4",
+  blue:  "#3b82f6", grad: "linear-gradient(90deg,#3b82f6,#7c3aed)",
+  teal:  "#5eead4", amber: "#fcd34d", red: "#fca5a5",
+};
+// 스토어 딥링크 (UpdateGate 와 동일 — 커스텀 스킴이라 OS가 스토어 앱을 직접 엶)
+const SETTINGS_STORE = {
+  ios:     "itms-apps://apps.apple.com/app/id6779502423",
+  android: "market://details?id=com.kbas.rental",
+};
+
 function StudentSettings() {
   const { profile } = useAuth();
+  const platform = Capacitor.getPlatform();
+  const isNative = platform === "ios" || platform === "android";
+
+  /* ── 알림 권한 ── */
   const [perm, setPerm] = React.useState(null);   // granted | denied | prompt | default | unsupported
   const [busy, setBusy] = React.useState(false);
   React.useEffect(() => { getNotifPermissionState().then(setPerm); }, []);
-  const PERM_LABEL = { granted:["허용됨", "#2DD4BF"], denied:["거부됨", "#FF6B6B"], unsupported:["미지원 기기", "#8A8A92"] };
-  const [permLabel, permColor] = PERM_LABEL[perm] || ["미설정", "#fbbf24"];
+  const PERM_LABEL = { granted:["허용됨", SET.teal], denied:["거부됨", SET.red], unsupported:["미지원 기기", SET.sub] };
+  const [permLabel, permColor] = PERM_LABEL[perm] || ["미설정", SET.amber];
   const canAsk = perm === "prompt" || perm === "default" || perm === "prompt-with-rationale";
   const turnOn = async () => {
     if (!profile?.uid || busy) return;
@@ -382,36 +401,232 @@ function StudentSettings() {
     setPerm(await enableNotifications(profile.uid));
     setBusy(false);
   };
-  const card = { background:"#121218", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:16, marginBottom:12 };
+
+  /* ── 알림 진단 — 권한은 허용인데 토큰이 등록 안 돼 알림이 안 오는 경우를 잡음 ── */
+  const [diag, setDiag] = React.useState(null);   // { web, native, thisDevice }
+  const [diagBusy, setDiagBusy] = React.useState(false);
+  const runDiag = async () => {
+    if (!profile?.uid || diagBusy) return;
+    setDiagBusy(true);
+    try {
+      const snap = await getDoc(doc(db, "users", profile.uid));
+      const d = snap.exists() ? snap.data() : {};
+      const web = (d.webTokens || []).length;
+      const nat = (d.nativeTokens || []).length;
+      // 이 기기 등록 여부는 권한이 이미 허용일 때만 확인 (아니면 권한 팝업이 뜸)
+      let thisDevice = null;
+      if (perm === "granted") {
+        const cur = await getFcmTokenOnce();
+        if (cur?.token) {
+          const list = cur.native ? (d.nativeTokens || []) : (d.webTokens || []);
+          thisDevice = list.includes(cur.token);
+        }
+      }
+      setDiag({ web, native: nat, thisDevice });
+    } catch (e) {
+      setDiag({ error: true });
+    }
+    setDiagBusy(false);
+  };
+  const reRegister = async () => {
+    if (!profile?.uid || diagBusy) return;
+    setDiagBusy(true);
+    setPerm(await enableNotifications(profile.uid));
+    setDiagBusy(false);
+    runDiag();
+  };
+
+  /* ── 시간표 공개 (내 정보에서 이동) ── */
+  const [ttPublic, setTtPublic] = React.useState(profile?.timetablePublic !== false);
+  const toggleTt = async () => {
+    const next = !ttPublic;
+    setTtPublic(next);
+    try { await updateDoc(doc(db, "users", profile.uid), { timetablePublic: next }); } catch (e) {}
+  };
+
+  /* ── 앱 새로고침 (캐시 비우기) — 청크 로드 실패로 화면이 안 뜰 때 복구 수단 ── */
+  const [refreshing, setRefreshing] = React.useState(false);
+  const hardRefresh = async () => {
+    if (refreshing) return;
+    setRefreshing(true);
+    try {
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch (e) {}
+    window.location.reload();
+  };
+
+  /* ── 업데이트 확인 ── */
+  const [upd, setUpd] = React.useState(null);
+  const [updBusy, setUpdBusy] = React.useState(false);
+  const checkUpdate = async () => {
+    if (updBusy) return;
+    setUpdBusy(true); setUpd(null);
+    try {
+      const snap = await getDoc(doc(db, "config", "appVersion"));
+      const cfg = snap.exists() ? snap.data() : null;
+      // latestVersion 이 있으면 그걸로, 없으면 강제 업데이트 기준선(minVersion)으로 폴백
+      const latest = cfg?.latestVersion || cfg?.minVersion || null;
+      if (!latest)      setUpd({ tone: "sub",  msg: "버전 정보를 확인할 수 없어요" });
+      else if (compareVersions(APP_VERSION, latest) < 0)
+                        setUpd({ tone: "new",  msg: `새 버전 ${latest} 이 나왔어요`, latest });
+      else              setUpd({ tone: "ok",   msg: "최신 버전을 사용 중이에요" });
+    } catch (e) {
+      setUpd({ tone: "err", msg: "확인 실패 — 네트워크를 확인해주세요" });
+    }
+    setUpdBusy(false);
+  };
+  const openStore = () => {
+    try { window.location.href = SETTINGS_STORE[platform] || SETTINGS_STORE.ios; } catch (e) {}
+  };
+
+  const card    = { background:SET.card, border:`1px solid ${SET.border}`, borderRadius:16, padding:16, marginBottom:12 };
+  const secTitle= { fontSize:12, fontWeight:800, color:SET.sub, margin:"18px 4px 8px", letterSpacing:"0.02em" };
+  const rowBtn  = { width:"100%", boxSizing:"border-box", textAlign:"left", display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, background:"transparent", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 };
+  const infoRow = { display:"flex", justifyContent:"space-between", padding:"9px 0", borderTop:`1px solid ${SET.line}`, fontSize:12.5 };
+  const ghostBtn= { marginTop:12, width:"100%", boxSizing:"border-box", padding:"11px 0", borderRadius:12, cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:800, background:SET.card2, color:SET.subLight, border:`1px solid ${SET.border}` };
+
   return (
     <div style={{ maxWidth:560 }}>
-      {/* 푸시 알림 */}
+
+      {/* ───── 알림 ───── */}
+      <div style={{ ...secTitle, marginTop:0 }}>알림</div>
+
       <div style={card}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
           <div>
-            <div style={{ fontSize:14.5, fontWeight:800, color:"#F1F5F9" }}>푸시 알림</div>
-            <div style={{ fontSize:11.5, color:"#64748B", marginTop:3 }}>예약 승인·공지 알림 수신</div>
+            <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>푸시 알림</div>
+            <div style={{ fontSize:11.5, color:SET.sub, marginTop:3 }}>예약 승인·공지 알림 수신</div>
           </div>
           <span style={{ fontSize:12, fontWeight:800, color:permColor, flexShrink:0 }}>{perm === null ? "확인 중..." : permLabel}</span>
         </div>
         {canAsk && (
           <button onClick={turnOn} disabled={busy}
-            style={{ marginTop:12, width:"100%", padding:"11px 0", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(90deg,#3b82f6,#7c3aed)", color:"#fff", fontSize:13, fontWeight:800, opacity:busy?0.6:1 }}>
+            style={{ marginTop:12, width:"100%", padding:"11px 0", borderRadius:12, border:"none", cursor:"pointer", background:SET.grad, color:"#fff", fontSize:13, fontWeight:800, opacity:busy?0.6:1 }}>
             {busy ? "설정 중..." : "알림 켜기"}
           </button>
         )}
         {perm === "denied" && (
-          <div style={{ marginTop:10, fontSize:11, color:"#8A8A92", lineHeight:1.5 }}>기기 설정 › 알림에서 허용으로 바꾸면 다시 받을 수 있어요.</div>
+          <div style={{ marginTop:10, fontSize:11, color:SET.sub, lineHeight:1.5 }}>기기 설정 › 알림에서 허용으로 바꾸면 다시 받을 수 있어요.</div>
         )}
       </div>
-      {/* 앱 정보 */}
-      <div style={{ ...card, marginBottom:0 }}>
-        <div style={{ fontSize:14.5, fontWeight:800, color:"#F1F5F9", marginBottom:10 }}>앱 정보</div>
-        <div style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid rgba(255,255,255,0.06)", fontSize:12.5 }}>
-          <span style={{ color:"#8A8A92" }}>버전</span><span style={{ color:"#ECECEE", fontWeight:600 }}>{APP_VERSION}</span>
+
+      {/* 알림 진단 */}
+      <div style={card}>
+        <div>
+          <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>알림 진단</div>
+          <div style={{ fontSize:11.5, color:SET.sub, marginTop:3, lineHeight:1.5 }}>알림이 허용인데도 안 온다면 눌러보세요</div>
         </div>
-        <div style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid rgba(255,255,255,0.06)", fontSize:12.5 }}>
-          <span style={{ color:"#8A8A92" }}>플랫폼</span><span style={{ color:"#ECECEE", fontWeight:600 }}>{Capacitor.getPlatform()}</span>
+
+        {diag && !diag.error && (
+          <div style={{ marginTop:12, background:SET.card2, border:`1px solid ${SET.border}`, borderRadius:12, padding:"4px 13px" }}>
+            {[
+              ["이 기기 등록", diag.thisDevice === null ? ["확인 불가", SET.sub] : diag.thisDevice ? ["등록됨", SET.teal] : ["등록 안 됨", SET.red]],
+              ["앱 기기 수",   [`${diag.native}대`, diag.native ? SET.subLight : SET.amber]],
+              ["웹 기기 수",   [`${diag.web}대`,    diag.web    ? SET.subLight : SET.amber]],
+            ].map(([k, [v, col]], i) => (
+              <div key={k} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderTop: i ? `1px solid ${SET.line}` : "none", fontSize:12.5 }}>
+                <span style={{ color:SET.sub }}>{k}</span>
+                <span style={{ color:col, fontWeight:700 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {diag?.error && <div style={{ marginTop:10, fontSize:11.5, color:SET.red }}>진단 실패 — 네트워크를 확인해주세요</div>}
+
+        <div style={{ display:"flex", gap:8, marginTop:12 }}>
+          <button onClick={runDiag} disabled={diagBusy} style={{ ...ghostBtn, marginTop:0, flex:1, opacity:diagBusy?0.6:1 }}>
+            {diagBusy ? "확인 중..." : "진단하기"}
+          </button>
+          {diag && diag.thisDevice === false && (
+            <button onClick={reRegister} disabled={diagBusy}
+              style={{ flex:1, boxSizing:"border-box", padding:"11px 0", borderRadius:12, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:800, background:SET.grad, color:"#fff", opacity:diagBusy?0.6:1 }}>
+              다시 등록
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* ───── 개인정보 ───── */}
+      <div style={secTitle}>개인정보</div>
+
+      <div style={card}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+          <div>
+            <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>시간표 공개</div>
+            <div style={{ fontSize:11.5, color:SET.sub, marginTop:3 }}>다른 학생이 내 시간표를 볼 수 있어요</div>
+          </div>
+          <button onClick={toggleTt}
+            style={{ width:48, height:22, minWidth:48, minHeight:22, padding:0, boxSizing:"border-box", borderRadius:11, border:"none", cursor:"pointer", background:ttPublic?SET.blue:"#2A2A31", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+            <div style={{ position:"absolute", top:0, left:ttPublic?26:0, width:22, height:22, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
+          </button>
+        </div>
+      </div>
+
+      <div style={card}>
+        <button onClick={() => window.open("https://rental-app-delta-kohl.vercel.app/privacy.html", "_blank")} style={rowBtn}>
+          <div>
+            <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>개인정보처리방침</div>
+            <div style={{ fontSize:11.5, color:SET.sub, marginTop:3 }}>수집 항목과 이용 목적 안내</div>
+          </div>
+          <ChevronRight size={17} color="#475569" style={{ flexShrink:0 }} />
+        </button>
+      </div>
+
+      {/* ───── 앱 관리 ───── */}
+      <div style={secTitle}>앱 관리</div>
+
+      <div style={card}>
+        <div>
+          <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>앱 새로고침</div>
+          <div style={{ fontSize:11.5, color:SET.sub, marginTop:3, lineHeight:1.5 }}>화면이 안 뜨거나 최신 내용이 반영되지 않을 때 저장된 캐시를 지우고 다시 불러옵니다</div>
+        </div>
+        <button onClick={hardRefresh} disabled={refreshing} style={{ ...ghostBtn, opacity:refreshing?0.6:1 }}>
+          {refreshing ? "새로고침 중..." : "캐시 비우고 새로고침"}
+        </button>
+      </div>
+
+      <div style={card}>
+        <div>
+          <div style={{ fontSize:14.5, fontWeight:800, color:SET.text }}>업데이트 확인</div>
+          <div style={{ fontSize:11.5, color:SET.sub, marginTop:3 }}>
+            {isNative ? `현재 ${APP_VERSION}` : "웹은 항상 최신 버전으로 실행돼요"}
+          </div>
+        </div>
+        {upd && (
+          <div style={{ marginTop:11, fontSize:12.5, fontWeight:700, lineHeight:1.5,
+            color: upd.tone === "ok" ? SET.teal : upd.tone === "new" ? SET.amber : upd.tone === "err" ? SET.red : SET.sub }}>
+            {upd.msg}
+          </div>
+        )}
+        {upd?.tone === "new" && isNative ? (
+          <button onClick={openStore}
+            style={{ marginTop:12, width:"100%", boxSizing:"border-box", padding:"11px 0", borderRadius:12, border:"none", cursor:"pointer", fontFamily:"inherit", fontSize:13, fontWeight:800, background:SET.grad, color:"#fff" }}>
+            스토어에서 업데이트
+          </button>
+        ) : (
+          <button onClick={checkUpdate} disabled={updBusy} style={{ ...ghostBtn, opacity:updBusy?0.6:1 }}>
+            {updBusy ? "확인 중..." : "지금 확인"}
+          </button>
+        )}
+      </div>
+
+      {/* ───── 정보 ───── */}
+      <div style={secTitle}>정보</div>
+
+      <div style={{ ...card, marginBottom:0 }}>
+        <div style={{ fontSize:14.5, fontWeight:800, color:SET.text, marginBottom:4 }}>앱 정보</div>
+        <div style={infoRow}>
+          <span style={{ color:SET.sub }}>버전</span><span style={{ color:SET.text, fontWeight:600 }}>{APP_VERSION}</span>
+        </div>
+        <div style={infoRow}>
+          <span style={{ color:SET.sub }}>플랫폼</span><span style={{ color:SET.text, fontWeight:600 }}>{platform}</span>
         </div>
       </div>
     </div>

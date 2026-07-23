@@ -138,7 +138,6 @@ export default function Profile() {
   const [phoneForm,      setPhoneForm]      = useState("");
   const [phoneDone,      setPhoneDone]      = useState(false);
   const [phoneErr,       setPhoneErr]       = useState("");
-  const [ttPublic,       setTtPublic]       = useState(profile?.timetablePublic !== false);
 
   // 📷 프로필 사진 변경 — 파일 선택 → 크롭 모달 → 확인 시 Storage 업로드 + photoURL 저장
   const fileRef = useRef(null);
@@ -279,29 +278,7 @@ export default function Profile() {
         📱 전화번호 변경
       </button>
 
-      {/* 시간표 공개 설정 */}
-      <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
-        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:P.text, marginBottom:2 }}>🗓️ 시간표 공개</div>
-            <div style={{ fontSize:11, color:P.sub }}>다른 학생이 내 시간표를 볼 수 있어요</div>
-          </div>
-          <button onClick={async () => {
-            const next = !ttPublic;
-            setTtPublic(next);
-            await updateItem("users", profile.uid, { timetablePublic: next });
-          }}
-            style={{ width:48, height:22, minWidth:48, minHeight:22, padding:0, boxSizing:"border-box", borderRadius:11, border:"none", cursor:"pointer", background:ttPublic?P.blue:"#2A2A31", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
-            <div style={{ position:"absolute", top:0, left:ttPublic?26:0, width:22, height:22, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
-          </button>
-        </div>
-      </div>
-
-      <button
-        onClick={() => window.open("https://rental-app-delta-kohl.vercel.app/privacy.html", "_blank")}
-        style={{ width: "100%", background: P.card, color: P.sub, border: `1px solid ${P.border}`, borderRadius: 12, padding: "12px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 10 }}>
-        개인정보처리방침
-      </button>
+      {/* 시간표 공개 · 개인정보처리방침은 더보기 › 설정으로 이동 (2026-07-24) */}
 
       {/* 로그아웃 · 회원 탈퇴 — 반반 2열 (크기 동일: 같은 padding·border·boxSizing) */}
       <div style={{ display: "flex", gap: 10 }}>
