@@ -7,6 +7,43 @@ import { doc, setDoc, getDoc, collection, getDocs, writeBatch, query, where, ser
 import { db, storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import PdfViewer from "../../components/PdfViewer";
+import { Pin, FileText, MessageCircle, Megaphone } from "lucide-react";
+
+// ─────────────────────────────────────────────────────────────
+// 학생 화면 전용 톤 — 더보기 메뉴 "공지사항" 타일(tint #38bdf8 sky)을 액센트로 확장.
+// 관리자 화면은 기존 C 모노톤 그대로 둠 (Calendar 처럼 공유 컴포넌트는 학생 뷰만 리스타일)
+// ─────────────────────────────────────────────────────────────
+const S = {
+  card:     "#121218",
+  card2:    "#0B0B0E",
+  border:   "rgba(255,255,255,0.07)",
+  text:     "#F1F5F9",
+  sub:      "#64748B",
+  subLight: "#a8adc4",
+  sky:      "#38bdf8",
+  skyTxt:   "#7dd3fc",
+  skyBg:    "rgba(56,189,248,0.13)",
+  skyBd:    "rgba(56,189,248,0.4)",
+  grad:     "linear-gradient(90deg,#38bdf8,#3b82f6)",
+};
+// 카테고리·상태색은 History.jsx 의 PAL 값 계열로 통일
+const S_CAT = {
+  "공지":     { fg: "#7dd3fc", bg: "rgba(56,189,248,.16)" },
+  "신규장비": { fg: "#5eead4", bg: "rgba(45,212,191,.16)" },
+  "휴무":     { fg: "#fca5a5", bg: "rgba(239,68,68,.16)" },
+};
+const S_AMBER = { fg: "#fcd34d", bg: "rgba(245,158,11,.16)" };
+const S_GRAY  = { fg: "#cbd5e1", bg: "rgba(148,163,184,.16)" };
+const sCat = (c) => S_CAT[c] || S_GRAY;
+
+// 작성자 역할 배지 — 학생 화면용 (관리자 화면은 기존 C 토큰 유지)
+const S_ROLE = {
+  super:     { label: "관리자", fg: "#7dd3fc", bg: "rgba(56,189,248,.16)" },
+  admin:     { label: "관리자", fg: "#7dd3fc", bg: "rgba(56,189,248,.16)" },
+  assistant: { label: "조교",   fg: "#5eead4", bg: "rgba(45,212,191,.16)" },
+  teacher:   { label: "교사",   fg: "#7fa9ff", bg: "rgba(59,130,246,.16)" },
+  professor: { label: "교수",   fg: "#c4b5fd", bg: "rgba(124,58,237,.16)" },
+};
 
 // PDF 등 첨부파일 업로드 (attachments 경로 — 기존 Storage 규칙 사용)
 async function uploadFile(file) {
@@ -49,6 +86,7 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
 
   const [showAdd, setShowAdd]   = useState(false);
   const [detail, setDetail]     = useState(null);
+  const [stuCat, setStuCat]     = useState("전체"); // 학생 화면 카테고리 필터
 
   // 알림 딥링크 — 특정 공지 상세 자동 열기
   useEffect(() => {
@@ -230,8 +268,63 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
     return `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
   };
 
-  const pinned = notices.filter(n => n.pinned);
-  const normal = notices.filter(n => !n.pinned);
+  // 상세 모달 색 토큰 — 관리자는 기존 C 값 1:1, 학생은 sky 톤
+  const T = isAdmin
+    ? { title: C.navy, text: C.text, sub: C.muted, panel: C.bg, border: C.border, accent: C.teal, pin: C.orange }
+    : { title: S.text, text: S.text, sub: S.sub, panel: S.card2, border: S.border, accent: S.sky, pin: S_AMBER.fg };
+
+  const shown = isAdmin ? notices : notices.filter(n => stuCat === "전체" || n.category === stuCat);
+  const pinned = shown.filter(n => n.pinned);
+  const normal = shown.filter(n => !n.pinned);
+
+  // ── 학생용 공지 카드 ──
+  const StuCard = ({ n }) => {
+    const cat = sCat(n.category);
+    const cmtCount = comments.filter(c => c.noticeId === n.id).length;
+    return (
+      <button
+        onClick={() => {
+          if (n.pdfUrl && !n.content?.trim()) setPdfView({ url: n.pdfUrl, title: n.title });
+          else { setDetail(n); setCommentText(""); }
+        }}
+        style={{
+          width: "100%", boxSizing: "border-box", textAlign: "left", cursor: "pointer", fontFamily: "inherit",
+          position: "relative", overflow: "hidden",
+          background: S.card, border: `1px solid ${n.pinned ? S.skyBd : S.border}`,
+          borderRadius: 14, padding: "14px 16px", marginBottom: 9,
+        }}>
+        {/* 고정 공지는 좌측 액센트 바 */}
+        {n.pinned && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 3, background: S.grad }} />}
+
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7, flexWrap: "wrap" }}>
+          <span style={{ background: cat.bg, color: cat.fg, borderRadius: 7, padding: "3px 9px", fontSize: 10.5, fontWeight: 800 }}>{n.category}</span>
+          {n.pinned && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: S_AMBER.bg, color: S_AMBER.fg, borderRadius: 7, padding: "3px 8px", fontSize: 10.5, fontWeight: 800 }}>
+              <Pin size={10} /> 고정
+            </span>
+          )}
+          {n.pdfUrl && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 3, background: S_GRAY.bg, color: S_GRAY.fg, borderRadius: 7, padding: "3px 8px", fontSize: 10.5, fontWeight: 800 }}>
+              <FileText size={10} /> PDF
+            </span>
+          )}
+        </div>
+
+        <div style={{ fontSize: 14.5, fontWeight: 800, color: S.text, lineHeight: 1.45, marginBottom: 7 }}>{n.title}</div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", fontSize: 11.5, color: S.sub }}>
+          <span>{n.date}</span>
+          <span style={{ color: S.border }}>·</span>
+          <span>{n.author}</span>
+          {cmtCount > 0 && (
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, color: S.skyTxt, fontWeight: 700 }}>
+              <MessageCircle size={11} /> {cmtCount}
+            </span>
+          )}
+        </div>
+      </button>
+    );
+  };
 
   const NCard = ({ n }) => {
     const cat = NOTICE_CAT[n.category] || { bg: C.bg, col: C.muted };
@@ -453,30 +546,84 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
         </Modal>
       )}
 
-      {pinned.length > 0 && (
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 10 }}>📌 고정 공지</div>
-          {pinned.map(n => <NCard key={n.id} n={n} />)}
+      {/* ── 목록: 학생 뷰 ── */}
+      {!isAdmin && (<>
+        {/* 카테고리 필터 칩 */}
+        <div style={{ display: "flex", gap: 7, overflowX: "auto", paddingBottom: 4, marginBottom: 14, scrollbarWidth: "none" }}>
+          {["전체", "공지", "신규장비", "휴무"].map(c => {
+            const on = stuCat === c;
+            return (
+              <button key={c} onClick={() => setStuCat(c)}
+                style={{
+                  flexShrink: 0, minHeight: 0, padding: "7px 14px", borderRadius: 999, cursor: "pointer",
+                  fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, whiteSpace: "nowrap",
+                  background: on ? S.sky : S.card, color: on ? "#08131a" : S.subLight,
+                  border: `1px solid ${on ? S.sky : S.border}`, transition: "all .15s",
+                }}>
+                {c}
+              </button>
+            );
+          })}
         </div>
-      )}
-      {normal.length > 0 && (
-        <div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>전체 공지</div>
-          {normal.map(n => <NCard key={n.id} n={n} />)}
-        </div>
-      )}
-      {notices.length === 0 && <Empty icon="📢" text="공지사항이 없습니다" />}
+
+        {pinned.length > 0 && (
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, fontWeight: 800, color: S_AMBER.fg, margin: "0 2px 9px" }}>
+              <Pin size={12} /> 고정 공지 <span style={{ color: S.sub, fontWeight: 600 }}>({pinned.length})</span>
+            </div>
+            {pinned.map(n => <StuCard key={n.id} n={n} />)}
+          </div>
+        )}
+        {normal.length > 0 && (
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 800, color: S.text, margin: "0 2px 9px" }}>
+              전체 공지 <span style={{ color: S.sub, fontWeight: 600 }}>({normal.length})</span>
+            </div>
+            {normal.map(n => <StuCard key={n.id} n={n} />)}
+          </div>
+        )}
+        {shown.length === 0 && (
+          <div style={{ background: S.card, border: `1px solid ${S.border}`, borderRadius: 14, padding: "36px 22px", textAlign: "center" }}>
+            <div style={{ width: 58, height: 58, borderRadius: 20, margin: "0 auto 14px", display: "flex", alignItems: "center", justifyContent: "center", background: S.skyBg, border: `1px solid ${S.skyBd}` }}>
+              <Megaphone size={25} color={S.skyTxt} />
+            </div>
+            <div style={{ fontSize: 14.5, fontWeight: 800, color: S.text, marginBottom: 6 }}>
+              {stuCat === "전체" ? "등록된 공지가 없어요" : `'${stuCat}' 공지가 없어요`}
+            </div>
+            <div style={{ fontSize: 12.5, color: S.sub, lineHeight: 1.7 }}>
+              {stuCat === "전체" ? "새 소식이 올라오면 여기에 표시돼요." : "다른 카테고리를 확인해보세요."}
+            </div>
+          </div>
+        )}
+      </>)}
+
+      {/* ── 목록: 관리자 뷰 (기존 그대로) ── */}
+      {isAdmin && (<>
+        {pinned.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.orange, marginBottom: 10 }}>📌 고정 공지</div>
+            {pinned.map(n => <NCard key={n.id} n={n} />)}
+          </div>
+        )}
+        {normal.length > 0 && (
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, marginBottom: 10 }}>전체 공지</div>
+            {normal.map(n => <NCard key={n.id} n={n} />)}
+          </div>
+        )}
+        {notices.length === 0 && <Empty icon="📢" text="공지사항이 없습니다" />}
+      </>)}
 
       {/* 공지 상세 + 댓글 모달 */}
       {detail && (() => {
-        const cat = NOTICE_CAT[detail.category] || { bg: C.bg, col: C.muted };
+        const cat = isAdmin ? (NOTICE_CAT[detail.category] || { bg: C.bg, col: C.muted }) : { bg: sCat(detail.category).bg, col: sCat(detail.category).fg };
         const detailComments = getComments(detail.id);
         return (
           <Modal onClose={() => setDetail(null)} width={580}>
             {(detail.pdfUrl && !detail.content?.trim()) ? (
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 12, lineHeight: 1.4 }}>📄 {detail.title}</div>
-                <div style={{ width: "100%", height: "72vh", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: "#fff" }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: T.title, marginBottom: 12, lineHeight: 1.4 }}>📄 {detail.title}</div>
+                <div style={{ width: "100%", height: "72vh", borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border}`, background: "#fff" }}>
                   <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(detail.pdfUrl)}&embedded=true`}
                     title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
                 </div>
@@ -489,19 +636,19 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
             {/* 헤더 */}
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
               <span style={{ background: cat.bg, color: cat.col, borderRadius: 6, padding: "3px 10px", fontSize: 12, fontWeight: 700 }}>{detail.category}</span>
-              {detail.pinned && <span style={{ fontSize: 12, color: C.orange, fontWeight: 700 }}>📌 고정</span>}
+              {detail.pinned && <span style={{ fontSize: 12, color: T.pin, fontWeight: 700 }}>📌 고정</span>}
             </div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: C.navy, marginBottom: 8, lineHeight: 1.4 }}>{detail.title}</div>
-            <div style={{ fontSize: 13, color: C.muted, marginBottom: 20 }}>{detail.date} · {detail.author}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: T.title, marginBottom: 8, lineHeight: 1.4 }}>{detail.title}</div>
+            <div style={{ fontSize: 13, color: T.sub, marginBottom: 20 }}>{detail.date} · {detail.author}</div>
 
             {/* 본문 */}
-            <div style={{ fontSize: 15, color: C.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: detail.pdfUrl ? 16 : 28 }}>{detail.content}</div>
+            <div style={{ fontSize: 15, color: T.text, lineHeight: 1.8, whiteSpace: "pre-wrap", marginBottom: detail.pdfUrl ? 16 : 28 }}>{detail.content}</div>
 
             {/* PDF 첨부 미리보기 */}
             {detail.pdfUrl && (
               <div style={{ marginBottom: 28 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: C.navy, marginBottom: 8 }}>📄 첨부 문서{detail.pdfName ? ` — ${detail.pdfName}` : ""}</div>
-                <div style={{ width: "100%", height: 460, borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: "#fff" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.title, marginBottom: 8 }}>📄 첨부 문서{detail.pdfName ? ` — ${detail.pdfName}` : ""}</div>
+                <div style={{ width: "100%", height: 460, borderRadius: 10, overflow: "hidden", border: `1px solid ${T.border}`, background: "#fff" }}>
                   <iframe src={`https://docs.google.com/viewer?url=${encodeURIComponent(detail.pdfUrl)}&embedded=true`}
                     title="첨부 PDF" style={{ width: "100%", height: "100%", border: "none" }} />
                 </div>
@@ -513,14 +660,14 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
             )}
 
             {/* 댓글 섹션 */}
-            <div style={{ borderTop: `2px solid ${C.border}`, paddingTop: 20 }}>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.navy, marginBottom: 16 }}>
+            <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: T.title, marginBottom: 16 }}>
                 💬 댓글 {detailComments.length}
               </div>
 
               {/* 댓글 목록 */}
               {detailComments.length === 0 && (
-                <div style={{ textAlign: "center", padding: "20px 0", color: C.muted, fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: "20px 0", color: T.sub, fontSize: 13 }}>
                   첫 댓글을 남겨보세요!
                 </div>
               )}
@@ -531,25 +678,31 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
                   return (
                     <div key={c.id} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                       <Avatar name={c.authorName || "?"} size={34} />
-                      <div style={{ flex: 1, background: C.bg, borderRadius: 12, padding: "10px 14px", border: `1px solid ${C.border}` }}>
+                      <div style={{ flex: 1, background: T.panel, borderRadius: 12, padding: "10px 14px", border: `1px solid ${T.border}` }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: 13, fontWeight: 700, color: C.navy }}>{c.authorName}</span>
+                            <span style={{ fontSize: 13, fontWeight: 700, color: T.title }}>{c.authorName}</span>
                             {["super","teacher","assistant","professor","admin"].includes(c.authorRole) && (
-                              <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: C.bg, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
-                                {c.authorRole === "professor" ? "교수" : c.authorRole === "teacher" ? "교사" : c.authorRole === "assistant" ? "조교" : "관리자"}
-                              </span>
+                              isAdmin ? (
+                                <span style={{ background: (c.authorRole === "super" || c.authorRole === "admin") ? C.navy : c.authorRole === "professor" ? C.purple : c.authorRole === "teacher" ? C.blue : C.teal, color: C.bg, borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>
+                                  {c.authorRole === "professor" ? "교수" : c.authorRole === "teacher" ? "교사" : c.authorRole === "assistant" ? "조교" : "관리자"}
+                                </span>
+                              ) : (
+                                <span style={{ background: S_ROLE[c.authorRole].bg, color: S_ROLE[c.authorRole].fg, borderRadius: 5, padding: "1px 7px", fontSize: 10, fontWeight: 800 }}>
+                                  {S_ROLE[c.authorRole].label}
+                                </span>
+                              )
                             )}
                           </div>
                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                            <span style={{ fontSize: 11, color: C.muted }}>{formatTime(c.createdAt)}</span>
+                            <span style={{ fontSize: 11, color: T.sub }}>{formatTime(c.createdAt)}</span>
                             {canDelete && (
                               <button onClick={() => deleteComment(c.id)}
-                                style={{ background: "none", border: "none", color: C.muted, cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
+                                style={{ background: "none", border: "none", color: T.sub, cursor: "pointer", fontSize: 13, padding: 0 }}>✕</button>
                             )}
                           </div>
                         </div>
-                        <div style={{ fontSize: 14, color: C.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{c.content}</div>
+                        <div style={{ fontSize: 14, color: T.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>{c.content}</div>
                       </div>
                     </div>
                   );
@@ -557,27 +710,60 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
               </div>
 
               {/* 댓글 입력 */}
-              <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
-                <Avatar name={profile?.name || "?"} size={34} />
-                <div style={{ flex: 1 }}>
+              {isAdmin ? (
+                <div style={{ display: "flex", gap: 8, alignItems: "flex-end" }}>
+                  <Avatar name={profile?.name || "?"} size={34} />
+                  <div style={{ flex: 1 }}>
+                    <textarea
+                      placeholder="댓글을 입력하세요..."
+                      value={commentText}
+                      onChange={e => setCommentText(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
+                      style={{ display: "block", width: "100%", background: T.panel, border: `1.5px solid ${T.border}`, borderRadius: 10, color: T.text, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", minHeight: 60, boxSizing: "border-box" }}
+                    />
+                    <div style={{ fontSize: 11, color: T.sub, marginTop: 4 }}>Enter로 등록 · Shift+Enter로 줄바꿈</div>
+                  </div>
+                  <Btn onClick={submitComment} color={T.accent} disabled={submitting || !commentText.trim()}>
+                    {submitting ? "..." : "등록"}
+                  </Btn>
+                </div>
+              ) : (
+                // 학생 뷰 — 안내문 제거하고 입력칸·등록버튼 높이를 맞춤 (Enter 등록 단축키는 그대로 동작)
+                <div style={{ display: "flex", gap: 8, alignItems: "stretch" }}>
+                  <div style={{ alignSelf: "center", flexShrink: 0, display: "flex" }}>
+                    <Avatar name={profile?.name || "?"} size={34} />
+                  </div>
                   <textarea
                     placeholder="댓글을 입력하세요..."
                     value={commentText}
                     onChange={e => setCommentText(e.target.value)}
                     onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitComment(); } }}
-                    style={{ display: "block", width: "100%", background: C.bg, border: `1.5px solid ${C.border}`, borderRadius: 10, color: C.text, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", minHeight: 60, boxSizing: "border-box" }}
+                    style={{ flex: 1, minWidth: 0, minHeight: 56, background: S.card2, border: `1.5px solid ${S.border}`, borderRadius: 12, color: S.text, padding: "10px 14px", fontSize: 13, fontFamily: "inherit", outline: "none", resize: "none", boxSizing: "border-box" }}
                   />
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 4 }}>Enter로 등록 · Shift+Enter로 줄바꿈</div>
+                  <button onClick={submitComment} disabled={submitting || !commentText.trim()}
+                    style={{
+                      flexShrink: 0, alignSelf: "center", minHeight: 40, height: 40, padding: "0 14px", borderRadius: 10,
+                      border: "none", fontFamily: "inherit", fontSize: 13, fontWeight: 800,
+                      background: S.sky, color: "#08131a",
+                      cursor: (submitting || !commentText.trim()) ? "default" : "pointer",
+                      opacity: (submitting || !commentText.trim()) ? 0.4 : 1,
+                    }}>
+                    {submitting ? "..." : "등록"}
+                  </button>
                 </div>
-                <Btn onClick={submitComment} color={C.teal} disabled={submitting || !commentText.trim()}>
-                  {submitting ? "..." : "등록"}
-                </Btn>
-              </div>
+              )}
             </div>
             </>)}
 
             <div style={{ marginTop: 20 }}>
-              <Btn onClick={() => setDetail(null)} color={C.navy} full>닫기</Btn>
+              {isAdmin ? (
+                <Btn onClick={() => setDetail(null)} color={C.navy} full>닫기</Btn>
+              ) : (
+                <button onClick={() => setDetail(null)}
+                  style={{ width: "100%", boxSizing: "border-box", padding: "12px", borderRadius: 12, cursor: "pointer", fontFamily: "inherit", fontSize: 14, fontWeight: 700, background: S.skyBg, color: S.skyTxt, border: `1.5px solid ${S.skyBd}` }}>
+                  닫기
+                </button>
+              )}
             </div>
           </Modal>
         );
