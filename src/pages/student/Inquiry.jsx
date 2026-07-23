@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { C } from "../../theme";
-import { Card, Btn, PageTitle, Badge, Empty } from "../../components/UI";
+import { Card, Btn, Badge, Empty } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 
@@ -71,8 +71,7 @@ export default function Inquiry() {
 
   return (
     <div style={{ maxWidth: 720 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <PageTitle>💬 문의하기</PageTitle>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
         <Btn onClick={() => { setShowForm(!showForm); setErrors({}); }} color={showForm ? C.muted : C.blue} outline={showForm}>
           {showForm ? "취소" : "+ 문의 작성"}
         </Btn>

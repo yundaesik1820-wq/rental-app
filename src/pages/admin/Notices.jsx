@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { C, NOTICE_CAT } from "../../theme";
-import { Card, Btn, Inp, Modal, Empty, PageTitle, Avatar } from "../../components/UI";
+import { Card, Btn, Inp, Modal, Empty, Avatar } from "../../components/UI";
 import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, collection, getDocs, writeBatch, query, where, serverTimestamp } from "firebase/firestore";
@@ -266,10 +266,11 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <PageTitle>📢 공지사항</PageTitle>
-        {isAdmin && <Btn onClick={() => setShowAdd(true)}>+ 공지 작성</Btn>}
-      </div>
+      {isAdmin && (
+        <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
+          <Btn onClick={() => setShowAdd(true)}>+ 공지 작성</Btn>
+        </div>
+      )}
 
       {/* 푸시 알림 보내기 (관리자, 접이식) */}
       {isAdmin && (

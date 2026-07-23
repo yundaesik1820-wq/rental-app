@@ -2,7 +2,7 @@ import { useState } from "react";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from "firebase/auth";
 import { auth } from "../../firebase";
 import { C, setTheme, getThemeMode } from "../../theme";
-import { Card, Avatar, PageTitle, Btn, Inp, Modal } from "../../components/UI";
+import { Card, Avatar, Btn, Inp, Modal } from "../../components/UI";
 import { useCollection, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { Award } from "lucide-react";
@@ -106,8 +106,6 @@ export default function Profile() {
 
   return (
     <div style={{ maxWidth: 500 }}>
-      <PageTitle>내 정보</PageTitle>
-
       {/* 프로필 카드 */}
       <Card style={{ textAlign: "center", padding: "32px 24px", marginBottom: 16 }}>
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>

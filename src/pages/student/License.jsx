@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { C } from "../../theme";
-import { Card, Btn, Modal, Empty, PageTitle } from "../../components/UI";
+import { Card, Btn, Modal, Empty } from "../../components/UI";
 import { useCollection, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 
@@ -90,8 +90,6 @@ export default function License({ focusId, onConsumed }) {
 
   return (
     <div>
-      <PageTitle>라이선스 신청</PageTitle>
-
       {/* 내 라이선스 현황 */}
       <Card style={{ marginBottom:24, background:`linear-gradient(135deg,${C.navy},#2D4A9B)` }}>
         <div style={{ fontSize:13, color:"rgba(255,255,255,0.6)", marginBottom:6 }}>내 현재 라이선스</div>

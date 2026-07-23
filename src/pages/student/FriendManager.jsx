@@ -4,7 +4,7 @@ import { db } from "../../firebase";
 import { C } from "../../theme";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
-import { PageTitle, Empty, Btn } from "../../components/UI";
+import { Empty, Btn } from "../../components/UI";
 
 // 친구관리 콘트롤타워 — 친구 추가 / 받은 요청 수락·거절 / 내 친구 목록
 // friends·friendRequests 데이터 모델은 기존 그대로 재사용 (Home.jsx / PetGame.jsx 로직 추출)
@@ -105,8 +105,6 @@ export default function FriendManager() {
 
   return (
     <div>
-      <PageTitle>친구관리</PageTitle>
-
       {/* 친구 추가 */}
       <div style={{ marginBottom:8, fontSize:14, fontWeight:800, color:C.text }}>친구 추가</div>
       <div style={{ display:"flex", gap:8, marginBottom:8 }}>
