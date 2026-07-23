@@ -2,11 +2,11 @@ import { useState, useRef, useEffect } from "react";
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential, deleteUser } from "firebase/auth";
 import { ref as sRef, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { auth, storage } from "../../firebase";
-import { C, setTheme, getThemeMode } from "../../theme";
+import { C } from "../../theme";
 import { Avatar, Btn, Inp, Modal } from "../../components/UI";
 import { useCollection, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { Award, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 
 // 더보기 페이지와 동일한 블루·퍼플 다크 톤 (theme.js C는 모노톤이라 로컬 상수 — 2026-07-19 블루 리디자인 계열)
 const P = {
@@ -138,7 +138,6 @@ export default function Profile() {
   const [phoneForm,      setPhoneForm]      = useState("");
   const [phoneDone,      setPhoneDone]      = useState(false);
   const [phoneErr,       setPhoneErr]       = useState("");
-  const [themeMode,      setThemeModeState] = useState(getThemeMode());
   const [ttPublic,       setTtPublic]       = useState(profile?.timetablePublic !== false);
 
   // 📷 프로필 사진 변경 — 파일 선택 → 크롭 모달 → 확인 시 Storage 업로드 + photoURL 저장
@@ -166,8 +165,6 @@ export default function Profile() {
     }
     setPhotoBusy(false);
   };
-
-  const handleTheme = (mode) => { setTheme(mode); setThemeModeState(mode); };
 
   const changePhone = async () => {
     if (!phoneForm.trim()) { setPhoneErr("전화번호를 입력하세요"); return; }
@@ -218,15 +215,6 @@ export default function Profile() {
   const isProf  = profile.role === "professor";
   const admYear = isProf ? "교수" : (profile.studentId ? `${profile.studentId.slice(0, 2)}학번` : "-");
 
-  const licenseColor = () => {
-    if (!profile.license || profile.license === "없음") return { bg: "rgba(255,255,255,0.06)", col: P.sub };
-    if (profile.license === "1단계") return { bg: P.blueBg,   col: P.blueText     };
-    if (profile.license === "2단계") return { bg: P.tealBg,   col: P.teal         };
-    if (profile.license === "3단계") return { bg: P.purpleBg, col: P.purpleLight  };
-    return { bg: "rgba(255,255,255,0.06)", col: P.sub };
-  };
-  const lc = licenseColor();
-
   const cardStyle = { background: P.card, border: `1px solid ${P.border}`, borderRadius: 16, padding: "16px 18px", marginBottom: 12 };
 
   return (
@@ -261,21 +249,6 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* 라이선스 카드 - 교수님은 숨김 */}
-      {profile.role !== "professor" && (
-        <div style={{ ...cardStyle, border: `1px solid rgba(124,58,237,0.35)` }}>
-          <div style={{ fontSize: 13, color: P.sub, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}><Award size={14} color={P.purpleLight} /> 장비 사용 라이선스</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ background: lc.bg, color: lc.col, borderRadius: 8, padding: "6px 16px", fontSize: 16, fontWeight: 800 }}>
-              {profile.license || "없음"}
-            </span>
-            {(!profile.license || profile.license === "없음") && (
-              <span style={{ fontSize: 12, color: P.sub }}>관리자 승인 후 등록됩니다</span>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* 계정 정보 */}
       <div style={cardStyle}>
         <div style={{ fontSize: 14, fontWeight: 800, color: P.text, marginBottom: 10 }}>계정 정보</div>
@@ -286,7 +259,6 @@ export default function Profile() {
           ]),
           ["계열/소속",  profile.dept || (isProf ? "교수" : "-")],
           ["연락처",     profile.phone || "-"],
-          ["이메일",     profile.email || "-"],
           ["누적 대여",  `${profile.rentals || mine.filter(r => r.status === "반납완료").length}회`],
           ["현재 대여중", `${active}개`],
         ].map(([k, v]) => (
@@ -319,23 +291,8 @@ export default function Profile() {
             setTtPublic(next);
             await updateItem("users", profile.uid, { timetablePublic: next });
           }}
-            style={{ width:44, height:24, borderRadius:12, border:"none", cursor:"pointer", background:ttPublic?P.blue:"#2A2A31", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
-            <div style={{ position:"absolute", top:3, left:ttPublic?22:3, width:18, height:18, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
-          </button>
-        </div>
-      </div>
-
-      {/* 테마 설정 */}
-      <div style={{ background: P.card, border: `1px solid ${P.border}`, borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: P.text, marginBottom: 10 }}>🎨 화면 테마</div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button onClick={() => handleTheme("dark")}
-            style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${themeMode === "dark" ? "#60A5FA" : P.border}`, background: themeMode === "dark" ? "#1E3A5F" : "transparent", color: themeMode === "dark" ? "#60A5FA" : P.sub, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            🌙 다크 모드
-          </button>
-          <button onClick={() => handleTheme("light")}
-            style={{ flex: 1, padding: "10px 0", borderRadius: 10, border: `2px solid ${themeMode === "light" ? "#1B2B6B" : P.border}`, background: themeMode === "light" ? "#EEF2FF" : "transparent", color: themeMode === "light" ? "#1B2B6B" : P.sub, fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            ☀️ 라이트 모드
+            style={{ width:48, height:28, minWidth:48, padding:0, boxSizing:"border-box", borderRadius:14, border:"none", cursor:"pointer", background:ttPublic?P.blue:"#2A2A31", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+            <div style={{ position:"absolute", top:3, left:ttPublic?23:3, width:22, height:22, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
           </button>
         </div>
       </div>
@@ -346,14 +303,17 @@ export default function Profile() {
         개인정보처리방침
       </button>
 
-      <button onClick={logout} style={{ width: "100%", background: P.redBg, color: P.red, border: `1.5px solid rgba(248,113,113,0.3)`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-        로그아웃
-      </button>
-
-      <button onClick={() => { setShowDelete(true); setDelPw(""); setDelErr(""); }}
-        style={{ width: "100%", background: "none", color: P.sub, border: "none", padding: "14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", marginTop: 6, opacity: 0.85 }}>
-        회원 탈퇴
-      </button>
+      {/* 로그아웃 · 회원 탈퇴 — 반반 2열 (크기 동일: 같은 padding·border·boxSizing) */}
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={logout}
+          style={{ flex: 1, boxSizing: "border-box", background: P.redBg, color: P.red, border: `1.5px solid rgba(248,113,113,0.3)`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          로그아웃
+        </button>
+        <button onClick={() => { setShowDelete(true); setDelPw(""); setDelErr(""); }}
+          style={{ flex: 1, boxSizing: "border-box", background: P.card, color: P.sub, border: `1.5px solid ${P.border}`, borderRadius: 12, padding: "12px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          회원 탈퇴
+        </button>
+      </div>
 
       {/* 📷 프로필 사진 크롭 모달 */}
       {cropSrc && (
