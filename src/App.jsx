@@ -736,7 +736,7 @@ function AppContent() {
         case "calendar": return <CalendarPage isAdmin={true} />;
         case "stats":    return <Stats isAdmin={true} />;
         case "notices":  return <Notices isAdmin={true} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
-        case "settings": return <Settings />;
+        case "settings": return <Settings isSuper={isSuper} />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
         case "license":  return <LicenseAdmin />;
         case "sns":      return <SNSManager />;

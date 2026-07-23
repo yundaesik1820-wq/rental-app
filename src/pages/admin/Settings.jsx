@@ -6,10 +6,19 @@ import { auth } from "../../firebase";
 import { C } from "../../theme";
 import { Card, Btn, PageTitle } from "../../components/UI";
 import { useAuth } from "../../hooks/useAuth.jsx";
+import { APP_VERSION, compareVersions } from "../../appVersion";
 
 const DEFAULTS = { maxDays: 7, maxSimultaneous: 2, startHour: 9, endHour: 18 };
 
-export default function Settings() {
+// config/appVersion 편집 폼의 빈 값 (문서에 없는 필드는 저장하지 않음)
+const VER_EMPTY = {
+  latestVersionIos: "", latestVersionAndroid: "",
+  minVersionIos: "",    minVersionAndroid: "",
+  enabled: true,        message: "",
+};
+const isVerFormat = (v) => /^\d+(\.\d+)*$/.test(v.trim());
+
+export default function Settings({ isSuper = true }) {
   const { user } = useAuth();
   const [form, setForm]       = useState(DEFAULTS);
   const [saved, setSaved]     = useState(false);
@@ -43,6 +52,57 @@ export default function Settings() {
       setPwLoading(false);
       setTimeout(() => setPwMsg(null), 4000);
     }
+  };
+
+  /* ── 앱 버전 관리 (config/appVersion) ── */
+  const [ver, setVer]         = useState(VER_EMPTY);
+  const [verRaw, setVerRaw]   = useState(null);   // 문서 원본 (레거시 필드 보존용)
+  const [verMsg, setVerMsg]   = useState(null);   // { type, text }
+  const [verBusy, setVerBusy] = useState(false);
+
+  useEffect(() => {
+    if (!isSuper) return;
+    getDoc(doc(db, "config", "appVersion"))
+      .then(snap => {
+        const d = snap.exists() ? snap.data() : {};
+        setVerRaw(d);
+        setVer({
+          // 플랫폼 전용 값이 없으면 기존 공용 값을 초기값으로 (저장하면 플랫폼별로 분리됨)
+          latestVersionIos:     d.latestVersionIos     || d.latestVersion || "",
+          latestVersionAndroid: d.latestVersionAndroid || d.latestVersion || "",
+          minVersionIos:        d.minVersionIos        || d.minVersion    || "",
+          minVersionAndroid:    d.minVersionAndroid    || d.minVersion    || "",
+          enabled:              d.enabled !== false,
+          message:              d.message || "",
+        });
+      })
+      .catch(() => setVerRaw({}));
+  }, [isSuper]);
+
+  // 이 기준선을 저장하면 지금 배포된 번들(APP_VERSION)이 잠기는지
+  const locksNow = (v) => v && isVerFormat(v) && compareVersions(APP_VERSION, v) < 0;
+  const willLock = ver.enabled && (locksNow(ver.minVersionIos) || locksNow(ver.minVersionAndroid));
+
+  const saveVer = async () => {
+    const bad = ["latestVersionIos","latestVersionAndroid","minVersionIos","minVersionAndroid"]
+      .find(k => ver[k].trim() && !isVerFormat(ver[k]));
+    if (bad) { setVerMsg({ type:"error", text:"버전은 1.0.12 같은 숫자·점 형식으로 입력해주세요." }); return; }
+    setVerBusy(true);
+    try {
+      // 입력한 값만 반영 — 빈 칸은 건드리지 않아 iosUrl 등 기존 필드가 보존됨
+      const payload = { enabled: ver.enabled, message: ver.message.trim(), updatedAt: serverTimestamp() };
+      for (const k of ["latestVersionIos","latestVersionAndroid","minVersionIos","minVersionAndroid"]) {
+        if (ver[k].trim()) payload[k] = ver[k].trim();
+      }
+      await setDoc(doc(db, "config", "appVersion"), payload, { merge: true });
+      setVerMsg({ type:"success", text:"앱 버전 설정이 저장됐습니다." });
+    } catch (e) {
+      setVerMsg({ type:"error", text: e.code === "permission-denied"
+        ? "권한이 없습니다. Firestore 규칙(config 쓰기 권한)이 게시됐는지 확인해주세요."
+        : "저장 실패: " + (e.message || "오류") });
+    }
+    setVerBusy(false);
+    setTimeout(() => setVerMsg(null), 5000);
   };
 
   useEffect(() => {
@@ -166,6 +226,80 @@ export default function Settings() {
           {pwLoading ? "변경 중..." : "🔐 비밀번호 변경"}
         </Btn>
       </Card>
+
+      {/* 앱 버전 관리 — config/appVersion. 전체 권한 관리자만 */}
+      {isSuper && (
+        <Card style={{ marginTop: 32, marginBottom: 40 }}>
+          <div style={{ fontSize: 15, fontWeight: 800, color: C.navy, marginBottom: 4 }}>📦 앱 버전 관리</div>
+          <div style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, marginBottom: 18 }}>
+            현재 실행 중인 번들 <b style={{ color: C.text }}>{APP_VERSION}</b> · iOS와 Android는 심사 시차가 있어 따로 관리합니다.<br />
+            빈 칸으로 두면 해당 항목은 저장하지 않습니다.
+          </div>
+
+          {verMsg && (
+            <div style={{ background: verMsg.type === "success" ? C.greenLight : C.redLight,
+              color: verMsg.type === "success" ? C.green : C.red,
+              borderRadius: 10, padding: "10px 14px", marginBottom: 16,
+              border: `1px solid ${verMsg.type === "success" ? C.green : C.red}30`,
+              fontWeight: 600, fontSize: 13, lineHeight: 1.6 }}>
+              {verMsg.type === "success" ? "✅ " : "⚠️ "}{verMsg.text}
+            </div>
+          )}
+
+          {/* 최신 버전 — 학생 설정 › 업데이트 확인에서 비교하는 값 */}
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 4 }}>최신 버전</div>
+          <div style={{ fontSize: 11.5, color: C.muted, marginBottom: 10 }}>학생 설정 › 업데이트 확인에서 이 값과 비교합니다 (앱을 막지는 않음)</div>
+          <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+            {[["latestVersionIos", "iOS"], ["latestVersionAndroid", "Android"]].map(([k, label]) => (
+              <div key={k} style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>{label}</div>
+                <input value={ver[k]} onChange={e => setVer(p => ({ ...p, [k]: e.target.value }))} placeholder="1.0.12"
+                  style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+              </div>
+            ))}
+          </div>
+
+          {/* 강제 업데이트 */}
+          <div style={{ borderTop: `1px solid ${C.border}`, paddingTop: 18 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 4 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>강제 업데이트 기준선</div>
+              <button onClick={() => setVer(p => ({ ...p, enabled: !p.enabled }))}
+                style={{ width:48, height:22, minWidth:48, minHeight:22, padding:0, boxSizing:"border-box", borderRadius:11, border:"none", cursor:"pointer", background: ver.enabled ? C.red : "#2A2A31", position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+                <div style={{ position:"absolute", top:0, left: ver.enabled ? 26 : 0, width:22, height:22, borderRadius:"50%", background:"#fff", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.2)" }} />
+              </button>
+            </div>
+            <div style={{ fontSize: 11.5, color: C.muted, marginBottom: 10, lineHeight: 1.6 }}>
+              이 버전보다 낮은 앱은 <b style={{ color: C.text }}>화면이 잠기고</b> 스토어로만 이동할 수 있습니다. 웹은 항상 최신이라 영향 없음.
+            </div>
+
+            <div style={{ display: "flex", gap: 12, marginBottom: 12, opacity: ver.enabled ? 1 : 0.45 }}>
+              {[["minVersionIos", "iOS"], ["minVersionAndroid", "Android"]].map(([k, label]) => (
+                <div key={k} style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>{label}</div>
+                  <input value={ver[k]} onChange={e => setVer(p => ({ ...p, [k]: e.target.value }))} placeholder="비워두면 잠그지 않음"
+                    style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${locksNow(ver[k]) && ver.enabled ? C.red : C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", boxSizing:"border-box" }} />
+                </div>
+              ))}
+            </div>
+
+            {willLock && (
+              <div style={{ background: C.redLight, border: `1px solid ${C.red}40`, borderRadius: 10, padding: "12px 14px", marginBottom: 12, fontSize: 12.5, color: C.red, fontWeight: 700, lineHeight: 1.6 }}>
+                ⚠️ 이대로 저장하면 지금 배포된 <b>{APP_VERSION}</b> 앱이 잠깁니다.<br />
+                <span style={{ fontWeight: 500 }}>새 빌드가 스토어에 올라간 뒤에 설정하세요.</span>
+              </div>
+            )}
+
+            <div style={{ fontSize: 12, fontWeight: 600, color: C.muted, marginBottom: 6 }}>잠금 화면 안내 문구</div>
+            <textarea value={ver.message} onChange={e => setVer(p => ({ ...p, message: e.target.value }))}
+              placeholder={"비워두면 기본 문구가 표시됩니다.\n예) 대여 기능이 개선되었습니다. 최신 버전으로 업데이트해 주세요."}
+              style={{ display:"block", width:"100%", background:C.bg, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 14px", fontSize:13, fontFamily:"inherit", outline:"none", resize:"vertical", minHeight:70, boxSizing:"border-box", marginBottom:16 }} />
+          </div>
+
+          <Btn onClick={saveVer} color={willLock ? C.red : C.navy} full disabled={verBusy || verRaw === null}>
+            {verBusy ? "저장 중..." : verRaw === null ? "불러오는 중..." : willLock ? "⚠️ 잠금을 적용하고 저장" : "버전 설정 저장"}
+          </Btn>
+        </Card>
+      )}
     </div>
   );
 }

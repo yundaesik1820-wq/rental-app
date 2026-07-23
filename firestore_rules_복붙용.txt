@@ -24,10 +24,17 @@ service cloud.firestore {
         .hasAny(['role', 'adminRole', 'status', 'reporterStatus', 'license']);
     }
 
-    // 앱 버전 게이트 설정 — 누구나 읽기(로그인 전에도 확인), 쓰기는 콘솔에서만
+    // 전체 권한 관리자(super/assistant)만. teacher/professor 는 제한 권한이라 제외.
+    // adminRole 이 없는 옛 관리자 문서는 super 로 간주 (앱 코드와 동일한 폴백)
+    function isSuperAdmin() {
+      return isAdmin() && me().get('adminRole', 'super') in ['super', 'assistant'];
+    }
+
+    // 앱 버전 게이트 설정 — 누구나 읽기(로그인 전에도 확인).
+    // 쓰기는 강제 업데이트로 앱을 잠글 수 있는 설정이라 전체 권한 관리자만.
     match /config/{doc} {
       allow read: if true;
-      allow write: if false;
+      allow write: if isSuperAdmin();
     }
 
     match /users/{userId} {
