@@ -278,7 +278,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   if (view === "profile")  return <Profile />;
   if (view === "friends")  return <FriendManager photoMap={photoMap} />;
   if (view === "inquiry")  return <StudentInquiry />;
-  if (view === "license")  return <License />;
+  if (view === "license")  return <License onOpenNotices={() => setView("notices")} />;
   if (view === "notices")  return <Notices isAdmin={false} />;
   if (view === "settings") return <StudentSettings />;
 
@@ -341,7 +341,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:7, flexShrink:0 }}>
               <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 11px", borderRadius:16, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.1)" }}>
                 <Sparkles size={11} color="#a78bfa" />
-                <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.06em", color:"#c4b5fd" }}>CREW LEVEL</span>
+                <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.06em", color:"#c4b5fd" }}>LICENSE LEVEL</span>
               </span>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <div style={{ width:86, height:6, borderRadius:3, background:"rgba(255,255,255,0.12)", overflow:"hidden" }}>
@@ -537,7 +537,7 @@ function AppContent() {
         case "reserve":  return <Reserve setTab={setTab} />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
-        case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
+        case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} onOpenNotices={() => setTab("notices")} />;
         case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
