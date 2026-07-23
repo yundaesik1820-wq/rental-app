@@ -130,7 +130,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, logout, pendingError, setPendingError }}>
+    <AuthContext.Provider value={{ user, profile, setProfile, loading, login, logout, pendingError, setPendingError }}>
       {children}
     </AuthContext.Provider>
   );

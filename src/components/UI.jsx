@@ -47,7 +47,11 @@ export function Btn({ children, onClick, color = C.blue, text = "#1E293B", small
   );
 }
 
-export function Avatar({ name, size = 40 }) {
+export function Avatar({ name, size = 40, src }) {
+  if (src) {
+    // 프로필 사진 — 모바일 전역 max-width:100% 캡핑 방지로 maxWidth:none 인라인 명시
+    return <img src={src} alt={name} style={{ width: size, height: size, maxWidth: "none", borderRadius: "50%", objectFit: "cover", flexShrink: 0, display: "block" }} />;
+  }
   const colors = [C.blue, C.teal, C.purple, C.red, C.orange];
   const col = colors[name.charCodeAt(0) % colors.length];
   return (

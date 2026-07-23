@@ -317,7 +317,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed }) {
         <div style={{ display:"flex", alignItems:"center", gap:18, position:"relative" }}>
           <div style={{ position:"relative", flexShrink:0 }}>
             <div style={{ padding:3, borderRadius:"50%", background:"linear-gradient(135deg,#3b82f6,#7c3aed)", boxShadow:"0 0 20px rgba(124,58,237,0.45)" }}>
-              <Avatar name={profile?.name || "학생"} size={70} />
+              <Avatar name={profile?.name || "학생"} size={70} src={profile?.photoURL} />
             </div>
           </div>
           <div style={{ minWidth:0 }}>
