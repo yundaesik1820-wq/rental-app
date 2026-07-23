@@ -3,11 +3,13 @@ import { getThemeMode, setTheme, C } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
 import { CartProvider } from "./hooks/useCart.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
-import { useFCM } from "./hooks/useFCM.js";
+import { useFCM, getNotifPermissionState, enableNotifications } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
 import UpdateGate from "./components/UpdateGate";
-import { Spinner } from "./components/UI";
+import { Spinner, Avatar } from "./components/UI";
+import { APP_VERSION } from "./appVersion";
+import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Pencil, Sparkles, ChevronRight } from "lucide-react";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
@@ -265,57 +267,157 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
   );
 }
 
-// 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
+// 학생용 더보기 — ejqhrl.png 목업 리디자인 (2026-07-23, 블루·퍼플 액센트)
 // view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
-const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", license:"라이선스", notices:"공지사항" };
+const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", license:"라이선스", notices:"공지사항", settings:"설정" };
 function StudentMyPage({ view, setView, initialView, onConsumed }) {
-  const { profile } = useAuth();
+  const { profile, logout } = useAuth();
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
   React.useEffect(() => { if (initialView) { setView(initialView); onConsumed?.(); } }, [initialView]);
 
-  if (view === "profile") return <Profile />;
-  if (view === "friends") return <FriendManager />;
-  if (view === "inquiry") return <StudentInquiry />;
-  if (view === "license") return <License />;
-  if (view === "notices") return <Notices isAdmin={false} />;
+  if (view === "profile")  return <Profile />;
+  if (view === "friends")  return <FriendManager />;
+  if (view === "inquiry")  return <StudentInquiry />;
+  if (view === "license")  return <License />;
+  if (view === "notices")  return <Notices isAdmin={false} />;
+  if (view === "settings") return <StudentSettings />;
 
-  const MenuRow = ({ icon, label, sub, onClick }) => (
-    <button onClick={onClick} style={{
-      width:"100%", textAlign:"left", cursor:"pointer",
-      background:"#1E293B", border:"1px solid #334155", borderRadius:12,
-      padding:"15px 16px", marginBottom:10,
-      display:"flex", alignItems:"center", justifyContent:"space-between",
-    }}>
-      <div style={{ display:"flex", alignItems:"center", gap:13 }}>
-        <span style={{ fontSize:20 }}>{icon}</span>
-        <div>
-          <div style={{ fontSize:15, fontWeight:700, color:"#F1F5F9" }}>{label}</div>
-          {sub && <div style={{ fontSize:11.5, color:"#64748B", marginTop:2 }}>{sub}</div>}
-        </div>
+  const licNum = (() => { const n = parseInt(String(profile?.license || "").replace(/\D/g, ""), 10); return Number.isNaN(n) ? 0 : n; })();
+
+  // 공용 행 내용 (아이콘 타일 + 라벨/설명 + 우측 요소)
+  const RowInner = ({ icon: Icon, tint, tintBg, label, sub, danger, right }) => (
+    <>
+      <span style={{ width:46, height:46, borderRadius:14, background:tintBg, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <Icon size={21} color={tint} />
+      </span>
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:15.5, fontWeight:800, color: danger ? "#f87171" : "#F1F5F9" }}>{label}</div>
+        <div style={{ fontSize:11.5, color:"#64748B", marginTop:3 }}>{sub}</div>
       </div>
-      <span style={{ fontSize:18, color:"#475569" }}>›</span>
-    </button>
+      {right !== undefined ? right : <ChevronRight size={17} color="#475569" style={{ flexShrink:0 }} />}
+    </>
+  );
+  const rowBase = { width:"100%", textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:14 };
+  const MenuCard = ({ highlight, onClick, children }) => (
+    <button onClick={onClick} style={{ ...rowBase,
+      background:"#121218",
+      border:`1px solid ${highlight ? "rgba(124,58,237,0.45)" : "rgba(255,255,255,0.07)"}`,
+      borderRadius:16, padding:"13px 16px", marginBottom:10,
+      boxShadow: highlight ? "0 0 18px rgba(124,58,237,0.14)" : "none",
+    }}>{children}</button>
   );
 
   return (
-    <div>
-      {/* 프로필 요약 카드 */}
-      <div style={{ background:"linear-gradient(135deg,#3d4370,#5b6191)", borderRadius:16, padding:"20px", marginBottom:18, display:"flex", alignItems:"center", gap:14 }}>
-        <div style={{ width:54, height:54, borderRadius:"50%", background:"rgba(255,255,255,0.18)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:26, flexShrink:0 }}>👤</div>
-        <div style={{ minWidth:0 }}>
-          <div style={{ fontSize:18, fontWeight:800, color:"#fff" }}>{profile?.name || "학생"}</div>
-          <div style={{ fontSize:13, color:"rgba(255,255,255,0.82)", marginTop:3 }}>
-            {[profile?.studentId, profile?.dept].filter(Boolean).join(" · ")}
+    <div style={{ maxWidth:560 }}>
+      {/* 프로필 히어로 카드 — 퍼플 그라데이션 + 글로우 링 아바타 + KBAS MEMBER 배지 */}
+      <div style={{ position:"relative", overflow:"hidden", borderRadius:20, padding:"22px 20px", marginBottom:16,
+        background:"linear-gradient(135deg,#1a1f3d 0%,#241a3d 55%,#12101f 100%)", border:"1px solid rgba(124,58,237,0.3)" }}>
+        <div style={{ position:"absolute", top:-40, right:-40, width:160, height:160, borderRadius:"50%", background:"radial-gradient(circle, rgba(124,58,237,0.28), transparent 70%)" }} />
+        <span style={{ position:"absolute", top:16, right:20, fontSize:34, opacity:0.22, transform:"rotate(12deg)" }}>🎬</span>
+        <div style={{ display:"flex", alignItems:"center", gap:18, position:"relative" }}>
+          <div style={{ position:"relative", flexShrink:0 }}>
+            <div style={{ padding:3, borderRadius:"50%", background:"linear-gradient(135deg,#3b82f6,#7c3aed)", boxShadow:"0 0 20px rgba(124,58,237,0.45)" }}>
+              <Avatar name={profile?.name || "학생"} size={70} />
+            </div>
+            <button onClick={() => setView("profile")} aria-label="프로필 수정"
+              style={{ position:"absolute", bottom:-2, right:-2, width:27, height:27, borderRadius:"50%", background:"#2a2a3d", border:"1px solid rgba(255,255,255,0.28)", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+              <Pencil size={12} color="#c7c9d4" />
+            </button>
+          </div>
+          <div style={{ minWidth:0 }}>
+            <div style={{ fontSize:21, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{profile?.name || "학생"}</div>
+            <div style={{ fontSize:13, color:"#a8adc4", marginTop:4 }}>{[profile?.studentId, profile?.dept].filter(Boolean).join(" · ")}</div>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:10, padding:"6px 14px", borderRadius:20, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.12)" }}>
+              <Sparkles size={12} color="#a78bfa" />
+              <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.08em", color:"#c4b5fd" }}>KBAS MEMBER</span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* 메뉴 리스트 */}
-      <MenuRow icon="👤" label="내 정보" sub="프로필·계정 정보 확인" onClick={() => setView("profile")} />
-      <MenuRow icon="🫂" label="친구관리" sub="친구 추가·요청·목록" onClick={() => setView("friends")} />
-      <MenuRow icon="💬" label="문의하기" sub="궁금한 점을 물어봐요" onClick={() => setView("inquiry")} />
-      <MenuRow icon="🎓" label="라이선스" sub="내 장비 사용 등급" onClick={() => setView("license")} />
-      <MenuRow icon="📢" label="공지사항" sub="대여실 소식·안내" onClick={() => setView("notices")} />
+      {/* 메뉴 카드 */}
+      <MenuCard onClick={() => setView("profile")}><RowInner icon={User} tint="#3b82f6" tintBg="rgba(59,130,246,0.13)" label="내 정보" sub="프로필·계정 정보 확인" /></MenuCard>
+      <MenuCard onClick={() => setView("friends")}><RowInner icon={Users} tint="#a78bfa" tintBg="rgba(167,139,250,0.13)" label="친구관리" sub="친구 추가·요청 목록" /></MenuCard>
+      <MenuCard onClick={() => setView("inquiry")}><RowInner icon={MessageCircle} tint="#8b5cf6" tintBg="rgba(139,92,246,0.13)" label="문의하기" sub="궁금한 점을 물어봐요" /></MenuCard>
+      <MenuCard highlight onClick={() => setView("license")}>
+        <RowInner icon={Clapperboard} tint="#7c3aed" tintBg="rgba(124,58,237,0.15)" label="라이선스" sub="내 장비 사용 등급"
+          right={
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:7, flexShrink:0 }}>
+              <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 11px", borderRadius:16, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.1)" }}>
+                <Sparkles size={11} color="#a78bfa" />
+                <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.06em", color:"#c4b5fd" }}>CREW LEVEL</span>
+              </span>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <div style={{ width:86, height:6, borderRadius:3, background:"rgba(255,255,255,0.12)", overflow:"hidden" }}>
+                  <div style={{ width:`${Math.min(licNum / 3, 1) * 100}%`, height:"100%", background:"linear-gradient(90deg,#3b82f6,#7c3aed)" }} />
+                </div>
+                <span style={{ fontSize:13, fontWeight:800, color:"#7e9dff", whiteSpace:"nowrap" }}>Lv. {licNum}</span>
+              </div>
+            </div>
+          } />
+      </MenuCard>
+      <MenuCard onClick={() => setView("notices")}><RowInner icon={Megaphone} tint="#38bdf8" tintBg="rgba(56,189,248,0.13)" label="공지사항" sub="대여실 소식·안내" /></MenuCard>
+
+      {/* 하단 그룹 — 설정 · 로그아웃 (한 카드에 두 행) */}
+      <div style={{ background:"#121218", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, marginTop:16, overflow:"hidden" }}>
+        <button onClick={() => setView("settings")} style={{ ...rowBase, background:"none", border:"none", padding:"13px 16px" }}>
+          <RowInner icon={SettingsIcon} tint="#9ca3af" tintBg="rgba(156,163,175,0.12)" label="설정" sub="앱 설정 및 환경 관리" />
+        </button>
+        <button onClick={() => { if (window.confirm("로그아웃할까요?")) logout(); }} style={{ ...rowBase, background:"none", border:"none", borderTop:"1px solid rgba(255,255,255,0.06)", padding:"13px 16px" }}>
+          <RowInner icon={LogOut} tint="#f87171" tintBg="rgba(248,113,113,0.12)" label="로그아웃" sub="안전하게 로그아웃" danger />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// 학생용 설정 — 더보기 › 설정 (푸시 알림 상태 + 앱 정보)
+function StudentSettings() {
+  const { profile } = useAuth();
+  const [perm, setPerm] = React.useState(null);   // granted | denied | prompt | default | unsupported
+  const [busy, setBusy] = React.useState(false);
+  React.useEffect(() => { getNotifPermissionState().then(setPerm); }, []);
+  const PERM_LABEL = { granted:["허용됨", "#2DD4BF"], denied:["거부됨", "#FF6B6B"], unsupported:["미지원 기기", "#8A8A92"] };
+  const [permLabel, permColor] = PERM_LABEL[perm] || ["미설정", "#fbbf24"];
+  const canAsk = perm === "prompt" || perm === "default" || perm === "prompt-with-rationale";
+  const turnOn = async () => {
+    if (!profile?.uid || busy) return;
+    setBusy(true);
+    setPerm(await enableNotifications(profile.uid));
+    setBusy(false);
+  };
+  const card = { background:"#121218", border:"1px solid rgba(255,255,255,0.07)", borderRadius:16, padding:16, marginBottom:12 };
+  return (
+    <div style={{ maxWidth:560 }}>
+      {/* 푸시 알림 */}
+      <div style={card}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+          <div>
+            <div style={{ fontSize:14.5, fontWeight:800, color:"#F1F5F9" }}>푸시 알림</div>
+            <div style={{ fontSize:11.5, color:"#64748B", marginTop:3 }}>예약 승인·공지 알림 수신</div>
+          </div>
+          <span style={{ fontSize:12, fontWeight:800, color:permColor, flexShrink:0 }}>{perm === null ? "확인 중..." : permLabel}</span>
+        </div>
+        {canAsk && (
+          <button onClick={turnOn} disabled={busy}
+            style={{ marginTop:12, width:"100%", padding:"11px 0", borderRadius:12, border:"none", cursor:"pointer", background:"linear-gradient(90deg,#3b82f6,#7c3aed)", color:"#fff", fontSize:13, fontWeight:800, opacity:busy?0.6:1 }}>
+            {busy ? "설정 중..." : "알림 켜기"}
+          </button>
+        )}
+        {perm === "denied" && (
+          <div style={{ marginTop:10, fontSize:11, color:"#8A8A92", lineHeight:1.5 }}>기기 설정 › 알림에서 허용으로 바꾸면 다시 받을 수 있어요.</div>
+        )}
+      </div>
+      {/* 앱 정보 */}
+      <div style={{ ...card, marginBottom:0 }}>
+        <div style={{ fontSize:14.5, fontWeight:800, color:"#F1F5F9", marginBottom:10 }}>앱 정보</div>
+        <div style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid rgba(255,255,255,0.06)", fontSize:12.5 }}>
+          <span style={{ color:"#8A8A92" }}>버전</span><span style={{ color:"#ECECEE", fontWeight:600 }}>{APP_VERSION}</span>
+        </div>
+        <div style={{ display:"flex", justifyContent:"space-between", padding:"7px 0", borderTop:"1px solid rgba(255,255,255,0.06)", fontSize:12.5 }}>
+          <span style={{ color:"#8A8A92" }}>플랫폼</span><span style={{ color:"#ECECEE", fontWeight:600 }}>{Capacitor.getPlatform()}</span>
+        </div>
+      </div>
     </div>
   );
 }
