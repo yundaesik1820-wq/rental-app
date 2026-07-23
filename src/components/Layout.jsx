@@ -34,14 +34,14 @@ const STU_NAV = [
   { id: "notices",   icon: Megaphone,     label: "공지사항" },
   { id: "community", icon: MessageSquare, label: "에브리타임"  },
   { id: "calendar",  icon: ShoppingCart,  label: "예약내역" },
-  { id: "mypage",    icon: UserCircle,    label: "내 정보" },
+  { id: "mypage",    icon: UserCircle,    label: "더보기" },
   { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 하단바 X — 커뮤니티 배너로 진입 (헤더 제목용)
 ];
 
 // 학생 하단바 아이콘 (목업 기준: 홈/예약내역/장비예약(FAB)/커뮤니티/더보기)
 const STU_BAR_ICON = { home: Home, calendar: ClipboardList, equip: CalendarPlus, community: MessageSquare, mypage: MoreHorizontal };
 
-export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab }) {
+export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab, headerTitle, onHeaderBack }) {
   const { profile, logout } = useAuth();
 
 
@@ -207,8 +207,16 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
       <div style={{ flex: 1, display: "flex", flexDirection: "column", minWidth: 0, minHeight: 0 }}>
         {/* Top bar — 커뮤니티 헤더와 동일 스타일 (띠 없음, 큰 볼드 제목, 검색+알림) */}
         <header style={{ background: C.bg, padding: "14px 18px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
-          <span style={{ fontSize: 20, fontWeight: 900, color: C.text, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-            {currentNav?.label}
+          <span style={{ display: "flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+            {onHeaderBack && (
+              <button onClick={onHeaderBack} className="tap-spring"
+                style={{ background: "none", border: "none", padding: 0, marginLeft: -6, cursor: "pointer", display: "flex", alignItems: "center", color: C.text }}>
+                <ChevronLeft size={24} strokeWidth={2.2} />
+              </button>
+            )}
+            <span style={{ fontSize: 20, fontWeight: 900, color: C.text, letterSpacing: "-0.02em", lineHeight: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {headerTitle || currentNav?.label}
+            </span>
           </span>
           <div style={{ display: "flex", alignItems: "center", gap: 16, paddingRight: "env(safe-area-inset-right, 0px)" }}>
             <button onClick={() => setShowSearch(true)} className="tap-spring" style={{ background: "none", border: "none", padding: 0, cursor: "pointer", display: "flex", alignItems: "center", color: C.text }}>

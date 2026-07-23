@@ -266,24 +266,18 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 }
 
 // 학생용 더보기 (프로필 요약 + 메뉴 허브, 카톡 더보기식)
-function StudentMyPage({ initialView, onConsumed }) {
+// view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
+const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", license:"라이선스", notices:"공지사항" };
+function StudentMyPage({ view, setView, initialView, onConsumed }) {
   const { profile } = useAuth();
-  const [view, setView] = React.useState("menu"); // menu | profile | friends | inquiry | license | notices
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
   React.useEffect(() => { if (initialView) { setView(initialView); onConsumed?.(); } }, [initialView]);
 
-  const Back = () => (
-    <button onClick={() => setView("menu")}
-      style={{ display:"flex", alignItems:"center", gap:6, background:"none", border:"none", color:"#94A3B8", fontSize:13, cursor:"pointer", marginBottom:16 }}>
-      ← 더보기
-    </button>
-  );
-
-  if (view === "profile") return (<div><Back /><Profile /></div>);
-  if (view === "friends") return (<div><Back /><FriendManager /></div>);
-  if (view === "inquiry") return (<div><Back /><StudentInquiry /></div>);
-  if (view === "license") return (<div><Back /><License /></div>);
-  if (view === "notices") return (<div><Back /><Notices isAdmin={false} /></div>);
+  if (view === "profile") return <Profile />;
+  if (view === "friends") return <FriendManager />;
+  if (view === "inquiry") return <StudentInquiry />;
+  if (view === "license") return <License />;
+  if (view === "notices") return <Notices isAdmin={false} />;
 
   const MenuRow = ({ icon, label, sub, onClick }) => (
     <button onClick={onClick} style={{
@@ -368,8 +362,10 @@ function AppContent() {
     return () => window.removeEventListener("kbas-theme-change", handler);
   }, []);
   const [showNotif, setShowNotif] = useState(false);
-  // 학생 더보기 재탭 시 리마운트용 — StudentMyPage의 view가 내부 state라 밖에서 못 되돌림
+  // 학생 더보기 — 재탭 시 리마운트용 key + view는 App 소유 (헤더 제목·뒤로가기 동기화)
   const [mypageKey, setMypageKey] = useState(0);
+  const [mypageView, setMypageView] = useState("menu");
+  useEffect(() => { if (tab !== "mypage") setMypageView("menu"); }, [tab]); // 탭 이탈 시 초기화
 
   const { data: rentalRequests }   = useCollection("rentalRequests",   "createdAt");
   const { data: allUsers }         = useCollection("users",            "createdAt");
@@ -442,7 +438,7 @@ function AppContent() {
         case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} />;
         case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
-        case "mypage":   return <StudentMyPage key={mypageKey} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
+        case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
         default:         return <StudentHome setTab={setTab} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
       }
     }
@@ -451,7 +447,9 @@ function AppContent() {
   return (
     <>
       <Layout tab={tab} setTab={setTab} notifCount={notifCount} onNotif={() => setShowNotif(true)}
-        onSameTab={(id) => { if (id === "mypage") setMypageKey(k => k + 1); }}>
+        headerTitle={tab === "mypage" && mypageView !== "menu" ? MYPAGE_TITLES[mypageView] : null}
+        onHeaderBack={tab === "mypage" && mypageView !== "menu" ? () => setMypageView("menu") : null}
+        onSameTab={(id) => { if (id === "mypage") { setMypageKey(k => k + 1); setMypageView("menu"); } }}>
         <Suspense fallback={<div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"60px 0" }}><Spinner /></div>}>
           {renderPage()}
         </Suspense>

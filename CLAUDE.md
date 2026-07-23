@@ -76,7 +76,8 @@ iOS: 빌드번호 ↑ → Codemagic → TestFlight → App Store Connect
   - 그룹탭 활성 판정은 `GROUP_MEMBERS` (하위 tab이 여기 없으면 탭이 활성으로 안 뜸).
 - 학생 하단 4탭(`MOBILE_STU_IDS`): **홈 / 장비 / 커뮤니티 / 더보기**.
   - **예약 신청은 탭에서 뺐음** — 장비 목록에서 담고 장바구니 바로 진입. `tab: "reserve"` 라우팅과 `STU_NAV` 항목은 유효(헤더 제목용).
-- **같은 탭 재탭** → `<main>`을 맨 위로 스크롤. 학생 더보기는 `onSameTab` → `mypageKey` 증가로 리마운트되어 메뉴 첫 화면 복귀(내부 `view` state라 밖에서 못 되돌림).
+- **같은 탭 재탭** → `<main>`을 맨 위로 스크롤. 학생 더보기는 `onSameTab` → `mypageKey` 증가 리마운트 + `mypageView` 리셋으로 메뉴 첫 화면 복귀.
+- **더보기 헤더** (2026-07-23): `StudentMyPage`의 `view` state는 **App이 소유**(`mypageView`) — Layout에 `headerTitle`/`onHeaderBack` prop으로 전달되어 헤더에 하위 메뉴 이름 + ‹ 뒤로가기 표시. 메뉴 루트에선 탭 라벨 "더보기"(STU_NAV). 탭 이탈 시 자동 초기화.
 - 하단 탭바: `position:fixed, bottom:0`, paddingBottom 고정 8px, `main` padding-bottom 고정 70px. **safe-area env 계산 안 씀(모든 기기 동일).**
 - 상단은 노치 보호로 `padding-top: max(env(safe-area-inset-top), 24px)` 유지.
 
