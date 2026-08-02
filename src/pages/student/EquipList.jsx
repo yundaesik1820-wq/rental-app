@@ -134,7 +134,7 @@ function PressBtn({ children, onClick, variant = "reserve", disabled, style }) {
   );
 }
 
-export default function EquipList({ setTab }) {
+export default function EquipList({ setTab, initialSearch, initialCat, onConsumed }) {
   const { profile } = useAuth();
   const { cart, setQty, cartSets, setCartSets, cartCount } = useCart();
   const [detailCam, setDetailCam] = useState(null); // 카메라 상세(액세서리 선택) 페이지
@@ -147,6 +147,16 @@ export default function EquipList({ setTab }) {
   const [filter, setFilter]   = useState("카메라");
   const [minorFilter, setMinorFilter] = useState("전체");
   const [tabView, setTabView] = useState("단품"); // "단품" | "세트"
+
+  // 상단 통합 검색에서 넘어온 경우: 카테고리 + 검색어 주입 후 1회 소비
+  useEffect(() => {
+    if (!initialSearch) return;
+    if (initialCat) setFilter(initialCat);
+    setMinorFilter("전체");
+    setSearch(initialSearch);
+    onConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialSearch, initialCat]);
   // 카메라/캠코더/액션캠·드론은 카드 클릭 → 상세로 담는 흐름이라
   // 중분류 칩·검색창·단품/세트 탭을 숨기고 단품 목록만 바로 보여준다.
   const catIsCameraLike = ["카메라", "캠코더", "액션캠/드론"].includes(filter);

@@ -751,7 +751,7 @@ function AppContent() {
     } else {
       switch (tab) {
         case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
-        case "equip":    return <EquipList setTab={setTab} />;
+        case "equip":    return <EquipList setTab={setTab} initialSearch={notifTarget?.equipSearch} initialCat={notifTarget?.equipCat} onConsumed={() => setNotifTarget(null)} />;
         case "reserve":  return <Reserve setTab={setTab} />;
         case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
@@ -767,6 +767,11 @@ function AppContent() {
   return (
     <>
       <Layout tab={tab} setTab={setTab} notifCount={notifCount} onNotif={() => setShowNotif(true)}
+        onSearchNavigate={(t) => {
+          if (t.tab) setTab(t.tab);
+          // 화면 전환 → 살짝 텀 두고 대상(장비검색어/공지/학생/대여) 주입 (알림 네비와 동일 패턴)
+          setTimeout(() => setNotifTarget(t), 450);
+        }}
         headerTitle={tab === "mypage" && mypageView !== "menu" ? MYPAGE_TITLES[mypageView] : null}
         onHeaderBack={tab === "mypage" && mypageView !== "menu" ? () => setMypageView("menu") : null}
         onSameTab={(id) => { if (id === "mypage") { setMypageKey(k => k + 1); setMypageView("menu"); } }}>

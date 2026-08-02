@@ -3,6 +3,7 @@ import { Capacitor } from "@capacitor/core";
 import { useAuth } from "../hooks/useAuth.jsx";
 import { enableNotifications, getNotifPermissionState } from "../hooks/useFCM";
 import { C } from "../theme";
+import GlobalSearch from "./GlobalSearch";
 import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
@@ -41,7 +42,7 @@ const STU_NAV = [
 // 학생 하단바 아이콘 (목업 기준: 홈/예약내역/장비예약(FAB)/커뮤니티/더보기)
 const STU_BAR_ICON = { home: Home, calendar: ClipboardList, equip: CalendarPlus, community: MessageSquare, mypage: MoreHorizontal };
 
-export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab, headerTitle, onHeaderBack }) {
+export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab, headerTitle, onHeaderBack, onSearchNavigate }) {
   const { profile, logout } = useAuth();
 
 
@@ -510,23 +511,13 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
         )}
       </div>
 
-      {/* 🔍 통합 검색 (준비중 껍데기 — 커뮤니티 헤더와 동일) */}
+      {/* 🔍 통합 검색 (역할별 멀티 — 열릴 때만 마운트 → 리스너도 그때만) */}
       {showSearch && (
-        <div onClick={() => setShowSearch(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 9500, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-          <div onClick={e => e.stopPropagation()}
-            style={{ background: C.bg, border: `1px solid ${C.border}`, borderRadius: 12, padding: "28px 24px", maxWidth: 320, textAlign: "center" }}>
-            <Search size={40} color={C.muted} strokeWidth={2} style={{ marginBottom: 12 }} />
-            <div style={{ fontSize: 15, fontWeight: 800, color: C.text, marginBottom: 8 }}>통합 검색 준비 중</div>
-            <div style={{ fontSize: 12.5, color: C.muted, lineHeight: 1.6, marginBottom: 20 }}>
-              곧 검색 기능을 추가할 예정이에요.
-            </div>
-            <button onClick={() => setShowSearch(false)}
-              style={{ width: "100%", padding: "11px", minHeight: 44, background: C.navy, color: C.bg, border: "none", borderRadius: 8, fontSize: 13, fontWeight: 800, cursor: "pointer" }}>
-              확인
-            </button>
-          </div>
-        </div>
+        <GlobalSearch
+          isAdmin={profile?.role === "admin"}
+          onClose={() => setShowSearch(false)}
+          onNavigate={(t) => { setShowSearch(false); onSearchNavigate?.(t); }}
+        />
       )}
 
     </div>
