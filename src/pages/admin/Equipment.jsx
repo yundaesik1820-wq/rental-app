@@ -752,6 +752,7 @@ export default function Equipment({ initialTab = "equip" }) {
   const [filter, setFilter]           = useState("카메라");
   const [minorFilter, setMinorFilter] = useState("전체");
   const [showAdd, setShowAdd]         = useState(false);
+  const [addMenu, setAddMenu]         = useState(false); // 등록 드롭다운(개별/일괄)
   const [showImport, setShowImport]   = useState(false);
   const [form, setForm]               = useState(EMPTY);
   const [inspItem, setInspItem]       = useState(null);
@@ -767,7 +768,7 @@ export default function Equipment({ initialTab = "equip" }) {
     const match = CAT_MATCH[filter];
     return match ? match(e) : e.majorCategory === filter;
   };
-  const minorList = ["전체", ...new Set(equipments.filter(inCategory).map(e => e.minorCategory).filter(Boolean))];
+  const minorList = [...new Set(equipments.filter(inCategory).map(e => e.minorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
     inCategory(e) &&
     (minorFilter === "전체" || e.minorCategory === minorFilter) &&
@@ -930,27 +931,21 @@ export default function Equipment({ initialTab = "equip" }) {
 
   return (
     <div>
-      {/* 탭 + 버튼 헤더 */}
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
-        {/* 탭 */}
-        <div style={{ display:"flex", background:C.bg, borderRadius:10, padding:3, gap:2 }}>
-          {[["equip","🔧 장비"]].map(([v,l]) => (
-            <button key={v} onClick={() => setActiveTab(v)}
-              style={{ padding:"6px 14px", borderRadius:8, border:"none", fontSize:12, fontWeight:700, cursor:"pointer", background:activeTab===v?C.navy:"transparent", color:activeTab===v?C.bg:C.muted }}>
-              {l}
-            </button>
-          ))}
+      {/* 버튼 헤더 — 순서 / 등록(개별·일괄) / 내보내기 */}
+      <div style={{ display:"flex", justifyContent:"flex-end", gap:5, marginBottom:14 }}>
+        <button onClick={() => setShowReorder(true)} style={{ background:C.purpleLight, color:C.purple, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>↕ 순서</button>
+        {/* 등록 드롭다운 (개별등록 / 일괄등록) */}
+        <div style={{ position:"relative" }}>
+          <button onClick={() => setAddMenu(m => !m)} style={{ background:C.navy, color:C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 등록 ▾</button>
+          {addMenu && (<>
+            <div onClick={() => setAddMenu(false)} style={{ position:"fixed", inset:0, zIndex:40 }} />
+            <div style={{ position:"absolute", top:"calc(100% + 4px)", right:0, zIndex:50, background:C.surface, border:`1px solid ${C.border}`, borderRadius:10, overflow:"hidden", minWidth:118, boxShadow:C.shadow }}>
+              <button onClick={() => { setShowAdd(true); setAddMenu(false); }}    style={{ display:"block", width:"100%", textAlign:"left", background:"transparent", color:C.text, border:"none", borderBottom:`1px solid ${C.border}`, padding:"9px 12px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>➕ 개별등록</button>
+              <button onClick={() => { setShowImport(true); setAddMenu(false); }} style={{ display:"block", width:"100%", textAlign:"left", background:"transparent", color:C.text, border:"none", padding:"9px 12px", fontSize:12, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>📥 일괄등록</button>
+            </div>
+          </>)}
         </div>
-        {/* 버튼 */}
-        <div style={{ display:"flex", gap:5 }}>
-          {activeTab === "equip" && <>
-            <button onClick={exportExcel}               style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📤 내보내기</button>
-            <button onClick={() => setShowMigrator(true)} style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>🗂️ 카테고리</button>
-            <button onClick={() => setShowImport(true)} style={{ background:C.tealLight, color:C.teal, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📥 일괄등록</button>
-            <button onClick={() => setShowReorder(true)} style={{ background:C.purpleLight, color:C.purple, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>↕ 순서</button>
-            <button onClick={() => setShowAdd(true)}    style={{ background:C.navy, color: C.bg, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>+ 추가</button>
-          </>}
-        </div>
+        <button onClick={exportExcel} style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:8, padding:"6px 10px", fontSize:11, fontWeight:700, cursor:"pointer" }}>📤 내보내기</button>
       </div>
 
 
@@ -1580,6 +1575,10 @@ export default function Equipment({ initialTab = "equip" }) {
 
       {/* 장비 탭 */}
       {activeTab === "equip" && (<>
+      {/* 검색 (최상단) */}
+      <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:14, boxSizing:"border-box" }} />
+
       {/* 카테고리 아이콘 그리드 (4열, 학생 EquipList와 동일 룩) */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px 4px", marginBottom:18 }}>
         {RENTAL_CATEGORIES.map(c => {
@@ -1597,20 +1596,16 @@ export default function Equipment({ initialTab = "equip" }) {
         })}
       </div>
 
-      {/* 검색 */}
-      <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
-        style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }} />
-
-      {/* 중분류 필터 */}
+      {/* 중분류 필터 (전체 없이 중분류 칩만 · 같은 칩 재탭 시 해제) */}
       {minorList.length > 1 && (
         <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
           {minorList.map(m => (
-            <button key={m} onClick={() => setMinorFilter(m)} style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"4px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{m}</button>
+            <button key={m} onClick={() => setMinorFilter(minorFilter===m ? "전체" : m)} style={{ background:minorFilter===m?C.teal:"transparent", color:minorFilter===m?"#fff":C.muted, border:`1px solid ${minorFilter===m?C.teal:C.border}`, borderRadius:14, padding:"4px 12px", fontSize:11, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{m}</button>
           ))}
         </div>
       )}
 
-      {/* 모델별 그룹화 */}
+      {/* 모델별 그룹화 — 관리자가 정한 순서(sortOrder)로 정렬(학생 화면과 동일). */}
       {(() => {
         const groups = Object.values(
           filtered.reduce((acc, e) => {
@@ -1619,7 +1614,13 @@ export default function Equipment({ initialTab = "equip" }) {
             acc[key].units.push(e);
             return acc;
           }, {})
-        );
+        ).sort((a, b) => {
+          // groupEquipments와 동일 규칙: 대분류 → sortOrder → 모델명.
+          const ord = (g) => g.units.reduce((m, u) => typeof u.sortOrder === "number" ? Math.min(m, u.sortOrder) : m, Infinity);
+          return (a.rep.majorCategory || "").localeCompare(b.rep.majorCategory || "")
+            || (ord(a) - ord(b))
+            || (a.rep.modelName || "").localeCompare(b.rep.modelName || "");
+        });
         return groups.length === 0
           ? <Empty icon="🔧" text="등록된 장비가 없습니다" />
           : (
