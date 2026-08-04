@@ -328,44 +328,56 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
   });
 
   const statusSummaryColor = avail === 0 ? C.red : avail < total ? C.yellow : C.green;
+  const stockPct   = total > 0 ? Math.round((avail / total) * 100) : 0;
+  const statusWord = avail === 0 ? "전량 대여중" : `${avail}/${total}대 가용`;
 
   return (
-    <div style={{ background:C.surface, borderRadius:12, border:`1.5px solid ${statusSummaryColor}40`, overflow:"hidden" }}>
+    <div style={{ background:C.surface, borderRadius:14, border:"1px solid rgba(96,130,246,0.14)", overflow:"hidden", display:"flex" }}>
+      {/* 좌측 재고 상태 컬러바 */}
+      <div style={{ width:4, flexShrink:0, background:`linear-gradient(180deg, ${statusSummaryColor}, ${statusSummaryColor}66)` }} />
+
+      <div style={{ flex:1, minWidth:0 }}>
       {/* 대표 행 */}
-      <div style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 12px" }}>
-        {/* 썸네일 */}
-        <div style={{ width:42, height:42, borderRadius:8, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-          {thumb
-            ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
-            : <span style={{ fontSize:18 }}>📷</span>
-          }
-        </div>
-
-        {/* 정보 */}
-        <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:3 }}>
-            <span style={{ fontSize:13, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{rep.modelName}</span>
-            {rep.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[rep.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:4, padding:"1px 5px", fontWeight:700, flexShrink:0 }}>Lv.{rep.licenseLevel}</span> : null; })()}
-            {/* 재고 요약 */}
-            <span style={{ fontSize:10, fontWeight:700, color:statusSummaryColor, flexShrink:0 }}>
-              {avail}/{total}대
-            </span>
+      <div style={{ padding:"10px 12px 11px" }}>
+        {/* 1행: 썸네일 + 모델명 + Lv */}
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ width:44, height:44, borderRadius:10, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+            {thumb
+              ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+              : <span style={{ fontSize:20 }}>📷</span>
+            }
           </div>
-          <div style={{ display:"flex", gap:4, flexWrap:"wrap", alignItems:"center" }}>
-            {rep.majorCategory && <span style={{ fontSize:10, color:C.blue, background:C.blueLight, borderRadius:4, padding:"0px 5px" }}>{rep.majorCategory}</span>}
-            {rep.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{rep.minorCategory}</span>}
-            
-            {rep.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {rep.manufacturer}</span>}
-            {renting > 0 && <span style={{ fontSize:10, color:C.blue }}>대여중 {renting}</span>}
-            {repair  > 0 && <span style={{ fontSize:10, color:C.yellow }}>수리중 {repair}</span>}
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
+              <span style={{ fontSize:14, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{rep.modelName}</span>
+              {rep.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[rep.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:5, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>Lv.{rep.licenseLevel}</span> : null; })()}
+            </div>
+            <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center" }}>
+              {rep.majorCategory && <span style={{ fontSize:10, color:C.blue, background:"rgba(96,130,246,0.13)", borderRadius:5, padding:"1px 6px", fontWeight:600 }}>{rep.majorCategory}</span>}
+              {rep.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{rep.minorCategory}</span>}
+              {rep.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {rep.manufacturer}</span>}
+            </div>
           </div>
         </div>
 
-        {/* 펼치기 + 추가 버튼 */}
-        <div style={{ display:"flex", gap:4, flexShrink:0, alignItems:"center" }}>
-          <button onClick={() => onEdit(rep)}       style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>수정</button>
-          <button onClick={() => { setOpen(o => !o); }} className="tap-spring" style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
-            {open ? "접기" : `${total}대 ▾`}
+        {/* 2행: 재고 게이지 */}
+        <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
+          <div style={{ flex:1, height:7, borderRadius:99, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
+            <div style={{ width:`${stockPct}%`, height:"100%", borderRadius:99, background:`linear-gradient(90deg, ${statusSummaryColor}, ${statusSummaryColor}aa)` }} />
+          </div>
+          <span style={{ fontSize:11, fontWeight:800, color:statusSummaryColor, flexShrink:0 }}>{statusWord}</span>
+        </div>
+
+        {/* 3행: 상태 카운트 + 버튼 */}
+        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:9 }}>
+          <div style={{ display:"flex", gap:5, flex:1, flexWrap:"wrap" }}>
+            {renting > 0 && <span style={{ fontSize:10, fontWeight:700, color:C.blue,   background:"rgba(96,130,246,0.12)", borderRadius:6, padding:"2px 7px" }}>대여중 {renting}</span>}
+            {repair  > 0 && <span style={{ fontSize:10, fontWeight:700, color:C.yellow, background:"rgba(245,158,11,0.12)", borderRadius:6, padding:"2px 7px" }}>수리중 {repair}</span>}
+            {renting === 0 && repair === 0 && <span style={{ fontSize:10, fontWeight:700, color:C.green, background:"rgba(52,211,153,0.12)", borderRadius:6, padding:"2px 7px" }}>전량 대여가능</span>}
+          </div>
+          <button onClick={() => onEdit(rep)} className="tap-spring" style={{ background:"rgba(96,130,246,0.13)", color:C.blue, border:"1px solid rgba(96,130,246,0.26)", borderRadius:8, padding:"5px 11px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>수정</button>
+          <button onClick={() => { setOpen(o => !o); }} className="tap-spring" style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 11px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
+            {open ? "접기 ▴" : `${total}대 ▾`}
           </button>
         </div>
       </div>
@@ -398,6 +410,7 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
           })}
         </div>
       )}
+      </div>
 
       {photoModal && <EquipPhotoModal {...photoModal} onClose={() => setPhotoModal(null)} />}
     </div>
