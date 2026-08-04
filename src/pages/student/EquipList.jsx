@@ -43,6 +43,28 @@ const RENTAL_CATEGORIES = [
   { name: "외부 렌탈샵", icon: "🏬", img: "/cat-icons/external.png" },
 ];
 
+// 🔗 학생 12아이콘 → 관리자 데이터(대분류 major + 중분류 minor) 매핑.
+//    관리자(Equipment.jsx)는 대분류를 7개(촬영/렌즈/ACC/트라이포드·그립/모니터/조명/음향)로
+//    저장하고, 카메라·캠코더·드론/액션캠은 "촬영"의 중분류다. 학생 아이콘 이름과 다르므로
+//    여기서 매핑해줘야 관리자가 대분류/중분류를 바꿔도 장비가 사라지지 않는다.
+//    ⚠️ 예전 데이터엔 majorCategory에 12분류 이름(카메라 등)이 그대로 박힌 경우가 있어
+//       legacy 폴백(majorCategory === 아이콘명)도 함께 잡는다.
+const CAT_MATCH = {
+  "카메라":       (e) => e.minorCategory === "카메라" || e.majorCategory === "카메라",
+  "캠코더":       (e) => e.minorCategory === "캠코더" || e.majorCategory === "캠코더",
+  "액션캠/드론":   (e) => e.minorCategory === "드론/액션캠" || ["액션캠/드론", "드론/액션캠", "액션캠", "드론"].includes(e.majorCategory),
+  "렌즈":         (e) => e.majorCategory === "렌즈" || isLens(e),
+  // 촬영 대분류의 액세서리류(배터리/충전기/저장매체/카드리더기)는 ACC 아이콘에 모은다
+  "ACC":          (e) => e.majorCategory === "ACC" || ["배터리", "충전기/전원", "저장매체", "카드리더기"].includes(e.minorCategory),
+  "삼각대/그립":   (e) => e.majorCategory === "트라이포드/그립" || e.majorCategory === "삼각대/그립",
+  "모니터":       (e) => e.majorCategory === "모니터",
+  "조명":         (e) => e.majorCategory === "조명",
+  "음향":         (e) => e.majorCategory === "음향",
+  "기타":         (e) => e.minorCategory === "기타" || e.majorCategory === "기타",
+  "편집":         (e) => e.majorCategory === "편집",
+  // "외부 렌탈샵"은 장비 목록이 아니라 별도 화면(ExternalRentalView)이라 여기 없음
+};
+
 // 카테고리 아이콘 — img가 있으면 이미지, 없거나 로드 실패하면 이모지로 폴백.
 // (이미지 파일을 아직 안 올렸을 때 깨진 이미지 대신 이모지가 보이게 한다)
 function CatIcon({ c }) {
@@ -188,21 +210,13 @@ export default function EquipList({ setTab, initialSearch, initialCat, onConsume
   const grouped    = groupEquipments(unitEquips);
   const setEquips  = groupSets(equipments);
 
-  // 카테고리 커스텀 순서
-  const CAT_ORDER = ["촬영", "렌즈", "ACC", "트라이포드/그립", "모니터", "조명", "음향"];
-  const rawCats = [...new Set([
-    ...grouped.map(e => e.majorCategory),
-    ...setEquips.map(e => e.majorCategory),
-  ].filter(Boolean))];
-  const sortedCats = [
-    ...CAT_ORDER.filter(c => rawCats.includes(c)),
-    ...rawCats.filter(c => !CAT_ORDER.includes(c)), // 지정 안된 카테고리는 뒤에
-  ];
-  const allCats = sortedCats; // 전체 제거
-
-  // 카테고리 판정 — 렌즈 계열(XEEN CF 세트 등)은 대분류가 "렌즈"가 아니어도
-  // 렌즈 카테고리에서 보이게 한다
-  const inCategory = (e) => !filter || e.majorCategory === filter || (filter === "렌즈" && isLens(e));
+  // 카테고리 판정 — 학생 아이콘(filter)을 관리자 데이터(major/minor)에 매핑.
+  //   CAT_MATCH에 규칙이 있으면 그걸 쓰고, 없으면(신규 아이콘 등) 대분류 직접 비교로 폴백.
+  const inCategory = (e) => {
+    if (!filter) return true;
+    const match = CAT_MATCH[filter];
+    return match ? match(e) : e.majorCategory === filter;
+  };
 
   // 선택된 대분류의 중분류 목록
   const minorList = ["전체", ...new Set([
