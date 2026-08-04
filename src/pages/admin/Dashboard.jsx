@@ -51,6 +51,35 @@ export default function Dashboard({ setTab }) {
   const today         = new Date().toISOString().slice(0, 10);
   const newNotices    = notices.filter(n => n.date === today).length;
 
+  // ⚡ 처리 대기 보드용 — 오늘 대여/반납 & 재고 0 모델
+  const tomorrow      = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const retStatuses   = ["승인됨", "대여중"];
+  const todayRentEquip = requests.filter(r => r.startDate === today && r.status === "승인됨").length;
+  const todayRetEquip  = requests.filter(r => r.endDate === today && retStatuses.includes(r.status)).length;
+  // 재고 0 모델(단품, 개체 status로 판정 — available 필드에 의존하지 않음)
+  const soldOutModels = (() => {
+    const byModel = {};
+    equipments.filter(e => !e.isSet).forEach(e => {
+      const k = e.modelName || e.name; if (!k) return;
+      if (!byModel[k]) byModel[k] = { total: 0, avail: 0 };
+      byModel[k].total++;
+      if ((e.status || "대여가능") === "대여가능") byModel[k].avail++;
+    });
+    return Object.values(byModel).filter(m => m.avail === 0).length;
+  })();
+
+  // 처리 대기 타일 (연체는 위 빨간 긴급줄로 따로 표시)
+  const actionTiles = [
+    { emo: "🕑", n: pending,        label: "대여 승인",   col: "#F59E0B", tab: "rental" },
+    { emo: "📥", n: todayRetEquip,  label: "오늘 반납",   col: "#4f8bff", tab: "rental" },
+    { emo: "📤", n: todayRentEquip, label: "오늘 대여",   col: "#2DD4BF", tab: "rental" },
+    { emo: "🙋", n: pendingUsers,   label: "학생 승인",   col: "#F59E0B", tab: "students" },
+    { emo: "🔑", n: pwResetPend,    label: "비번 초기화", col: "#fbbf24", tab: "students" },
+    { emo: "📩", n: unanswered,     label: "미답변 문의", col: "#FF6B6B", tab: "inquiry" },
+    { emo: "🎖️", n: licensePend,    label: "라이선스 대기", col: "#a78bfa", tab: "license" },
+    { emo: "📦", n: soldOutModels,  label: "재고 0",      col: "#FF6B6B", tab: "equip" },
+  ];
+
   const roleName = profile?.adminRole === "teacher"   ? "교사" :
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
@@ -81,9 +110,13 @@ export default function Dashboard({ setTab }) {
 
   return (
     <div>
-      {/* Welcome banner */}
-      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:20, padding:"18px 20px", marginBottom:20, position:"relative" }}>
-        <div style={{ position:"absolute", top:12, right:12, display:"flex", gap:6 }}>
+      {/* Welcome banner — 컴팩트 1행 (첫 화면 공간 확보) */}
+      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:16, padding:"12px 16px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
+        <div style={{ minWidth:0, display:"flex", alignItems:"center", gap:8 }}>
+          <span style={{ fontSize:16, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>안녕하세요, {profile?.name}님 👋</span>
+          <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:6, padding:"1px 8px", fontSize:10, fontWeight:700, color:"#fff", flexShrink:0 }}>{roleName}</span>
+        </div>
+        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
           {canSwitch && (
             <button onClick={async () => {
               if (savedCreds) {
@@ -99,19 +132,12 @@ export default function Dashboard({ setTab }) {
               }
             }} disabled={switchLoading} title="계정 전환"
               style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"7px 9px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:switchLoading?0.7:1 }}>
-              <RefreshCw size={16} style={{ animation: switchLoading?"spin 1s linear infinite":"none" }} />
+              <RefreshCw size={15} style={{ animation: switchLoading?"spin 1s linear infinite":"none" }} />
             </button>
           )}
-          <button onClick={logout} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"6px 10px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", gap:4 }}>
-            <LogOut size={14} /> 로그아웃
+          <button onClick={logout} title="로그아웃" style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"7px 9px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <LogOut size={15} />
           </button>
-        </div>
-        <div style={{ fontSize:12, color:"rgba(255,255,255,0.6)", marginBottom:3, display:"flex", alignItems:"center", gap:6 }}>
-          {roleName}
-          <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:6, padding:"1px 8px", fontSize:11, fontWeight:700 }}>{roleName}</span>
-        </div>
-        <div style={{ fontSize:20, fontWeight:900, color:"#fff" }}>
-          안녕하세요, {profile?.name}님 👋
         </div>
       </div>
 
@@ -126,8 +152,24 @@ export default function Dashboard({ setTab }) {
         </div>
       )}
 
-      {/* 업무별 현황 */}
-      <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>📋 업무 현황</div>
+      {/* ⚡ 처리 대기 보드 — 스크롤 없이 오늘 할 일 한눈에 (0이면 흐리게, >0이면 색+숫자) */}
+      <div style={{ fontSize:12, fontWeight:800, color:C.muted, marginBottom:8 }}>⚡ 처리 대기</div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:7, marginBottom:18 }}>
+        {actionTiles.map((t, i) => {
+          const active = t.n > 0;
+          return (
+            <div key={i} onClick={() => setTab?.(t.tab)}
+              style={{ background: active ? `${t.col}1f` : C.surface, border:`1px solid ${active ? `${t.col}55` : C.border}`, borderRadius:12, padding:"9px 4px 8px", textAlign:"center", cursor:"pointer" }}>
+              <div style={{ fontSize:12, marginBottom:1 }}>{t.emo}</div>
+              <div style={{ fontSize:20, fontWeight:900, color: active ? t.col : "#4a4a52", lineHeight:1.05 }}>{t.n}</div>
+              <div style={{ fontSize:9.5, color: active ? C.text : C.muted, marginTop:2, fontWeight:600, wordBreak:"keep-all", lineHeight:1.15 }}>{t.label}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 상세 현황 (드릴다운) */}
+      <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>📋 상세 현황</div>
 
       {/* 공지 관리 */}
       <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
