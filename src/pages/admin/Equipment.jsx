@@ -228,6 +228,23 @@ function EquipCard({ e, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCop
   );
 }
 
+// 개체 목록(펼침) — 학생 블루 액센트 디자인에 맞춘 상태/버튼 색
+const STU_UNIT_STATUS = {
+  대여가능: { color:"#34D399", bg:"rgba(52,211,153,0.14)" },
+  대여중:   { color:"#7e9dff", bg:"rgba(96,130,246,0.16)" },
+  수리중:   { color:"#fbbf24", bg:"rgba(245,158,11,0.14)" },
+  대여불가: { color:"#FF6B6B", bg:"rgba(255,107,107,0.14)" },
+};
+const STU_UNIT_BTN = {
+  edit:   { color:"#7e9dff", bg:"rgba(96,130,246,0.13)", bd:"rgba(96,130,246,0.28)" },
+  status: { color:"#fbbf24", bg:"rgba(245,158,11,0.13)", bd:"rgba(245,158,11,0.28)" },
+  del:    { color:"#FF6B6B", bg:"rgba(255,107,107,0.13)", bd:"rgba(255,107,107,0.28)" },
+};
+const stuBtnStyle = (t) => ({
+  background:t.bg, color:t.color, border:`1px solid ${t.bd}`, borderRadius:7,
+  padding:"4px 9px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
+});
+
 // ── 모델별 그룹 카드 ────────────────────────────────────────
 function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
   const [open, setOpen] = useState(false);
@@ -238,6 +255,13 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
   const renting  = units.filter(u => u.status === "대여중").length;
   const repair   = units.filter(u => u.status === "수리중").length;
   const total    = units.length;
+
+  // 개체 정렬 — 호기번호(01, 02 …) 오름차순. 번호 없으면 itemNo 자연순.
+  const sortedUnits = [...units].sort((a, b) => {
+    const na = parseInt(a.unitNo, 10), nb = parseInt(b.unitNo, 10);
+    if (!isNaN(na) && !isNaN(nb) && na !== nb) return na - nb;
+    return (a.itemNo || "").localeCompare(b.itemNo || "", undefined, { numeric: true });
+  });
 
   const statusSummaryColor = avail === 0 ? C.red : avail < total ? C.yellow : C.green;
 
@@ -276,32 +300,32 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
         {/* 펼치기 + 추가 버튼 */}
         <div style={{ display:"flex", gap:4, flexShrink:0, alignItems:"center" }}>
           <button onClick={() => onEdit(rep)}       style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>수정</button>
-          <button onClick={() => { setOpen(o => !o); }} style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
+          <button onClick={() => { setOpen(o => !o); }} className="tap-spring" style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:6, padding:"4px 7px", fontSize:10, fontWeight:700, cursor:"pointer" }}>
             {open ? "접기" : `${total}대 ▾`}
           </button>
         </div>
       </div>
 
-      {/* 개별 호기 목록 (펼침) */}
+      {/* 개별 호기 목록 (펼침) — 학생 블루 디자인 · 01→02 정렬 · 2줄(정보 / 버튼) 레이아웃 */}
       {open && (
-        <div style={{ borderTop:`1px solid ${C.border}` }}>
-          {units.map(u => {
-            const sc = { 대여가능: C.green, 대여중: C.blue, 수리중: C.yellow, 대여불가: C.red }[u.status] || C.muted;
-            const sb = { 대여가능: C.greenLight, 대여중: C.blueLight, 수리중: C.yellowLight, 대여불가: C.redLight }[u.status] || C.bg;
+        <div style={{ borderTop:`1px solid ${C.border}`, background:"rgba(96,130,246,0.04)" }}>
+          {sortedUnits.map(u => {
+            const st = STU_UNIT_STATUS[u.status] || STU_UNIT_STATUS.대여가능;
             return (
-              <div key={u.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 12px 7px 18px", borderBottom:`1px solid ${C.border}` }}>
-                <div style={{ flex:1, display:"flex", gap:6, alignItems:"center", minWidth:0 }}>
-                  <span style={{ fontSize:11, fontWeight:700, color:C.muted }}>{u.unitNo || "-"}</span>
-                  {u.itemNo && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>#{u.itemNo}</span>}
-                  {u.location && <span style={{ fontSize:10, color:C.muted }}>📍{u.location}</span>}
-                  {u.serialNo && <span style={{ fontSize:10, color:C.muted, fontFamily:"monospace" }}>S/N:{u.serialNo}</span>}
+              <div key={u.id} style={{ display:"flex", flexDirection:"column", gap:7, padding:"9px 12px", borderBottom:`1px solid ${C.border}` }}>
+                {/* 위: 호기번호 · 제품번호 · 위치 · S/N · 대여상태 */}
+                <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+                  <span style={{ flexShrink:0, minWidth:22, height:22, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 6px", fontSize:11, fontWeight:800, color:"#93a8e8", background:"rgba(96,130,246,0.13)", border:"1px solid rgba(96,130,246,0.22)", borderRadius:7 }}>{u.unitNo || "-"}</span>
+                  {u.itemNo   && <span style={{ fontSize:11, color:C.text, fontWeight:800 }}>#{u.itemNo}</span>}
+                  {u.location && <span style={{ fontSize:11, color:C.text, fontWeight:800 }}>📍{u.location}</span>}
+                  {u.serialNo && <span style={{ fontSize:11, color:C.text, fontWeight:800 }}>S/N:{u.serialNo}</span>}
+                  <span style={{ marginLeft:"auto", flexShrink:0, fontSize:10, background:st.bg, color:st.color, borderRadius:6, padding:"2px 7px", fontWeight:800 }}>{u.status||"대여가능"}</span>
                 </div>
-                <span style={{ fontSize:10, background:sb, color:sc, borderRadius:4, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>{u.status||"대여가능"}</span>
-                <div style={{ display:"flex", gap:3, flexShrink:0 }}>
-                  <button onClick={() => onEdit(u)}         style={{ background:C.greenLight, color:C.green, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>수정</button>
-                  <button onClick={() => onCycleStatus(u)}  style={{ background:C.yellowLight, color:C.yellow, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>상태</button>
-                  <button onClick={() => onDetail(u)}       style={{ background:C.blueLight, color:C.blue, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>상세</button>
-                  <button onClick={() => onDelete(u.id)}    style={{ background:C.redLight, color:C.red, border:"none", borderRadius:5, padding:"3px 6px", fontSize:9, fontWeight:700, cursor:"pointer" }}>삭제</button>
+                {/* 아래: 수정 / 상태 / 삭제 (균등 3버튼) */}
+                <div style={{ display:"flex", gap:6 }}>
+                  <button onClick={() => onEdit(u)}         className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.edit),   flex:1 }}>수정</button>
+                  <button onClick={() => onCycleStatus(u)}  className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.status), flex:1 }}>상태</button>
+                  <button onClick={() => onDelete(u.id)}    className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.del),    flex:1 }}>삭제</button>
                 </div>
               </div>
             );
