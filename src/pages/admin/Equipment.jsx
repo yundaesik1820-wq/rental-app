@@ -5,8 +5,48 @@ import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useF
 import CategoryMigrator from "../../components/CategoryMigrator";
 import EquipReorderModal from "../../components/EquipReorderModal";
 import { isValidYoutubeUrl } from "../../utils/youtube";
+import { isLens } from "../../utils/equipCompat";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+
+// 🗂️ 상단 카테고리 아이콘 그리드 — 학생 EquipList와 동일한 12분류.
+//    ⚠️ 학생 EquipList.jsx의 RENTAL_CATEGORIES / CAT_MATCH 와 동일하게 유지할 것.
+//       (매핑이 어긋나면 장비가 목록에서 사라지는 버그로 이어짐. 원본 = EquipList.jsx)
+const RENTAL_CATEGORIES = [
+  { name: "카메라",        icon: "📷", img: "/cat-icons/camera.png" },
+  { name: "캠코더",        icon: "📹", img: "/cat-icons/camcorder.png" },
+  { name: "액션캠/드론",    icon: "🚁", img: "/cat-icons/actioncam-drone.png" },
+  { name: "렌즈",          icon: "🔭", img: "/cat-icons/lens.png" },
+  { name: "ACC",          icon: "🔌", img: "/cat-icons/acc.png" },
+  { name: "삼각대/그립",    icon: "📐", img: "/cat-icons/tripod.png" },
+  { name: "모니터",        icon: "🖥️", img: "/cat-icons/monitor.png" },
+  { name: "조명",          icon: "💡", img: "/cat-icons/light.png" },
+  { name: "음향",          icon: "🎤", img: "/cat-icons/audio.png" },
+  { name: "기타",          icon: "📦", img: "/cat-icons/etc.png" },
+  { name: "편집",          icon: "✂️", img: "/cat-icons/edit.png" },
+  { name: "외부 렌탈샵", icon: "🏬", img: "/cat-icons/external.png" },
+];
+// 학생 아이콘(filter) → 관리자 데이터(대분류 major + 중분류 minor) 매핑
+const CAT_MATCH = {
+  "카메라":       (e) => e.minorCategory === "카메라" || e.majorCategory === "카메라",
+  "캠코더":       (e) => e.minorCategory === "캠코더" || e.majorCategory === "캠코더",
+  "액션캠/드론":   (e) => e.minorCategory === "드론/액션캠" || ["액션캠/드론", "드론/액션캠", "액션캠", "드론"].includes(e.majorCategory),
+  "렌즈":         (e) => e.majorCategory === "렌즈" || isLens(e),
+  "ACC":          (e) => e.majorCategory === "ACC" || ["배터리", "충전기/전원", "저장매체", "카드리더기"].includes(e.minorCategory),
+  "삼각대/그립":   (e) => e.majorCategory === "트라이포드/그립" || e.majorCategory === "삼각대/그립",
+  "모니터":       (e) => e.majorCategory === "모니터",
+  "조명":         (e) => e.majorCategory === "조명",
+  "음향":         (e) => e.majorCategory === "음향",
+  "기타":         (e) => e.minorCategory === "기타" || e.majorCategory === "기타",
+  "편집":         (e) => e.majorCategory === "편집",
+};
+// 카테고리 아이콘 — img 있으면 이미지, 없거나 로드 실패 시 이모지 폴백
+function CatIcon({ c }) {
+  const [err, setErr] = useState(false);
+  return c.img && !err
+    ? <img src={c.img} alt={c.name} onError={() => setErr(true)} style={{ width:"100%", height:"100%", objectFit:"contain" }} />
+    : <span>{c.icon}</span>;
+}
 
 async function uploadImage(file) {
   return new Promise((resolve, reject) => {
@@ -303,6 +343,41 @@ const stuBtnStyle = (t) => ({
   padding:"4px 9px", fontSize:11, fontWeight:700, cursor:"pointer", whiteSpace:"nowrap", flexShrink:0,
 });
 
+// ── 배민식 카드 UI (학생 EquipList와 동일 룩) ──────────────
+const ADM_BOX_CAT = { color:"#93a8e8", bg:"rgba(96,130,246,0.13)", bd:"rgba(96,130,246,0.22)" };
+// 라이선스 레벨별 컬러 (Lv.1 민트 / Lv.2 블루 / Lv.3+ 퍼플)
+const admLvStyle = (n) =>
+  n >= 3 ? { color:"#b79bff", bg:"rgba(124,58,237,0.18)", bd:"rgba(124,58,237,0.34)" } :
+  n === 2 ? { color:"#7e9dff", bg:"rgba(96,130,246,0.15)", bd:"rgba(96,130,246,0.30)" } :
+            { color:"#2DD4BF", bg:"rgba(45,212,191,0.13)", bd:"rgba(45,212,191,0.28)" };
+// 블루 박스 (카테고리 / 라이선스 / 보유대수)
+function AdmBox({ s, children }) {
+  return <span style={{ fontSize:11, fontWeight:800, padding:"4px 9px", borderRadius:8, whiteSpace:"nowrap",
+    color:s.color, background:s.bg, border:`1px solid ${s.bd}` }}>{children}</span>;
+}
+// 입체 버튼 — 누르면 아래로 쑥 들어가는 모션 (reserve=블루 그라데 / detail=다크)
+function PressBtn({ children, onClick, variant = "detail", style }) {
+  const [p, setP] = useState(false);
+  const base = { fontSize:12, fontWeight:800, padding:"8px 14px", borderRadius:10, border:"none",
+    whiteSpace:"nowrap", fontFamily:"inherit", cursor:"pointer",
+    transition:"transform .07s ease, box-shadow .07s ease", flexShrink:0, ...style };
+  const reserve = variant === "reserve";
+  const sh = reserve
+    ? (p ? "0 1px 0 #2a2170, 0 2px 7px rgba(79,139,255,0.35), inset 0 1px 0 rgba(255,255,255,0.25)"
+         : "0 4px 0 #2a2170, 0 6px 14px rgba(79,139,255,0.40), inset 0 1px 0 rgba(255,255,255,0.35)")
+    : (p ? "0 1px 0 #0d0f16, 0 2px 5px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05)"
+         : "0 3px 0 #0d0f16, 0 4px 9px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.07)");
+  const vs = reserve
+    ? { color:"#fff", background:"linear-gradient(135deg,#4f8bff,#8b5cf6)", textShadow:"0 1px 1px rgba(0,0,0,0.28)", transform:p?"translateY(3px)":"none" }
+    : { color:"#cdd7f6", background:"linear-gradient(180deg,#242836,#191c26)", transform:p?"translateY(2px)":"none" };
+  return (
+    <button onClick={onClick}
+      onPointerDown={() => setP(true)} onPointerUp={() => setP(false)}
+      onPointerLeave={() => setP(false)} onPointerCancel={() => setP(false)}
+      style={{ ...base, ...vs, boxShadow:sh }}>{children}</button>
+  );
+}
+
 // ── 모델별 그룹 카드 ────────────────────────────────────────
 function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
   const [open, setOpen] = useState(false);
@@ -316,8 +391,6 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
 
   // 상태별 카운트
   const avail    = units.filter(u => (u.status||"대여가능") === "대여가능").length;
-  const renting  = units.filter(u => u.status === "대여중").length;
-  const repair   = units.filter(u => u.status === "수리중").length;
   const total    = units.length;
 
   // 개체 정렬 — 호기번호(01, 02 …) 오름차순. 번호 없으면 itemNo 자연순.
@@ -327,58 +400,40 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
     return (a.itemNo || "").localeCompare(b.itemNo || "", undefined, { numeric: true });
   });
 
-  const statusSummaryColor = avail === 0 ? C.red : avail < total ? C.yellow : C.green;
-  const stockPct   = total > 0 ? Math.round((avail / total) * 100) : 0;
-  const statusWord = avail === 0 ? "전량 대여중" : `${avail}/${total}대 가용`;
+  const availOk = avail > 0;
 
   return (
-    <div style={{ background:C.surface, borderRadius:14, border:"1px solid rgba(96,130,246,0.14)", overflow:"hidden", display:"flex" }}>
-      {/* 좌측 재고 상태 컬러바 */}
-      <div style={{ width:4, flexShrink:0, background:`linear-gradient(180deg, ${statusSummaryColor}, ${statusSummaryColor}66)` }} />
-
-      <div style={{ flex:1, minWidth:0 }}>
-      {/* 대표 행 */}
-      <div style={{ padding:"10px 12px 11px" }}>
-        {/* 1행: 썸네일 + 모델명 + Lv */}
-        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <div style={{ width:44, height:44, borderRadius:10, overflow:"hidden", flexShrink:0, background:C.bg, border:`1px solid ${C.border}`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+    <div style={{ background:C.card, borderRadius:16, border:`1px solid ${C.border}`, boxShadow:C.shadow, overflow:"hidden", color:C.text }}>
+      <div style={{ padding:"12px 13px" }}>
+        {/* 상단: 썸네일 · 모델명/제조사 · 대여가능 배지 */}
+        <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+          <div style={{ width:48, height:48, borderRadius:9, overflow:"hidden", border:`1px solid ${C.border}`, background:C.bg, flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
             {thumb
               ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"contain" }} />
               : <span style={{ fontSize:20 }}>📷</span>
             }
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ display:"flex", alignItems:"center", gap:5, marginBottom:3 }}>
-              <span style={{ fontSize:14, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{rep.modelName}</span>
-              {rep.licenseLevel > 0 && (() => { const lv = LICENSE_LEVELS[rep.licenseLevel]; return lv ? <span style={{ fontSize:10, background:lv.bg, color:lv.color, borderRadius:5, padding:"1px 6px", fontWeight:700, flexShrink:0 }}>Lv.{rep.licenseLevel}</span> : null; })()}
-            </div>
-            <div style={{ display:"flex", gap:5, flexWrap:"wrap", alignItems:"center" }}>
-              {rep.majorCategory && <span style={{ fontSize:10, color:C.blue, background:"rgba(96,130,246,0.13)", borderRadius:5, padding:"1px 6px", fontWeight:600 }}>{rep.majorCategory}</span>}
-              {rep.minorCategory && <span style={{ fontSize:10, color:C.muted }}>{rep.minorCategory}</span>}
-              {rep.manufacturer  && <span style={{ fontSize:10, color:C.muted }}>· {rep.manufacturer}</span>}
-            </div>
+            <div style={{ fontSize:15, fontWeight:800, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{rep.modelName}</div>
+            {rep.manufacturer && <div style={{ fontSize:11.5, color:C.muted, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", marginTop:1 }}>{rep.manufacturer}</div>}
           </div>
+          <span style={{ flexShrink:0, fontSize:10.5, fontWeight:800, padding:"3px 8px", borderRadius:7,
+            color:availOk?"#34D399":"#FF6B6B", background:availOk?"#0F3028":"#2E1414" }}>
+            {availOk ? "대여가능" : "대여불가"}
+          </span>
         </div>
 
-        {/* 2행: 재고 게이지 */}
-        <div style={{ display:"flex", alignItems:"center", gap:8, marginTop:10 }}>
-          <div style={{ flex:1, height:7, borderRadius:99, background:"rgba(255,255,255,0.06)", overflow:"hidden" }}>
-            <div style={{ width:`${stockPct}%`, height:"100%", borderRadius:99, background:`linear-gradient(90deg, ${statusSummaryColor}, ${statusSummaryColor}aa)` }} />
+        {/* 하단: 블루 박스 3개 · 수정/펼치기 */}
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8, marginTop:11, flexWrap:"wrap" }}>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", minWidth:0 }}>
+            {rep.majorCategory && <AdmBox s={ADM_BOX_CAT}>{rep.majorCategory}</AdmBox>}
+            {rep.licenseLevel > 0 && <AdmBox s={admLvStyle(rep.licenseLevel)}>Lv.{rep.licenseLevel}</AdmBox>}
+            <AdmBox s={ADM_BOX_CAT}>{avail}/{total}대</AdmBox>
           </div>
-          <span style={{ fontSize:11, fontWeight:800, color:statusSummaryColor, flexShrink:0 }}>{statusWord}</span>
-        </div>
-
-        {/* 3행: 상태 카운트 + 버튼 */}
-        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:9 }}>
-          <div style={{ display:"flex", gap:5, flex:1, flexWrap:"wrap" }}>
-            {renting > 0 && <span style={{ fontSize:10, fontWeight:700, color:C.blue,   background:"rgba(96,130,246,0.12)", borderRadius:6, padding:"2px 7px" }}>대여중 {renting}</span>}
-            {repair  > 0 && <span style={{ fontSize:10, fontWeight:700, color:C.yellow, background:"rgba(245,158,11,0.12)", borderRadius:6, padding:"2px 7px" }}>수리중 {repair}</span>}
-            {renting === 0 && repair === 0 && <span style={{ fontSize:10, fontWeight:700, color:C.green, background:"rgba(52,211,153,0.12)", borderRadius:6, padding:"2px 7px" }}>전량 대여가능</span>}
+          <div style={{ display:"flex", gap:7, flexShrink:0, alignItems:"center" }}>
+            <PressBtn variant="reserve" onClick={() => onEdit(rep)}>수정</PressBtn>
+            <PressBtn onClick={() => setOpen(o => !o)}>{open ? "접기 ▴" : `${total}대 ▾`}</PressBtn>
           </div>
-          <button onClick={() => onEdit(rep)} className="tap-spring" style={{ background:"rgba(96,130,246,0.13)", color:C.blue, border:"1px solid rgba(96,130,246,0.26)", borderRadius:8, padding:"5px 11px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>수정</button>
-          <button onClick={() => { setOpen(o => !o); }} className="tap-spring" style={{ background:C.bg, color:C.muted, border:`1px solid ${C.border}`, borderRadius:8, padding:"5px 11px", fontSize:11, fontWeight:700, cursor:"pointer", flexShrink:0 }}>
-            {open ? "접기 ▴" : `${total}대 ▾`}
-          </button>
         </div>
       </div>
 
@@ -410,7 +465,6 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
           })}
         </div>
       )}
-      </div>
 
       {photoModal && <EquipPhotoModal {...photoModal} onClose={() => setPhotoModal(null)} />}
     </div>
@@ -695,7 +749,7 @@ export default function Equipment({ initialTab = "equip" }) {
 
   const [activeTab, setActiveTab]     = useState(initialTab);
   const [search, setSearch]           = useState("");
-  const [filter, setFilter]           = useState("전체");
+  const [filter, setFilter]           = useState("카메라");
   const [minorFilter, setMinorFilter] = useState("전체");
   const [showAdd, setShowAdd]         = useState(false);
   const [showImport, setShowImport]   = useState(false);
@@ -707,13 +761,16 @@ export default function Equipment({ initialTab = "equip" }) {
   const [showMigrator, setShowMigrator] = useState(false); // 카테고리 일괄 정리
   const [showReorder, setShowReorder] = useState(false); // 장비 표시 순서 편집
 
-  const majorCats = ["전체", ...new Set(equipments.map(e => e.majorCategory).filter(Boolean))];
-  const minorList = filter === "전체"
-    ? []
-    : ["전체", ...new Set(equipments.filter(e => e.majorCategory === filter).map(e => e.minorCategory).filter(Boolean))];
+  // 카테고리 판정 — 학생 아이콘(filter)을 관리자 데이터(major/minor)에 매핑.
+  //   CAT_MATCH 규칙이 있으면 그걸 쓰고, 없으면(외부 렌탈샵 등) 대분류 직접 비교로 폴백.
+  const inCategory = (e) => {
+    const match = CAT_MATCH[filter];
+    return match ? match(e) : e.majorCategory === filter;
+  };
+  const minorList = ["전체", ...new Set(equipments.filter(inCategory).map(e => e.minorCategory).filter(Boolean))];
   const filtered  = equipments.filter(e =>
-    (filter === "전체" || e.majorCategory === filter) &&
-    (filter === "전체" || minorFilter === "전체" || e.minorCategory === minorFilter) &&
+    inCategory(e) &&
+    (minorFilter === "전체" || e.minorCategory === minorFilter) &&
     (e.modelName?.includes(search) || e.itemName?.includes(search) ||
      e.manufacturer?.includes(search) || e.itemNo?.includes(search) || e.unitNo?.includes(search))
   );
@@ -1523,16 +1580,27 @@ export default function Equipment({ initialTab = "equip" }) {
 
       {/* 장비 탭 */}
       {activeTab === "equip" && (<>
-      {/* 검색 + 필터 */}
-      <div style={{ display:"flex", gap:14, marginBottom:8, flexWrap:"wrap" }}>
-        <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
-          style={{ flex:1, minWidth:200, background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none" }} />
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          {majorCats.map(c => (
-            <button key={c} onClick={() => { setFilter(c); setMinorFilter("전체"); }} style={{ background:filter===c?C.navy:C.surface, color:filter===c?C.bg:C.muted, border:`1px solid ${filter===c?C.navy:C.border}`, borderRadius:20, padding:"8px 16px", fontSize:13, fontWeight:600, cursor:"pointer", whiteSpace:"nowrap" }}>{c}</button>
-          ))}
-        </div>
+      {/* 카테고리 아이콘 그리드 (4열, 학생 EquipList와 동일 룩) */}
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:"16px 4px", marginBottom:18 }}>
+        {RENTAL_CATEGORIES.map(c => {
+          const on = filter === c.name;
+          return (
+            <div key={c.name} role="button" onClick={() => { setFilter(c.name); setMinorFilter("전체"); setSearch(""); }}
+              style={{ textAlign:"center", cursor:"pointer" }}>
+              <div style={{ width:54, height:54, borderRadius:16, display:"flex", alignItems:"center", justifyContent:"center", fontSize:24, margin:"0 auto", overflow:"hidden",
+                background: on ? "linear-gradient(135deg,#3b82f6,#7c3aed)" : C.surface, border:`1px solid ${on ? "#3b82f6" : C.border}`, transition:"all .15s", boxShadow: on ? "0 4px 12px rgba(59,130,246,0.4)" : "none" }}>
+                <CatIcon c={c} />
+              </div>
+              <div style={{ fontSize:11, color: on ? "#7e9dff" : C.muted, marginTop:7, fontWeight: on ? 700 : 600, wordBreak:"keep-all", lineHeight:1.25 }}>{c.name}</div>
+            </div>
+          );
+        })}
       </div>
+
+      {/* 검색 */}
+      <input placeholder="🔍 모델명, 품명, 호기, 물품번호 검색" value={search} onChange={e => setSearch(e.target.value)}
+        style={{ display:"block", width:"100%", background:C.surface, border:`1.5px solid ${C.border}`, borderRadius:10, color:C.text, padding:"10px 16px", fontSize:14, fontFamily:"inherit", outline:"none", marginBottom:12, boxSizing:"border-box" }} />
+
       {/* 중분류 필터 */}
       {minorList.length > 1 && (
         <div style={{ display:"flex", gap:6, marginBottom:14, flexWrap:"wrap" }}>
