@@ -128,7 +128,10 @@ service cloud.firestore {
 
     match /pwResetRequests/{docId} {
       allow read: if isLoggedIn();
-      allow create: if isLoggedIn();
+      // 비번 초기화 요청은 로그인 못 하는 사람이 쓰는 기능 → 비로그인 create 허용.
+      // 스팸 방지로 필드는 이 4개만, status 는 pending 고정.
+      allow create: if request.resource.data.keys().hasOnly(['studentId', 'studentName', 'status', 'createdAt'])
+                    && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }

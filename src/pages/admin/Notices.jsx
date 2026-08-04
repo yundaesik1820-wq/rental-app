@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { C, NOTICE_CAT } from "../../theme";
 import { Card, Btn, Inp, Modal, Empty, Avatar } from "../../components/UI";
-import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
+import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, collection, getDocs, writeBatch, query, where, serverTimestamp } from "firebase/firestore";
 import { db, storage } from "../../firebase";
@@ -85,6 +85,7 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
   const { data: comments } = useCollection("noticeComments", "createdAt");
 
   const [showAdd, setShowAdd]   = useState(false);
+  const [editId, setEditId]     = useState(null); // 수정 중인 공지 id (null이면 신규 작성)
   const [detail, setDetail]     = useState(null);
   const [stuCat, setStuCat]     = useState("전체"); // 학생 화면 카테고리 필터
 
@@ -201,16 +202,36 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
     if (pdfRef.current) pdfRef.current.value = "";
   };
 
-  const addNotice = async () => {
+  const emptyForm = { title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false, pdfUrl: "", pdfName: "" };
+
+  const openNew = () => { setEditId(null); setForm(emptyForm); setShowAdd(true); };
+  const openEdit = (n) => {
+    setEditId(n.id);
+    setForm({
+      title: n.title || "", content: n.content || "", category: n.category || "공지",
+      pinned: !!n.pinned, sendAlert: false, popup: !!n.popup, pdfUrl: n.pdfUrl || "", pdfName: n.pdfName || "",
+    });
+    setShowAdd(true);
+  };
+  const closeAddModal = () => { setShowAdd(false); setEditId(null); setForm(emptyForm); };
+
+  const saveNotice = async () => {
     if (!form.title.trim()) { alert("제목을 입력해 주세요"); return; }
     if (!form.content.trim() && !form.pdfUrl) { alert("내용이나 PDF 중 하나는 넣어 주세요"); return; }
-    const authorRole  = profile?.adminRole || "super";
-    const authorLabel = authorRole === "teacher"   ? "교사" :
-                        authorRole === "assistant" ? "조교" :
-                        authorRole === "professor" ? "교수" : "관리자";
-    await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
-    setForm({ title: "", content: "", category: "공지", pinned: true, sendAlert: false, popup: false, pdfUrl: "", pdfName: "" });
-    setShowAdd(false);
+    if (editId) {
+      // 수정: 날짜·작성자는 원본 유지, 편집 가능한 필드만 갱신 (푸시 재발송은 안 함 — onCreate 트리거라 애초에 재발송 안 됨)
+      await updateItem("notices", editId, {
+        title: form.title, content: form.content, category: form.category,
+        pinned: form.pinned, popup: form.popup, pdfUrl: form.pdfUrl, pdfName: form.pdfName,
+      });
+    } else {
+      const authorRole  = profile?.adminRole || "super";
+      const authorLabel = authorRole === "teacher"   ? "교사" :
+                          authorRole === "assistant" ? "조교" :
+                          authorRole === "professor" ? "교수" : "관리자";
+      await addItem("notices", { ...form, date: new Date().toISOString().slice(0, 10), author: `${profile?.name || "관리자"} (${authorLabel})` });
+    }
+    closeAddModal();
   };
 
   const sendCustomAlert = async () => {
@@ -349,8 +370,12 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
             </div>
           </div>
           {isAdmin && (
-            <button onClick={e => { e.stopPropagation(); deleteItem("notices", n.id); }}
-              style={{ background: "none", border: "none", color: C.muted, fontSize: 18, cursor: "pointer", padding: 4 }}>🗑️</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0 }}>
+              <button onClick={e => { e.stopPropagation(); openEdit(n); }}
+                style={{ background: "none", border: "none", color: C.muted, fontSize: 16, cursor: "pointer", padding: 4 }}>✏️</button>
+              <button onClick={e => { e.stopPropagation(); if (window.confirm("이 공지를 삭제할까요?")) deleteItem("notices", n.id); }}
+                style={{ background: "none", border: "none", color: C.muted, fontSize: 18, cursor: "pointer", padding: 4 }}>🗑️</button>
+            </div>
           )}
         </div>
       </Card>
@@ -361,7 +386,7 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
     <div>
       {isAdmin && (
         <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginBottom: 20 }}>
-          <Btn onClick={() => setShowAdd(true)}>+ 공지 작성</Btn>
+          <Btn onClick={openNew}>+ 공지 작성</Btn>
         </div>
       )}
 
@@ -478,8 +503,8 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
 
       {/* 공지 작성 모달 */}
       {showAdd && (
-        <Modal onClose={() => setShowAdd(false)} width={540}>
-          <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 20 }}>공지 작성</div>
+        <Modal onClose={closeAddModal} width={540}>
+          <div style={{ fontSize: 17, fontWeight: 800, color: C.navy, marginBottom: 20 }}>{editId ? "공지 수정" : "공지 작성"}</div>
           <Inp label="제목" placeholder="공지 제목 입력" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
           <div style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: C.text, marginBottom: 6 }}>내용</div>
@@ -523,13 +548,15 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
           {/* 알림/팝업 설정 */}
           <div style={{ background:C.bg, borderRadius:12, padding:"12px 14px", marginBottom:16 }}>
             <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:10 }}>발송 설정</div>
-            <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, cursor:"pointer" }}>
-              <input type="checkbox" checked={form.sendAlert} onChange={e => setForm(p => ({ ...p, sendAlert: e.target.checked }))} style={{ width:17, height:17 }} />
-              <div>
-                <div style={{ fontSize:13, fontWeight:700, color:C.text }}>🔔 푸시 알림 전송</div>
-                <div style={{ fontSize:11, color:C.muted }}>앱 설치 학생에게 알림을 보냅니다</div>
-              </div>
-            </label>
+            {!editId && (
+              <label style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10, cursor:"pointer" }}>
+                <input type="checkbox" checked={form.sendAlert} onChange={e => setForm(p => ({ ...p, sendAlert: e.target.checked }))} style={{ width:17, height:17 }} />
+                <div>
+                  <div style={{ fontSize:13, fontWeight:700, color:C.text }}>🔔 푸시 알림 전송</div>
+                  <div style={{ fontSize:11, color:C.muted }}>앱 설치 학생에게 알림을 보냅니다</div>
+                </div>
+              </label>
+            )}
             <label style={{ display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}>
               <input type="checkbox" checked={form.popup} onChange={e => setForm(p => ({ ...p, popup: e.target.checked }))} style={{ width:17, height:17 }} />
               <div>
@@ -540,8 +567,8 @@ export default function Notices({ isAdmin = true, initialNoticeId, onConsumed })
           </div>
 
           <div style={{ display: "flex", gap: 10 }}>
-            <Btn onClick={() => setShowAdd(false)} color={C.muted} outline full>취소</Btn>
-            <Btn onClick={addNotice} full>게시</Btn>
+            <Btn onClick={closeAddModal} color={C.muted} outline full>취소</Btn>
+            <Btn onClick={saveNotice} full>{editId ? "수정 완료" : "게시"}</Btn>
           </div>
         </Modal>
       )}

@@ -309,10 +309,10 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
   const [photoModal, setPhotoModal] = useState(null); // { productPhotos, snPhoto, title }
   const thumb = rep.displayPhotoUrl || (rep.photoUrls?.[0]) || null;
 
-  // 제품사진 갤러리 — 제품사진(photoUrls) 우선, 없으면 송출용 이미지로 폴백
-  const productPhotos = (rep.photoUrls && rep.photoUrls.length)
-    ? rep.photoUrls
-    : (rep.displayPhotoUrl ? [rep.displayPhotoUrl] : []);
+  // 제품사진 갤러리 — 호기(개체)별 photoUrls 우선, 없으면 송출용 이미지로 폴백
+  const productPhotosOf = (u) => (u.photoUrls && u.photoUrls.length)
+    ? u.photoUrls
+    : (u.displayPhotoUrl ? [u.displayPhotoUrl] : []);
 
   // 상태별 카운트
   const avail    = units.filter(u => (u.status||"대여가능") === "대여가능").length;
@@ -387,7 +387,7 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
                 </div>
                 {/* 아래: 사진 / 수정 / 상태 / 삭제 (균등 4버튼) — 사진은 눌러야 열림 */}
                 <div style={{ display:"flex", gap:6 }}>
-                  <button onClick={() => setPhotoModal({ productPhotos, snPhoto: u.snPhotoUrl || "", title: `${rep.modelName}${u.unitNo ? " · " + u.unitNo + "호기" : ""}` })}
+                  <button onClick={() => setPhotoModal({ productPhotos: productPhotosOf(u), snPhoto: u.snPhotoUrl || "", title: `${rep.modelName}${u.unitNo ? " · " + u.unitNo + "호기" : ""}` })}
                     className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.photo), flex:1 }}>사진</button>
                   <button onClick={() => onEdit(u)}         className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.edit),   flex:1 }}>수정</button>
                   <button onClick={() => onCycleStatus(u)}  className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.status), flex:1 }}>상태</button>
