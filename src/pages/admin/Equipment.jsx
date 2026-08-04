@@ -23,7 +23,7 @@ async function uploadImage(file) {
 }
 
 // ── 이미지 업로더 (최대 N장) ──────────────────────────────
-function MultiImageUploader({ values = [], onChange, max = 4 }) {
+function MultiImageUploader({ values = [], onChange, max = 10 }) {
   const inputRef  = useRef();
   const [uploading, setUploading] = useState(false);
 
@@ -44,19 +44,29 @@ function MultiImageUploader({ values = [], onChange, max = 4 }) {
         제품 사진 <span style={{ color: C.muted, fontWeight: 400 }}>(최대 {max}장 · 선택)</span>
       </div>
       {values.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 8 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 6, marginBottom: 8 }}>
           {values.map((url, i) => (
-            <div key={i} style={{ position: "relative", paddingTop: "75%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
+            <div key={i} style={{ position: "relative", paddingTop: "100%", borderRadius: 10, overflow: "hidden", border: `1px solid ${C.border}`, background: C.bg }}>
               <img loading="lazy" decoding="async" src={url} alt={`사진${i+1}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }} />
-              <button onClick={() => onChange(values.filter((_, j) => j !== i))} style={{ position: "absolute", top: 4, right: 4, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 24, height: 24, cursor: "pointer", fontSize: 12, fontWeight: 700 }}>✕</button>
+              <span style={{ position:"absolute", bottom:3, left:3, fontSize:9, fontWeight:800, color:"#fff", background:"rgba(0,0,0,0.55)", borderRadius:4, padding:"0 4px" }}>{i+1}</span>
+              <button onClick={() => onChange(values.filter((_, j) => j !== i))} className="tap-spring" style={{ position: "absolute", top: 3, right: 3, background: C.red, color: "#fff", border: "none", borderRadius: "50%", width: 22, height: 22, cursor: "pointer", fontSize: 11, fontWeight: 700 }}>✕</button>
             </div>
           ))}
+          {values.length < max && (
+            <div onClick={() => !uploading && inputRef.current.click()} className="tap-spring" style={{ position:"relative", paddingTop:"100%", border: `2px dashed ${C.border}`, borderRadius: 10, cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
+              <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+                {uploading
+                  ? <div style={{ color: C.blue, fontSize: 12, fontWeight: 600 }}>⏳</div>
+                  : <><div style={{ fontSize: 22 }}>＋</div><div style={{ fontSize: 10, color: C.muted, marginTop:2 }}>{values.length}/{max}</div></>}
+              </div>
+            </div>
+          )}
         </div>
       )}
-      {values.length < max && (
-        <div onClick={() => !uploading && inputRef.current.click()} style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: "20px 0", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
+      {values.length === 0 && (
+        <div onClick={() => !uploading && inputRef.current.click()} className="tap-spring" style={{ border: `2px dashed ${C.border}`, borderRadius: 10, padding: "20px 0", textAlign: "center", cursor: uploading ? "not-allowed" : "pointer", background: C.bg }}>
           {uploading ? <div style={{ color: C.blue, fontSize: 13, fontWeight: 600 }}>⏳ 업로드 중...</div> : (
-            <><div style={{ fontSize: 28, marginBottom: 6 }}>📷</div><div style={{ fontSize: 12, color: C.muted }}>클릭하여 사진 추가 ({values.length}/{max}장)</div></>
+            <><div style={{ fontSize: 28, marginBottom: 6 }}>📷</div><div style={{ fontSize: 12, color: C.muted }}>클릭하여 사진 추가 (최대 {max}장)</div></>
           )}
         </div>
       )}
@@ -91,6 +101,53 @@ function SingleImageUploader({ label, value, onChange }) {
         </div>
       )}
       <input ref={inputRef} type="file" accept="image/*" onChange={handleFile} style={{ display: "none" }} />
+    </div>
+  );
+}
+
+// ── 장비 사진 모달 (제품사진 / 시리얼사진 탭 · 좌우 넘김) ──
+function EquipPhotoModal({ productPhotos = [], snPhoto = "", title = "사진", onClose }) {
+  const [tab, setTab] = useState(productPhotos.length ? "product" : "sn");
+  const [idx, setIdx] = useState(0);
+  const photos = tab === "product" ? productPhotos : (snPhoto ? [snPhoto] : []);
+  const cur = Math.min(idx, Math.max(0, photos.length - 1));
+  const go   = (d) => setIdx(i => (i + d + photos.length) % photos.length);
+  const pick = (t) => { setTab(t); setIdx(0); };
+  const navBtn = { position:"absolute", top:"50%", transform:"translateY(-50%)", background:"rgba(255,255,255,0.14)", color:"#fff", border:"none", borderRadius:"50%", width:40, height:40, fontSize:22, fontWeight:700, cursor:"pointer", lineHeight:1, display:"flex", alignItems:"center", justifyContent:"center" };
+  const tabBtn = (active) => ({ flex:1, padding:"9px 0", fontSize:12.5, fontWeight:800, cursor:"pointer", border:"none", borderRadius:10, fontFamily:"inherit",
+    background: active ? "linear-gradient(135deg,#3b82f6,#7c3aed)" : "rgba(255,255,255,0.08)", color: active ? "#fff" : "rgba(255,255,255,0.65)" });
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, zIndex:9999, background:"rgba(0,0,0,0.92)", display:"flex", flexDirection:"column" }}>
+      {/* 헤더 */}
+      <div onClick={e => e.stopPropagation()} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"14px 16px", paddingTop:"max(env(safe-area-inset-top),14px)" }}>
+        <span style={{ color:"#fff", fontSize:14, fontWeight:800, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{title}</span>
+        <button onClick={onClose} className="tap-spring" style={{ flexShrink:0, marginLeft:10, background:"rgba(255,255,255,0.15)", color:"#fff", border:"none", borderRadius:"50%", width:34, height:34, fontSize:15, fontWeight:700, cursor:"pointer" }}>✕</button>
+      </div>
+      {/* 탭: 제품사진 / 시리얼사진 */}
+      <div onClick={e => e.stopPropagation()} style={{ display:"flex", gap:8, padding:"0 16px 12px", width:"100%", maxWidth:520, margin:"0 auto", boxSizing:"border-box" }}>
+        <button className="tap-spring" onClick={() => pick("product")} style={tabBtn(tab === "product")}>제품사진{productPhotos.length ? ` ${productPhotos.length}` : ""}</button>
+        <button className="tap-spring" onClick={() => pick("sn")}      style={tabBtn(tab === "sn")}>시리얼사진{snPhoto ? " 1" : ""}</button>
+      </div>
+      {/* 이미지 영역 */}
+      <div onClick={onClose} style={{ flex:1, position:"relative", display:"flex", alignItems:"center", justifyContent:"center", minHeight:0 }}>
+        {photos.length ? (
+          <img onClick={e => e.stopPropagation()} src={photos[cur]} alt="" style={{ maxWidth:"92%", maxHeight:"100%", objectFit:"contain", borderRadius:8 }} />
+        ) : (
+          <div style={{ color:"rgba(255,255,255,0.55)", fontSize:13 }}>{tab === "product" ? "등록된 제품사진이 없습니다" : "등록된 시리얼 사진이 없습니다"}</div>
+        )}
+        {photos.length > 1 && (<>
+          <button onClick={e => { e.stopPropagation(); go(-1); }} className="tap-spring" style={{ ...navBtn, left:12 }}>‹</button>
+          <button onClick={e => { e.stopPropagation(); go(1);  }} className="tap-spring" style={{ ...navBtn, right:12 }}>›</button>
+        </>)}
+      </div>
+      {/* 점 */}
+      {photos.length > 1 && (
+        <div onClick={e => e.stopPropagation()} style={{ display:"flex", gap:6, justifyContent:"center", padding:"12px 0", paddingBottom:"max(env(safe-area-inset-bottom),16px)" }}>
+          {photos.map((_, i) => (
+            <div key={i} onClick={() => setIdx(i)} style={{ width:i===cur?18:7, height:7, borderRadius:99, background:i===cur?"#fff":"rgba(255,255,255,0.4)", cursor:"pointer", transition:"all .2s" }} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -159,7 +216,7 @@ function DetailModal({ item, onClose, onSave }) {
     <Modal onClose={onClose} width={480}>
       <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 4 }}>📋 세부사항</div>
       <div style={{ fontSize: 13, color: C.muted, marginBottom: 18 }}>{item.modelName} {item.unitNo && `· ${item.unitNo}`}</div>
-      <MultiImageUploader values={form.photoUrls} onChange={urls => setForm(p => ({ ...p, photoUrls: urls }))} max={4} />
+      <MultiImageUploader values={form.photoUrls} onChange={urls => setForm(p => ({ ...p, photoUrls: urls }))} max={10} />
       <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} />
       <Inp label="S/N (시리얼 넘버)" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => setForm(p => ({ ...p, serialNo: e.target.value }))} />
       <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => setForm(p => ({ ...p, snPhotoUrl: url }))} />
@@ -236,6 +293,7 @@ const STU_UNIT_STATUS = {
   대여불가: { color:"#FF6B6B", bg:"rgba(255,107,107,0.14)" },
 };
 const STU_UNIT_BTN = {
+  photo:  { color:"#2DD4BF", bg:"rgba(45,212,191,0.13)",  bd:"rgba(45,212,191,0.30)" },
   edit:   { color:"#7e9dff", bg:"rgba(96,130,246,0.13)", bd:"rgba(96,130,246,0.28)" },
   status: { color:"#fbbf24", bg:"rgba(245,158,11,0.13)", bd:"rgba(245,158,11,0.28)" },
   del:    { color:"#FF6B6B", bg:"rgba(255,107,107,0.13)", bd:"rgba(255,107,107,0.28)" },
@@ -248,7 +306,13 @@ const stuBtnStyle = (t) => ({
 // ── 모델별 그룹 카드 ────────────────────────────────────────
 function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus, onEdit, onCopy }) {
   const [open, setOpen] = useState(false);
+  const [photoModal, setPhotoModal] = useState(null); // { productPhotos, snPhoto, title }
   const thumb = rep.displayPhotoUrl || (rep.photoUrls?.[0]) || null;
+
+  // 제품사진 갤러리 — 제품사진(photoUrls) 우선, 없으면 송출용 이미지로 폴백
+  const productPhotos = (rep.photoUrls && rep.photoUrls.length)
+    ? rep.photoUrls
+    : (rep.displayPhotoUrl ? [rep.displayPhotoUrl] : []);
 
   // 상태별 카운트
   const avail    = units.filter(u => (u.status||"대여가능") === "대여가능").length;
@@ -321,8 +385,10 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
                   {u.serialNo && <span style={{ fontSize:11, color:C.text, fontWeight:800 }}>S/N:{u.serialNo}</span>}
                   <span style={{ marginLeft:"auto", flexShrink:0, fontSize:10, background:st.bg, color:st.color, borderRadius:6, padding:"2px 7px", fontWeight:800 }}>{u.status||"대여가능"}</span>
                 </div>
-                {/* 아래: 수정 / 상태 / 삭제 (균등 3버튼) */}
+                {/* 아래: 사진 / 수정 / 상태 / 삭제 (균등 4버튼) — 사진은 눌러야 열림 */}
                 <div style={{ display:"flex", gap:6 }}>
+                  <button onClick={() => setPhotoModal({ productPhotos, snPhoto: u.snPhotoUrl || "", title: `${rep.modelName}${u.unitNo ? " · " + u.unitNo + "호기" : ""}` })}
+                    className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.photo), flex:1 }}>사진</button>
                   <button onClick={() => onEdit(u)}         className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.edit),   flex:1 }}>수정</button>
                   <button onClick={() => onCycleStatus(u)}  className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.status), flex:1 }}>상태</button>
                   <button onClick={() => onDelete(u.id)}    className="tap-spring" style={{ ...stuBtnStyle(STU_UNIT_BTN.del),    flex:1 }}>삭제</button>
@@ -332,6 +398,8 @@ function EquipCardGroup({ rep, units, onDetail, onInsp, onDelete, onCycleStatus,
           })}
         </div>
       )}
+
+      {photoModal && <EquipPhotoModal {...photoModal} onClose={() => setPhotoModal(null)} />}
     </div>
   );
 }
@@ -1038,7 +1106,7 @@ export default function Equipment({ initialTab = "equip" }) {
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항 (선택)</div>
             <SingleImageUploader label="🖼️ 송출용 이미지 (학생에게 표시)" value={form.displayPhotoUrl || ""} onChange={url => f("displayPhotoUrl", url)} />
-            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
+            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={10} />
             <Inp label="보관 위치" placeholder="예: A동 101호 3번 선반" value={form.location} onChange={e => f("location", e.target.value)} />
             <Inp label="S/N" placeholder="예: SN-20240001" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
             <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => f("snPhotoUrl", url)} />
@@ -1234,7 +1302,7 @@ export default function Equipment({ initialTab = "equip" }) {
           <div style={{ border:`1px dashed ${C.border}`, borderRadius:12, padding:16, marginBottom:16 }}>
             <div style={{ fontSize:13, fontWeight:700, color:C.navy, marginBottom:14 }}>세부사항</div>
             <SingleImageUploader label="🖼️ 송출용 이미지 (학생에게 표시)" value={form.displayPhotoUrl || ""} onChange={url => f("displayPhotoUrl", url)} />
-            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={4} />
+            <MultiImageUploader values={form.photoUrls} onChange={urls => f("photoUrls", urls)} max={10} />
             <Inp label="보관 위치" value={form.location} onChange={e => f("location", e.target.value)} />
             <Inp label="S/N" value={form.serialNo} onChange={e => f("serialNo", e.target.value)} />
             <SingleImageUploader label="S/N 사진" value={form.snPhotoUrl} onChange={url => f("snPhotoUrl", url)} />
