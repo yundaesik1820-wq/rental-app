@@ -38,6 +38,7 @@ export default function Dashboard({ setTab }) {
   const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",   "createdAt");
   const { data: schedules }        = useCollection("licenseSchedules",   "date");
+  const { data: faqs }             = useCollection("faqs",              "createdAt");
 
   // 통계
   const pending       = requests.filter(r => r.status === "승인대기").length;
@@ -51,33 +52,34 @@ export default function Dashboard({ setTab }) {
   const today         = new Date().toISOString().slice(0, 10);
   const newNotices    = notices.filter(n => n.date === today).length;
 
-  // ⚡ 처리 대기 보드용 — 오늘 대여/반납 & 재고 0 모델
-  const tomorrow      = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-  const retStatuses   = ["승인됨", "대여중"];
-  const todayRentEquip = requests.filter(r => r.startDate === today && r.status === "승인됨").length;
-  const todayRetEquip  = requests.filter(r => r.endDate === today && retStatuses.includes(r.status)).length;
-  // 재고 0 모델(단품, 개체 status로 판정 — available 필드에 의존하지 않음)
-  const soldOutModels = (() => {
-    const byModel = {};
-    equipments.filter(e => !e.isSet).forEach(e => {
-      const k = e.modelName || e.name; if (!k) return;
-      if (!byModel[k]) byModel[k] = { total: 0, avail: 0 };
-      byModel[k].total++;
-      if ((e.status || "대여가능") === "대여가능") byModel[k].avail++;
-    });
-    return Object.values(byModel).filter(m => m.avail === 0).length;
-  })();
+  // ⚡ 처리 대기 보드용 — 오늘/내일 대여·반납, 장비 현황
+  const tomorrow       = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const retStatuses    = ["승인됨", "대여중"];
+  const todayRentEquip = requests.filter(r => r.startDate === today     && r.status === "승인됨").length;
+  const todayRetEquip  = requests.filter(r => r.endDate   === today     && retStatuses.includes(r.status)).length;
+  const tmrRentEquip   = requests.filter(r => r.startDate === tomorrow  && r.status === "승인됨").length;
+  const tmrRetEquip    = requests.filter(r => r.endDate   === tomorrow  && retStatuses.includes(r.status)).length;
 
-  // 처리 대기 타일 (연체는 위 빨간 긴급줄로 따로 표시)
-  const actionTiles = [
-    { emo: "🕑", n: pending,        label: "대여 승인",   col: "#F59E0B", tab: "rental" },
-    { emo: "📥", n: todayRetEquip,  label: "오늘 반납",   col: "#4f8bff", tab: "rental" },
-    { emo: "📤", n: todayRentEquip, label: "오늘 대여",   col: "#2DD4BF", tab: "rental" },
-    { emo: "🙋", n: pendingUsers,   label: "학생 승인",   col: "#F59E0B", tab: "students" },
-    { emo: "🔑", n: pwResetPend,    label: "비번 초기화", col: "#fbbf24", tab: "students" },
-    { emo: "📩", n: unanswered,     label: "미답변 문의", col: "#FF6B6B", tab: "inquiry" },
-    { emo: "🎖️", n: licensePend,    label: "라이선스 대기", col: "#a78bfa", tab: "license" },
-    { emo: "📦", n: soldOutModels,  label: "재고 0",      col: "#FF6B6B", tab: "equip" },
+  // ⚡ 처리 대기 — 도메인별 그룹 (연체는 위 빨간 긴급줄로 별도 표시)
+  //   info=true 는 급한 처리건이 아니라 관리 대상 수(0이어도 흐리지 않게 파랗게 유지)
+  const GROUPS = [
+    { name: "사용자 관리", emo: "👥", accent: "#7e9dff", tiles: [
+      { label: "가입 승인",   n: pendingUsers, col: "#F59E0B", tab: "students" },
+      { label: "비번 초기화", n: pwResetPend,  col: "#fbbf24", tab: "students" },
+      { label: "라이선스",    n: licensePend,  col: "#a78bfa", tab: "license" },
+    ]},
+    { name: "소식 관리", emo: "📢", accent: "#a78bfa", tiles: [
+      { label: "공지", n: notices.length, col: "#7e9dff", tab: "notices", info: true },
+      { label: "문의", n: unanswered,     col: "#FF6B6B", tab: "inquiry" },
+      { label: "FAQ",  n: faqs.length,    col: "#7e9dff", tab: "inquiry", info: true },
+    ]},
+    { name: "대여 관리", emo: "📅", accent: "#2DD4BF", tiles: [
+      { label: "대여 승인", n: pending,        col: "#F59E0B", tab: "rental" },
+      { label: "오늘 대여", n: todayRentEquip, col: "#2DD4BF", tab: "rental" },
+      { label: "오늘 반납", n: todayRetEquip,  col: "#4f8bff", tab: "rental" },
+      { label: "내일 대여", n: tmrRentEquip,   col: "#2DD4BF", tab: "rental" },
+      { label: "내일 반납", n: tmrRetEquip,    col: "#4f8bff", tab: "rental" },
+    ]},
   ];
 
   const roleName = profile?.adminRole === "teacher"   ? "교사" :
@@ -152,20 +154,31 @@ export default function Dashboard({ setTab }) {
         </div>
       )}
 
-      {/* ⚡ 처리 대기 보드 — 스크롤 없이 오늘 할 일 한눈에 (0이면 흐리게, >0이면 색+숫자) */}
+      {/* ⚡ 처리 대기 — 도메인별 그룹 타일 보드 (한 줄에 그룹 하나, 타일은 가로 배치) */}
       <div style={{ fontSize:12, fontWeight:800, color:C.muted, marginBottom:8 }}>⚡ 처리 대기</div>
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:7, marginBottom:18 }}>
-        {actionTiles.map((t, i) => {
-          const active = t.n > 0;
-          return (
-            <div key={i} onClick={() => setTab?.(t.tab)}
-              style={{ background: active ? `${t.col}1f` : C.surface, border:`1px solid ${active ? `${t.col}55` : C.border}`, borderRadius:12, padding:"9px 4px 8px", textAlign:"center", cursor:"pointer" }}>
-              <div style={{ fontSize:12, marginBottom:1 }}>{t.emo}</div>
-              <div style={{ fontSize:20, fontWeight:900, color: active ? t.col : "#4a4a52", lineHeight:1.05 }}>{t.n}</div>
-              <div style={{ fontSize:9.5, color: active ? C.text : C.muted, marginTop:2, fontWeight:600, wordBreak:"keep-all", lineHeight:1.15 }}>{t.label}</div>
+      <div style={{ marginBottom:10 }}>
+        {GROUPS.map((g, gi) => (
+          <div key={gi} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:12, marginBottom:10 }}>
+            {/* 그룹 헤더 */}
+            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10 }}>
+              <span style={{ width:26, height:26, borderRadius:8, background:`${g.accent}22`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{g.emo}</span>
+              <span style={{ fontSize:13, fontWeight:800, color:C.text }}>{g.name}</span>
             </div>
-          );
-        })}
+            {/* 타일들 (가로 flex, 넘치면 줄바꿈) */}
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {g.tiles.map((t, ti) => {
+                const active = t.n > 0 || t.info;   // info 타일은 0이어도 파랗게 유지
+                return (
+                  <div key={ti} onClick={() => setTab?.(t.tab)}
+                    style={{ flex:"1 1 88px", minWidth:88, background: active ? `${t.col}18` : C.bg, border:`1px solid ${active ? `${t.col}44` : C.border}`, borderTop:`3px solid ${active ? t.col : C.border}`, borderRadius:10, padding:"8px 6px 7px", textAlign:"center", cursor:"pointer" }}>
+                    <div style={{ fontSize:20, fontWeight:900, color: active ? t.col : "#4a4a52", lineHeight:1.05 }}>{t.n}</div>
+                    <div style={{ fontSize:10, color: active ? C.text : C.muted, marginTop:2, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 상세 현황 (드릴다운) */}
