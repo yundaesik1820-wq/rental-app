@@ -173,12 +173,11 @@ export default function Dashboard({ setTab }) {
       <span style={{ background:`${nCol}22`, color:nCol, borderRadius:6, padding:"2px 9px", fontSize:12, fontWeight:800, flexShrink:0 }}>{n}</span>
     </div>
   );
-  const opTile = ({ Icon, col, label, n }) => (
-    <div onClick={() => setTab?.("rental")} style={{ background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:11, padding:9, cursor:"pointer" }}>
-      <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:MUTED, fontWeight:600 }}>
-        <Icon size={13} color={col} /> {label}
-      </div>
-      <div style={{ fontSize:16, fontWeight:900, color:TXT, marginTop:3 }}>{n}<span style={{ fontSize:10, color:MUTED, fontWeight:600 }}>건</span></div>
+  const opRow = ({ Icon, col, label, n }) => (
+    <div key={label} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+      {iconChip(Icon, col, 30, 16)}
+      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT }}>{label}</span>
+      <span style={{ fontSize:15, fontWeight:900, color:TXT, flexShrink:0 }}>{n}<span style={{ fontSize:10, color:MUTED, fontWeight:600 }}>건</span></span>
     </div>
   );
 
@@ -239,46 +238,42 @@ export default function Dashboard({ setTab }) {
         </div>
       </div>
 
-      {/* 사용자 관리 + 빠른 작업 */}
-      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"stretch" }}>
-        <div style={{ flex:1.45, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px" }}>
-          {cardTitle(Users, BLUE2, "사용자 관리", () => setTab?.("students"))}
-          {mgmtRow({ Icon: UserPlus, col: BLUE,   label:"가입 승인",      badge:`${pendingUsers}건 대기`, badgeCol: pendingUsers>0?BLUE:MUTED,   tab:"students" })}
-          {mgmtRow({ Icon: Lock,     col: GREEN,  label:"비밀번호 초기화", badge:`${pwResetPend}건`,      badgeCol: pwResetPend>0?YELLOW:MUTED,  tab:"students" })}
-          {mgmtRow({ Icon: Award,    col: PURPLE, label:"라이선스 관리",   badge:`${licensePend}건 대기`, badgeCol: licensePend>0?PURPLE:MUTED,  tab:"license" })}
+      {/* 빠른 작업 — 컴팩트 가로 바 (한 줄) */}
+      <div onClick={() => setTab?.("rental")} style={{ background:"linear-gradient(135deg,#2a3a7a,#3f2f6e)", border:`1px solid ${BLUE}59`, borderRadius:14, padding:"10px 13px", marginBottom:14, display:"flex", alignItems:"center", gap:11, cursor:"pointer" }}>
+        <div style={{ width:34, height:34, borderRadius:10, background:"rgba(255,255,255,0.14)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Zap size={18} color="#ffd66b" /></div>
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:12.5, fontWeight:800, color:"#fff" }}>빠른 작업 · 대여 승인</div>
+          <div style={{ fontSize:11, color:"rgba(255,255,255,0.72)" }}>{pending}건 대기 중</div>
         </div>
-        <div onClick={() => setTab?.("rental")} style={{ flex:1, minWidth:0, background:"linear-gradient(140deg,#2a3a7a,#3f2f6e)", border:`1px solid ${BLUE}59`, borderRadius:16, padding:"13px 14px", display:"flex", flexDirection:"column", cursor:"pointer" }}>
-          <span style={{ display:"flex", alignItems:"center", gap:7, fontSize:13.5, fontWeight:800, color:"#fff" }}><Zap size={17} color="#ffd66b" /> 빠른 작업</span>
-          <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>
-            <div style={{ width:38, height:38, borderRadius:11, background:"rgba(255,255,255,0.14)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Crosshair size={20} color="#fff" /></div>
-            <div style={{ minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>대여 승인</div>
-              <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{pending}건 대기 중</div>
-            </div>
-          </div>
-          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"linear-gradient(135deg,#4f8bff,#7c5cff)", borderRadius:10, padding:"9px 0", marginTop:14, fontSize:13, fontWeight:800, color:"#fff" }}>바로가기 <ArrowRight size={15} color="#fff" /></div>
-        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:5, background:"linear-gradient(135deg,#4f8bff,#7c5cff)", borderRadius:9, padding:"7px 12px", fontSize:12.5, fontWeight:800, color:"#fff", flexShrink:0 }}>바로가기 <ArrowRight size={14} color="#fff" /></div>
       </div>
 
-      {/* 소식 & 문의 + 대여 운영 */}
-      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"stretch" }}>
-        <div style={{ flex:1, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px" }}>
-          {cardTitle(MessageSquare, BLUE2, "소식 & 문의", () => setTab?.("inquiry"))}
-          {newsRow({ Icon: Megaphone,     col: BLUE,   label:"공지", n: notices.length, nCol: BLUE2, tab:"notices" })}
-          {newsRow({ Icon: MessageSquare, col: RED,    label:"문의", n: unanswered,     nCol: unanswered>0?RED:MUTED, tab:"inquiry" })}
-          {newsRow({ Icon: HelpCircle,    col: PURPLE, label:"FAQ",  n: faqs.length,    nCol: BLUE2, tab:"inquiry" })}
-        </div>
-        <div style={{ flex:1.15, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px" }}>
-          {cardTitle(Calendar, TEAL, "대여 운영", () => setTab?.("calendar"))}
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginTop:6 }}>
-            {opTile({ Icon: Calendar,       col: TEAL,  label:"오늘 대여", n: todayRentEquip })}
-            {opTile({ Icon: ArrowRightLeft, col: BLUE,  label:"오늘 반납", n: todayRetEquip })}
-            {opTile({ Icon: Calendar,       col: MUTED, label:"내일 대여", n: tmrRentEquip })}
-          </div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:7, marginTop:7 }}>
-            {opTile({ Icon: ArrowRightLeft, col: BLUE, label:"내일 반납", n: tmrRetEquip })}
-            <div onClick={() => setTab?.("calendar")} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:11, fontSize:12, fontWeight:700, color:BLUE2, cursor:"pointer" }}>전체 일정 보기 <ChevronRight size={15} color={BLUE2} /></div>
-          </div>
+      {/* 사용자 관리 */}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px", marginBottom:14 }}>
+        {cardTitle(Users, BLUE2, "사용자 관리", () => setTab?.("students"))}
+        {mgmtRow({ Icon: UserPlus, col: BLUE,   label:"가입 승인",      badge:`${pendingUsers}건 대기`, badgeCol: pendingUsers>0?BLUE:MUTED,   tab:"students" })}
+        {mgmtRow({ Icon: Lock,     col: GREEN,  label:"비밀번호 초기화", badge:`${pwResetPend}건`,      badgeCol: pwResetPend>0?YELLOW:MUTED,  tab:"students" })}
+        {mgmtRow({ Icon: Award,    col: PURPLE, label:"라이선스 관리",   badge:`${licensePend}건 대기`, badgeCol: licensePend>0?PURPLE:MUTED,  tab:"license" })}
+      </div>
+
+      {/* 소식 & 문의 */}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px", marginBottom:14 }}>
+        {cardTitle(MessageSquare, BLUE2, "소식 & 문의", () => setTab?.("inquiry"))}
+        {newsRow({ Icon: Megaphone,     col: BLUE,   label:"공지", n: notices.length, nCol: BLUE2, tab:"notices" })}
+        {newsRow({ Icon: MessageSquare, col: RED,    label:"문의", n: unanswered,     nCol: unanswered>0?RED:MUTED, tab:"inquiry" })}
+        {newsRow({ Icon: HelpCircle,    col: PURPLE, label:"FAQ",  n: faqs.length,    nCol: BLUE2, tab:"inquiry" })}
+      </div>
+
+      {/* 대여 운영 — 세로 1열 (오늘/내일 대여·반납 + 전체 일정 보기) */}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px", marginBottom:14 }}>
+        {cardTitle(Calendar, TEAL, "대여 운영", () => setTab?.("calendar"))}
+        {opRow({ Icon: Calendar,       col: TEAL,  label:"오늘 대여", n: todayRentEquip })}
+        {opRow({ Icon: ArrowRightLeft, col: BLUE,  label:"오늘 반납", n: todayRetEquip })}
+        {opRow({ Icon: Calendar,       col: PURPLE,label:"내일 대여", n: tmrRentEquip })}
+        {opRow({ Icon: ArrowRightLeft, col: BLUE2, label:"내일 반납", n: tmrRetEquip })}
+        <div onClick={() => setTab?.("calendar")} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0 8px", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+          <span style={{ fontSize:12.5, fontWeight:700, color:BLUE2 }}>전체 일정 보기</span>
+          <ChevronRight size={16} color={BLUE2} />
         </div>
       </div>
 
