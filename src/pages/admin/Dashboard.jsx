@@ -46,10 +46,25 @@ export default function Dashboard({ setTab }) {
   const tmrRentEquip   = requests.filter(r => r.startDate === tomorrow && r.status === "승인됨").length;
   const tmrRetEquip    = requests.filter(r => r.endDate   === tomorrow && retStatuses.includes(r.status)).length;
 
-  // 오늘 날짜 표기
-  const now = new Date();
-  const wd = ["일","월","화","수","목","금","토"][now.getDay()];
-  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")} (${wd})`;
+  // 날짜 표기 (오늘 / 내일)
+  const WD = ["일","월","화","수","목","금","토"];
+  const fmtDate = (d) => `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} (${WD[d.getDay()]})`;
+  const dateStr  = fmtDate(new Date());
+  const dateStr2 = fmtDate(new Date(Date.now() + 86400000));
+
+  // 현황 캐러셀 (오늘 / 내일)
+  const todayTiles = [
+    { Icon: Calendar,       label:"오늘 대여", n: todayRentEquip, col: BLUE },
+    { Icon: ArrowRightLeft, label:"오늘 반납", n: todayRetEquip,  col: GREEN },
+    { Icon: Clock,          label:"승인 대기", n: pending,        col: YELLOW },
+    { Icon: Wrench,         label:"정비 필요", n: repairUnits,    col: PURPLE },
+  ];
+  const tmrTiles = [
+    { Icon: Calendar,       label:"내일 대여", n: tmrRentEquip, col: BLUE },
+    { Icon: ArrowRightLeft, label:"내일 반납", n: tmrRetEquip,  col: GREEN },
+    { Icon: Clock,          label:"승인 대기", n: pending,      col: YELLOW },
+    { Icon: Wrench,         label:"정비 필요", n: repairUnits,  col: PURPLE },
+  ];
 
   // 최근 알림 피드 (연체 + 신규 대여신청, 최신순)
   const timeAgo = (ts) => {
@@ -90,6 +105,7 @@ export default function Dashboard({ setTab }) {
   const [setupPw,       setSetupPw]       = useState("");
   const [switchErr,     setSwitchErr]     = useState("");
   const [switchLoading, setSwitchLoading] = useState(false);
+  const [curPage,       setCurPage]       = useState(0); // 현황 캐러셀 페이지
 
   const handleSaveCreds = async () => {
     if (!setupPw.trim()) { setSwitchErr("비밀번호를 입력해주세요"); return; }
@@ -126,10 +142,20 @@ export default function Dashboard({ setTab }) {
     </div>
   );
   const statTile = ({ Icon, label, n, col }) => (
-    <div style={{ background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:12, padding:"10px 8px" }}>
+    <div key={label} style={{ background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:12, padding:"10px 8px" }}>
       {iconChip(Icon, col, 28, 16)}
       <div style={{ fontSize:10, color:MUTED, fontWeight:600, marginTop:8 }}>{label}</div>
       <div style={{ fontSize:19, fontWeight:900, color:TXT, marginTop:1 }}>{n}<span style={{ fontSize:11, fontWeight:600, color:MUTED }}>건</span></div>
+    </div>
+  );
+  // 현황 캐러셀 한 페이지 (제목 + 날짜 + 4타일)
+  const statPage = (title, dstr, tiles) => (
+    <div key={title} style={{ minWidth:"100%", boxSizing:"border-box", scrollSnapAlign:"start" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+        <span style={{ fontSize:14, fontWeight:800, color:TXT }}>{title}</span>
+        <span style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}>{dstr} <Calendar size={14} color={MUTED} /></span>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>{tiles.map(statTile)}</div>
     </div>
   );
   const mgmtRow = ({ Icon, col, label, badge, badgeCol, tab }) => (
@@ -166,19 +192,18 @@ export default function Dashboard({ setTab }) {
         }
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ fontSize:16, fontWeight:800, color:TXT, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{profile?.name}님, 반갑습니다! 👋</div>
-          <div style={{ fontSize:12, color:MUTED, marginTop:2 }}>오늘도 관리 잘 부탁드려요.</div>
+          <span style={{ display:"inline-block", marginTop:5, background:`${BLUE}26`, color:BLUE2, border:`1px solid ${BLUE}55`, borderRadius:7, padding:"2px 9px", fontSize:11, fontWeight:700 }}>{roleName}</span>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
           {canSwitch && (
             <button onClick={doSwitch} disabled={switchLoading} title="계정 전환"
               style={{ background:"none", border:"none", color:MUTED, cursor:"pointer", display:"flex", padding:4, opacity:switchLoading?0.5:1 }}>
-              <RefreshCw size={17} style={{ animation: switchLoading ? "spin 1s linear infinite" : "none" }} />
+              <RefreshCw size={18} style={{ animation: switchLoading ? "spin 1s linear infinite" : "none" }} />
             </button>
           )}
           <button onClick={logout} title="로그아웃" style={{ background:"none", border:"none", color:MUTED, cursor:"pointer", display:"flex", padding:4 }}>
-            <LogOut size={17} />
+            <LogOut size={18} />
           </button>
-          <span style={{ background:`${BLUE}26`, color:BLUE2, border:`1px solid ${BLUE}55`, borderRadius:7, padding:"3px 9px", fontSize:11, fontWeight:700 }}>{roleName}</span>
         </div>
       </div>
 
@@ -198,17 +223,19 @@ export default function Dashboard({ setTab }) {
         </div>
       )}
 
-      {/* 오늘의 현황 */}
+      {/* 현황 캐러셀 — 좌우로 밀면 오늘 ↔ 내일 */}
       <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:14, marginBottom:14 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
-          <span style={{ fontSize:14, fontWeight:800, color:TXT }}>오늘의 현황</span>
-          <span style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}>{dateStr} <Calendar size={14} color={MUTED} /></span>
+        <style>{`.dash-carousel::-webkit-scrollbar{display:none}`}</style>
+        <div className="dash-carousel"
+          onScroll={(e) => { const el = e.currentTarget; setCurPage(Math.round(el.scrollLeft / el.clientWidth)); }}
+          style={{ display:"flex", overflowX:"auto", scrollSnapType:"x mandatory", scrollbarWidth:"none" }}>
+          {statPage("오늘의 현황", dateStr,  todayTiles)}
+          {statPage("내일의 현황", dateStr2, tmrTiles)}
         </div>
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
-          {statTile({ Icon: Calendar,       label:"오늘 대여", n: todayRentEquip, col: BLUE })}
-          {statTile({ Icon: ArrowRightLeft, label:"오늘 반납", n: todayRetEquip,  col: GREEN })}
-          {statTile({ Icon: Clock,          label:"승인 대기", n: pending,        col: YELLOW })}
-          {statTile({ Icon: Wrench,         label:"정비 필요", n: repairUnits,    col: PURPLE })}
+        <div style={{ display:"flex", gap:5, justifyContent:"center", marginTop:12 }}>
+          {[0,1].map(i => (
+            <div key={i} style={{ width: curPage===i ? 16 : 5, height:5, borderRadius:99, background: curPage===i ? BLUE : BORDER, transition:"width .2s" }} />
+          ))}
         </div>
       </div>
 
