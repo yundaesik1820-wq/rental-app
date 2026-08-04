@@ -2,92 +2,85 @@ import { useState } from "react";
 import { C } from "../../theme";
 import { useCollection } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
-import { LogOut, RefreshCw } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase";
+import {
+  LogOut, RefreshCw, Calendar, ArrowRightLeft, Clock, Wrench,
+  UserPlus, Lock, Award, Megaphone, MessageSquare, HelpCircle,
+  Bell, ChevronRight, Zap, Crosshair, ArrowRight, AlertTriangle, Users,
+} from "lucide-react";
 
-function DashRow({ icon, label, onClick, alerts = [] }) {
-  const totalCount = alerts.reduce((s, a) => s + a.count, 0);
-  return (
-    <div onClick={onClick}
-      style={{ display:"flex", alignItems:"center", gap:12, background:C.surface, borderRadius:12, padding:"12px 14px", marginBottom:8, cursor: onClick ? "pointer" : "default", border:`1px solid ${C.border}` }}>
-      <span style={{ fontSize:20, flexShrink:0 }}>{icon}</span>
-      <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>{label}</span>
-      <div style={{ display:"flex", gap:5, flexShrink:0, flexWrap:"wrap", justifyContent:"flex-end" }}>
-        {alerts.filter(a => a.count > 0).map((a, i) => (
-          <span key={i} style={{ background: a.color || C.red, color:"#fff", borderRadius:20, padding:"2px 9px", fontSize:11, fontWeight:700, whiteSpace:"nowrap" }}>
-            {a.label} {a.count}
-          </span>
-        ))}
-        {totalCount === 0 && (
-          <span style={{ background:C.greenLight, color:C.green, borderRadius:20, padding:"2px 9px", fontSize:11, fontWeight:700 }}>정상</span>
-        )}
-      </div>
-    </div>
-  );
-}
+// ── 학생 블루 팔레트 (theme.js C는 아직 모노톤이라 여기서 직접 박음) ──
+const BLUE = "#4f8bff", BLUE2 = "#7e9dff", GREEN = "#34D399",
+      YELLOW = "#fbbf24", PURPLE = "#a78bfa", TEAL = "#2DD4BF",
+      RED = "#FF6B6B", MUTED = "#8A8A92", TXT = "#ECECEE",
+      CARD = "#16161c", CARDBG = "#0f0f14", BORDER = "#26262e";
+
+const chev = <ChevronRight size={18} color={MUTED} style={{ flexShrink: 0 }} />;
 
 export default function Dashboard({ setTab }) {
   const { profile, logout } = useAuth();
-  const { data: requests }         = useCollection("rentalRequests",    "createdAt");
-  const { data: equipments }       = useCollection("equipments",        "createdAt");
-  const { data: users }            = useCollection("users",             "createdAt");
-  const { data: notices }          = useCollection("notices",           "createdAt");
-  const { data: licenseApps }      = useCollection("licenseApplications","createdAt");
-  const { data: inquiries }        = useCollection("inquiries",         "createdAt");
-  const { data: communityPosts }   = useCollection("communityPosts",    "createdAt");
-  const { data: pwResets }         = useCollection("pwResetRequests",   "createdAt");
-  const { data: schedules }        = useCollection("licenseSchedules",   "date");
-  const { data: faqs }             = useCollection("faqs",              "createdAt");
+  const { data: requests }    = useCollection("rentalRequests",     "createdAt");
+  const { data: equipments }  = useCollection("equipments",         "createdAt");
+  const { data: users }       = useCollection("users",              "createdAt");
+  const { data: notices }     = useCollection("notices",            "createdAt");
+  const { data: licenseApps } = useCollection("licenseApplications","createdAt");
+  const { data: inquiries }   = useCollection("inquiries",          "createdAt");
+  const { data: pwResets }    = useCollection("pwResetRequests",    "createdAt");
+  const { data: faqs }        = useCollection("faqs",               "createdAt");
 
   // 통계
-  const pending       = requests.filter(r => r.status === "승인대기").length;
-  const overdue       = requests.filter(r => r.status === "연체").length;
-  const held          = requests.filter(r => r.status === "보류").length;
-  const pendingUsers  = users.filter(u => u.status === "pending").length;
-  const pwResetPend   = pwResets.filter(r => r.status === "pending").length;
-  const lowStock      = equipments.filter(e => (e.available || 0) === 0).length;
-  const licensePend   = licenseApps.filter(a => a.status === "대기").length;
-  const unanswered    = inquiries.filter(i => i.status !== "답변완료").length;
-  const today         = new Date().toISOString().slice(0, 10);
-  const newNotices    = notices.filter(n => n.date === today).length;
+  const pending      = requests.filter(r => r.status === "승인대기").length;
+  const overdue      = requests.filter(r => r.status === "연체").length;
+  const pendingUsers = users.filter(u => u.status === "pending").length;
+  const pwResetPend  = pwResets.filter(r => r.status === "pending").length;
+  const licensePend  = licenseApps.filter(a => a.status === "대기").length;
+  const unanswered   = inquiries.filter(i => i.status !== "답변완료").length;
+  const repairUnits  = equipments.filter(e => e.status === "수리중").length;
 
-  // ⚡ 처리 대기 보드용 — 오늘/내일 대여·반납, 장비 현황
-  const tomorrow       = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+  const today    = new Date().toISOString().slice(0, 10);
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
   const retStatuses    = ["승인됨", "대여중"];
-  const todayRentEquip = requests.filter(r => r.startDate === today     && r.status === "승인됨").length;
-  const todayRetEquip  = requests.filter(r => r.endDate   === today     && retStatuses.includes(r.status)).length;
-  const tmrRentEquip   = requests.filter(r => r.startDate === tomorrow  && r.status === "승인됨").length;
-  const tmrRetEquip    = requests.filter(r => r.endDate   === tomorrow  && retStatuses.includes(r.status)).length;
+  const todayRentEquip = requests.filter(r => r.startDate === today    && r.status === "승인됨").length;
+  const todayRetEquip  = requests.filter(r => r.endDate   === today    && retStatuses.includes(r.status)).length;
+  const tmrRentEquip   = requests.filter(r => r.startDate === tomorrow && r.status === "승인됨").length;
+  const tmrRetEquip    = requests.filter(r => r.endDate   === tomorrow && retStatuses.includes(r.status)).length;
 
-  // ⚡ 처리 대기 — 도메인별 그룹 (연체는 위 빨간 긴급줄로 별도 표시)
-  //   info=true 는 급한 처리건이 아니라 관리 대상 수(0이어도 흐리지 않게 파랗게 유지)
-  const GROUPS = [
-    { name: "사용자 관리", emo: "👥", accent: "#7e9dff", tiles: [
-      { label: "가입 승인",   n: pendingUsers, col: "#F59E0B", tab: "students" },
-      { label: "비번 초기화", n: pwResetPend,  col: "#fbbf24", tab: "students" },
-      { label: "라이선스",    n: licensePend,  col: "#a78bfa", tab: "license" },
-    ]},
-    { name: "소식 관리", emo: "📢", accent: "#a78bfa", tiles: [
-      { label: "공지", n: notices.length, col: "#7e9dff", tab: "notices", info: true },
-      { label: "문의", n: unanswered,     col: "#FF6B6B", tab: "inquiry" },
-      { label: "FAQ",  n: faqs.length,    col: "#7e9dff", tab: "inquiry", info: true },
-    ]},
-    { name: "대여 관리", emo: "📅", accent: "#2DD4BF", tiles: [
-      { label: "대여 승인", n: pending,        col: "#F59E0B", tab: "rental" },
-      { label: "오늘 대여", n: todayRentEquip, col: "#2DD4BF", tab: "rental" },
-      { label: "오늘 반납", n: todayRetEquip,  col: "#4f8bff", tab: "rental" },
-      { label: "내일 대여", n: tmrRentEquip,   col: "#2DD4BF", tab: "rental" },
-      { label: "내일 반납", n: tmrRetEquip,    col: "#4f8bff", tab: "rental" },
-    ]},
-  ];
+  // 오늘 날짜 표기
+  const now = new Date();
+  const wd = ["일","월","화","수","목","금","토"][now.getDay()];
+  const dateStr = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,"0")}.${String(now.getDate()).padStart(2,"0")} (${wd})`;
+
+  // 최근 알림 피드 (연체 + 신규 대여신청, 최신순)
+  const timeAgo = (ts) => {
+    const d = ts?.toDate?.() || (ts?.seconds ? new Date(ts.seconds * 1000) : null);
+    if (!d) return "";
+    const s = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (s < 60)    return "방금 전";
+    if (s < 3600)  return `${Math.floor(s/60)}분 전`;
+    if (s < 86400) return `${Math.floor(s/3600)}시간 전`;
+    return `${Math.floor(s/86400)}일 전`;
+  };
+  const itemsLabel = (r) => {
+    const first = r.items?.[0]?.equipName || "장비";
+    const more  = (r.items?.length || 0) > 1 ? ` 외 ${r.items.length - 1}건` : "";
+    return first + more;
+  };
+  const feedItems = [
+    ...requests.filter(r => r.status === "연체").map(r => ({
+      dot: RED, tag: "연체 알림", tagCol: RED, ts: r.createdAt,
+      text: `${itemsLabel(r)}이(가) 연체되었습니다.`,
+    })),
+    ...requests.filter(r => r.status === "승인대기").map(r => ({
+      dot: BLUE, tag: "대여 신청", tagCol: BLUE2, ts: r.createdAt,
+      text: `${r.studentName || "학생"}님이 ${itemsLabel(r)} 대여를 신청했습니다.`,
+    })),
+  ].sort((a, b) => (b.ts?.seconds || 0) - (a.ts?.seconds || 0)).slice(0, 4);
 
   const roleName = profile?.adminRole === "teacher"   ? "교사" :
                    profile?.adminRole === "assistant" ? "조교" :
                    profile?.adminRole === "professor" ? "교수" : "관리자";
 
-  const adminRole2    = profile?.adminRole || "super";
-  const isTeacherProf = adminRole2 === "teacher" || adminRole2 === "professor";
   const canSwitch = !!profile?.linkedEmail;
   const storageKey = `linked_creds_${profile?.uid}`;
   const savedCreds = (() => {
@@ -109,330 +102,173 @@ export default function Dashboard({ setTab }) {
       setSwitchErr("이메일 또는 비밀번호가 맞지 않아요");
     } finally { setSwitchLoading(false); }
   };
+  const doSwitch = async () => {
+    if (savedCreds) {
+      setSwitchLoading(true);
+      try { await signInWithEmailAndPassword(auth, savedCreds.email, savedCreds.pw); }
+      catch { localStorage.removeItem(storageKey); setSwitchModal(true); }
+      finally { setSwitchLoading(false); }
+    } else { setSwitchModal(true); }
+  };
+
+  // ── 재사용 렌더 조각 ──
+  const iconChip = (Icon, col, size = 30, isz = 16) => (
+    <div style={{ width:size, height:size, borderRadius:9, background:`${col}22`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+      <Icon size={isz} color={col} />
+    </div>
+  );
+  const cardTitle = (Icon, col, label, onClick) => (
+    <div onClick={onClick} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4, cursor: onClick ? "pointer" : "default" }}>
+      <span style={{ display:"flex", alignItems:"center", gap:8, fontSize:13.5, fontWeight:800, color:TXT }}>
+        <Icon size={18} color={col} /> {label}
+      </span>
+      {onClick && chev}
+    </div>
+  );
+  const statTile = ({ Icon, label, n, col }) => (
+    <div style={{ background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:12, padding:"10px 8px" }}>
+      {iconChip(Icon, col, 28, 16)}
+      <div style={{ fontSize:10, color:MUTED, fontWeight:600, marginTop:8 }}>{label}</div>
+      <div style={{ fontSize:19, fontWeight:900, color:TXT, marginTop:1 }}>{n}<span style={{ fontSize:11, fontWeight:600, color:MUTED }}>건</span></div>
+    </div>
+  );
+  const mgmtRow = ({ Icon, col, label, badge, badgeCol, tab }) => (
+    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+      {iconChip(Icon, col, 28, 15)}
+      <span style={{ flex:1, minWidth:0, fontSize:12.5, fontWeight:700, color:TXT, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+      <span style={{ background:`${badgeCol}22`, color:badgeCol, borderRadius:6, padding:"2px 7px", fontSize:10.5, fontWeight:700, whiteSpace:"nowrap", flexShrink:0 }}>{badge}</span>
+      {chev}
+    </div>
+  );
+  const newsRow = ({ Icon, col, label, n, nCol, tab }) => (
+    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+      {iconChip(Icon, col, 30, 16)}
+      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT }}>{label}</span>
+      <span style={{ background:`${nCol}22`, color:nCol, borderRadius:6, padding:"2px 9px", fontSize:12, fontWeight:800, flexShrink:0 }}>{n}</span>
+    </div>
+  );
+  const opTile = ({ Icon, col, label, n }) => (
+    <div onClick={() => setTab?.("rental")} style={{ background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:11, padding:9, cursor:"pointer" }}>
+      <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:10, color:MUTED, fontWeight:600 }}>
+        <Icon size={13} color={col} /> {label}
+      </div>
+      <div style={{ fontSize:16, fontWeight:900, color:TXT, marginTop:3 }}>{n}<span style={{ fontSize:10, color:MUTED, fontWeight:600 }}>건</span></div>
+    </div>
+  );
 
   return (
     <div>
-      {/* Welcome banner — 컴팩트 1행 (첫 화면 공간 확보) */}
-      <div style={{ background:`linear-gradient(135deg,#1B2B6B,#2D9B8A)`, borderRadius:16, padding:"12px 16px", marginBottom:14, display:"flex", alignItems:"center", justifyContent:"space-between", gap:10 }}>
-        <div style={{ minWidth:0, display:"flex", alignItems:"center", gap:8 }}>
-          <span style={{ fontSize:16, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>안녕하세요, {profile?.name}님 👋</span>
-          <span style={{ background:"rgba(255,255,255,0.2)", borderRadius:6, padding:"1px 8px", fontSize:10, fontWeight:700, color:"#fff", flexShrink:0 }}>{roleName}</span>
+      {/* 헤더 — 아바타 + 인사 + 역할 + (전환/로그아웃) */}
+      <div style={{ display:"flex", alignItems:"center", gap:11, marginBottom:14 }}>
+        {profile?.photoURL
+          ? <img src={profile.photoURL} alt="" style={{ width:44, height:44, borderRadius:99, objectFit:"cover", flexShrink:0, border:`1px solid ${BORDER}` }} />
+          : <div style={{ width:44, height:44, borderRadius:99, background:"linear-gradient(135deg,#3b82f6,#7c3aed)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, fontWeight:800, color:"#fff", flexShrink:0 }}>{(profile?.name || "?").slice(0,1)}</div>
+        }
+        <div style={{ flex:1, minWidth:0 }}>
+          <div style={{ fontSize:16, fontWeight:800, color:TXT, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{profile?.name}님, 반갑습니다! 👋</div>
+          <div style={{ fontSize:12, color:MUTED, marginTop:2 }}>오늘도 관리 잘 부탁드려요.</div>
         </div>
-        <div style={{ display:"flex", gap:6, flexShrink:0 }}>
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexShrink:0 }}>
           {canSwitch && (
-            <button onClick={async () => {
-              if (savedCreds) {
-                setSwitchLoading(true);
-                try {
-                  await signInWithEmailAndPassword(auth, savedCreds.email, savedCreds.pw);
-                } catch {
-                  localStorage.removeItem(storageKey);
-                  setSwitchModal(true);
-                } finally { setSwitchLoading(false); }
-              } else {
-                setSwitchModal(true);
-              }
-            }} disabled={switchLoading} title="계정 전환"
-              style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"7px 9px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", opacity:switchLoading?0.7:1 }}>
-              <RefreshCw size={15} style={{ animation: switchLoading?"spin 1s linear infinite":"none" }} />
+            <button onClick={doSwitch} disabled={switchLoading} title="계정 전환"
+              style={{ background:"none", border:"none", color:MUTED, cursor:"pointer", display:"flex", padding:4, opacity:switchLoading?0.5:1 }}>
+              <RefreshCw size={17} style={{ animation: switchLoading ? "spin 1s linear infinite" : "none" }} />
             </button>
           )}
-          <button onClick={logout} title="로그아웃" style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, padding:"7px 9px", color:"rgba(255,255,255,0.8)", fontSize:12, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            <LogOut size={15} />
+          <button onClick={logout} title="로그아웃" style={{ background:"none", border:"none", color:MUTED, cursor:"pointer", display:"flex", padding:4 }}>
+            <LogOut size={17} />
           </button>
+          <span style={{ background:`${BLUE}26`, color:BLUE2, border:`1px solid ${BLUE}55`, borderRadius:7, padding:"3px 9px", fontSize:11, fontWeight:700 }}>{roleName}</span>
         </div>
       </div>
 
-      {/* 연체 긴급 알림 */}
+      {/* 연체 긴급 */}
       {overdue > 0 && (
-        <div style={{ background:C.redLight, borderRadius:14, padding:"12px 16px", marginBottom:16, border:`1px solid ${C.red}30`, display:"flex", gap:10, alignItems:"center" }}>
-          <span style={{ fontSize:20 }}>⚠️</span>
-          <div>
-            <div style={{ fontSize:13, fontWeight:700, color:C.red }}>연체 {overdue}건 — 즉시 확인 필요</div>
-            <div style={{ fontSize:11, color:C.muted }}>대여/반납 탭에서 처리하세요</div>
+        <div onClick={() => setTab?.("rental")} style={{ background:"linear-gradient(135deg,#3a1a1e,#2a1216)", border:`1px solid ${RED}66`, borderRadius:16, padding:"13px 15px", marginBottom:14, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}>
+          <div style={{ width:42, height:42, borderRadius:12, background:"linear-gradient(135deg,#ff5b5b,#e03b3b)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <AlertTriangle size={22} color="#fff" />
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:11, color:"#ff9a9a", fontWeight:700 }}>즉시 확인 필요</div>
+            <div style={{ fontSize:16, fontWeight:900, color:"#fff", marginTop:1 }}>연체 {overdue}건 <span style={{ color:"#ff9a9a", fontWeight:600, fontSize:13 }}>/ 즉시 확인</span></div>
+          </div>
+          <div style={{ width:32, height:32, borderRadius:99, background:"rgba(255,255,255,0.12)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+            <ChevronRight size={18} color="#fff" />
           </div>
         </div>
       )}
 
-      {/* ⚡ 처리 대기 — 도메인별 그룹 타일 보드 (한 줄에 그룹 하나, 타일은 가로 배치) */}
-      <div style={{ fontSize:12, fontWeight:800, color:C.muted, marginBottom:8 }}>⚡ 처리 대기</div>
-      <div style={{ marginBottom:10 }}>
-        {GROUPS.map((g, gi) => (
-          <div key={gi} style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:16, padding:12, marginBottom:10 }}>
-            {/* 그룹 헤더 */}
-            <div style={{ display:"flex", alignItems:"center", gap:7, marginBottom:10 }}>
-              <span style={{ width:26, height:26, borderRadius:8, background:`${g.accent}22`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:14, flexShrink:0 }}>{g.emo}</span>
-              <span style={{ fontSize:13, fontWeight:800, color:C.text }}>{g.name}</span>
+      {/* 오늘의 현황 */}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:14, marginBottom:14 }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:12 }}>
+          <span style={{ fontSize:14, fontWeight:800, color:TXT }}>오늘의 현황</span>
+          <span style={{ fontSize:12, color:MUTED, display:"flex", alignItems:"center", gap:5 }}>{dateStr} <Calendar size={14} color={MUTED} /></span>
+        </div>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8 }}>
+          {statTile({ Icon: Calendar,       label:"오늘 대여", n: todayRentEquip, col: BLUE })}
+          {statTile({ Icon: ArrowRightLeft, label:"오늘 반납", n: todayRetEquip,  col: GREEN })}
+          {statTile({ Icon: Clock,          label:"승인 대기", n: pending,        col: YELLOW })}
+          {statTile({ Icon: Wrench,         label:"정비 필요", n: repairUnits,    col: PURPLE })}
+        </div>
+      </div>
+
+      {/* 사용자 관리 + 빠른 작업 */}
+      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"stretch" }}>
+        <div style={{ flex:1.45, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px" }}>
+          {cardTitle(Users, BLUE2, "사용자 관리", () => setTab?.("students"))}
+          {mgmtRow({ Icon: UserPlus, col: BLUE,   label:"가입 승인",      badge:`${pendingUsers}건 대기`, badgeCol: pendingUsers>0?BLUE:MUTED,   tab:"students" })}
+          {mgmtRow({ Icon: Lock,     col: GREEN,  label:"비밀번호 초기화", badge:`${pwResetPend}건`,      badgeCol: pwResetPend>0?YELLOW:MUTED,  tab:"students" })}
+          {mgmtRow({ Icon: Award,    col: PURPLE, label:"라이선스 관리",   badge:`${licensePend}건 대기`, badgeCol: licensePend>0?PURPLE:MUTED,  tab:"license" })}
+        </div>
+        <div onClick={() => setTab?.("rental")} style={{ flex:1, minWidth:0, background:"linear-gradient(140deg,#2a3a7a,#3f2f6e)", border:`1px solid ${BLUE}59`, borderRadius:16, padding:"13px 14px", display:"flex", flexDirection:"column", cursor:"pointer" }}>
+          <span style={{ display:"flex", alignItems:"center", gap:7, fontSize:13.5, fontWeight:800, color:"#fff" }}><Zap size={17} color="#ffd66b" /> 빠른 작업</span>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginTop:14 }}>
+            <div style={{ width:38, height:38, borderRadius:11, background:"rgba(255,255,255,0.14)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Crosshair size={20} color="#fff" /></div>
+            <div style={{ minWidth:0 }}>
+              <div style={{ fontSize:13, fontWeight:800, color:"#fff" }}>대여 승인</div>
+              <div style={{ fontSize:11, color:"rgba(255,255,255,0.7)" }}>{pending}건 대기 중</div>
             </div>
-            {/* 타일들 (가로 flex, 넘치면 줄바꿈) */}
-            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-              {g.tiles.map((t, ti) => {
-                const active = t.n > 0 || t.info;   // info 타일은 0이어도 파랗게 유지
-                return (
-                  <div key={ti} onClick={() => setTab?.(t.tab)}
-                    style={{ flex:"1 1 88px", minWidth:88, background: active ? `${t.col}18` : C.bg, border:`1px solid ${active ? `${t.col}44` : C.border}`, borderTop:`3px solid ${active ? t.col : C.border}`, borderRadius:10, padding:"8px 6px 7px", textAlign:"center", cursor:"pointer" }}>
-                    <div style={{ fontSize:20, fontWeight:900, color: active ? t.col : "#4a4a52", lineHeight:1.05 }}>{t.n}</div>
-                    <div style={{ fontSize:10, color: active ? C.text : C.muted, marginTop:2, fontWeight:600, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{t.label}</div>
-                  </div>
-                );
-              })}
-            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:7, background:"linear-gradient(135deg,#4f8bff,#7c5cff)", borderRadius:10, padding:"9px 0", marginTop:14, fontSize:13, fontWeight:800, color:"#fff" }}>바로가기 <ArrowRight size={15} color="#fff" /></div>
+        </div>
+      </div>
+
+      {/* 소식 & 문의 + 대여 운영 */}
+      <div style={{ display:"flex", gap:10, marginBottom:14, alignItems:"stretch" }}>
+        <div style={{ flex:1, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px" }}>
+          {cardTitle(MessageSquare, BLUE2, "소식 & 문의", () => setTab?.("inquiry"))}
+          {newsRow({ Icon: Megaphone,     col: BLUE,   label:"공지", n: notices.length, nCol: BLUE2, tab:"notices" })}
+          {newsRow({ Icon: MessageSquare, col: RED,    label:"문의", n: unanswered,     nCol: unanswered>0?RED:MUTED, tab:"inquiry" })}
+          {newsRow({ Icon: HelpCircle,    col: PURPLE, label:"FAQ",  n: faqs.length,    nCol: BLUE2, tab:"inquiry" })}
+        </div>
+        <div style={{ flex:1.15, minWidth:0, background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px" }}>
+          {cardTitle(Calendar, TEAL, "대여 운영", () => setTab?.("calendar"))}
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:7, marginTop:6 }}>
+            {opTile({ Icon: Calendar,       col: TEAL,  label:"오늘 대여", n: todayRentEquip })}
+            {opTile({ Icon: ArrowRightLeft, col: BLUE,  label:"오늘 반납", n: todayRetEquip })}
+            {opTile({ Icon: Calendar,       col: MUTED, label:"내일 대여", n: tmrRentEquip })}
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1.4fr", gap:7, marginTop:7 }}>
+            {opTile({ Icon: ArrowRightLeft, col: BLUE, label:"내일 반납", n: tmrRetEquip })}
+            <div onClick={() => setTab?.("calendar")} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:6, background:CARDBG, border:`1px solid ${BORDER}`, borderRadius:11, fontSize:12, fontWeight:700, color:BLUE2, cursor:"pointer" }}>전체 일정 보기 <ChevronRight size={15} color={BLUE2} /></div>
+          </div>
+        </div>
+      </div>
+
+      {/* 최근 알림 */}
+      <div style={{ background:CARD, border:`1px solid ${BORDER}`, borderRadius:16, padding:"13px 14px 4px", marginBottom:14 }}>
+        {cardTitle(Bell, BLUE2, "최근 알림", () => setTab?.("rental"))}
+        {feedItems.length === 0 && (
+          <div style={{ padding:"14px 0 16px", fontSize:12.5, color:MUTED, borderTop:`1px solid ${BORDER}` }}>새 알림이 없습니다</div>
+        )}
+        {feedItems.map((f, i) => (
+          <div key={i} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+            <span style={{ width:7, height:7, borderRadius:99, background:f.dot, flexShrink:0 }} />
+            <span style={{ fontSize:11.5, fontWeight:800, color:f.tagCol, flexShrink:0 }}>{f.tag}</span>
+            <span style={{ flex:1, minWidth:0, fontSize:12, color:"#c8c8cf", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.text}</span>
+            <span style={{ fontSize:11, color:MUTED, flexShrink:0 }}>{timeAgo(f.ts)}</span>
           </div>
         ))}
-      </div>
-
-      {/* 상세 현황 (드릴다운) */}
-      <div style={{ fontSize:12, fontWeight:700, color:C.muted, marginBottom:8 }}>📋 상세 현황</div>
-
-      {/* 공지 관리 */}
-      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-        <div onClick={() => setTab?.("notices")}
-          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-          <span style={{ fontSize:20 }}>📢</span>
-          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>공지 관리</span>
-          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-        </div>
-        {notices.slice(0,3).map(n => (
-          <div key={n.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:10 }}>
-            <span style={{ fontSize:12, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", flex:1 }}>{n.title}</span>
-            <span style={{ fontSize:11, color:C.muted, flexShrink:0 }}>{n.date}</span>
-          </div>
-        ))}
-        {notices.length === 0 && (
-          <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, fontSize:12, color:C.muted }}>등록된 공지가 없습니다</div>
-        )}
-      </div>
-
-      {/* 학생 관리 */}
-      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-        <div onClick={() => setTab?.("students")}
-          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-          <span style={{ fontSize:20 }}>👥</span>
-          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>학생 관리</span>
-          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-        </div>
-        <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
-          <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center" }}>
-            <div style={{ fontSize:18, fontWeight:900, color: pendingUsers>0 ? C.orange : C.green }}>{pendingUsers}</div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>승인 대기</div>
-          </div>
-          <div style={{ flex:1, padding:"10px 14px", textAlign:"center" }}>
-            <div style={{ fontSize:18, fontWeight:900, color: pwResetPend>0 ? C.yellow : C.green }}>{pwResetPend}</div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>비밀번호 초기화 요청</div>
-          </div>
-        </div>
-      </div>
-
-      {/* 장비/시설 관리 */}
-      {(() => {
-        const CAT_ORDER = ["촬영","렌즈","ACC","트라이포드/그립","모니터","조명","음향"];
-        // 단품만, 동일 모델명은 1건으로 카운팅
-        const units = equipments.filter(e => !e.isSet);
-        const uniqueModels = [...new Set(units.map(e => e.modelName || e.name).filter(Boolean))];
-        const cats = [...new Set(units.map(e => e.majorCategory).filter(Boolean))];
-        const sortedCats = [
-          ...CAT_ORDER.filter(c => cats.includes(c)),
-          ...cats.filter(c => !CAT_ORDER.includes(c)),
-        ];
-
-        // 카테고리별 가용 모델 수 (모델 단위, available>0인 모델만)
-        const catStats = sortedCats.map(cat => {
-          const catUnits = units.filter(e => e.majorCategory === cat);
-          const totalModels = [...new Set(catUnits.map(e => e.modelName||e.name).filter(Boolean))].length;
-          const availModels = [...new Set(
-            catUnits.filter(e => (e.available||0) > 0).map(e => e.modelName||e.name).filter(Boolean)
-          )].length;
-          return { cat, totalModels, availModels };
-        });
-
-        return (
-          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            {/* 헤더 + 바로가기 */}
-            <div style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px" }}>
-              <span style={{ fontSize:20 }}>📦</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비 관리</span>
-              <span onClick={() => setTab?.("equip")} style={{ fontSize:12, color:C.blue, fontWeight:600, cursor:"pointer" }}>바로가기 →</span>
-            </div>
-
-            {/* 장비 카테고리별 현황 */}
-            <div style={{ display:"grid", gridTemplateColumns:`repeat(${catStats.length}, 1fr)`, gap:0, borderTop:`1px solid ${C.border}` }}>
-              {catStats.map(({ cat, totalModels, availModels }, idx) => {
-                const isLow   = availModels < totalModels;
-                const baseCol = isLow ? "#D97706" : "#059669";
-                const dimCol  = isLow ? "#FCD34D" : "#6EE7B7";
-                return (
-                  <div key={cat} style={{ textAlign:"center", padding:"10px 4px", background: isLow ? C.yellowLight : C.greenLight, borderRight: idx < catStats.length-1 ? `1px solid ${C.border}` : "none" }}>
-                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"center", gap:0 }}>
-                      <span style={{ fontSize:18, fontWeight:800, color:baseCol }}>{availModels}</span>
-                      <span style={{ fontSize:18, fontWeight:400, color:dimCol }}>/{totalModels}</span>
-                    </div>
-                    <div style={{ fontSize:9, color:C.muted, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", padding:"0 2px" }}>{cat}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* 장비 대여관리 */}
-      {(() => {
-        const today    = new Date().toISOString().slice(0,10);
-        const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
-
-        const retStatus = ["승인됨", "대여중"];
-        const todayRentEquip  = requests.filter(r => r.startDate === today     && r.status === "승인됨").length;
-        const todayRetEquip   = requests.filter(r => r.endDate === today          && retStatus.includes(r.status)).length;
-        const tmrRentEquip    = requests.filter(r => r.startDate === tomorrow     && r.status === "승인됨").length;
-        const tmrRetEquip     = requests.filter(r => r.endDate === tomorrow       && retStatus.includes(r.status)).length;
-
-        const Row = ({label, equip}) => (
-          <div style={{ display:"flex", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:8 }}>
-            <span style={{ fontSize:12, color:C.muted, minWidth:80 }}>{label}</span>
-            <span style={{ fontSize:12, fontWeight:700, color:equip>0?C.navy:C.muted }}>장비 {equip}건</span>
-          </div>
-        );
-
-        return (
-          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            <div onClick={() => setTab?.("rental")}
-              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-              <span style={{ fontSize:20 }}>📅</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>장비 대여관리</span>
-              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-            </div>
-            {/* 승인 대기 - 항상 표시 */}
-            <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
-              <div style={{ flex:1, padding:"10px 14px", textAlign:"center", background: pending>0 ? C.yellowLight : C.bg }}>
-                <div style={{ fontSize:18, fontWeight:900, color: pending>0 ? C.orange : C.green }}>{pending}</div>
-                <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>장비대여 승인대기</div>
-              </div>
-            </div>
-            <Row label="오늘 대여" equip={todayRentEquip} />
-            <Row label="오늘 반납" equip={todayRetEquip} />
-            <Row label="내일 대여" equip={tmrRentEquip} />
-            <Row label="내일 반납" equip={tmrRetEquip} />
-          </div>
-        );
-      })()}
-
-      {/* 라이선스 관리 */}
-      {(() => {
-        const today = new Date().toISOString().slice(0,10);
-        const upcoming = schedules
-          .filter(s => s.date >= today && s.status !== "완료")
-          .sort((a,b) => a.date > b.date ? 1 : -1)
-          .slice(0, 3);
-
-        const DEPTS = ["영상계열","성우계열","엔터테인먼트계열","음향계열","실용음악계열"];
-        const students = users.filter(u => u.role === "student" && u.status === "approved");
-
-        const LicBar = ({ dept }) => {
-          const group = dept === "전체" ? students : students.filter(u => u.dept === dept);
-          const total = group.length;
-          if (total === 0) return null;
-          const none = group.filter(u => !u.license || u.license === "없음").length;
-          const lv1  = group.filter(u => u.license === "1단계").length;
-          const lv2  = group.filter(u => u.license === "2단계").length;
-          const lv3  = group.filter(u => u.license === "3단계").length;
-          const pct  = n => Math.round(n/total*100);
-          return (
-            <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}` }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:5 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:C.navy }}>{dept === "전체" ? "전체" : dept.replace("계열","")}</span>
-                <span style={{ fontSize:10, color:C.muted }}>총 {total}명</span>
-              </div>
-              {/* 게이지 바 */}
-              {/* 없음:#B0BEC5 / 1단계:#5BB5A2 / 2단계:#7986CB / 3단계:#E57373 */}
-              <div style={{ display:"flex", borderRadius:4, overflow:"hidden", height:8, marginBottom:4 }}>
-                {none>0 && <div style={{ flex:none, background:"#B0BEC5" }} title={`없음 ${none}명`} />}
-                {lv1 >0 && <div style={{ flex:lv1,  background:"#5BB5A2" }} title={`1단계 ${lv1}명`} />}
-                {lv2 >0 && <div style={{ flex:lv2,  background:"#7986CB" }} title={`2단계 ${lv2}명`} />}
-                {lv3 >0 && <div style={{ flex:lv3,  background:"#E57373" }} title={`3단계 ${lv3}명`} />}
-              </div>
-              <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
-                {[["없음", none, "#90A4AE"], ["1단계", lv1, "#5BB5A2"], ["2단계", lv2, "#7986CB"], ["3단계", lv3, "#E57373"]].map(([label, n, col]) => (
-                  <span key={label} style={{ fontSize:10, color:col, fontWeight:600 }}>
-                    {label} {n}명({pct(n)}%)
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        };
-
-        return (
-          <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-            <div onClick={() => setTab?.("license")}
-              style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-              <span style={{ fontSize:20 }}>🎖️</span>
-              <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>라이선스 관리</span>
-              <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-            </div>
-
-            {/* 예정 수업 */}
-            {upcoming.length > 0 && (
-              <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, background:C.purpleLight }}>
-                <div style={{ fontSize:11, fontWeight:700, color:C.purple, marginBottom:4 }}>📅 예정 수업</div>
-                {upcoming.map(s => (
-                  <div key={s.id} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.text, marginBottom:2 }}>
-                    <span>{s.title}</span>
-                    <span style={{ color:C.muted }}>{s.date} {s.time}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 계열별 라이선스 현황 */}
-            {DEPTS.map(dept => <LicBar key={dept} dept={dept} />)}
-          </div>
-        );
-      })()}
-
-      {/* 에브리타임 관리 - 슈퍼/조교만 */}
-      {!isTeacherProf && <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-        <div onClick={() => setTab?.("community")}
-          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-          <span style={{ fontSize:20 }}>💬</span>
-          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>에브리타임 관리</span>
-          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-        </div>
-        {[...communityPosts]
-          .sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0))
-          .slice(0,3)
-          .map(p => (
-            <div key={p.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 14px", borderTop:`1px solid ${C.border}`, gap:10 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
-                <span style={{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:4, padding:"1px 6px", fontSize:10, color:C.muted, flexShrink:0 }}>{p.category}</span>
-                <span style={{ fontSize:12, color:C.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
-              </div>
-              <span style={{ fontSize:10, color:C.muted, flexShrink:0 }}>💬{p.likes||0}</span>
-            </div>
-          ))
-        }
-        {communityPosts.length === 0 && (
-          <div style={{ padding:"8px 14px", borderTop:`1px solid ${C.border}`, fontSize:12, color:C.muted }}>게시글이 없습니다</div>
-        )}
-      </div>}
-
-      {/* 문의 관리 */}
-      <div style={{ background:C.surface, borderRadius:12, marginBottom:8, border:`1px solid ${C.border}`, overflow:"hidden" }}>
-        <div onClick={() => setTab?.("inquiry")}
-          style={{ display:"flex", alignItems:"center", gap:12, padding:"12px 14px", cursor:"pointer" }}>
-          <span style={{ fontSize:20 }}>📩</span>
-          <span style={{ flex:1, fontSize:14, fontWeight:700, color:C.navy }}>문의 관리</span>
-          <span style={{ fontSize:12, color:C.blue, fontWeight:600 }}>바로가기 →</span>
-        </div>
-        <div style={{ display:"flex", borderTop:`1px solid ${C.border}` }}>
-          <div style={{ flex:1, padding:"10px 14px", borderRight:`1px solid ${C.border}`, textAlign:"center", background: unanswered>0 ? C.redLight : C.bg }}>
-            <div style={{ fontSize:18, fontWeight:900, color: unanswered>0 ? C.red : C.green }}>{unanswered}</div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>미답변</div>
-          </div>
-          <div style={{ flex:1, padding:"10px 14px", textAlign:"center" }}>
-            <div style={{ fontSize:18, fontWeight:900, color:C.green }}>{inquiries.length - unanswered}</div>
-            <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>답변완료</div>
-          </div>
-        </div>
       </div>
 
       {/* 계정 연결 설정 모달 (처음 한 번만) */}
@@ -441,10 +277,10 @@ export default function Dashboard({ setTab }) {
           onClick={() => { setSwitchModal(false); setSwitchErr(""); }}>
           <div onClick={e => e.stopPropagation()}
             style={{ background:C.surface, borderRadius:16, padding:24, width:"100%", maxWidth:360, boxShadow:"0 8px 32px rgba(0,0,0,0.3)" }}>
-            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>🔄 계정 전환</div>
+            <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:4 }}>계정 전환</div>
             <div style={{ fontSize:12, color:C.muted, marginBottom:16 }}>비밀번호를 입력하면 바로 전환돼요</div>
             <div style={{ background:C.bg, borderRadius:9, padding:"9px 12px", marginBottom:12, fontSize:13, color:C.text }}>
-              📧 {profile?.linkedEmail}
+              {profile?.linkedEmail}
             </div>
             <div style={{ marginBottom: switchErr ? 8 : 16 }}>
               <div style={{ fontSize:11, fontWeight:600, color:C.muted, marginBottom:4 }}>비밀번호</div>
@@ -460,7 +296,7 @@ export default function Dashboard({ setTab }) {
                 style={{ flex:1, background:"none", border:`1px solid ${C.border}`, borderRadius:9, padding:"10px 0", fontSize:13, color:C.muted, cursor:"pointer", fontFamily:"inherit" }}>취소</button>
               <button onClick={handleSaveCreds} disabled={switchLoading}
                 style={{ flex:2, background:C.navy, border:"none", borderRadius:9, padding:"10px 0", fontSize:13, fontWeight:700, color: C.bg, cursor:"pointer", fontFamily:"inherit", opacity:switchLoading?0.7:1 }}>
-                {switchLoading ? "확인 중..." : "💾 계정 저장"}
+                {switchLoading ? "확인 중..." : "계정 저장"}
               </button>
             </div>
             {savedCreds && (
