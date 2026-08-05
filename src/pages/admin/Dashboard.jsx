@@ -134,11 +134,11 @@ export default function Dashboard({ setTab }) {
     </div>
   );
   const cardTitle = (Icon, col, label, onClick) => (
-    <div onClick={onClick} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:4, cursor: onClick ? "pointer" : "default" }}>
+    <div onClick={onClick} style={{ position:"relative", display:"flex", alignItems:"center", justifyContent:"center", marginBottom:4, cursor: onClick ? "pointer" : "default" }}>
       <span style={{ display:"flex", alignItems:"center", gap:8, fontSize:13.5, fontWeight:800, color:TXT }}>
         <Icon size={18} color={col} /> {label}
       </span>
-      {onClick && chev}
+      {onClick && <span style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", display:"flex" }}>{chev}</span>}
     </div>
   );
   const statTile = ({ Icon, label, n, col }) => (
@@ -159,24 +159,24 @@ export default function Dashboard({ setTab }) {
     </div>
   );
   const mgmtRow = ({ Icon, col, label, badge, badgeCol, tab }) => (
-    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:10, minHeight:48, boxSizing:"border-box", padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
-      {iconChip(Icon, col, 30, 16)}
-      <span style={{ flex:1, minWidth:0, fontSize:13, fontWeight:700, color:TXT, textAlign:"center", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
+    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:8, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+      {iconChip(Icon, col, 28, 15)}
+      <span style={{ flex:1, minWidth:0, fontSize:12.5, fontWeight:700, color:TXT, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{label}</span>
       <span style={{ background:`${badgeCol}22`, color:badgeCol, borderRadius:6, padding:"2px 7px", fontSize:10.5, fontWeight:700, whiteSpace:"nowrap", flexShrink:0 }}>{badge}</span>
       {chev}
     </div>
   );
   const newsRow = ({ Icon, col, label, n, nCol, tab }) => (
-    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:10, minHeight:48, boxSizing:"border-box", padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+    <div key={label} onClick={() => setTab?.(tab)} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
       {iconChip(Icon, col, 30, 16)}
-      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT, textAlign:"center" }}>{label}</span>
+      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT }}>{label}</span>
       <span style={{ background:`${nCol}22`, color:nCol, borderRadius:6, padding:"2px 9px", fontSize:12, fontWeight:800, flexShrink:0 }}>{n}</span>
     </div>
   );
   const opRow = ({ Icon, col, label, n }) => (
-    <div key={label} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:10, minHeight:48, boxSizing:"border-box", padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+    <div key={label} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:10, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
       {iconChip(Icon, col, 30, 16)}
-      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT, textAlign:"center" }}>{label}</span>
+      <span style={{ flex:1, fontSize:13, fontWeight:700, color:TXT }}>{label}</span>
       <span style={{ fontSize:15, fontWeight:900, color:TXT, flexShrink:0 }}>{n}<span style={{ fontSize:10, color:MUTED, fontWeight:600 }}>건</span></span>
     </div>
   );
@@ -284,10 +284,10 @@ export default function Dashboard({ setTab }) {
           <div style={{ padding:"14px 0 16px", fontSize:12.5, color:MUTED, borderTop:`1px solid ${BORDER}` }}>새 알림이 없습니다</div>
         )}
         {feedItems.map((f, i) => (
-          <div key={i} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:9, minHeight:48, boxSizing:"border-box", padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
+          <div key={i} onClick={() => setTab?.("rental")} style={{ display:"flex", alignItems:"center", gap:9, padding:"9px 0", borderTop:`1px solid ${BORDER}`, cursor:"pointer" }}>
             <span style={{ width:7, height:7, borderRadius:99, background:f.dot, flexShrink:0 }} />
             <span style={{ fontSize:11.5, fontWeight:800, color:f.tagCol, flexShrink:0 }}>{f.tag}</span>
-            <span style={{ flex:1, minWidth:0, fontSize:12, color:"#c8c8cf", textAlign:"center", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.text}</span>
+            <span style={{ flex:1, minWidth:0, fontSize:12, color:"#c8c8cf", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{f.text}</span>
             <span style={{ fontSize:11, color:MUTED, flexShrink:0 }}>{timeAgo(f.ts)}</span>
           </div>
         ))}
