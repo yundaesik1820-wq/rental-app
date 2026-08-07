@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import jsQR from "jsqr";
 import { C } from "../../theme";
 import { REQUIRE_RETURN_PHOTOS } from "../../config";
-import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
+import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle, Select } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
 import { useCollection, updateItem, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
