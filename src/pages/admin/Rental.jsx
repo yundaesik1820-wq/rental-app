@@ -633,6 +633,7 @@ export default function Rental({ subAdmin = false, focusId, onConsumed }) {
   const [photoModal, setPhotoModal]   = useState(null);   // 반납사진 라이트박스 { photos, idx }
   const [swapReason, setSwapReason]   = useState("");      // 교체 사유
   const [showProxy, setShowProxy]     = useState(false);   // 대리신청 모달 (슈퍼 전용)
+  const [proxySignTarget, setProxySignTarget] = useState(null); // 기존 건 학생 대리서명 대상 (슈퍼 전용)
   const { data: proxyUsers } = useCollection("users", "createdAt", { enabled: isSuperOnly });
 
   // 🔔 알림 딥링크 — 해당 대여 건으로 이동 + 스크롤 + 하이라이트
@@ -1135,6 +1136,13 @@ ${r.attachments?.length > 0 ? `
             </div>
           )}
 
+          {/* 학생 대리서명 (슈퍼 전용, 서명 없는 건만) */}
+          {isSuperOnly && !r.studentSignature && (
+            <div style={{ marginBottom:8 }}>
+              <Btn onClick={() => setProxySignTarget(r)} color={C.purple} outline full small>✍️ 학생 대리서명</Btn>
+            </div>
+          )}
+
           {/* 출력 버튼 */}
           <div style={{ marginBottom:8 }}>
             <Btn onClick={() => printRequest(r)} color={C.muted} outline full small>🖨️ 신청서 출력</Btn>
@@ -1537,6 +1545,23 @@ ${r.attachments?.length > 0 ? `
           createdBy={profile?.name || "관리자"}
           onClose={() => setShowProxy(false)}
         />
+      )}
+
+      {/* 기존 건 학생 대리서명 (슈퍼 전용) */}
+      {proxySignTarget && (
+        <Modal onClose={() => setProxySignTarget(null)} width={520}>
+          <div style={{ fontSize: 13, color: C.muted, marginBottom: 12 }}>
+            <span style={{ fontWeight: 700, color: C.text }}>{proxySignTarget.studentName}</span>님 신청건에 학생 서명을 대리로 작성합니다.
+          </div>
+          <SignaturePad
+            title="학생 서명 (대리 작성)"
+            onSave={async (d) => {
+              await updateItem("rentalRequests", proxySignTarget.id, { studentSignature: d });
+              setProxySignTarget(null);
+            }}
+            onCancel={() => setProxySignTarget(null)}
+          />
+        </Modal>
       )}
 
     </div>
