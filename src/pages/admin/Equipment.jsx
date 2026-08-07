@@ -1629,7 +1629,7 @@ export default function Equipment({ initialTab = "equip" }) {
                 <EquipCardGroup key={rep.modelName||rep.id} rep={rep} units={units}
                   onDetail={setDetailItem}
                   onInsp={setInspItem}
-                  onDelete={id => deleteItem("equipments", id)}
+                  onDelete={id => { if (window.confirm("이 장비를 삭제할까요?")) deleteItem("equipments", id); }}
                   onCycleStatus={cycleStatus}
                   onEdit={startEdit}
                   onCopy={startCopy}
