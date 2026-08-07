@@ -121,6 +121,20 @@ exports.onRentalStatusChange = functions.firestore
     });
 
     if (alreadySent) return;
+
+    // 교사서명대기 전환 → 교사(들)에게 서명 요청 알림 (학생 알림 아님)
+    if (after.status === "교사서명대기") {
+      const itemNames = (after.items || []).map(i => i.modelName || i.equipName || "").filter(Boolean);
+      const label = itemNames.length > 1 ? `${itemNames[0]} 외 ${itemNames.length - 1}건` : (itemNames[0] || "장비");
+      const who = after.studentName || "학생";
+      const adminsSnap = await admin.firestore().collection("users").where("role", "==", "admin").get();
+      const sends = adminsSnap.docs
+        .filter(x => { const dd = x.data(); return (dd.adminRole === "teacher" || dd.adminRole === "professor") && hasToken(dd); })
+        .map(x => sendFCM(x.id, "서명 대기 중인 신청이 있어요 ✍️", `${who}님의 ${label} 대여 신청에 교사 서명이 필요해요.`));
+      await Promise.allSettled(sends);
+      return;
+    }
+
     const usersSnap = await admin.firestore().collection("users")
       .where("studentId", "==", after.studentId)
       .where("status", "==", "approved")
@@ -153,19 +167,29 @@ exports.onRentalCreate = functions.firestore
   .document("rentalRequests/{reqId}")
   .onCreate(async (snap) => {
     const d = snap.data();
-    // 학생 조회 (onRentalStatusChange과 동일 방식)
+    // (1) 신청자(학생)에게 접수 확인 알림
     const usersSnap = await admin.firestore().collection("users")
       .where("studentId", "==", d.studentId)
       .where("status", "==", "approved")
       .limit(1).get();
-    if (usersSnap.empty) return;
-    const uid  = usersSnap.docs[0].id;
-    const name = d.studentName || usersSnap.docs[0].data().name || "학생";
-    await sendFCM(
-      uid,
-      "신청이 완료됐어요!",
-      `${name}님의 소중한 신청 잘 받았어요! 열심히 검토할게요🔥`
-    );
+    if (!usersSnap.empty) {
+      const uid  = usersSnap.docs[0].id;
+      const name = d.studentName || usersSnap.docs[0].data().name || "학생";
+      await sendFCM(
+        uid,
+        "신청이 완료됐어요!",
+        `${name}님의 소중한 신청 잘 받았어요! 열심히 검토할게요🔥`
+      );
+    }
+    // (2) 슈퍼관리자에게 새 신청 접수 알림
+    const itemNames = (d.items || []).map(i => i.modelName || i.equipName || "").filter(Boolean);
+    const label = itemNames.length > 1 ? `${itemNames[0]} 외 ${itemNames.length - 1}건` : (itemNames[0] || "장비");
+    const who = d.studentName || "학생";
+    const adminsSnap = await admin.firestore().collection("users").where("role", "==", "admin").get();
+    const sends = adminsSnap.docs
+      .filter(x => { const dd = x.data(); return dd.adminRole === "super" && hasToken(dd); })
+      .map(x => sendFCM(x.id, "새 대여 신청이 접수됐어요 📋", `${who}님이 ${label} 대여를 신청했어요. 확인해주세요!`));
+    await Promise.allSettled(sends);
   });
 
 // ── 새 공지사항 알림 ──────────────────────────────────────
