@@ -369,10 +369,11 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
 
   const PURPOSES = ["학교행사", "수업과제", "동아리스터디", "개인작업", "기타"];
 
-  const students = users.filter(u => u.role === "student" && u.status === "approved");
+  // 학생(승인) + 교수 모두 대리신청 대상
+  const targets = users.filter(u => u.role === "professor" || (u.role === "student" && u.status === "approved"));
   const kw = q.trim();
   const matched = kw
-    ? students.filter(u => (u.name || "").includes(kw) || (u.studentId || "").includes(kw)).slice(0, 8)
+    ? targets.filter(u => (u.name || "").includes(kw) || (u.studentId || "").includes(kw) || (u.email || "").includes(kw)).slice(0, 8)
     : [];
 
   // 고유 장비 모델 목록 (단품/세트 구분, 보유 수량 집계)
@@ -426,13 +427,14 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
         quantity: it.isSet ? 1 : it.qty, isSet: it.isSet,
         ...(it.isSet ? { setItems: [] } : {}),
       }));
+      const isProf = student.role === "professor";
       await addItem("rentalRequests", {
-        studentId:   student.studentId || "",
+        studentId:   isProf ? (student.profId || student.email || "") : (student.studentId || ""),
         studentName: student.name || "",
-        role:        "student",
+        role:        isProf ? "professor" : "student",
         phone:       student.phone || "",
-        dept:        student.dept || "",
-        license:     student.license || "없음",
+        dept:        isProf ? "교수" : (student.dept || ""),
+        license:     isProf ? "교수" : (student.license || "없음"),
         items, storageForm: null,
         emergencyContact: emergency.trim(),
         locationType,
@@ -461,32 +463,41 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
   return (
     <Modal onClose={onClose} width={460}>
       <div style={{ fontSize: 18, fontWeight: 800, color: C.navy, marginBottom: 4 }}>✍️ 대리신청</div>
-      <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>학생 명의로 대여 신청을 대신 넣습니다. (승인대기 상태로 접수)</div>
+      <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>학생/교수 명의로 대여 신청을 대신 넣습니다. (승인대기 상태로 접수)</div>
 
-      {/* 1. 학생 선택 */}
-      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>1. 학생</div>
+      {/* 1. 대상 선택 (학생/교수) */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>1. 학생 / 교수</div>
       {student ? (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.tealLight, border: `1px solid ${C.teal}40`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{student.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{student.studentId}</span></div>
-            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{student.dept} · 라이선스 {student.license || "없음"}</div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>
+              {student.role === "professor" && <span style={{ background: C.purpleLight, color: C.purple, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, marginRight: 6 }}>교수</span>}
+              {student.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{student.role === "professor" ? (student.email || "") : (student.studentId || "")}</span>
+            </div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{student.role === "professor" ? "교수" : `${student.dept || ""} · 라이선스 ${student.license || "없음"}`}</div>
           </div>
           <button onClick={() => setStudent(null)} style={{ background: "none", border: "none", color: C.red, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>변경</button>
         </div>
       ) : (
         <div style={{ marginBottom: 16 }}>
-          <Inp placeholder="이름 또는 학번 검색" value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 0 }} />
+          <Inp placeholder="이름 · 학번 · 이메일 검색" value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 0 }} />
           {matched.length > 0 && (
             <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, marginTop: 6, overflow: "hidden" }}>
-              {matched.map(u => (
-                <button key={u.id} onClick={() => { setStudent(u); setQ(""); }} style={{ display: "block", width: "100%", textAlign: "left", background: C.surface, border: "none", borderBottom: `1px solid ${C.border}`, padding: "10px 14px", cursor: "pointer" }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{u.name} <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>{u.studentId}</span></div>
-                  <div style={{ fontSize: 11, color: C.muted }}>{u.dept}</div>
-                </button>
-              ))}
+              {matched.map(u => {
+                const isProf = u.role === "professor";
+                return (
+                  <button key={u.id} onClick={() => { setStudent(u); setQ(""); }} style={{ display: "block", width: "100%", textAlign: "left", background: C.surface, border: "none", borderBottom: `1px solid ${C.border}`, padding: "10px 14px", cursor: "pointer" }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>
+                      {isProf && <span style={{ background: C.purpleLight, color: C.purple, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, marginRight: 6 }}>교수</span>}
+                      {u.name} <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>{isProf ? (u.email || "") : (u.studentId || "")}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: C.muted }}>{isProf ? "교수" : u.dept}</div>
+                  </button>
+                );
+              })}
             </div>
           )}
-          {kw && matched.length === 0 && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>일치하는 승인 학생이 없습니다</div>}
+          {kw && matched.length === 0 && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>일치하는 학생/교수가 없습니다</div>}
         </div>
       )}
 
