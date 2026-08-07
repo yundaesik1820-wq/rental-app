@@ -4,7 +4,7 @@ import { C } from "../../theme";
 import { REQUIRE_RETURN_PHOTOS } from "../../config";
 import { Card, Badge, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import SignaturePad from "../../components/SignaturePad";
-import { useCollection, updateItem } from "../../hooks/useFirestore";
+import { useCollection, updateItem, addItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { PauseCircle } from "lucide-react";
 
@@ -346,12 +346,235 @@ function QRChecklist({ checklist, onUpdate, onPrev, onConfirm, submitting, mode 
   );
 }
 
+// ── 관리자 대리신청 모달 (슈퍼관리자 전용) ────────────────────
+// 학교행사 등으로 관리자가 학생 명의로 대여 신청을 대신 넣음.
+// 신청서는 학생 신청과 동일한 형태(rentalRequests, status:"승인대기")로 생성돼 일반 흐름을 탐.
+function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
+  const [q, setQ]                 = useState("");
+  const [student, setStudent]     = useState(null);
+  const [eq, setEq]               = useState("");
+  const [picked, setPicked]       = useState({}); // key -> { modelName, majorCategory, itemName, isSet, qty, max }
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endDate, setEndDate]     = useState("");
+  const [endTime, setEndTime]     = useState("18:00");
+  const [purpose, setPurpose]     = useState("학교행사");
+  const [purposeDetail, setPurposeDetail] = useState("");
+  const [participants, setParticipants]   = useState("");
+  const [locationType, setLocationType]   = useState("교내");
+  const [location, setLocation]   = useState("");
+  const [emergency, setEmergency] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr]             = useState("");
+
+  const PURPOSES = ["학교행사", "수업과제", "동아리스터디", "개인작업", "기타"];
+
+  const students = users.filter(u => u.role === "student" && u.status === "approved");
+  const kw = q.trim();
+  const matched = kw
+    ? students.filter(u => (u.name || "").includes(kw) || (u.studentId || "").includes(kw)).slice(0, 8)
+    : [];
+
+  // 고유 장비 모델 목록 (단품/세트 구분, 보유 수량 집계)
+  const models = (() => {
+    const m = {};
+    equipments.forEach(e => {
+      const name = e.modelName || e.name;
+      if (!name) return;
+      const isSet = !!e.isSet;
+      const key = `${name}|${isSet ? 1 : 0}`;
+      if (!m[key]) m[key] = { modelName: name, majorCategory: e.majorCategory || "", itemName: e.itemName || "", isSet, count: 0 };
+      m[key].count += 1;
+    });
+    return Object.values(m);
+  })();
+  const eqkw = eq.trim();
+  const eqMatched = eqkw ? models.filter(x => x.modelName.includes(eqkw)).slice(0, 12) : [];
+
+  const addModel = (x) => {
+    const key = `${x.modelName}|${x.isSet ? 1 : 0}`;
+    const max = x.isSet ? 1 : x.count;
+    setPicked(p => {
+      const cur = p[key]?.qty || 0;
+      return { ...p, [key]: { modelName: x.modelName, majorCategory: x.majorCategory, itemName: x.itemName, isSet: x.isSet, qty: Math.min(max, cur + 1), max } };
+    });
+    setEq("");
+  };
+  const setQty = (key, qty) => {
+    setPicked(p => {
+      const it = p[key];
+      if (!it) return p;
+      const n = Math.max(0, Math.min(it.max, qty));
+      if (n === 0) { const cp = { ...p }; delete cp[key]; return cp; }
+      return { ...p, [key]: { ...it, qty: n } };
+    });
+  };
+  const pickedList = Object.entries(picked);
+
+  const submit = async () => {
+    setErr("");
+    if (!student)                 return setErr("학생을 선택하세요");
+    if (pickedList.length === 0)  return setErr("장비를 1개 이상 선택하세요");
+    if (!startDate)               return setErr("대여 시작일을 선택하세요");
+    if (!endDate)                 return setErr("반납일을 선택하세요");
+    if (startDate > endDate)      return setErr("반납일이 대여일보다 빠릅니다");
+    setSubmitting(true);
+    try {
+      const items = pickedList.map(([, it]) => ({
+        modelName: it.modelName, equipName: it.modelName,
+        itemName: it.itemName, category: it.majorCategory,
+        quantity: it.isSet ? 1 : it.qty, isSet: it.isSet,
+        ...(it.isSet ? { setItems: [] } : {}),
+      }));
+      await addItem("rentalRequests", {
+        studentId:   student.studentId || "",
+        studentName: student.name || "",
+        role:        "student",
+        phone:       student.phone || "",
+        dept:        student.dept || "",
+        license:     student.license || "없음",
+        items, storageForm: null,
+        emergencyContact: emergency.trim(),
+        locationType,
+        participants: participants.trim(),
+        location: location.trim(),
+        purpose,
+        purposeDetail: purposeDetail.trim(),
+        club: "", courseName: "", professorName: "",
+        eventName: purpose === "학교행사" ? purposeDetail.trim() : "",
+        eventProfessor: "",
+        attachments: [],
+        startDate, startTime, endDate, endTime,
+        status: "승인대기", reason: "",
+        studentSignature: "",
+        proxyBy: createdBy || "관리자", // 대리신청 표시(관리자가 대신 넣음)
+      });
+      onClose();
+    } catch (e) {
+      console.error(e);
+      setErr("신청 중 오류: " + e.message);
+    } finally { setSubmitting(false); }
+  };
+
+  const stepBtn = { width: 28, height: 28, minHeight: 28, borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: "pointer", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" };
+
+  return (
+    <Modal onClose={onClose} width={460}>
+      <div style={{ fontSize: 18, fontWeight: 800, color: C.navy, marginBottom: 4 }}>✍️ 대리신청</div>
+      <div style={{ fontSize: 12, color: C.muted, marginBottom: 18 }}>학생 명의로 대여 신청을 대신 넣습니다. (승인대기 상태로 접수)</div>
+
+      {/* 1. 학생 선택 */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>1. 학생</div>
+      {student ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.tealLight, border: `1px solid ${C.teal}40`, borderRadius: 10, padding: "10px 14px", marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>{student.name} <span style={{ fontSize: 12, color: C.muted, fontWeight: 500 }}>{student.studentId}</span></div>
+            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{student.dept} · 라이선스 {student.license || "없음"}</div>
+          </div>
+          <button onClick={() => setStudent(null)} style={{ background: "none", border: "none", color: C.red, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>변경</button>
+        </div>
+      ) : (
+        <div style={{ marginBottom: 16 }}>
+          <Inp placeholder="이름 또는 학번 검색" value={q} onChange={e => setQ(e.target.value)} style={{ marginBottom: 0 }} />
+          {matched.length > 0 && (
+            <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, marginTop: 6, overflow: "hidden" }}>
+              {matched.map(u => (
+                <button key={u.id} onClick={() => { setStudent(u); setQ(""); }} style={{ display: "block", width: "100%", textAlign: "left", background: C.surface, border: "none", borderBottom: `1px solid ${C.border}`, padding: "10px 14px", cursor: "pointer" }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: C.text }}>{u.name} <span style={{ fontSize: 11, color: C.muted, fontWeight: 500 }}>{u.studentId}</span></div>
+                  <div style={{ fontSize: 11, color: C.muted }}>{u.dept}</div>
+                </button>
+              ))}
+            </div>
+          )}
+          {kw && matched.length === 0 && <div style={{ fontSize: 12, color: C.muted, marginTop: 6 }}>일치하는 승인 학생이 없습니다</div>}
+        </div>
+      )}
+
+      {/* 2. 장비 선택 */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 6 }}>2. 장비</div>
+      <Inp placeholder="장비 모델명 검색" value={eq} onChange={e => setEq(e.target.value)} style={{ marginBottom: 0 }} />
+      {eqMatched.length > 0 && (
+        <div style={{ border: `1px solid ${C.border}`, borderRadius: 10, marginTop: 6, overflow: "hidden", maxHeight: 200, overflowY: "auto" }}>
+          {eqMatched.map(x => (
+            <button key={`${x.modelName}|${x.isSet ? 1 : 0}`} onClick={() => addModel(x)} style={{ display: "flex", width: "100%", justifyContent: "space-between", alignItems: "center", background: C.surface, border: "none", borderBottom: `1px solid ${C.border}`, padding: "9px 14px", cursor: "pointer" }}>
+              <span style={{ fontSize: 13, color: C.text }}>
+                {x.isSet && <span style={{ background: C.orangeLight, color: C.orange, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, marginRight: 6 }}>세트</span>}
+                {x.modelName}
+              </span>
+              <span style={{ fontSize: 11, color: C.muted }}>보유 {x.count}</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {pickedList.length > 0 && (
+        <div style={{ marginTop: 10, marginBottom: 16, display: "flex", flexDirection: "column", gap: 6 }}>
+          {pickedList.map(([key, it]) => (
+            <div key={key} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.bg, borderRadius: 8, padding: "8px 12px" }}>
+              <div style={{ fontSize: 13, color: C.text, fontWeight: 600 }}>
+                {it.isSet && <span style={{ background: C.orangeLight, color: C.orange, borderRadius: 5, padding: "1px 6px", fontSize: 10, fontWeight: 700, marginRight: 6 }}>세트</span>}
+                {it.modelName}
+              </div>
+              {it.isSet ? (
+                <button onClick={() => setQty(key, 0)} style={{ background: C.redLight, color: C.red, border: "none", borderRadius: 8, padding: "4px 10px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>제거</button>
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={() => setQty(key, it.qty - 1)} style={stepBtn}>−</button>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: C.navy, minWidth: 20, textAlign: "center" }}>{it.qty}</span>
+                  <button onClick={() => setQty(key, it.qty + 1)} style={{ ...stepBtn, borderColor: C.teal, background: C.tealLight, color: C.teal }}>+</button>
+                  <span style={{ fontSize: 11, color: C.muted }}>/ {it.max}</span>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 3. 기간 */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: "16px 0 6px" }}>3. 대여 기간</div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}><Inp type="date" value={startDate} onChange={e => setStartDate(e.target.value)} /></div>
+        <div style={{ width: 110 }}><Inp type="time" value={startTime} onChange={e => setStartTime(e.target.value)} /></div>
+      </div>
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ flex: 1 }}><Inp type="date" value={endDate} onChange={e => setEndDate(e.target.value)} /></div>
+        <div style={{ width: 110 }}><Inp type="time" value={endTime} onChange={e => setEndTime(e.target.value)} /></div>
+      </div>
+
+      {/* 4. 목적/상세 (선택) */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: "16px 0 6px" }}>4. 사용 목적 <span style={{ color: C.muted, fontWeight: 400 }}>(선택)</span></div>
+      <Select value={purpose} onChange={e => setPurpose(e.target.value)}>
+        {PURPOSES.map(p => <option key={p} value={p}>{p}</option>)}
+      </Select>
+      <Inp placeholder={purpose === "학교행사" ? "행사명" : "세부 내용"} value={purposeDetail} onChange={e => setPurposeDetail(e.target.value)} />
+      <Inp placeholder="참여인원 (선택)" value={participants} onChange={e => setParticipants(e.target.value)} />
+      <div style={{ display: "flex", gap: 8 }}>
+        <div style={{ width: 110 }}>
+          <Select value={locationType} onChange={e => setLocationType(e.target.value)}>
+            <option value="교내">교내</option>
+            <option value="교외">교외</option>
+          </Select>
+        </div>
+        <div style={{ flex: 1 }}><Inp placeholder="장소 (선택)" value={location} onChange={e => setLocation(e.target.value)} /></div>
+      </div>
+      <Inp placeholder="비상연락처 (선택)" value={emergency} onChange={e => setEmergency(e.target.value)} />
+
+      {err && <div style={{ fontSize: 12, color: C.red, fontWeight: 600, margin: "6px 0 10px" }}>{err}</div>}
+
+      <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+        <Btn onClick={onClose} color={C.muted} outline full>취소</Btn>
+        <Btn onClick={submit} color={C.teal} text="#fff" full disabled={submitting}>{submitting ? "접수 중..." : "대리신청 접수"}</Btn>
+      </div>
+    </Modal>
+  );
+}
+
 export default function Rental({ subAdmin = false, focusId, onConsumed }) {
   const { profile } = useAuth();
   const { data: requests }   = useCollection("rentalRequests", "createdAt");
   const { data: equipments }       = useCollection("equipments", "createdAt");
 
   const adminRole   = profile?.adminRole || "super";
+  const isSuperOnly = adminRole === "super"; // 대리신청은 슈퍼관리자 전용
   const isTeacher   = subAdmin && (adminRole === "teacher" || adminRole === "professor");
   const isSuper     = !isTeacher; // 슈퍼+조교는 전체 권한
   const isAssist    = adminRole === "assistant";
@@ -367,6 +590,8 @@ export default function Rental({ subAdmin = false, focusId, onConsumed }) {
   const [swapModal, setSwapModal]     = useState(null);   // 교체 모달 { request, unitIdx }
   const [photoModal, setPhotoModal]   = useState(null);   // 반납사진 라이트박스 { photos, idx }
   const [swapReason, setSwapReason]   = useState("");      // 교체 사유
+  const [showProxy, setShowProxy]     = useState(false);   // 대리신청 모달 (슈퍼 전용)
+  const { data: proxyUsers } = useCollection("users", "createdAt", { enabled: isSuperOnly });
 
   // 🔔 알림 딥링크 — 해당 대여 건으로 이동 + 스크롤 + 하이라이트
   const [flashId, setFlashId] = useState(null);
@@ -746,7 +971,14 @@ ${r.attachments?.length > 0 ? `
 
   return (
     <div>
-      <PageTitle>📋 대여 신청 관리</PageTitle>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 20 }}>
+        <div style={{ fontSize: 22, fontWeight: 900, color: C.navy }}>📋 대여 신청 관리</div>
+        {isSuperOnly && (
+          <button onClick={() => setShowProxy(true)} style={{ background: C.teal, color: "#fff", border: "none", borderRadius: 10, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap", flexShrink: 0 }}>
+            ✍️ 대리신청
+          </button>
+        )}
+      </div>
 
       {/* 승인대기 알림 */}
       {counts["승인대기"] > 0 && (
@@ -1253,6 +1485,16 @@ ${r.attachments?.length > 0 ? `
           </div>
           <Btn onClick={() => { setSwapModal(null); setSwapReason(""); }} color={C.muted} outline full>취소</Btn>
         </Modal>
+      )}
+
+      {/* 대리신청 모달 (슈퍼관리자 전용) */}
+      {showProxy && (
+        <ProxyRequestModal
+          users={proxyUsers}
+          equipments={equipments}
+          createdBy={profile?.name || "관리자"}
+          onClose={() => setShowProxy(false)}
+        />
       )}
 
     </div>
