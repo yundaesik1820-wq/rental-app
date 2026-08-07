@@ -364,6 +364,8 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
   const [locationType, setLocationType]   = useState("교내");
   const [location, setLocation]   = useState("");
   const [emergency, setEmergency] = useState("");
+  const [sig, setSig]             = useState("");    // 학생 대리서명 (선택)
+  const [showSig, setShowSig]     = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [err, setErr]             = useState("");
 
@@ -448,7 +450,7 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
         attachments: [],
         startDate, startTime, endDate, endTime,
         status: "승인대기", reason: "",
-        studentSignature: "",
+        studentSignature: sig || "", // 관리자 대리서명(있으면). 비면 출력물엔 빈 서명란
         proxyBy: createdBy || "관리자", // 대리신청 표시(관리자가 대신 넣음)
       });
       onClose();
@@ -459,6 +461,18 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
   };
 
   const stepBtn = { width: 28, height: 28, minHeight: 28, borderRadius: 8, border: `1px solid ${C.border}`, background: C.bg, color: C.text, cursor: "pointer", fontSize: 16, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center" };
+
+  if (showSig) {
+    return (
+      <Modal onClose={() => setShowSig(false)} width={520}>
+        <SignaturePad
+          title="학생 서명 (대리 작성)"
+          onSave={(d) => { setSig(d); setShowSig(false); }}
+          onCancel={() => setShowSig(false)}
+        />
+      </Modal>
+    );
+  }
 
   return (
     <Modal onClose={onClose} width={460}>
@@ -568,6 +582,23 @@ function ProxyRequestModal({ users, equipments, createdBy, onClose }) {
         <div style={{ flex: 1 }}><Inp placeholder="장소 (선택)" value={location} onChange={e => setLocation(e.target.value)} /></div>
       </div>
       <Inp placeholder="비상연락처 (선택)" value={emergency} onChange={e => setEmergency(e.target.value)} />
+
+      {/* 5. 학생 서명 (대리, 선택) */}
+      <div style={{ fontSize: 13, fontWeight: 700, color: C.text, margin: "16px 0 6px" }}>5. 학생 서명 <span style={{ color: C.muted, fontWeight: 400 }}>(대리, 선택)</span></div>
+      {sig ? (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: "8px 12px", marginBottom: 4 }}>
+          <img src={sig} alt="서명" style={{ width: 120, height: 48, objectFit: "contain", background: "#fff", borderRadius: 6, maxWidth: "none" }} />
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={() => setShowSig(true)} style={{ background: "none", border: `1px solid ${C.border}`, color: C.text, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>다시</button>
+            <button onClick={() => setSig("")} style={{ background: C.redLight, border: "none", color: C.red, borderRadius: 8, padding: "6px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer" }}>삭제</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => setShowSig(true)} style={{ width: "100%", background: C.bg, border: `1.5px dashed ${C.border}`, color: C.muted, borderRadius: 10, padding: "12px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+          ✍️ 여기를 눌러 학생 서명 대리 작성
+        </button>
+      )}
+      <div style={{ fontSize: 11, color: C.muted, margin: "6px 0 4px" }}>비워두면 신청서 출력물의 학생 서명란이 빈칸으로 나와 종이에 직접 받을 수 있어요.</div>
 
       {err && <div style={{ fontSize: 12, color: C.red, fontWeight: 600, margin: "6px 0 10px" }}>{err}</div>}
 
