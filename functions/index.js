@@ -11,9 +11,10 @@ exports.resetStudentPassword = functions.https.onCall(async (data, context) => {
   if (!callerDoc.exists || callerDoc.data().role !== "admin")
     throw new functions.https.HttpsError("permission-denied", "관리자만 사용할 수 있습니다.");
   const { studentId, email, requestId } = data;
-  if (!studentId && !email) throw new functions.https.HttpsError("invalid-argument", "학번 또는 이메일이 필요합니다.");
-  // 관리자(자유 이메일) 계정은 학번 이메일이 아니므로 email이 오면 그대로, 아니면 학번@kbas.ac.kr로 조회
-  const lookupEmail = (email && email.includes("@")) ? email.trim().toLowerCase() : `${studentId}@kbas.ac.kr`;
+  // 학생은 학번, 관리자는 자유 이메일. @ 포함이면 그대로 이메일, 아니면 학번@kbas.ac.kr로 조회
+  const idOrEmail = (email || studentId || "").trim();
+  if (!idOrEmail) throw new functions.https.HttpsError("invalid-argument", "학번 또는 이메일이 필요합니다.");
+  const lookupEmail = idOrEmail.includes("@") ? idOrEmail.toLowerCase() : `${idOrEmail}@kbas.ac.kr`;
   try {
     const user = await admin.auth().getUserByEmail(lookupEmail);
     await admin.auth().updateUser(user.uid, { password: "123456" });
@@ -21,7 +22,7 @@ exports.resetStudentPassword = functions.https.onCall(async (data, context) => {
       await admin.firestore().collection("pwResetRequests").doc(requestId)
         .update({ status: "done", doneAt: new Date().toISOString() });
     }
-    return { success: true, message: `${studentId || lookupEmail} 비밀번호가 123456으로 초기화됐습니다.` };
+    return { success: true, message: `${idOrEmail} 비밀번호가 123456으로 초기화됐습니다.` };
   } catch (e) {
     throw new functions.https.HttpsError("not-found", "해당 계정을 찾을 수 없습니다: " + e.message);
   }

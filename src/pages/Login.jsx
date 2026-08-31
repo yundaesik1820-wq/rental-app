@@ -84,12 +84,9 @@ export default function Login() {
     if (!resetId.trim() || !resetName.trim()) { setResetErr("학번(또는 이메일)과 이름을 모두 입력하세요"); return; }
     setResetLoading(true); setResetErr("");
     try {
-      const idRaw = resetId.trim();
-      const isEmail = idRaw.includes("@");   // 관리자는 자유 이메일 계정이라 학번이 없음
+      // studentId 칸에 학번 또는 관리자 이메일을 그대로 담음(@ 포함 여부로 함수가 판별). 규칙 필드 그대로 유지.
       await addDoc(collection(db, "pwResetRequests"), {
-        studentId:  isEmail ? "" : idRaw,
-        loginEmail: isEmail ? idRaw.toLowerCase() : `${idRaw}@kbas.ac.kr`,
-        studentName: resetName.trim(),
+        studentId: resetId.trim(), studentName: resetName.trim(),
         status: "pending", createdAt: serverTimestamp(),
       });
       setResetDone(true);
