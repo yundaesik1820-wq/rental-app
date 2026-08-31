@@ -81,11 +81,15 @@ export default function Login() {
   };
 
   const handleReset = async () => {
-    if (!resetId.trim() || !resetName.trim()) { setResetErr("학번과 이름을 모두 입력하세요"); return; }
+    if (!resetId.trim() || !resetName.trim()) { setResetErr("학번(또는 이메일)과 이름을 모두 입력하세요"); return; }
     setResetLoading(true); setResetErr("");
     try {
+      const idRaw = resetId.trim();
+      const isEmail = idRaw.includes("@");   // 관리자는 자유 이메일 계정이라 학번이 없음
       await addDoc(collection(db, "pwResetRequests"), {
-        studentId: resetId.trim(), studentName: resetName.trim(),
+        studentId:  isEmail ? "" : idRaw,
+        loginEmail: isEmail ? idRaw.toLowerCase() : `${idRaw}@kbas.ac.kr`,
+        studentName: resetName.trim(),
         status: "pending", createdAt: serverTimestamp(),
       });
       setResetDone(true);
@@ -217,13 +221,13 @@ export default function Login() {
               ) : (
                 <>
                   <div style={{ fontSize:17, fontWeight:800, color:C.navy, marginBottom:4 }}>비밀번호 초기화 요청</div>
-                  <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>학번과 이름을 입력하면 관리자에게 요청이 전달됩니다</div>
+                  <div style={{ fontSize:13, color:C.muted, marginBottom:20 }}>학번(관리자는 이메일)과 이름을 입력하면 관리자에게 요청이 전달됩니다</div>
                   {resetErr && (
                     <div style={{ background:C.redLight, color:C.red, borderRadius:10, padding:"10px 14px", fontSize:13, marginBottom:14, border:`1px solid ${C.red}30` }}>
                       ⚠️ {resetErr}
                     </div>
                   )}
-                  <Inp label="학번 *" placeholder="예: 25237001" value={resetId} onChange={e => { setResetId(e.target.value); setResetErr(""); }} />
+                  <Inp label="학번 또는 이메일 *" placeholder="학번 25237001 또는 name@email.com" value={resetId} onChange={e => { setResetId(e.target.value); setResetErr(""); }} />
                   <Inp label="이름 *" placeholder="홍길동" value={resetName} onChange={e => { setResetName(e.target.value); setResetErr(""); }} />
                   <div style={{ display:"flex", gap:10, marginTop:8 }}>
                     <Btn onClick={() => setShowReset(false)} color={C.muted} outline full>취소</Btn>

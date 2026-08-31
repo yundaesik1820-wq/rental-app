@@ -278,12 +278,13 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
   // 비밀번호 초기화 요청 처리
   // 비밀번호 초기화 요청 처리 (Cloud Function 호출)
   const handlePwReset = async (req) => {
-    if (!window.confirm(`${req.studentName}(${req.studentId}) 학생의 비밀번호를 123456으로 초기화하시겠습니까?`)) return;
+    const who = req.studentId || req.loginEmail || "";
+    if (!window.confirm(`${req.studentName}(${who})님의 비밀번호를 123456으로 초기화하시겠습니까?`)) return;
     try {
       const { getFunctions, httpsCallable } = await import("firebase/functions");
       const functions     = getFunctions();
       const resetPassword = httpsCallable(functions, "resetStudentPassword");
-      const result        = await resetPassword({ studentId: req.studentId, requestId: req.id });
+      const result        = await resetPassword({ studentId: req.studentId, email: req.loginEmail, requestId: req.id });
       alert("✅ " + result.data.message);
     } catch(e) {
       alert("오류: " + (e.message || JSON.stringify(e)));
@@ -627,7 +628,7 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                   <div>
                     <div style={{ fontSize:15, fontWeight:700, color:C.text, marginBottom:2 }}>{req.studentName}</div>
-                    <div style={{ fontSize:13, color:C.muted }}>학번: {req.studentId}</div>
+                    <div style={{ fontSize:13, color:C.muted }}>{req.studentId ? `학번: ${req.studentId}` : `이메일: ${req.loginEmail || ""}`}</div>
                     <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>
                       요청일: {req.createdAt?.toDate?.()?.toLocaleDateString("ko-KR") || ""}
                     </div>
