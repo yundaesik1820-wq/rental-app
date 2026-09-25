@@ -166,7 +166,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, allUsers, pwResets,
   // 클릭 시 이동할 페이지 + 실제 글까지 여는 딥링크 타깃
   const navTarget = (a) => {
     if (a.cat === "친구")     return { tab: "mypage", mypageView: "friends" };
-    if (a.cat === "프로젝트") return { tab: "projectstudio" };
+    if (a.cat === "프로젝트") return { tab: isAdmin ? "projectstudio" : "production" };
     if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
     if (a.cat === "SNS")      return { tab: "community" };
@@ -668,7 +668,7 @@ function AppContent() {
         case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "production": return <ProductionScreen key="production" initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("home")} />;
-        case "boxoffice": return <Community key="boxoffice" initialRoom="boxoffice" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} onRoomConsumed={() => {}} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
+        case "boxoffice": return <Community key="boxoffice" lockRoom="boxoffice" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} onRoomConsumed={() => {}} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "community": return <Community key="community" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;

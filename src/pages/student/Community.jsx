@@ -482,11 +482,11 @@ function CrewMakersSection({ crews, staffs, onOpen, onAll, bookmarks, onToggleBo
   );
 }
 
-export default function Community({ onExit, onNotif, initialRoom, initialPostId, initialArticleId, onRoomConsumed, onOpenProjectStudio }) {
+export default function Community({ onExit, onNotif, initialRoom, initialPostId, initialArticleId, onRoomConsumed, onOpenProjectStudio, lockRoom }) {
   const { profile } = useAuth();
 
   // 🎬 선택된 룸 - null이면 분기 화면, 그 외엔 해당 룸 표시
-  const [selectedRoom, setSelectedRoom] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(lockRoom || null);
   const [blockedRoom, setBlockedRoom] = useState(null); // 교수/교사가 학생전용 룸 클릭 시
   // 🎬 룸 진입 스플래시 — 전체보기 진입 연출 (null | { src, phase: "in"|"out" })
   const [roomSplash, setRoomSplash] = useState(null);
@@ -1239,10 +1239,12 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
-              <button onClick={() => setSelectedRoom(null)}
-                style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#fafaf9", flexShrink:0 }}>
-                <ChevronLeft size={24} strokeWidth={2.2} />
-              </button>
+              {!lockRoom && (
+                <button onClick={() => setSelectedRoom(null)}
+                  style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#fafaf9", flexShrink:0 }}>
+                  <ChevronLeft size={24} strokeWidth={2.2} />
+                </button>
+              )}
               <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                 {currentRoom ? currentRoom.title : "커뮤니티"}
               </span>
