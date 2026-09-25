@@ -203,12 +203,6 @@ export default function Profile() {
     }
     setPwLoading(false);
   };
-  const { data: allRequests } = useCollection("rentalRequests", "createdAt");
-
-  const myId   = profile?.studentId || profile?.email || "";
-  const mine   = allRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
-  const active = mine.filter(r => r.status === "대여중" || r.status === "연체").length;
-
   if (!profile) return null;
 
   const isProf  = profile.role === "professor";
@@ -258,8 +252,6 @@ export default function Profile() {
           ]),
           ["계열/소속",  profile.dept || (isProf ? "교수" : "-")],
           ["연락처",     profile.phone || "-"],
-          ["누적 대여",  `${profile.rentals || mine.filter(r => r.status === "반납완료").length}회`],
-          ["현재 대여중", `${active}개`],
         ].map(([k, v]) => (
           <div key={k} style={{ display: "flex", justifyContent: "space-between", padding: "10px 0", borderBottom: `1px solid ${P.border}` }}>
             <span style={{ fontSize: 14, color: P.sub }}>{k}</span>

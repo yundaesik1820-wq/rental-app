@@ -26,12 +26,7 @@ const fmtSeen = (ts) => {
 
 export default function Students({ readOnly = false, focusId, onConsumed }) {
   const { data: allUsers }    = useCollection("users", "createdAt");
-  const { data: allRequests }   = useCollection("rentalRequests", "createdAt");
   const { data: resetRequests } = useCollection("pwResetRequests", "createdAt");
-
-  // studentId 기준 대여 횟수 실시간 집계
-  const getRentalCount = (studentId) =>
-    allRequests.filter(r => r.studentId === studentId).length;
 
   // readOnly(일반직원)일 때 탭을 승인학생 목록만 표시
   const TABS_ALL = [
@@ -678,17 +673,13 @@ export default function Students({ readOnly = false, focusId, onConsumed }) {
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {filtered.map(s => (
               <Card key={s.id} id={`user-row-${s.id}`} style={{ padding:14, ...(flashId===s.id ? { border:`2px solid ${C.teal}`, boxShadow:`0 0 0 3px ${C.teal}66`, transform:"scale(1.01)" } : {}) }}>
-                {/* 상단: 프로필 + 누적 대여 */}
+                {/* 상단: 프로필 */}
                 <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                   <Avatar name={s.name||"?"} size={48} />
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontSize:16, fontWeight:800, color:C.text, marginBottom:3, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.name}</div>
                     <div style={{ fontSize:12.5, color:C.blue, fontWeight:600, fontFamily:"monospace" }}>{s.studentId} · {admYear(s.studentId)}</div>
                     <div style={{ fontSize:12.5, color:C.muted, marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{s.dept} · {s.phone}</div>
-                  </div>
-                  <div style={{ flexShrink:0, textAlign:"center", background:C.bg, borderRadius:12, padding:"8px 14px", minWidth:64 }}>
-                    <div style={{ fontSize:22, fontWeight:900, color:C.navy, lineHeight:1 }}>{getRentalCount(s.studentId)}</div>
-                    <div style={{ fontSize:9, color:C.muted, marginTop:3 }}>누적 대여</div>
                   </div>
                 </div>
 

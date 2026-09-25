@@ -43,36 +43,10 @@ service cloud.firestore {
       allow create: if isLoggedIn()
         && request.resource.data.get('role', '') != 'admin'
         && request.resource.data.get('status', '') != 'approved';
-      // 수정: 관리자는 전체 / 본인은 권한 필드 제외 / 남은 pet의 하트·경험치 필드만
-      // (친구 펫 상호작용). pet 통째 교체·삭제({pet:null})·종/희귀도/이름 조작 차단.
+      // 수정: 관리자는 전체 / 본인은 권한 필드(role·adminRole·status·license 등) 제외
       allow update: if isAdmin()
-        || (isOwner(userId) && !touchesPrivileged())
-        || (isLoggedIn()
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pet'])
-            && resource.data.keys().hasAll(['pet'])
-            && request.resource.data.pet.diff(resource.data.pet).affectedKeys()
-                 .hasOnly(['hearts', 'heartedBy', 'exp', 'actLog', 'onceLog']));
+        || (isOwner(userId) && !touchesPrivileged());
       allow delete: if isOwner(userId) || isAdmin();
-    }
-
-    match /equipments/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
-    }
-
-    match /rentalRequests/{docId} {
-      allow read: if isLoggedIn();
-      allow create: if isLoggedIn();
-      allow update: if isAdmin()
-        || (isLoggedIn() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['returnPhotos']));
-      allow delete: if isAdmin();
-    }
-
-    match /facilityRequests/{docId} {
-      allow read: if isLoggedIn();
-      allow create: if isLoggedIn();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
     }
 
     match /notices/{docId} {
@@ -114,18 +88,6 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
-    match /licenseSchedules/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
-    }
-
-    match /licenseApplications/{docId} {
-      allow read: if isLoggedIn();
-      allow create: if isLoggedIn();
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
     match /pwResetRequests/{docId} {
       allow read: if isLoggedIn();
       // 비번 초기화 요청은 로그인 못 하는 사람이 쓰는 기능 → 비로그인 create 허용.
@@ -134,11 +96,6 @@ service cloud.firestore {
                     && request.resource.data.status == 'pending';
       allow update: if isAdmin();
       allow delete: if isAdmin();
-    }
-
-    match /facilities/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
     }
 
     match /timetables/{docId} {
@@ -156,11 +113,6 @@ service cloud.firestore {
       allow create: if isLoggedIn();
       allow update: if isAdmin();
       allow delete: if isAdmin();
-    }
-
-    match /inspections/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
     }
 
     match /friendRequests/{docId} {
@@ -185,62 +137,6 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read: if isLoggedIn();
       allow write: if isAdmin();
-    }
-
-    match /quizzes/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
-    }
-
-    // 오늘의 퀴즈 풀 (관리자만 등록·조회 / 자동 출제 함수는 admin SDK라 규칙 무관)
-    match /quizPool/{docId} {
-      allow read, write: if isAdmin();
-    }
-
-    // 씬스패치 기사
-    function canWriteArticle() {
-      return isLoggedIn() && (
-        (me().get('role','') == 'admin' && me().get('adminRole','super') in ['super','assistant'])
-        || me().get('reporterStatus','') == 'approved'
-      );
-    }
-
-    function isArticleAdmin() {
-      return isLoggedIn()
-        && me().get('role','') == 'admin'
-        && me().get('adminRole','super') in ['super','assistant'];
-    }
-
-    match /scenepatchArticles/{id} {
-      allow read: if isLoggedIn();
-      allow create: if canWriteArticle();
-      allow update: if isLoggedIn() && (
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['views','updatedAt'])
-        || resource.data.authorUid == request.auth.uid
-        || isArticleAdmin()
-      );
-      allow delete: if isLoggedIn() && (
-        resource.data.authorUid == request.auth.uid
-        || isArticleAdmin()
-      );
-    }
-
-    // 기자단 신청
-    match /reporterApplications/{id} {
-      allow read: if isAdmin();
-      allow create: if isLoggedIn() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAdmin();
-    }
-
-    // 외부 렌탈샵 (학생 읽기 / 관리자만 추가·수정·삭제)
-    match /externalRentals/{docId} {
-      allow read: if isLoggedIn();
-      allow write: if isAdmin();
-    }
-
-    // 장비 수리 관리 (관리자 전용)
-    match /repairs/{docId} {
-      allow read, write: if isAdmin();
     }
 
     // 🎬 Project Studio — 프로젝트 접근 판정
@@ -277,7 +173,7 @@ service cloud.firestore {
     // 와일드카드지만 아래 목록에 없는 컬렉션엔 아무 권한도 주지 않음.
     function isPsCol(c) {
       return c in ['projectTasks', 'scenes', 'sceneBreakdowns', 'shots', 'shootDays',
-        'castMembers', 'crewMembers', 'psLocations', 'props', 'projectEquipments', 'budgetItems',
+        'castMembers', 'crewMembers', 'psLocations', 'props', 'budgetItems',
         'projectFiles', 'ideaNotes'];
     }
     match /{psCol}/{docId} {
