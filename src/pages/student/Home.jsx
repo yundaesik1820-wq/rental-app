@@ -9,7 +9,6 @@ import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
 import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot, Camera, Image as ImageIcon, Clapperboard, MessageSquare, Film } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
 // ── 홈 전용 슬레이트 톤 (다크 유지, 포인트색만 다듬음) ──
 // 배경·텍스트는 기존 다크 그대로 두고, 포인트(navy 등)만 슬레이트로 바꾼다.
@@ -296,42 +295,41 @@ function GpaCalculator({ classes = [] }) {
   );
 }
 
-// ── 친구관리 타일 (펫 카드 옆 반폭) ──
+// ── 친구관리 타일 (전체폭 가로 레이아웃) ──
 function FriendTile({ count, reqCount, onOpen }) {
   const [iconOk, setIconOk] = useState(true);
   return (
     <button onClick={onOpen}
       style={{ flex:1, minWidth:0, boxSizing:"border-box", position:"relative", textAlign:"left", cursor:"pointer",
         background:"linear-gradient(140deg,#16233a 0%,#1f3c66 100%)", border:"1px solid rgba(255,255,255,0.08)",
-        borderRadius:18, padding:"14px", display:"flex", flexDirection:"column", gap:8, fontFamily:"inherit" }}>
+        borderRadius:18, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit" }}>
+      {iconOk ? (
+        <img src="/friend-icon.png" alt="친구관리" onError={() => setIconOk(false)}
+          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #0B0B0E", background:"#0B0B0E", flexShrink:0 }} />
+      ) : (
+        <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)", flexShrink:0,
+          display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
+      )}
+      <div style={{ flex:1, minWidth:0 }}>
+        <div style={{ fontSize:15, fontWeight:900, color:"#fff" }}>친구관리</div>
+        <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
+          친구 {count}명{reqCount > 0 ? ` · 받은 요청 ${reqCount}` : ""}
+        </div>
+      </div>
       {reqCount > 0 && (
-        <span style={{ position:"absolute", top:10, right:10, minWidth:18, height:18, padding:"0 5px", boxSizing:"border-box",
-          background:"#FF5A5A", color:"#fff", borderRadius:9, fontSize:11, fontWeight:800,
+        <span style={{ minWidth:20, height:20, padding:"0 6px", boxSizing:"border-box", flexShrink:0,
+          background:"#FF5A5A", color:"#fff", borderRadius:10, fontSize:11.5, fontWeight:800,
           display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
           {reqCount > 99 ? "99+" : reqCount}
         </span>
       )}
-      {iconOk ? (
-        <img src="/friend-icon.png" alt="친구관리" onError={() => setIconOk(false)}
-          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #0B0B0E", background:"#0B0B0E" }} />
-      ) : (
-        <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)",
-          display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
-      )}
-      <div style={{ marginTop:"auto" }}>
-        <div style={{ fontSize:14, fontWeight:900, color:"#fff" }}>친구관리</div>
-        <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
-          친구 {count}명{reqCount > 0 ? ` · 요청 ${reqCount}` : ""}
-        </div>
-      </div>
+      <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink:0 }} />
     </button>
   );
 }
 
 export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const { profile, logout } = useAuth();
-  const [showPet, setShowPet] = useState(false);
-  const [petRefresh, setPetRefresh] = useState(0);
   const [nowTick, setNowTick] = useState(0); // 1분마다 갱신 (다음 수업 카운트다운)
   useEffect(() => { const id = setInterval(() => setNowTick(t => t + 1), 60000); return () => clearInterval(id); }, []);
 
@@ -742,21 +740,14 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
         </div>
       </div>
 
-      {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
-      <div style={{ display:"flex", gap:10, marginBottom:6, alignItems:"stretch" }}>
-        <PetHomeCard key={petRefresh} uid={profile?.uid} onOpen={() => setShowPet(true)} />
+      {/* 🫂 친구관리 */}
+      <div style={{ display:"flex", marginBottom:6 }}>
         <FriendTile
           count={myFriends.length}
           reqCount={friendRequests.filter(r => r.toId === profile?.uid && r.status === "pending").length}
           onOpen={() => onOpenFriends?.()}
         />
       </div>
-
-      {showPet && <PetOverlay uid={profile?.uid} onClose={() => { setShowPet(false); setPetRefresh(n => n + 1); }}
-        friends={myFriends.map(f => {
-          const isMine = f.userId === profile?.uid;
-          return { uid: isMine ? f.friendId : f.userId, name: isMine ? f.friendName : f.userName, sid: isMine ? f.friendStudentId : f.userStudentId };
-        })} />}
 
       {/* 공지 팝업 모달 */}
       {popupNotice && (
@@ -1225,7 +1216,7 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
       {/* 온보딩 튜토리얼 */}
       {showOnboarding && (() => {
         const steps = [
-    { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 펫과 친구를 한눈에 볼 수 있어요!" },
+    { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 친구를 한눈에 볼 수 있어요!" },
     { emoji:"🎬", title:"작품제작", desc:"프로젝트 스튜디오와 촬영 도구로 작품을 기획하고 만들어요!" },
     { emoji:"💬", title:"커뮤니티", desc:"자유·질문·강의·협업모집 등 다양한 게시판으로 소통해요!" },
     { emoji:"🍿", title:"작품상영관", desc:"학생들이 만든 작품을 감상하고 응원할 수 있어요!" },
