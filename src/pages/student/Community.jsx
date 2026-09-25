@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Capacitor } from "@capacitor/core";
-import { Search, Bell, ChevronLeft, ChevronRight, MessageCircle, BookOpen, Users, Clapperboard, Video, GraduationCap, Star } from "lucide-react";
+import { Search, Bell, ChevronLeft, ChevronRight, MessageCircle, BookOpen, Users, Video, GraduationCap, Star } from "lucide-react";
 import { C } from "../../theme";
 import { storage } from "../../firebase";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
@@ -9,15 +9,6 @@ import { Card, Btn, Inp, Modal, Empty, PageTitle } from "../../components/UI";
 import { useCollection, addItem, updateItem, deleteItem } from "../../hooks/useFirestore";
 import { useAuth } from "../../hooks/useAuth.jsx";
 import { serverTimestamp, arrayUnion, arrayRemove } from "firebase/firestore";
-import CinemaSlate from "../../components/CinemaSlate";
-import ExposureLive from "../../components/ExposureLive";
-import ExposureCalc from "../../components/ExposureCalc";
-import DofCalc from "../../components/DofCalc";
-import ColorTemp from "../../components/ColorTemp";
-import FovCalc from "../../components/FovCalc";
-import ScripterTool from "../../components/ScripterTool";
-import SunSeeker from "../../components/SunSeeker";
-import ResourceHub from "../../components/ResourceHub";
 
 // 🚫 욕설/혐오 표현 필터 (Apple App Store 가이드라인 1.2 — UGC 욕설 필터링 요건)
 // 학교 커뮤니티 운영 정책에 맞게 아래 목록을 자유롭게 추가/삭제하세요.
@@ -112,19 +103,6 @@ const ROOMS = [
     categories:["협업모집", "스탭프로필"],
   },
   {
-    id:"tools",
-    number:"06",
-    icon:"🎬",
-    subtitle:"FILM TOOLS",
-    subEn:"Film Tools",
-    title:"필름 도구",
-    desc:"촬영 현장 실용 도구",
-    color:"#fbbf24",
-    colorBg:"rgba(251,191,36,0.15)",
-    borderStyle:"dashed",
-    categories:[], // 도구는 카테고리 X
-  },
-  {
     id:"boxoffice",
     number:"07",
     icon:"🎥",
@@ -152,26 +130,11 @@ const ROOMS = [
   },
 ];
 
-// 🎞️ 필름도구 스와이프 박스 — 이미지 전용 (public/film-tools/*.png, 480×240 제작 → 160×80 표시)
-//    윗줄 5개 + 아랫줄 4개, 가로 스냅 스와이프. 클릭 시 해당 도구 바로 진입.
-const FILM_TOOL_BOXES = [
-  { key:"slate",         img:"/film-tools/slate.png" },
-  { key:"scripter",      img:"/film-tools/scripter.png" },
-  { key:"live-exposure", img:"/film-tools/live-exposure.png" },
-  { key:"exposure-calc", img:"/film-tools/exposure-calc.png" },
-  { key:"dof",           img:"/film-tools/dof.png" },
-  { key:"color-temp",    img:"/film-tools/color-temp.png" },
-  { key:"fov",           img:"/film-tools/fov.png" },
-  { key:"sun",           img:"/film-tools/sun.png" },
-  { key:"resources",     img:"/film-tools/resources.png" },
-];
-
 // 🎬 룸 → 라인 아이콘 (목업 00.png 디자인)
 const ROOM_ICON = {
   community:   MessageCircle,
   knowledge:   BookOpen,
   crew:        Users,
-  tools:       Clapperboard,
   boxoffice:   Video,
   class:       GraduationCap,
 };
@@ -548,7 +511,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const [showSearch, setShowSearch] = useState(false); // 헤더 검색(추후 구현 — 현재 자리만)
   const currentRoom = ROOMS.find(r => r.id === selectedRoom);
   // 🛠️ 선택된 도구 (필름 도구 룸 안에서)
-  const [selectedTool, setSelectedTool] = useState(null);
 
   // 🔔 알림 딥링크 — 룸/기사/글 진입 (App에서 받은 타깃을 로컬로 복사 후 즉시 소비)
   const [deepArticleId, setDeepArticleId] = useState(null);
@@ -1250,7 +1212,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         paddingBottom:16,
       }}>
         {/* 상단 헤더 - 최상위는 목업(커뮤니티+검색+벨), 룸/도구 안은 시네마 헤더 */}
-        {(!currentRoom && !selectedTool) ? (
+        {!currentRoom ? (
           <div data-cinema="1" style={{
             position:"sticky", top:0, zIndex:50,
             background:"#0a0a0a",
@@ -1277,16 +1239,12 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
             display:"flex", alignItems:"center", justifyContent:"space-between",
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
-              <button onClick={() => {
-                  // 도구 룸 그리드가 없어져서 도구에서 뒤로가기 = 루트 직행
-                  if (selectedTool) { setSelectedTool(null); setSelectedRoom(null); }
-                  else { setSelectedRoom(null); setSelectedTool(null); }
-                }}
+              <button onClick={() => setSelectedRoom(null)}
                 style={{ background:"none", border:"none", padding:0, cursor:"pointer", display:"flex", alignItems:"center", color:"#fafaf9", flexShrink:0 }}>
                 <ChevronLeft size={24} strokeWidth={2.2} />
               </button>
               <span style={{ fontSize:20, fontWeight:900, color:"#fafaf9", letterSpacing:"-0.02em", lineHeight:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                {selectedTool ? "도구" : currentRoom ? currentRoom.title : "커뮤니티"}
+                {currentRoom ? currentRoom.title : "커뮤니티"}
               </span>
             </div>
             <div style={{ display:"flex", alignItems:"center", gap:16, flexShrink:0 }}>
@@ -1605,58 +1563,8 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         </div>
       )}
 
-      {/* 🛠️ 필름 도구 룸 그리드 제거됨 (2026-07-22) — 루트의 필름도구 이미지 박스 스와이프가 대체.
-          진입: 루트 박스 클릭 → 도구 직행 / 뒤로가기 → 루트 복귀 */}
-
-      {/* 🎬 슬레이터 본체 표시 */}
-      {selectedRoom === "tools" && selectedTool === "slate" && (
-        <div style={{ marginTop:8 }}>
-          <CinemaSlate onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-        </div>
-      )}
-
-      {/* 🎥 LIVE 노출 도우미 표시 */}
-      {selectedRoom === "tools" && selectedTool === "live-exposure" && (
-        <ExposureLive onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 📷 노출 계산기 (이론) */}
-      {selectedRoom === "tools" && selectedTool === "exposure-calc" && (
-        <ExposureCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 📐 DOF 계산기 */}
-      {selectedRoom === "tools" && selectedTool === "dof" && (
-        <DofCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 🌡️ 색온도 계산기 */}
-      {selectedRoom === "tools" && selectedTool === "color-temp" && (
-        <ColorTemp onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 🔭 렌즈 화각 */}
-      {selectedRoom === "tools" && selectedTool === "fov" && (
-        <FovCalc onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 📝 스크립터 */}
-      {selectedRoom === "tools" && selectedTool === "scripter" && (
-        <ScripterTool C={C} onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 🌅 태양 위치 */}
-      {selectedRoom === "tools" && selectedTool === "sun" && (
-        <SunSeeker onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
-      {/* 📚 자료 큐레이션 */}
-      {selectedRoom === "tools" && selectedTool === "resources" && (
-        <ResourceHub onBack={() => { setSelectedTool(null); setSelectedRoom(null); }} />
-      )}
-
       {/* 게시판 룸들 (community, knowledge, boxoffice) */}
-      {selectedRoom && selectedRoom !== "tools" && (
+      {selectedRoom && (
         <>
       {selectedRoom === "boxoffice" ? (
         <BoxOfficeView posts={posts} onOpen={openPost} onPlay={setFsVideo} />
