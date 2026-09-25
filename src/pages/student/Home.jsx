@@ -691,46 +691,58 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
         .hmini{position:absolute;left:4%;top:54%;transform:translateY(-50%);z-index:6;display:flex;gap:7px;pointer-events:auto;}
         .hmini button{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.85);cursor:pointer;padding:0;}
       `}</style>
-      {/* home-hero.png — 마스코트+인사말만 표시 (하단 장비버튼 영역은 잘라냄) */}
-      <div style={{ position: "relative", width: "100%", aspectRatio: "1493 / 502", overflow: "hidden", borderRadius: 16, marginBottom: 12 }}>
-        <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
-        <div className="htext">
-          <p className="hgreet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</p>
-          <p className="hsub">오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
-        </div>
-        <div className="hmini">
-          <button onClick={logout} title="로그아웃" aria-label="로그아웃">
+      {/* 히어로 카드 — 원본 히어로 이미지를 전체에 흐릿하게 깔고 그 위에 인사말 + 반투명 빠른메뉴 */}
+      <div style={{ position: "relative", aspectRatio: "1493 / 796", borderRadius: 16, overflow: "hidden", marginBottom: 12, border: "1px solid rgba(255,255,255,0.08)", background: "#0e1226" }}>
+        {/* 배경: 원본 히어로 이미지 (흐릿하게) */}
+        <img src="/home-hero.png" alt="" aria-hidden="true"
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.42 }} />
+        {/* 하단은 진하게 — 원본에 그려진 옛 버튼이 새 버튼 뒤로 비치지 않게 */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(14,18,38,0.28) 0%, rgba(14,18,38,0.42) 42%, rgba(14,18,38,0.92) 100%)" }} />
+
+        {/* 로그아웃 / 계정전환 */}
+        <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 7, zIndex: 3 }}>
+          <button onClick={logout} title="로그아웃" aria-label="로그아웃"
+            style={{ display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 9, background: "rgba(255,255,255,0.13)", border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)", cursor: "pointer", padding: 0 }}>
             <LogOut size={14} />
           </button>
           {profile?.linkedEmail && (
-            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환" aria-label="계정 전환" style={{ opacity: switchLoading2 ? 0.6 : 1 }}>
+            <button onClick={handleSwitch2} disabled={switchLoading2} title="계정 전환" aria-label="계정 전환"
+              style={{ display: "grid", placeItems: "center", width: 28, height: 28, borderRadius: 9, background: "rgba(255,255,255,0.13)", border: "1px solid rgba(255,255,255,0.14)", color: "rgba(255,255,255,0.85)", cursor: "pointer", padding: 0, opacity: switchLoading2 ? 0.6 : 1 }}>
               <RefreshCw size={14} />
             </button>
           )}
         </div>
-      </div>
 
-      {/* 빠른메뉴 — 작품제작 / 커뮤니티 / 작품상영관 */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
-        {[
-          { icon: Clapperboard,  label: "작품제작",   sub: "새 작품 기획",     grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
-          { icon: MessageSquare, label: "커뮤니티",   sub: "우리 학교 이야기", grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
-          { icon: Film,          label: "작품상영관", sub: "학생 작품 감상",   grad: "linear-gradient(135deg,#7c3aed,#a855f7)", onClick: () => setTab?.("boxoffice") },
-        ].map((b, i) => {
-          const Icon = b.icon;
-          return (
-            <button key={i} className="tap-spring" onClick={b.onClick}
-              style={{ background: "#121218", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "13px 10px", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
-              <span style={{ width: 38, height: 38, borderRadius: 11, background: b.grad, display: "grid", placeItems: "center" }}>
-                <Icon size={19} color="#fff" strokeWidth={2.1} />
-              </span>
-              <div style={{ textAlign: "left" }}>
-                <div style={{ fontSize: 13, fontWeight: 800, color: "#F1F5F9" }}>{b.label}</div>
-                <div style={{ fontSize: 10.5, color: "#64748B", marginTop: 2 }}>{b.sub}</div>
-              </div>
-            </button>
-          );
-        })}
+        {/* 내용 — 위 인사말 / 아래 빠른메뉴 */}
+        <div style={{ position: "absolute", inset: 0, zIndex: 2, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: "18px 14px 12px" }}>
+          {/* 인사말 */}
+          <div style={{ width: "58%" }}>
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: "0.02em" }}>안녕하세요, <span style={{ color: "#8ba4ff" }}>{profile?.name}</span>님 👋</p>
+            <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.6, fontWeight: 500, color: "rgba(214,224,252,0.82)" }}>오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
+          </div>
+          {/* 빠른메뉴 — 반투명 (뒤 마스코트 비침) */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
+            {[
+              { icon: Clapperboard,  label: "작품제작",   sub: "새 작품 기획",  grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
+              { icon: MessageSquare, label: "커뮤니티",   sub: "학교 이야기",   grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
+              { icon: Film,          label: "작품상영관", sub: "작품 감상",     grad: "linear-gradient(135deg,#7c3aed,#a855f7)", onClick: () => setTab?.("boxoffice") },
+            ].map((b, i) => {
+              const Icon = b.icon;
+              return (
+                <button key={i} className="tap-spring" onClick={b.onClick}
+                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 12, padding: "10px 9px", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, minWidth: 0, backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}>
+                  <span style={{ width: 30, height: 30, borderRadius: 9, background: b.grad, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                    <Icon size={16} color="#fff" strokeWidth={2.2} />
+                  </span>
+                  <div style={{ minWidth: 0, width: "100%" }}>
+                    <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>{b.label}</div>
+                    <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.7)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.sub}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
