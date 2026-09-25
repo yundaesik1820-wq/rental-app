@@ -720,8 +720,8 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
             <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: "0.02em" }}>안녕하세요, <span style={{ color: "#8ba4ff" }}>{profile?.name}</span>님 👋</p>
             <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.6, fontWeight: 500, color: "rgba(214,224,252,0.82)" }}>오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
           </div>
-          {/* 빠른메뉴 — 반투명 슬림 (한 줄 3개, 360px 폭에서도 안 넘치게 minmax(0,1fr)) */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 5 }}>
+          {/* 빠른메뉴 — flexbox nowrap: 어떤 폭에서도 무조건 한 줄, 각 버튼 1/3 (반응형) */}
+          <div style={{ display: "flex", flexWrap: "nowrap", gap: 5, width: "100%" }}>
             {[
               { icon: Clapperboard,  label: "작품제작",   grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
               { icon: MessageSquare, label: "커뮤니티",   grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
@@ -730,7 +730,7 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
               const Icon = b.icon;
               return (
                 <button key={i} className="tap-spring" onClick={b.onClick}
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 10, padding: "7px 3px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, minWidth: 0, backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}>
+                  style={{ flex: "1 1 0", minWidth: 0, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 10, padding: "7px 3px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 4, backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}>
                   <span style={{ width: 20, height: 20, borderRadius: 6, background: b.grad, display: "grid", placeItems: "center", flexShrink: 0 }}>
                     <Icon size={12} color="#fff" strokeWidth={2.3} />
                   </span>
