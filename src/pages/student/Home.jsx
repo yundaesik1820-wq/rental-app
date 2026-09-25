@@ -696,8 +696,8 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
         {/* 배경: 원본 히어로 이미지 (흐릿하게) */}
         <img src="/home-hero.png" alt="" aria-hidden="true"
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: 0.42 }} />
-        {/* 하단은 진하게 — 원본에 그려진 옛 버튼이 새 버튼 뒤로 비치지 않게 */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(14,18,38,0.28) 0%, rgba(14,18,38,0.42) 42%, rgba(14,18,38,0.92) 100%)" }} />
+        {/* 하단은 아래로 갈수록 불투명 — 원본에 그려진 옛 장비버튼(하단 1/3)을 완전히 가림 */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(14,18,38,0.22) 0%, rgba(14,18,38,0.36) 36%, rgba(14,18,38,0.96) 60%, rgba(14,18,38,1) 72%)" }} />
 
         {/* 로그아웃 / 계정전환 */}
         <div style={{ position: "absolute", top: 12, right: 12, display: "flex", gap: 7, zIndex: 3 }}>
@@ -720,24 +720,21 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
             <p style={{ margin: 0, fontSize: 14, fontWeight: 800, color: "#fff", letterSpacing: "0.02em" }}>안녕하세요, <span style={{ color: "#8ba4ff" }}>{profile?.name}</span>님 👋</p>
             <p style={{ margin: "7px 0 0", fontSize: 11, lineHeight: 1.6, fontWeight: 500, color: "rgba(214,224,252,0.82)" }}>오늘도 멋진 촬영과 작품을<br/>한예진이 함께 응원할게요!</p>
           </div>
-          {/* 빠른메뉴 — 반투명 (뒤 마스코트 비침) */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 7 }}>
+          {/* 빠른메뉴 — 반투명 슬림 (한 줄 3개) */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 6 }}>
             {[
-              { icon: Clapperboard,  label: "작품제작",   sub: "새 작품 기획",  grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
-              { icon: MessageSquare, label: "커뮤니티",   sub: "학교 이야기",   grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
-              { icon: Film,          label: "작품상영관", sub: "작품 감상",     grad: "linear-gradient(135deg,#7c3aed,#a855f7)", onClick: () => setTab?.("boxoffice") },
+              { icon: Clapperboard,  label: "작품제작",   grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
+              { icon: MessageSquare, label: "커뮤니티",   grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
+              { icon: Film,          label: "작품상영관", grad: "linear-gradient(135deg,#7c3aed,#a855f7)", onClick: () => setTab?.("boxoffice") },
             ].map((b, i) => {
               const Icon = b.icon;
               return (
                 <button key={i} className="tap-spring" onClick={b.onClick}
-                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 12, padding: "10px 9px", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 7, minWidth: 0, backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}>
-                  <span style={{ width: 30, height: 30, borderRadius: 9, background: b.grad, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                    <Icon size={16} color="#fff" strokeWidth={2.2} />
+                  style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 10, padding: "7px 4px", cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 5, minWidth: 0, backdropFilter: "blur(3px)", WebkitBackdropFilter: "blur(3px)" }}>
+                  <span style={{ width: 22, height: 22, borderRadius: 7, background: b.grad, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                    <Icon size={13} color="#fff" strokeWidth={2.2} />
                   </span>
-                  <div style={{ minWidth: 0, width: "100%" }}>
-                    <div style={{ fontSize: 12, fontWeight: 800, color: "#fff", whiteSpace: "nowrap" }}>{b.label}</div>
-                    <div style={{ fontSize: 9.5, color: "rgba(255,255,255,0.7)", marginTop: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.sub}</div>
-                  </div>
+                  <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{b.label}</span>
                 </button>
               );
             })}
