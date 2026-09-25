@@ -48,7 +48,6 @@ export const WORKSPACE_MENUS = [
   { key: "schedule",  label: "촬영 일정",       icon: CalendarDays, ready: true },
   { key: "casting",   label: "캐스팅",          icon: Users,        ready: true },
   { key: "locations", label: "로케이션",        icon: MapPin,       ready: true },
-  { key: "equipment", label: "장비",            icon: Wrench,       ready: true },
   { key: "budget",    label: "예산",            icon: Wallet,       ready: true },
   { key: "crew",      label: "팀원",            icon: UserPlus,     ready: true },
   { key: "files",     label: "파일 보관함",     icon: FolderOpen,   ready: true },

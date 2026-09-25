@@ -8,39 +8,32 @@ import {
   Home, Wrench, ClipboardList, Users, Calendar, BarChart2,
   Megaphone, MessageCircle, Settings, Search,
   BookOpen, CalendarCheck, CalendarPlus, UserCircle, Bell, LogOut,
-  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart, Clapperboard
+  ChevronLeft, ChevronRight, GraduationCap, MessageSquare, Share2, MoreHorizontal, Store, ShoppingCart, Clapperboard, Film
 } from "lucide-react";
 
 const ADMIN_NAV = [
   { id: "home",     icon: Home,          label: "대시보드" },
-  { id: "equip",    icon: Wrench,        label: "장비 관리" },
-  { id: "rental",   icon: ClipboardList, label: "대여/반납" },
   { id: "students", icon: Users,         label: "학생 관리" },
-  { id: "calendar", icon: Calendar,      label: "캘린더/통계" },
   { id: "notices",  icon: Megaphone,     label: "공지사항"  },
   { id: "inquiry",  icon: MessageCircle, label: "문의 관리" },
-  { id: "license",  icon: GraduationCap, label: "라이선스"  },
   { id: "community", icon: MessageSquare, label: "에브리타임"   },
   { id: "sns",      icon: Share2,        label: "SNS 관리"  },
-  { id: "external", icon: Store,         label: "외부 렌탈샵" },
   { id: "settings", icon: Settings,      label: "설정"      },
   { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 커뮤니티 배너로 진입
 ];
 
 const STU_NAV = [
-  { id: "home",      icon: Home,          label: "홈"       },
-  { id: "equip",     icon: Store,         label: "장비 예약" },
-  { id: "reserve",   icon: CalendarCheck, label: "예약 신청" },
-  { id: "license",   icon: GraduationCap, label: "라이선스" },
-  { id: "notices",   icon: Megaphone,     label: "공지사항" },
-  { id: "community", icon: MessageSquare, label: "에브리타임"  },
-  { id: "calendar",  icon: ShoppingCart,  label: "예약내역" },
-  { id: "mypage",    icon: UserCircle,    label: "더보기" },
-  { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 하단바 X — 커뮤니티 배너로 진입 (헤더 제목용)
+  { id: "home",       icon: Home,          label: "홈"       },
+  { id: "production",  icon: Clapperboard,  label: "작품제작"  },
+  { id: "community",   icon: MessageSquare, label: "커뮤니티"  },
+  { id: "boxoffice",   icon: Film,          label: "작품상영관" },
+  { id: "notices",    icon: Megaphone,     label: "공지사항" },
+  { id: "mypage",      icon: UserCircle,    label: "더보기" },
+  { id: "projectstudio", icon: Clapperboard, label: "프로젝트 스튜디오" }, // 헤더 제목용 (작품제작 딥링크)
 ];
 
 // 학생 하단바 아이콘 (목업 기준: 홈/예약내역/장비예약(FAB)/커뮤니티/더보기)
-const STU_BAR_ICON = { home: Home, calendar: ClipboardList, equip: CalendarPlus, community: MessageSquare, mypage: MoreHorizontal };
+const STU_BAR_ICON = { home: Home, production: Clapperboard, community: MessageSquare, boxoffice: Film, mypage: MoreHorizontal };
 
 export default function Layout({ tab, setTab, children, notifCount, onNotif, onSameTab, headerTitle, onHeaderBack, onSearchNavigate }) {
   const { profile, logout } = useAuth();
@@ -79,10 +72,8 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
 
   // 모바일 하단 탭바: 학생은 핵심 5개 한 줄, 관리자는 기존 2줄 유지
   const NAV_ACCENT = C.navy; // 네온 라임 포인트
-  const NAV_SHORT = { home: "홈", equip: "장비예약", reserve: "예약", calendar: "예약내역", community: "커뮤니티", mypage: "더보기" };
-  // 예약 신청은 하단 탭에서 뺌 — 장비 목록에서 담고 장바구니 바로 진입 (tab "reserve" 자체는 유효)
-  // calendar = 대여이력/예약내역 화면
-  const MOBILE_STU_IDS = ["home", "calendar", "equip", "community", "mypage"];
+  const NAV_SHORT = { home: "홈", production: "작품제작", community: "커뮤니티", boxoffice: "작품상영관", mypage: "더보기" };
+  const MOBILE_STU_IDS = ["home", "production", "community", "boxoffice", "mypage"];
   const isStudentNav = profile?.role !== "admin";
   const stuTabs = MOBILE_STU_IDS
     .map(id => {
@@ -96,18 +87,15 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
   // 관리자 모바일 하단: 그룹 탭 6개
   const ADMIN_MOBILE_TABS = [
     { id: "home",      icon: Home,           label: "홈" },
-    { id: "rental",    icon: ClipboardList,  label: "대여" },
-    { id: "g_equip",   icon: Wrench,         label: "장비" },
     { id: "g_student", icon: Users,          label: "학생" },
     { id: "g_sns",     icon: Share2,         label: "SNS" },
     { id: "g_more",    icon: MoreHorizontal, label: "더보기" },
   ];
   // 그룹 탭 활성 판정 (그룹에 속한 기능 화면이면 해당 그룹 탭 활성)
   const GROUP_MEMBERS = {
-    g_equip:   ["g_equip", "equip", "external"],
-    g_student: ["g_student", "students", "license"],
+    g_student: ["g_student", "students"],
     g_sns:     ["g_sns", "sns", "community"],
-    g_more:    ["g_more", "calendar", "stats", "notices", "inquiry", "settings"],
+    g_more:    ["g_more", "notices", "inquiry", "settings"],
   };
   const mobileRows = isStudentNav ? [stuTabs] : [ADMIN_MOBILE_TABS];
 
@@ -399,7 +387,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
           <div className="bottom-nav-row" style={{ position: "relative", display: "grid", gridTemplateColumns: `repeat(${stuTabs.length}, 1fr)` }}>
             {stuTabs.map(n => {
               const active = tab === n.id;
-              const isFab = n.id === "equip";
+              const isFab = n.id === "community";
               const Icon = STU_BAR_ICON[n.id] || n.icon;
               const onClick = () => {
                 if (tab === n.id) {
@@ -424,7 +412,7 @@ export default function Layout({ tab, setTab, children, notifCount, onNotif, onS
                         boxShadow: "0 6px 18px rgba(124,58,237,0.5)",
                         border: `4px solid ${C.surface}`, zIndex: 1,
                       }}>
-                        <CalendarPlus size={27} color="#fff" strokeWidth={2.2} />
+                        <MessageSquare size={27} color="#fff" strokeWidth={2.2} />
                       </div>
                       <span style={{ position: "relative", zIndex: 3, fontSize: 10, fontWeight: 700, color: "#7e9dff", whiteSpace: "nowrap", letterSpacing: "-0.3px" }}>{n.label}</span>
                     </>

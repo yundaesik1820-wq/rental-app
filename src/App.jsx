@@ -1,7 +1,6 @@
 import React, { useState, useEffect, lazy, Suspense } from "react";
 import { getThemeMode, setTheme, C } from "./theme";
 import { AuthProvider, useAuth } from "./hooks/useAuth.jsx";
-import { CartProvider } from "./hooks/useCart.jsx";
 import { useCollection as useCollectionHook } from "./hooks/useFirestore";
 import { useFCM, getNotifPermissionState, enableNotifications, getFcmTokenOnce } from "./hooks/useFCM.js";
 import Layout from "./components/Layout";
@@ -40,28 +39,18 @@ function lazyRetry(factory, retries = 2, delay = 350) {
 
 // Admin pages (lazy — 초기 번들에서 분리, 진입 시 로드)
 const Dashboard  = lazyRetry(() => import("./pages/admin/Dashboard"));
-const Equipment  = lazyRetry(() => import("./pages/admin/Equipment"));
-const Rental     = lazyRetry(() => import("./pages/admin/Rental"));
 const Students   = lazyRetry(() => import("./pages/admin/Students"));
-const CalendarPage = lazyRetry(() => import("./pages/admin/Calendar"));
-const Stats      = lazyRetry(() => import("./pages/admin/Stats"));
 import GroupHub   from "./components/GroupHub";
 const Notices    = lazyRetry(() => import("./pages/admin/Notices"));
 const Settings   = lazyRetry(() => import("./pages/admin/Settings"));
 const AdminInquiry  = lazyRetry(() => import("./pages/admin/Inquiry"));
-const LicenseAdmin  = lazyRetry(() => import("./pages/admin/LicenseAdmin.jsx"));
-const License          = lazyRetry(() => import("./pages/student/License.jsx"));
 const Community     = lazyRetry(() => import("./pages/student/Community.jsx"));
 const ProjectStudio = lazyRetry(() => import("./pages/student/projectstudio/ProjectStudio.jsx"));
+const ProductionScreen = lazyRetry(() => import("./pages/student/ProductionScreen.jsx"));
 const SNSManager    = lazyRetry(() => import("./pages/admin/SNSManager"));
-const ExternalRental = lazyRetry(() => import("./pages/admin/ExternalRental"));
-const RepairManager = lazyRetry(() => import("./pages/admin/RepairManager"));
 
 // Student pages (lazy)
 const StudentHome    = lazyRetry(() => import("./pages/student/Home"));
-const EquipList      = lazyRetry(() => import("./pages/student/EquipList"));
-const History        = lazyRetry(() => import("./pages/student/History"));
-const Reserve        = lazyRetry(() => import("./pages/student/Reserve"));
 const Profile         = lazyRetry(() => import("./pages/student/Profile"));
 const StudentInquiry = lazyRetry(() => import("./pages/student/Inquiry"));
 const FriendManager  = lazyRetry(() => import("./pages/student/FriendManager"));
@@ -71,37 +60,19 @@ import { useCollection } from "./hooks/useFirestore";
 
 const NOTIF_CC = { red:"#F05252", redLight:"#FEF2F2", yellow:"#F59E0B", yellowLight:"#FFFBEB", blue:"#3B6CF8", blueLight:"#EEF2FF", green:"#10B981", greenLight:"#ECFDF5", purple:"#8B5CF6", purpleLight:"#F5F3FF", orange:"#F97316", orangeLight:"#FFF7ED", navy:"#1A2B6B", text:"#1E293B", muted:"#94A3B8", border:"#E2E8F0", teal:"#0ABFA3", tealLight:"#E6FAF7" };
 
-function notifLabel(r) {
-  if (!r.items || r.items.length === 0) return r.equipName || "-";
-  const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
-  return names.length > 1 ? `${names[0]} 외 ${names.length-1}건` : names[0] || "-";
-}
-
 // 모든 알림을 만드는 단일 소스 — 배지 카운트와 패널 목록이 공유 (최신순 정렬)
 function buildAlerts(isAdmin, profile, data) {
-  const { rentalRequests=[], allUsers=[], pwResets=[], notices=[], licenseSchedules=[], communityPosts=[], communityComments=[], friendRequests=[], crewInvites=[] } = data || {};
-  const CC = NOTIF_CC, L = notifLabel;
-  const today    = new Date().toISOString().slice(0,10);
-  const tomorrow = new Date(Date.now()+86400000).toISOString().slice(0,10);
-  const myId     = profile?.studentId || "";
+  const { allUsers=[], pwResets=[], notices=[], communityPosts=[], communityComments=[], friendRequests=[], crewInvites=[] } = data || {};
+  const CC = NOTIF_CC;
   const uid      = profile?.uid || "";
   let alerts;
   if (isAdmin) {
     alerts = [
-      ...rentalRequests.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 발생: ${L(r)}`, desc:`${r.studentName} · 반납예정 ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...rentalRequests.filter(r=>r.status==="승인대기").map(r=>({ id:`승인대기_${r.id}`, cat:"대여/반납", color:CC.yellow, bg:CC.yellowLight, icon:"📋", title:`승인 대기: ${L(r)}`, desc:`${r.studentName}`, time:r.createdAt, rentalId:r.id })),
       ...allUsers.filter(u=>u.status==="pending").map(u=>({ id:`가입_${u.id}`, cat:"회원", color:CC.blue, bg:CC.blueLight, icon:"👤", title:`가입 승인 대기: ${u.name}`, desc:`${u.dept} · ${u.studentId}`, time:u.createdAt, userId:u.id })),
       ...pwResets.filter(r=>r.status==="pending").map(r=>({ id:`비번_${r.id}`, cat:"회원", color:CC.orange, bg:CC.orangeLight, icon:"🔑", title:`비밀번호 초기화 요청: ${r.studentName}`, desc:`학번 ${r.studentId}`, time:r.createdAt, userId:r.id })),
     ];
   } else {
-    const myRentals  = rentalRequests.filter(r=>r.studentId===myId||r.studentId===profile?.uid);
-    const upcoming = licenseSchedules.filter(s=>s.date>=today && s.status!=="완료");
     alerts = [
-      ...myRentals.filter(r=>r.status==="승인됨").map(r=>({ id:`승인됨_${r.id}`, cat:"대여/반납", color:CC.green, bg:CC.greenLight, icon:"✅", title:`대여 승인됨: ${L(r)}`, desc:`${r.startDate} ~ ${r.endDate}`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...myRentals.filter(r=>r.status==="거절됨").map(r=>({ id:`거절됨_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"❌", title:`대여 거절됨: ${L(r)}`, desc:r.reason||"", time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...myRentals.filter(r=>r.status==="대여중"&&r.endDate===tomorrow).map(r=>({ id:`반납D1_${r.id}`, cat:"대여/반납", color:CC.orange, bg:CC.orangeLight, icon:"⏰", title:`반납 D-1: ${L(r)}`, desc:`내일(${r.endDate})까지 반납해주세요`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...myRentals.filter(r=>r.status==="연체").map(r=>({ id:`연체_${r.id}`, cat:"대여/반납", color:CC.red, bg:CC.redLight, icon:"⚠️", title:`연체 중: ${L(r)}`, desc:`반납예정일 ${r.endDate} 초과`, time:r.updatedAt||r.createdAt, rentalId:r.id })),
-      ...upcoming.map(s=>({ id:`라이선스_${s.id}`, cat:"라이선스", color:CC.purple, bg:CC.purpleLight, icon:"🎖️", title:`라이선스 수업 신청 가능: ${s.title||s.equipName}`, desc:`${s.date} ${s.time||""} · ${s.location||""}`, time:s.createdAt, licenseId:s.id })),
       ...friendRequests.filter(r=>r.toId===uid && r.status==="pending").map(r=>({ id:`친구_${r.id}`, cat:"친구", color:CC.teal, bg:CC.tealLight, icon:"🤝", title:`${r.fromName}님이 친구 요청을 보냈어요!`, time:r.createdAt, tab:"mypage" })),
     ];
   }
@@ -124,7 +95,7 @@ function buildAlerts(isAdmin, profile, data) {
   return alerts.filter(a => { if (a.cat === "공지") return true; const t = ts(a.time); return t===0 || t>=cutoff; }).sort((a,b) => ts(b.time) - ts(a.time));
 }
 
-function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites }) {
+function NotifPanel({ onClose, isAdmin, profile, onNavigate, allUsers, pwResets, notices, communityPosts, communityComments, friendRequests, crewInvites }) {
   const CC = NOTIF_CC;
   const [selCat, setSelCat] = React.useState("전체");
   // 등장/퇴장 애니메이션 — 다음 프레임에 enter=true로 슬라이드 인, 닫을 땐 먼저 슬라이드 아웃 후 언마운트
@@ -200,12 +171,11 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
     if (a.cat === "SNS")      return { tab: "community" };
     if (a.cat === "회원")     return { tab: "students", userId: a.userId };
-    if (a.cat === "라이선스") return { tab: "license", licenseId: a.licenseId };
-    return { tab: isAdmin ? "rental" : "calendar", rentalId: a.rentalId }; // 대여/반납
+    return { tab: isAdmin ? "home" : "home" };
   };
   const handleClick = (a) => { markSeen(a.id); onNavigate?.(navTarget(a)); };
 
-  const allAlerts = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites });
+  const allAlerts = buildAlerts(isAdmin, profile, { allUsers, pwResets, notices, communityPosts, communityComments, friendRequests, crewInvites });
   const unreadIn = (g) => allAlerts.filter(a => !seenIds.has(a.id) && (g === "전체" || groupOf(a) === g)).length;
   const filtered = selCat === "전체" ? allAlerts : allAlerts.filter(a => groupOf(a) === selCat);
 
@@ -269,7 +239,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, rentalRequests, all
 
 // 학생용 더보기 — ejqhrl.png 목업 리디자인 (2026-07-23, 블루·퍼플 액센트)
 // view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
-const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", license:"라이선스", notices:"공지사항", settings:"설정" };
+const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", notices:"공지사항", settings:"설정" };
 function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   const { profile, logout } = useAuth();
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
@@ -278,11 +248,8 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   if (view === "profile")  return <Profile />;
   if (view === "friends")  return <FriendManager photoMap={photoMap} />;
   if (view === "inquiry")  return <StudentInquiry />;
-  if (view === "license")  return <License onOpenNotices={() => setView("notices")} />;
   if (view === "notices")  return <Notices isAdmin={false} />;
   if (view === "settings") return <StudentSettings />;
-
-  const licNum = (() => { const n = parseInt(String(profile?.license || "").replace(/\D/g, ""), 10); return Number.isNaN(n) ? 0 : n; })();
 
   // 공용 행 내용 (아이콘 타일 + 라벨/설명 + 우측 요소)
   const RowInner = ({ icon: Icon, tint, tintBg, label, sub, danger, right }) => (
@@ -325,7 +292,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
             <div style={{ fontSize:13, color:"#a8adc4", marginTop:4 }}>{[profile?.studentId, profile?.dept].filter(Boolean).join(" · ")}</div>
             <div style={{ display:"inline-flex", alignItems:"center", gap:6, marginTop:10, padding:"6px 14px", borderRadius:20, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.12)" }}>
               <Clapperboard size={12} color="#a78bfa" />
-              <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.08em", color:"#c4b5fd" }}>LV{licNum} 라이선스</span>
+              <span style={{ fontSize:11, fontWeight:800, letterSpacing:"0.08em", color:"#c4b5fd" }}>KBAS MEMBER</span>
             </div>
           </div>
         </div>
@@ -335,23 +302,6 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
       <MenuCard onClick={() => setView("profile")}><RowInner icon={User} tint="#3b82f6" tintBg="rgba(59,130,246,0.13)" label="내 정보" sub="프로필·계정 정보 확인" /></MenuCard>
       <MenuCard onClick={() => setView("friends")}><RowInner icon={Users} tint="#a78bfa" tintBg="rgba(167,139,250,0.13)" label="친구관리" sub="친구 추가·요청 목록" /></MenuCard>
       <MenuCard onClick={() => setView("inquiry")}><RowInner icon={MessageCircle} tint="#8b5cf6" tintBg="rgba(139,92,246,0.13)" label="문의하기" sub="궁금한 점을 물어봐요" /></MenuCard>
-      <MenuCard highlight onClick={() => setView("license")}>
-        <RowInner icon={Clapperboard} tint="#7c3aed" tintBg="rgba(124,58,237,0.15)" label="라이선스" sub="내 장비 사용 등급"
-          right={
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:7, flexShrink:0 }}>
-              <span style={{ display:"inline-flex", alignItems:"center", gap:5, padding:"4px 11px", borderRadius:16, border:"1px solid rgba(124,58,237,0.5)", background:"rgba(124,58,237,0.1)" }}>
-                <Sparkles size={11} color="#a78bfa" />
-                <span style={{ fontSize:10, fontWeight:800, letterSpacing:"0.06em", color:"#c4b5fd" }}>LICENSE LEVEL</span>
-              </span>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <div style={{ width:86, height:6, borderRadius:3, background:"rgba(255,255,255,0.12)", overflow:"hidden" }}>
-                  <div style={{ width:`${Math.min(licNum / 3, 1) * 100}%`, height:"100%", background:"linear-gradient(90deg,#3b82f6,#7c3aed)" }} />
-                </div>
-                <span style={{ fontSize:13, fontWeight:800, color:"#7e9dff", whiteSpace:"nowrap" }}>Lv. {licNum}</span>
-              </div>
-            </div>
-          } />
-      </MenuCard>
       <MenuCard onClick={() => setView("notices")}><RowInner icon={Megaphone} tint="#38bdf8" tintBg="rgba(56,189,248,0.13)" label="공지사항" sub="대여실 소식·안내" /></MenuCard>
 
       {/* 하단 그룹 — 설정 · 로그아웃 (한 카드에 두 행) */}
@@ -636,31 +586,6 @@ function StudentSettings() {
   );
 }
 
-// 학생용 대여이력 + 캘린더 통합
-function StudentCalendarHistory({ profile, focusId, onConsumed }) {
-  const [view, setView] = React.useState("history");
-  // 🔔 알림 딥링크 — 대여이력 뷰로 강제 전환 후 History에 위임
-  React.useEffect(() => { if (focusId) setView("history"); }, [focusId]);
-  return (
-    <div>
-      {/* 슬라이드 세그먼트 토글 (블루 그라데이션) */}
-      <div style={{ position:"relative", display:"flex", background:"#10131d", border:"1px solid #232a3a", borderRadius:14, padding:5, marginBottom:16 }}>
-        <div style={{ position:"absolute", top:5, bottom:5, left: view==="history" ? 5 : "50%", width:"calc(50% - 5px)", background:"linear-gradient(135deg,#3b82f6,#2563eb)", borderRadius:10, transition:"left 0.28s cubic-bezier(0.4,0,0.2,1)", boxShadow:"0 4px 14px rgba(37,99,235,0.4)" }} />
-        {[["history","예약내역"],["calendar","예약캘린더"]].map(([v,l]) => (
-          <button key={v} onClick={() => setView(v)}
-            style={{ position:"relative", zIndex:1, flex:1, padding:"11px 0", background:"transparent", border:"none", borderRadius:10,
-              fontSize:14, fontWeight:800, cursor:"pointer", fontFamily:"inherit",
-              color: view===v ? "#fff" : C.muted, transition:"color 0.2s" }}>
-            {l}
-          </button>
-        ))}
-      </div>
-      {view === "history"  && <History focusId={focusId} onConsumed={onConsumed} />}
-      {view === "calendar" && <CalendarPage isAdmin={false} userId={profile?.studentId} userEmail={profile?.email} userName={profile?.name} />}
-    </div>
-  );
-}
-
 function AppContent() {
   const { user, profile, loading } = useAuth();
   useFCM(profile?.uid);
@@ -683,11 +608,9 @@ function AppContent() {
   const [mypageView, setMypageView] = useState("menu");
   useEffect(() => { if (tab !== "mypage") setMypageView("menu"); }, [tab]); // 탭 이탈 시 초기화
 
-  const { data: rentalRequests }   = useCollection("rentalRequests",   "createdAt");
   const { data: allUsers }         = useCollection("users",            "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
   const { data: notices }          = useCollection("notices",          "createdAt");
-  const { data: licenseSchedules } = useCollection("licenseSchedules", "date");
   // 알림용: 커뮤니티 전체가 아니라 "내 글 / 내 글에 달린 댓글"만 구독 (데이터·비용 절감)
   // orderBy 생략 + where 단독 → 복합 인덱스 불필요. buildAlerts가 자체 정렬함.
   const _uid = profile?.uid || "";
@@ -720,28 +643,20 @@ function AppContent() {
   for (const u of allUsers) if (u.photoURL) photoMap[u.id] = u.photoURL;
 
   // 배지 카운트 — 패널과 동일한 buildAlerts 사용 (배지·목록 불일치 방지)
-  const notifCount = buildAlerts(isAdmin, profile, { rentalRequests, allUsers, pwResets, notices, licenseSchedules, communityPosts, communityComments, friendRequests, crewInvites }).filter(a => notSeen(a.id)).length;
+  const notifCount = buildAlerts(isAdmin, profile, { allUsers, pwResets, notices, communityPosts, communityComments, friendRequests, crewInvites }).filter(a => notSeen(a.id)).length;
 
   const renderPage = () => {
     if (isAdmin) {
       switch (tab) {
         case "home":     return <Dashboard setTab={setTab} />;
-        case "rental":   return <Rental subAdmin={isTeacherProf} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
-        case "g_equip":   return <GroupHub groupId="g_equip" setTab={setTab} />;
         case "g_student": return <GroupHub groupId="g_student" setTab={setTab} />;
         case "g_sns":     return <GroupHub groupId="g_sns" setTab={setTab} />;
         case "g_more":    return <GroupHub groupId="g_more" setTab={setTab} />;
-        case "equip":    return <Equipment />;
         case "students": return <Students focusId={notifTarget?.userId} onConsumed={() => setNotifTarget(null)} />;
-        case "calendar": return <CalendarPage isAdmin={true} />;
-        case "stats":    return <Stats isAdmin={true} />;
         case "notices":  return <Notices isAdmin={true} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "settings": return <Settings isSuper={isSuper} />;
         case "inquiry":  return <AdminInquiry canDelete={isSuper} />;
-        case "license":  return <LicenseAdmin />;
         case "sns":      return <SNSManager />;
-        case "external": return <ExternalRental />;
-        case "repair":   return <RepairManager />;
         case "community":
           // 교수·교사도 에브리타임 진입 허용 (학생 전용 룸은 Community 내부에서 차단 모달 처리)
           return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
@@ -751,12 +666,10 @@ function AppContent() {
     } else {
       switch (tab) {
         case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
-        case "equip":    return <EquipList setTab={setTab} initialSearch={notifTarget?.equipSearch} initialCat={notifTarget?.equipCat} onConsumed={() => setNotifTarget(null)} />;
-        case "reserve":  return <Reserve setTab={setTab} />;
-        case "calendar": return <StudentCalendarHistory profile={profile} focusId={notifTarget?.rentalId} onConsumed={() => setNotifTarget(null)} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
-        case "license":  return <License focusId={notifTarget?.licenseId} onConsumed={() => setNotifTarget(null)} onOpenNotices={() => setTab("notices")} />;
-        case "community": return <Community onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("projectstudio"); }} />;
+        case "production": return <ProductionScreen key="production" initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("home")} />;
+        case "boxoffice": return <Community key="boxoffice" initialRoom="boxoffice" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} onRoomConsumed={() => {}} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
+        case "community": return <Community key="community" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
         default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
@@ -790,11 +703,9 @@ function AppContent() {
             // 페이지 먼저 전환 → 살짝 텀 두고 대상(글/공지/기사/상태 카드) 등장 (모든 알림 공통)
             setTimeout(() => { setCommunityRoom(t.room || null); setNotifTarget(t); }, 450);
           }}
-          rentalRequests={rentalRequests}
           allUsers={allUsers}
           pwResets={pwResets}
           notices={notices}
-          licenseSchedules={licenseSchedules}
           communityPosts={communityPosts}
           communityComments={communityComments}
           friendRequests={friendRequests}
@@ -847,9 +758,7 @@ export default function App() {
     <ErrorBoundary>
       <UpdateGate>
         <AuthProvider>
-          <CartProvider>
-            <AppContent />
-          </CartProvider>
+          <AppContent />
         </AuthProvider>
       </UpdateGate>
     </ErrorBoundary>

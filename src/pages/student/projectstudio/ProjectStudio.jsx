@@ -11,7 +11,6 @@ import ScriptScreen from "./ScriptScreen";
 import ShotsScreen from "./ShotsScreen";
 import ScheduleScreen from "./ScheduleScreen";
 import CrewScreen from "./CrewScreen";
-import EquipmentScreen from "./EquipmentScreen";
 import BudgetScreen from "./BudgetScreen";
 import CastScreen from "./CastScreen";
 import LocationScreen from "./LocationScreen";
@@ -75,8 +74,8 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
   if (view === "aicreate") {
     return <ProjectAICreate basic={aiBasic} onBack={() => setView("create")} onCreated={(id) => setView(id)} />;
   }
-  // 서브 화면 ("script:" | "shots:" | "schedule:" | "crew:" | "equipment:" | "budget:" | "casting:" | "locations:" | "files:" + 프로젝트 id)
-  if (typeof view === "string" && /^(script|shots|schedule|crew|equipment|budget|casting|locations|files|idea):/.test(view)) {
+  // 서브 화면 ("script:" | "shots:" | "schedule:" | "crew:" | "budget:" | "casting:" | "locations:" | "files:" + 프로젝트 id)
+  if (typeof view === "string" && /^(script|shots|schedule|crew|budget|casting|locations|files|idea):/.test(view)) {
     const [screen, pid] = [view.split(":")[0], view.split(":")[1]];
     const project = projects.find(p => p.id === pid);
     if (!project && loading) return <div style={{ padding: 40, textAlign: "center" }}><Spinner /></div>;
@@ -104,9 +103,6 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
     }
     if (screen === "crew") {
       return <CrewScreen project={project} onBack={() => setView(pid)} />;
-    }
-    if (screen === "equipment") {
-      return <EquipmentScreen project={project} onBack={() => setView(pid)} />;
     }
     if (screen === "budget") {
       return <BudgetScreen project={project} onBack={() => setView(pid)} />;

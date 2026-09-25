@@ -7,19 +7,10 @@ import {
 
 // 그룹별 업무 카드 정의
 const GROUPS = {
-  g_equip: {
-    title: "장비",
-    items: [
-      { id: "equip",    icon: Wrench,    label: "장비 관리",   desc: "장비 등록·수정·재고" },
-      { id: "repair",   icon: Hammer,    label: "장비 수리",   desc: "수리 접수·이력 관리" },
-      { id: "external", icon: Store,     label: "외부 렌탈샵", desc: "제휴 업체 관리" },
-    ],
-  },
   g_student: {
     title: "학생",
     items: [
       { id: "students", icon: Users,         label: "학생 관리",     desc: "학생 정보·권한" },
-      { id: "license",  icon: GraduationCap, label: "라이선스 관리", desc: "장비 자격 인증" },
     ],
   },
   g_sns: {
@@ -32,8 +23,6 @@ const GROUPS = {
   g_more: {
     title: "더보기",
     items: [
-      { id: "calendar", icon: Calendar,      label: "캘린더 관리",   desc: "일정·대여 현황" },
-      { id: "stats",    icon: BarChart3,     label: "통계 관리",     desc: "이용 통계·리포트" },
       { id: "notices",  icon: Megaphone,     label: "공지사항 관리", desc: "공지·PDF 등록" },
       { id: "inquiry",  icon: MessageCircle, label: "문의 관리",     desc: "학생 문의 답변" },
       { id: "settings", icon: Settings,      label: "설정",          desc: "앱·계정 설정" },

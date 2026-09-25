@@ -7,7 +7,7 @@ import { useAuth } from "../../hooks/useAuth.jsx";
 import { doc, setDoc, getDoc, query, where, getDocs, updateDoc, onSnapshot, orderBy } from "firebase/firestore";
 import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
 import { db, storage, auth as firebaseAuth } from "../../firebase";
-import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot, Camera, Image as ImageIcon } from "lucide-react";
+import { LogOut, RefreshCw, CalendarPlus, ClipboardList, ShieldCheck, ChevronRight, CalendarDays, PlusCircle, Bot, Camera, Image as ImageIcon, Clapperboard, MessageSquare, Film } from "lucide-react";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { PetHomeCard, PetOverlay } from "../../components/PetGame.jsx";
 
@@ -332,7 +332,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const { profile, logout } = useAuth();
   const [showPet, setShowPet] = useState(false);
   const [petRefresh, setPetRefresh] = useState(0);
-  const [showRules, setShowRules] = useState(false); // 대여 규칙 모달
   const [nowTick, setNowTick] = useState(0); // 1분마다 갱신 (다음 수업 카운트다운)
   useEffect(() => { const id = setInterval(() => setNowTick(t => t + 1), 60000); return () => clearInterval(id); }, []);
 
@@ -368,7 +367,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
       setSwitchModal2(true);
     } finally { setSwitchLoading2(false); }
   };
-  const { data: allRequests }       = useCollection("rentalRequests",    "createdAt");
   const { data: notices }           = useCollection("notices",           "createdAt");
   // 받은/보낸 신청 완전 분리
   const { data: friendRequests } = useCollection("friendRequests", "createdAt");
@@ -376,10 +374,8 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
   const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
   const { data: communityComments } = useCollection("communityComments", "createdAt");
-  const { data: licenseSchedules }  = useCollection("licenseSchedules",  "date");
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
-  const [selectedRequest, setSelectedRequest] = useState(null);
   const [commentText,     setCommentText]     = useState("");
   const [submitting,      setSubmitting]      = useState(false);
 
@@ -399,9 +395,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
     const dismissed = localStorage.getItem('ios_install_dismissed');
     return isIos && isSafari && !isStandalone && !dismissed;
   });
-  const [returnPhotoUploading, setReturnPhotoUploading] = useState(false);
-  const [returnPhotoProgress,  setReturnPhotoProgress]  = useState(0);
-  const [expandedReturnId,     setExpandedReturnId]     = useState(null); // 펼쳐진 반납준비 항목
   const [showFriendTab,  setShowFriendTab]  = useState(false);
   const [viewFriend,     setViewFriend]     = useState(null); // { id, name, dept, classes }
   const [viewFriendLoading, setViewFriendLoading] = useState(false);
@@ -527,25 +520,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
     await saveTimetable([]);
   };
 
-  const myId = profile?.studentId || profile?.email || "";
-  const myRentals = allRequests.filter(r =>
-    (r.studentId === myId || r.studentId === profile?.uid) &&
-    (r.status === "대여중" || r.status === "연체")
-  );
-  const myRes = allRequests.filter(r =>
-    (r.studentId === myId || r.studentId === profile?.uid) &&
-    (r.status === "승인대기" || r.status === "승인됨")
-  );
-
-  // 레벨/신뢰도 카드용 대여 통계 (실제 데이터)
-  const myRentalsAll = allRequests.filter(r => r.studentId === myId || r.studentId === profile?.uid);
-  const rentedCnt  = myRentalsAll.filter(r => ["대여중", "반납완료", "연체"].includes(r.status)).length; // 실제 대여한 횟수
-  const onTimeCnt  = myRentalsAll.filter(r => r.status === "반납완료").length;                          // 정시반납(반납완료)
-  const overdueCnt = myRentalsAll.filter(r => r.status === "연체").length;                              // 연체
-  // 신뢰도 = 정시반납×120 + 대여×30 − 연체×300 (최소 0). ※ 규칙은 조정 가능
-  const trustScore = Math.max(0, onTimeCnt * 120 + rentedCnt * 30 - overdueCnt * 300);
-  const petStats = { rented: rentedCnt, onTime: onTimeCnt, overdue: overdueCnt, trust: trustScore };
-
   // ── 시간표: 오늘 수업 / 다음 수업 (nowTick으로 1분마다 갱신) ──
   const _now = new Date(); void nowTick;
   const _todayLabel = ["일", "월", "화", "수", "목", "금", "토"][_now.getDay()];
@@ -566,12 +540,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const recentNotices = pinned.length > 0
     ? pinned
     : [...notices].sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0, 3);
-
-  const getEquipLabel = (r) => {
-    if (!r.items || r.items.length === 0) return r.equipName || "-";
-    const names = r.items.map(i => i.modelName || i.equipName || "").filter(Boolean);
-    return names.length > 1 ? `${names[0]} 외 ${names.length - 1}건` : names[0] || "-";
-  };
 
   const getNoticeComments = (noticeId) =>
     comments
@@ -602,43 +570,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const myFriends = friends.filter(f =>
     f.userId === profile?.uid || f.friendId === profile?.uid
   );
-
-  // 반납 준비 사진 업로드
-  const uploadReturnPhoto = (requestId) => async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const input = e.target;
-    setReturnPhotoUploading(true);
-    setReturnPhotoProgress(0);
-    try {
-      const storageRef = ref(storage, `return_photos/${requestId}_${Date.now()}`);
-      const task = uploadBytesResumable(storageRef, file);
-      await new Promise((resolve, reject) => {
-        task.on("state_changed",
-          snap => setReturnPhotoProgress(Math.round(snap.bytesTransferred / snap.totalBytes * 100)),
-          reject,
-          resolve
-        );
-      });
-      const url = await getDownloadURL(task.snapshot.ref);
-      // Firestore에서 최신 데이터 직접 읽어서 업데이트
-      const docSnap = await getDoc(doc(db, "rentalRequests", requestId));
-      const current = docSnap.exists() ? (docSnap.data().returnPhotos || []) : [];
-      if (current.length >= 3) { alert("사진은 최대 3장까지 업로드할 수 있어요"); return; }
-      await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: [...current, url] });
-      input.value = "";
-    } catch(err) {
-      alert("업로드 실패: " + err.message);
-    } finally {
-      setReturnPhotoUploading(false);
-      setReturnPhotoProgress(0);
-    }
-  };
-
-  const deleteReturnPhoto = async (requestId, photos, idx) => {
-    const newPhotos = photos.filter((_, i) => i !== idx);
-    await updateDoc(doc(db, "rentalRequests", requestId), { returnPhotos: newPhotos });
-  };
 
   // 친구 시간표 보기
   const viewFriendTimetable = async (friendDoc) => {
@@ -760,7 +691,8 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
         .hmini{position:absolute;left:4%;top:54%;transform:translateY(-50%);z-index:6;display:flex;gap:7px;pointer-events:auto;}
         .hmini button{display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:rgba(255,255,255,0.13);border:1px solid rgba(255,255,255,0.14);color:rgba(255,255,255,0.85);cursor:pointer;padding:0;}
       `}</style>
-      <div style={{ position: "relative", width: "100%", lineHeight: 0, marginBottom: 12 }}>
+      {/* home-hero.png — 마스코트+인사말만 표시 (하단 장비버튼 영역은 잘라냄) */}
+      <div style={{ position: "relative", width: "100%", aspectRatio: "1493 / 502", overflow: "hidden", borderRadius: 16, marginBottom: 12 }}>
         <img src="/home-hero.png" alt="홈" style={{ width: "100%", display: "block" }} />
         <div className="htext">
           <p className="hgreet">안녕하세요, <span className="nm">{profile?.name}</span>님 👋</p>
@@ -776,41 +708,30 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
             </button>
           )}
         </div>
-        {[
-          { label: "장비 예약", box: { left: "4.0%",  top: "66.6%", width: "30.2%", height: "26.6%" }, onClick: () => setTab?.("equip") },
-          { label: "예약 내역", box: { left: "35.8%", top: "66.6%", width: "28.6%", height: "26.6%" }, onClick: () => setTab?.("calendar") },
-          { label: "대여 규칙", box: { left: "66.0%", top: "66.6%", width: "29.9%", height: "26.6%" }, onClick: () => setShowRules(true) },
-        ].map((b, i) => (
-          <button key={i} className="hero-hit" aria-label={b.label} onClick={b.onClick} style={b.box} />
-        ))}
       </div>
 
-      {/* 대여 규칙 모달 */}
-      {showRules && (
-        <Modal onClose={() => setShowRules(false)} width={380}>
-          <div style={{ display:"flex", alignItems:"center", gap:9, marginBottom:14 }}>
-            <div style={{ width:36, height:36, borderRadius:10, background:"linear-gradient(135deg,#5b8def,#4f6bd8)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-              <ShieldCheck size={19} color="#fff" strokeWidth={2.2} />
-            </div>
-            <div style={{ fontSize:15, fontWeight:900, color:C.text }}>대여 이용 규칙</div>
-          </div>
-          {[
-            { t:"대여 시간", d:"평일 당일대여 09:00~17:30 / 주말대여 금 17:30 ~ 월 09:00" },
-            { t:"신청 기한", d:"이용일 최소 3일 전까지 신청 (긴급 체크 시 예외)" },
-            { t:"라이선스", d:"보유 라이선스 등급(LV0~LV3)에 따라 대여 가능 장비가 달라져요" },
-            { t:"반납", d:"제시간에 반납해주세요. 연체 시 이용이 제한될 수 있어요" },
-          ].map((r,i) => (
-            <div key={i} style={{ display:"flex", gap:10, padding:"10px 0", borderTop: i>0 ? `1px solid ${C.border}` : "none" }}>
-              <div style={{ flexShrink:0, width:64, fontSize:12, fontWeight:800, color:C.text }}>{r.t}</div>
-              <div style={{ flex:1, fontSize:12, color:C.muted, lineHeight:1.55 }}>{r.d}</div>
-            </div>
-          ))}
-          <button onClick={() => setShowRules(false)}
-            style={{ width:"100%", marginTop:14, background:C.navy, color:C.bg, border:"none", borderRadius:10, padding:"11px 0", fontSize:13, fontWeight:800, cursor:"pointer", fontFamily:"inherit" }}>
-            확인
-          </button>
-        </Modal>
-      )}
+      {/* 빠른메뉴 — 작품제작 / 커뮤니티 / 작품상영관 */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+        {[
+          { icon: Clapperboard,  label: "작품제작",   sub: "새 작품 기획",     grad: "linear-gradient(135deg,#5b8def,#7c3aed)", onClick: () => setTab?.("production") },
+          { icon: MessageSquare, label: "커뮤니티",   sub: "우리 학교 이야기", grad: "linear-gradient(135deg,#3b82f6,#2563eb)", onClick: () => setTab?.("community") },
+          { icon: Film,          label: "작품상영관", sub: "학생 작품 감상",   grad: "linear-gradient(135deg,#7c3aed,#a855f7)", onClick: () => setTab?.("boxoffice") },
+        ].map((b, i) => {
+          const Icon = b.icon;
+          return (
+            <button key={i} className="tap-spring" onClick={b.onClick}
+              style={{ background: "#121218", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "13px 10px", cursor: "pointer", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+              <span style={{ width: 38, height: 38, borderRadius: 11, background: b.grad, display: "grid", placeItems: "center" }}>
+                <Icon size={19} color="#fff" strokeWidth={2.1} />
+              </span>
+              <div style={{ textAlign: "left" }}>
+                <div style={{ fontSize: 13, fontWeight: 800, color: "#F1F5F9" }}>{b.label}</div>
+                <div style={{ fontSize: 10.5, color: "#64748B", marginTop: 2 }}>{b.sub}</div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
 
       {/* 🐾 펫 + 🫂 친구관리 (한 줄 2박스) */}
       <div style={{ display:"flex", gap:10, marginBottom:6, alignItems:"stretch" }}>
@@ -897,14 +818,13 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
             <img src="/mascot/baby.png" alt="렌토리" style={{ width:120, height:120, objectFit:"contain", marginBottom:8 }} />
             <div style={{ fontSize:16, fontWeight:900, color:C.text, marginBottom:14 }}>렌토리를 소개합니다!</div>
             <div style={{ fontSize:12, color:C.text, lineHeight:1.7, textAlign:"left", background:C.bg, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
-              렌토리는 한국방송예술진흥원 장비대여실에서 태어난 작은 수달이에요.<br/>
-              카메라, 렌즈, 조명, 삼각대 사이에서 자라며 장비 이름과 사용법을 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 촬영 준비를 도와주고 있어요.<br/><br/>
-              대여 신청부터 장비 확인, 반납 알림까지<br/>
-              촬영의 시작과 끝을 함께하는<br/>
-              여러분의 공식 장비 도우미랍니다.<br/><br/>
-              장비를 깨끗하게 쓰고 제시간에 반납하면 렌토리가 따봉을 날려줘요. 👍<br/>
-              하지만 반납이 늦거나 장비를 함부로 다루면 7번 아이언과 함께 나타날지도 몰라요! ⛳<br/><br/>
-              <div style={{ fontWeight:700, color:C.teal, textAlign:"center" }}>오늘의 촬영도 렌토리와 함께 준비해볼까요?</div>
+              렌토리는 한국방송예술진흥원에서 태어난 작은 수달이에요.<br/>
+              카메라, 렌즈, 조명 사이에서 자라며 영상 만드는 걸 자연스럽게 익혔고, 지금은 앱 안에서 여러분의 작품 활동을 응원하고 있어요.<br/><br/>
+              작품 기획부터 촬영, 커뮤니티 소통까지<br/>
+              여러분의 학교 생활을 함께하는<br/>
+              한예진의 공식 마스코트랍니다.<br/><br/>
+              좋은 작품을 만들고 친구들과 나누면 렌토리가 따봉을 날려줘요. 👍<br/><br/>
+              <div style={{ fontWeight:700, color:C.teal, textAlign:"center" }}>오늘도 렌토리와 함께 멋진 작품 만들어볼까요?</div>
             </div>
             <button onClick={() => setShowRentory(false)}
               style={{ background:`linear-gradient(135deg, ${C.teal}, ${C.navy})`, color:"#fff", border:"none", borderRadius:10, padding:"11px 24px", fontSize:12, fontWeight:700, cursor:"pointer", width:"100%" }}>
@@ -1162,33 +1082,6 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
       {/* 학점 계산기 */}
       <GpaCalculator classes={classes} />
 
-        {/* 라이선스 수업 */}
-        {(() => {
-          const today = new Date().toISOString().slice(0,10);
-          const upcoming = licenseSchedules
-            .filter(s => s.date >= today && s.status !== "완료")
-            .sort((a,b) => a.date > b.date ? 1 : -1)
-            .slice(0, 3);
-          if (upcoming.length === 0) return null;
-          return (
-            <section>
-              <SectionTitle>🎖️ 라이선스 신청 가능한 수업</SectionTitle>
-              {upcoming.map(s => (
-                <Card key={s.id} style={{ marginBottom:8 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <div>
-                      <div style={{ fontSize:12, fontWeight:700, color:C.text }}>{s.title || s.equipName}</div>
-                      <div style={{ fontSize:12, color:C.muted, marginTop:3 }}>{s.date} {s.time} · {s.location}</div>
-                      {s.licenseLevel && <div style={{ fontSize:11, color:C.purple, marginTop:2, fontWeight:600 }}>Lv.{s.licenseLevel} 수업</div>}
-                    </div>
-                    <span style={{ background:C.purpleLight, color:C.purple, borderRadius:8, padding:"4px 10px", fontSize:12, fontWeight:700, flexShrink:0 }}>신청가능</span>
-                  </div>
-                </Card>
-              ))}
-            </section>
-          );
-        })()}
-
       {/* 수업 추가/수정 모달 */}
       {showClassForm && (
         <Modal onClose={() => { setShowClassForm(false); setEditClass(null); }} width={420}>
@@ -1319,37 +1212,14 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
       })()}
 
 
-      {/* 대여 상세 모달 */}
-      {selectedRequest && (
-        <Modal onClose={() => setSelectedRequest(null)} width={480}>
-          <div style={{ fontSize: 16, fontWeight: 800, color: C.navy, marginBottom: 16 }}>{getEquipLabel(selectedRequest)}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, fontSize: 12 }}>
-            {[
-              ["상태", selectedRequest.status],
-              ["목적", selectedRequest.purpose],
-              ["대여일", selectedRequest.startDate],
-              ["반납예정", `${selectedRequest.endDate} ${selectedRequest.endTime}`],
-            ].map(([label, val]) => (
-              <div key={label} style={{ background: C.bg, borderRadius: 10, padding: "10px 14px" }}>
-                <div style={{ fontSize: 11, color: C.muted, marginBottom: 3 }}>{label}</div>
-                <div style={{ fontWeight: 700, color: C.text }}>{val}</div>
-              </div>
-            ))}
-          </div>
-          <div style={{ marginTop: 16 }}>
-            <Btn onClick={() => setSelectedRequest(null)} color={C.muted} outline full>닫기</Btn>
-          </div>
-        </Modal>
-      )}
 
       {/* 온보딩 튜토리얼 */}
       {showOnboarding && (() => {
         const steps = [
-    { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 나의 예약현황을 한눈에 볼 수 있어요!" },
-    { emoji:"🎬", title:"장비 목록", desc:"대여 가능한 장비를 미리 확인할 수 있어요!" },
-    { emoji:"📋", title:"예약 신청", desc:"초보자 가이드와 함께 장비를 골라보거나, 직접 선택할 수 있어요!" },
-    { emoji:"📅", title:"대여이력/캘린더", desc:"내 대여 기록과 전체 대여 일정을 캘린더로 확인해요!" },
-    { emoji:"💬", title:"에브리타임", desc:"자유·질문·강의 등 다양한 게시판으로 소통해요!" },
+    { emoji:"🏠", title:"홈 화면", desc:"시간표, 학점 계산기, 펫과 친구를 한눈에 볼 수 있어요!" },
+    { emoji:"🎬", title:"작품제작", desc:"프로젝트 스튜디오와 촬영 도구로 작품을 기획하고 만들어요!" },
+    { emoji:"💬", title:"커뮤니티", desc:"자유·질문·강의·협업모집 등 다양한 게시판으로 소통해요!" },
+    { emoji:"🍿", title:"작품상영관", desc:"학생들이 만든 작품을 감상하고 응원할 수 있어요!" },
     { emoji:"👤", title:"내정보/문의", desc:"내 프로필 설정과 문의를 여기서 할 수 있어요!" },
   ];
         const step  = steps[onboardStep];

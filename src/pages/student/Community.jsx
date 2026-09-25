@@ -1482,34 +1482,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         );
                       })()}
 
-                      {/* 🎞️ 필름도구 — 이미지 박스 가로 스와이프 (윗줄 5 + 아랫줄 4) */}
-                      <div style={{ marginTop:14 }}>
-                        <div style={{ display:"flex", alignItems:"center", marginBottom:7, padding:"0 2px" }}>
-                          <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#fbbf24" }}>필름도구</span>
-                        </div>
-                        <style>{`.ft-swipe::-webkit-scrollbar{display:none}.ft-swipe{scrollbar-width:none;-ms-overflow-style:none}`}</style>
-                        <div className="ft-swipe" style={{
-                          display:"grid", gridTemplateRows:"repeat(2, 80px)", gap:8,
-                          overflowX:"auto", WebkitOverflowScrolling:"touch",
-                          scrollSnapType:"x mandatory", touchAction:"pan-x pan-y",
-                        }}>
-                          {FILM_TOOL_BOXES.map((t, i) => (
-                            <div key={t.key}
-                              onClick={() => { setSelectedRoom("tools"); setSelectedTool(t.key); }}
-                              style={{
-                                gridRow: i < 5 ? 1 : 2, gridColumn: (i < 5 ? i : i - 5) + 1,
-                                width:160, height:80, borderRadius:14, overflow:"hidden", cursor:"pointer",
-                                scrollSnapAlign:"start", flexShrink:0,
-                                background:"#17171c", border:"1px solid rgba(255,255,255,0.07)",
-                              }}>
-                              <img loading="lazy" decoding="async" src={t.img} alt=""
-                                style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }}
-                                onError={e => { e.currentTarget.style.opacity = 0; }} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
                       {/* 🎬 오늘의 추천작 — 매일 00시 기준 날짜 시드 랜덤 (모두에게 같은 작품) */}
                       {(() => {
                         const works = posts.filter(p => p.category === "작품공유" && getYouTubeId(p.ytUrl));
