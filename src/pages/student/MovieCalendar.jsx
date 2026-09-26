@@ -4,7 +4,7 @@ import { useCollection, addItem, deleteItem } from "../../hooks/useFirestore";
 import { Modal } from "../../components/UI";
 import {
   Plus, ChevronLeft, ChevronRight, ChevronDown, X, Search,
-  Trash2, Film, Tv, BookOpen, Loader2,
+  Trash2, Film, Tv, BookOpen, Loader2, Users, Sparkles,
 } from "lucide-react";
 
 // ── 무비캘린더 전용 컬러(다크 + 핑크 액센트로 기능 정체성) ──
@@ -34,18 +34,31 @@ const todayStr = () => { const t = new Date(); return ymd(t.getFullYear(), t.get
 
 export default function MovieCalendar({ viewUid = null, viewName = null }) {
   const { profile } = useAuth();
-  const uid = viewUid || profile?.uid;
-  const readOnly = !!viewUid && viewUid !== profile?.uid;
+  // 보고 있는 대상(내 캘린더 / 친구 캘린더). 화면 안에서 친구로 전환 가능.
+  const [friendSel, setFriendSel] = useState(viewUid ? { uid: viewUid, name: viewName } : null);
+  const uid = friendSel?.uid || profile?.uid;
+  const readOnly = !!friendSel && friendSel.uid !== profile?.uid;
 
   const now = new Date();
   const [year,  setYear]  = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1); // 1~12
   const [filter, setFilter] = useState("all"); // all | movie | tv | book
   const [showMonthPick, setShowMonthPick] = useState(false);
+  const [showFriendPick, setShowFriendPick] = useState(false);
+  const [showRecap, setShowRecap] = useState(false);
 
   const [addOpen, setAddOpen] = useState(false);
   const [addDate, setAddDate] = useState(todayStr());
   const [dayOpen, setDayOpen] = useState(null); // 선택한 날짜(YYYY-MM-DD)
+
+  // 내 친구 목록 (양방향) — 친구 캘린더 전환용
+  const { data: friends } = useCollection("friends", "createdAt");
+  const myFriends = useMemo(() => (
+    friends
+      .filter(f => f.userId === profile?.uid || f.friendId === profile?.uid)
+      .map(f => { const mine = f.userId === profile?.uid; return { uid: mine ? f.friendId : f.userId, name: mine ? f.friendName : f.userName }; })
+      .filter(f => f.uid)
+  ), [friends, profile?.uid]);
 
   // 내(또는 친구) 기록 — where 단독(인덱스 불필요), 월/타입 필터는 클라에서
   const { data: logs } = useCollection("mediaLogs", null, {
@@ -109,12 +122,25 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
           </button>
           <button onClick={goNext} style={iconBtn}><ChevronRight size={20} color={M.sub} /></button>
         </div>
-        {!isThisMonth && (
-          <button onClick={goToday}
-            style={{ background: "none", border: "none", color: M.pink, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
-            이번 달
-          </button>
-        )}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {!isThisMonth && (
+            <button onClick={goToday}
+              style={{ background: "none", border: "none", color: M.pink, fontSize: 13, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+              이번 달
+            </button>
+          )}
+          {readOnly ? (
+            <button onClick={() => setFriendSel(null)}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: M.pinkSoft, border: `1px solid ${M.pink}44`, borderRadius: 999, color: M.pink, fontSize: 12, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", padding: "5px 11px" }}>
+              내 캘린더
+            </button>
+          ) : (
+            <button onClick={() => setShowFriendPick(true)} title="친구 캘린더"
+              style={{ ...iconBtn, width: 34, height: 34, background: M.card, border: `1px solid ${M.border}` }}>
+              <Users size={17} color={M.sub} />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 친구 캘린더 표시 배너 */}
@@ -124,12 +150,13 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
         </div>
       )}
 
-      {/* 월 요약 배너 */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, background: M.card, border: `1px solid ${M.border}`, borderRadius: 14, padding: "12px 16px", marginBottom: 14 }}>
+      {/* 월 요약 배너 — 누르면 월별 결산 */}
+      <button onClick={() => setShowRecap(true)}
+        style={{ width: "100%", boxSizing: "border-box", display: "flex", alignItems: "center", gap: 14, background: M.card, border: `1px solid ${M.border}`, borderRadius: 14, padding: "12px 16px", marginBottom: 14, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
         <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg,${M.pink},#c026d3)`, display: "grid", placeItems: "center", flexShrink: 0, fontSize: 16, fontWeight: 900, color: "#fff" }}>
           {month}
         </div>
-        <div style={{ display: "flex", gap: 16 }}>
+        <div style={{ display: "flex", gap: 16, flex: 1 }}>
           {KINDS.map(k => (
             <div key={k.key} style={{ textAlign: "center" }}>
               <div style={{ fontSize: 17, fontWeight: 900, color: k.color, lineHeight: 1 }}>{stat[k.key]}</div>
@@ -137,7 +164,11 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
             </div>
           ))}
         </div>
-      </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, flexShrink: 0, color: M.sub }}>
+          <span style={{ fontSize: 11.5, fontWeight: 700 }}>결산</span>
+          <ChevronRight size={16} color={M.sub} />
+        </div>
+      </button>
 
       {/* 필터칩 */}
       <div style={{ display: "flex", gap: 7, marginBottom: 14 }}>
@@ -280,6 +311,71 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
           </Modal>
         );
       })()}
+
+      {/* 친구 선택 모달 */}
+      {showFriendPick && (
+        <Modal onClose={() => setShowFriendPick(false)} width={340}>
+          <div style={{ color: M.text }}>
+            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 14 }}>친구 캘린더</div>
+            {myFriends.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "24px 0", color: M.sub, fontSize: 13, lineHeight: 1.7 }}>
+                아직 친구가 없어요.<br />더보기 › 친구관리에서 추가해봐요.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
+                {myFriends.map(f => (
+                  <button key={f.uid} onClick={() => { setFriendSel(f); setShowFriendPick(false); setFilter("all"); }}
+                    style={{ display: "flex", alignItems: "center", gap: 12, background: M.card, border: `1px solid ${M.border}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    <span style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg,${M.pink},#c026d3)`, display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15, fontWeight: 800, color: "#fff" }}>{(f.name || "?").slice(0, 1)}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: M.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                    <ChevronRight size={16} color={M.faint} style={{ flexShrink: 0 }} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* 월별 결산 모달 */}
+      {showRecap && (
+        <Modal onClose={() => setShowRecap(false)} width={420}>
+          <div style={{ color: M.text }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <Sparkles size={18} color={M.pink} />
+              <div style={{ fontSize: 17, fontWeight: 900 }}>{year}년 {month}월 결산</div>
+            </div>
+            <div style={{ fontSize: 12, color: M.sub, marginBottom: 16 }}>
+              {readOnly ? `${friendSel?.name}님이 ` : ""}이 달에 {monthLogs.length}편 기록했어요{monthLogs.length ? " 🎬" : ""}
+            </div>
+            {monthLogs.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "30px 0", color: M.sub, fontSize: 13 }}>이 달 기록이 없어요.</div>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                  {KINDS.map(k => (
+                    <div key={k.key} style={{ flex: 1, background: M.card, border: `1px solid ${M.border}`, borderRadius: 12, padding: "12px 0", textAlign: "center" }}>
+                      <k.icon size={16} color={k.color} style={{ marginBottom: 4 }} />
+                      <div style={{ fontSize: 18, fontWeight: 900, color: k.color, lineHeight: 1 }}>{stat[k.key]}</div>
+                      <div style={{ fontSize: 10.5, color: M.sub, marginTop: 3 }}>{k.label}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, maxHeight: 380, overflowY: "auto" }}>
+                  {[...monthLogs].sort((a, b) => (a.date || "").localeCompare(b.date || "")).map(l => (
+                    <div key={l.id} style={{ aspectRatio: "3 / 4", borderRadius: 8, overflow: "hidden", background: M.soft, position: "relative", display: "grid", placeItems: "center" }}>
+                      {l.posterUrl
+                        ? <img src={l.posterUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        : <span style={{ fontSize: 9, color: M.sub, padding: 3, textAlign: "center" }}>{l.title}</span>}
+                      <span style={{ position: "absolute", top: 3, left: 4, fontSize: 9, fontWeight: 800, color: "#fff", textShadow: "0 1px 3px rgba(0,0,0,0.9)" }}>{parseInt((l.date || "").slice(8, 10), 10)}일</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </Modal>
+      )}
 
       {/* 추가 모달 */}
       {addOpen && (
