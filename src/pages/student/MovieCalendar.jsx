@@ -60,6 +60,19 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
       .filter(f => f.uid)
   ), [friends, profile?.uid]);
 
+  // 친구들의 "이번 달" 기록 편수 — 친구 선택 모달 열 때만 조회(in 최대 30명)
+  const friendUids = useMemo(() => myFriends.map(f => f.uid).slice(0, 30), [myFriends]);
+  const { data: friendLogs } = useCollection("mediaLogs", null, {
+    where: [["userId", "in", friendUids.length ? friendUids : ["__none__"]]],
+    enabled: showFriendPick && friendUids.length > 0,
+  });
+  const curYm = `${now.getFullYear()}-${pad2(now.getMonth() + 1)}`;
+  const friendMonthCount = useMemo(() => {
+    const m = {};
+    for (const l of friendLogs) if ((l.date || "").startsWith(curYm)) m[l.userId] = (m[l.userId] || 0) + 1;
+    return m;
+  }, [friendLogs, curYm]);
+
   // 내(또는 친구) 기록 — where 단독(인덱스 불필요), 월/타입 필터는 클라에서
   const { data: logs } = useCollection("mediaLogs", null, {
     where: [["userId", "==", uid || "__none__"]],
@@ -325,9 +338,9 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
               <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 360, overflowY: "auto" }}>
                 {myFriends.map(f => (
                   <button key={f.uid} onClick={() => { setFriendSel(f); setShowFriendPick(false); setFilter("all"); }}
-                    style={{ display: "flex", alignItems: "center", gap: 12, background: M.card, border: `1px solid ${M.border}`, borderRadius: 12, padding: "10px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-                    <span style={{ width: 38, height: 38, borderRadius: "50%", background: `linear-gradient(135deg,${M.pink},#c026d3)`, display: "grid", placeItems: "center", flexShrink: 0, fontSize: 15, fontWeight: 800, color: "#fff" }}>{(f.name || "?").slice(0, 1)}</span>
+                    style={{ display: "flex", alignItems: "center", gap: 10, background: M.card, border: `1px solid ${M.border}`, borderRadius: 12, padding: "12px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                     <span style={{ flex: 1, minWidth: 0, fontSize: 14, fontWeight: 700, color: M.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: M.pink, flexShrink: 0 }}>이번 달 {friendMonthCount[f.uid] || 0}편</span>
                     <ChevronRight size={16} color={M.faint} style={{ flexShrink: 0 }} />
                   </button>
                 ))}

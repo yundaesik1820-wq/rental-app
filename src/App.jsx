@@ -166,7 +166,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, allUsers, pwResets,
 
   // 클릭 시 이동할 페이지 + 실제 글까지 여는 딥링크 타깃
   const navTarget = (a) => {
-    if (a.cat === "친구")     return { tab: "mypage", mypageView: "friends" };
+    if (a.cat === "친구")     return { tab: "home", homeView: "friends" };
     if (a.cat === "프로젝트") return { tab: isAdmin ? "projectstudio" : "production" };
     if (a.cat === "공지")     return { tab: "notices", noticeId: a.noticeId };
     if (a.cat === "SNS" && a.postId)    return { tab: "community", postId: a.postId };
@@ -240,15 +240,15 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, allUsers, pwResets,
 
 // 학생용 더보기 — ejqhrl.png 목업 리디자인 (2026-07-23, 블루·퍼플 액센트)
 // view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
-const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", moviecal:"시네로그", inquiry:"문의하기", notices:"공지사항", settings:"설정" };
+const MYPAGE_TITLES = { profile:"내 정보", inquiry:"문의하기", notices:"공지사항", settings:"설정" };
+// 홈 탭 내부 서브뷰 헤더 제목 (시네로그·친구관리 — 홈에서만 접근)
+const HOME_VIEW_TITLES = { moviecal:"시네로그", friends:"친구관리" };
 function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   const { profile, logout } = useAuth();
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
   React.useEffect(() => { if (initialView) { setView(initialView); onConsumed?.(); } }, [initialView]);
 
   if (view === "profile")  return <Profile />;
-  if (view === "friends")  return <FriendManager photoMap={photoMap} />;
-  if (view === "moviecal") return <MovieCalendar />;
   if (view === "inquiry")  return <StudentInquiry />;
   if (view === "notices")  return <Notices isAdmin={false} />;
   if (view === "settings") return <StudentSettings />;
@@ -302,8 +302,6 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
 
       {/* 메뉴 카드 */}
       <MenuCard onClick={() => setView("profile")}><RowInner icon={User} tint="#3b82f6" tintBg="rgba(59,130,246,0.13)" label="내 정보" sub="프로필·계정 정보 확인" /></MenuCard>
-      <MenuCard onClick={() => setView("friends")}><RowInner icon={Users} tint="#a78bfa" tintBg="rgba(167,139,250,0.13)" label="친구관리" sub="친구 추가·요청 목록" /></MenuCard>
-      <MenuCard onClick={() => setView("moviecal")}><RowInner icon={Film} tint="#F472B6" tintBg="rgba(244,114,182,0.13)" label="시네로그" sub="본 영화·시리즈·책 기록" /></MenuCard>
       <MenuCard onClick={() => setView("inquiry")}><RowInner icon={MessageCircle} tint="#8b5cf6" tintBg="rgba(139,92,246,0.13)" label="문의하기" sub="궁금한 점을 물어봐요" /></MenuCard>
       <MenuCard onClick={() => setView("notices")}><RowInner icon={Megaphone} tint="#38bdf8" tintBg="rgba(56,189,248,0.13)" label="공지사항" sub="대여실 소식·안내" /></MenuCard>
 
@@ -610,6 +608,11 @@ function AppContent() {
   const [mypageKey, setMypageKey] = useState(0);
   const [mypageView, setMypageView] = useState("menu");
   useEffect(() => { if (tab !== "mypage") setMypageView("menu"); }, [tab]); // 탭 이탈 시 초기화
+  // 홈 탭 내부 서브뷰 (시네로그·친구관리) — 뒤로가기 시 홈 루트로. null | "moviecal" | "friends"
+  const [homeView, setHomeView] = useState(null);
+  useEffect(() => { if (tab !== "home") setHomeView(null); }, [tab]); // 탭 이탈 시 초기화
+  // 알림 딥링크 → 홈 서브뷰(친구 등) 진입 후 소비
+  useEffect(() => { if (notifTarget?.homeView) { setHomeView(notifTarget.homeView); setNotifTarget(null); } }, [notifTarget]);
 
   const { data: allUsers }         = useCollection("users",            "createdAt");
   const { data: pwResets }         = useCollection("pwResetRequests",  "createdAt");
@@ -668,14 +671,17 @@ function AppContent() {
       }
     } else {
       switch (tab) {
-        case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} onOpenMovieCal={() => { setNotifTarget({ mypageView: "moviecal" }); setTab("mypage"); }} />;
+        case "home":
+          if (homeView === "moviecal") return <MovieCalendar />;
+          if (homeView === "friends")  return <FriendManager photoMap={photoMap} />;
+          return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => setHomeView("friends")} onOpenMovieCal={() => setHomeView("moviecal")} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "production": return <ProductionScreen key="production" initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("home")} />;
         case "boxoffice": return <Community key="boxoffice" lockRoom="boxoffice" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} onRoomConsumed={() => {}} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "community": return <Community key="community" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
-        default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} onOpenMovieCal={() => { setNotifTarget({ mypageView: "moviecal" }); setTab("mypage"); }} />;
+        default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => setHomeView("friends")} onOpenMovieCal={() => setHomeView("moviecal")} />;
       }
     }
   };
@@ -688,9 +694,9 @@ function AppContent() {
           // 화면 전환 → 살짝 텀 두고 대상(장비검색어/공지/학생/대여) 주입 (알림 네비와 동일 패턴)
           setTimeout(() => setNotifTarget(t), 450);
         }}
-        headerTitle={tab === "mypage" && mypageView !== "menu" ? MYPAGE_TITLES[mypageView] : null}
-        onHeaderBack={tab === "mypage" && mypageView !== "menu" ? () => setMypageView("menu") : null}
-        onSameTab={(id) => { if (id === "mypage") { setMypageKey(k => k + 1); setMypageView("menu"); } }}>
+        headerTitle={tab === "mypage" && mypageView !== "menu" ? MYPAGE_TITLES[mypageView] : (tab === "home" && homeView ? HOME_VIEW_TITLES[homeView] : null)}
+        onHeaderBack={tab === "mypage" && mypageView !== "menu" ? () => setMypageView("menu") : (tab === "home" && homeView ? () => setHomeView(null) : null)}
+        onSameTab={(id) => { if (id === "mypage") { setMypageKey(k => k + 1); setMypageView("menu"); } if (id === "home") setHomeView(null); }}>
         <Suspense fallback={<div style={{ display:"flex", justifyContent:"center", alignItems:"center", padding:"60px 0" }}><Spinner /></div>}>
           {renderPage()}
         </Suspense>
