@@ -295,35 +295,34 @@ function GpaCalculator({ classes = [] }) {
   );
 }
 
-// ── 친구관리 타일 (전체폭 가로 레이아웃) ──
+// ── 친구관리 타일 (반폭 컴팩트 — 무비캘린더와 한 줄) ──
 function FriendTile({ count, reqCount, onOpen }) {
   const [iconOk, setIconOk] = useState(true);
   return (
-    <button onClick={onOpen}
+    <button onClick={onOpen} className="tap-spring"
       style={{ flex:1, minWidth:0, boxSizing:"border-box", position:"relative", textAlign:"left", cursor:"pointer",
         background:"linear-gradient(140deg,#16233a 0%,#1f3c66 100%)", border:"1px solid rgba(255,255,255,0.08)",
-        borderRadius:18, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit" }}>
+        borderRadius:18, padding:"13px 14px", display:"flex", alignItems:"center", gap:11, fontFamily:"inherit" }}>
       {iconOk ? (
         <img src="/friend-icon.png" alt="친구관리" onError={() => setIconOk(false)}
-          style={{ width:46, height:46, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #0B0B0E", background:"#0B0B0E", flexShrink:0 }} />
+          style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #0B0B0E", background:"#0B0B0E", flexShrink:0 }} />
       ) : (
-        <div style={{ width:46, height:46, borderRadius:"50%", background:"rgba(255,255,255,0.12)", flexShrink:0,
-          display:"flex", alignItems:"center", justifyContent:"center", fontSize:24 }}>🫂</div>
+        <div style={{ width:40, height:40, borderRadius:"50%", background:"rgba(255,255,255,0.12)", flexShrink:0,
+          display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>🫂</div>
       )}
       <div style={{ flex:1, minWidth:0 }}>
-        <div style={{ fontSize:15, fontWeight:900, color:"#fff" }}>친구관리</div>
-        <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
-          친구 {count}명{reqCount > 0 ? ` · 받은 요청 ${reqCount}` : ""}
+        <div style={{ fontSize:14, fontWeight:900, color:"#fff" }}>친구관리</div>
+        <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+          친구 {count}명
         </div>
       </div>
       {reqCount > 0 && (
-        <span style={{ minWidth:20, height:20, padding:"0 6px", boxSizing:"border-box", flexShrink:0,
+        <span style={{ position:"absolute", top:8, right:8, minWidth:20, height:20, padding:"0 6px", boxSizing:"border-box",
           background:"#FF5A5A", color:"#fff", borderRadius:10, fontSize:11.5, fontWeight:800,
           display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>
           {reqCount > 99 ? "99+" : reqCount}
         </span>
       )}
-      <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink:0 }} />
     </button>
   );
 }
@@ -742,44 +741,28 @@ export default function StudentHome({ setTab, onOpenFriends, onOpenMovieCal, pho
         </div>
       </div>
 
-      {/* 🎬 무비캘린더 진입 카드 */}
-      {(() => {
-        const nowYm = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}`;
-        const thisMonthCount = myMediaLogs.filter(l => (l.date || "").startsWith(nowYm)).length;
-        const recentPosters = [...myMediaLogs]
-          .filter(l => l.posterUrl)
-          .sort((a,b) => (b.date || "").localeCompare(a.date || ""))
-          .slice(0, 4);
-        return (
-          <button onClick={() => onOpenMovieCal?.()} className="tap-spring"
-            style={{ width:"100%", boxSizing:"border-box", textAlign:"left", cursor:"pointer", marginBottom:6,
-              background:"linear-gradient(140deg,#2a1533 0%,#3d1a4d 100%)", border:"1px solid rgba(244,114,182,0.28)",
-              borderRadius:18, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit" }}>
-            <span style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#F472B6,#c026d3)", display:"grid", placeItems:"center", flexShrink:0 }}>
-              <Film size={22} color="#fff" />
-            </span>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:15, fontWeight:900, color:"#fff" }}>무비캘린더</div>
-              <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
-                {thisMonthCount > 0 ? `이번 달 ${thisMonthCount}편 기록` : "본 영화·시리즈·책을 기록해보세요"}
+      {/* 🎬 무비캘린더 + 🫂 친구관리 — 반폭 2박스 한 줄 */}
+      <div style={{ display:"flex", gap:8, marginBottom:6 }}>
+        {(() => {
+          const nowYm = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}`;
+          const thisMonthCount = myMediaLogs.filter(l => (l.date || "").startsWith(nowYm)).length;
+          return (
+            <button onClick={() => onOpenMovieCal?.()} className="tap-spring"
+              style={{ flex:1, minWidth:0, boxSizing:"border-box", textAlign:"left", cursor:"pointer",
+                background:"linear-gradient(140deg,#2a1533 0%,#3d1a4d 100%)", border:"1px solid rgba(244,114,182,0.28)",
+                borderRadius:18, padding:"13px 14px", display:"flex", alignItems:"center", gap:11, fontFamily:"inherit" }}>
+              <span style={{ width:40, height:40, borderRadius:12, background:"linear-gradient(135deg,#F472B6,#c026d3)", display:"grid", placeItems:"center", flexShrink:0 }}>
+                <Film size={20} color="#fff" />
+              </span>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:14, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>시네로그</div>
+                <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {thisMonthCount > 0 ? `이번 달 ${thisMonthCount}편` : "기록 시작하기"}
+                </div>
               </div>
-            </div>
-            {recentPosters.length > 0 ? (
-              <div style={{ display:"flex", flexShrink:0 }}>
-                {recentPosters.map((p, i) => (
-                  <img key={i} src={p.posterUrl} alt="" style={{ width:26, height:38, borderRadius:4, objectFit:"cover", background:"#000",
-                    marginLeft: i === 0 ? 0 : -9, border:"1.5px solid #2a1533", boxShadow:"0 1px 3px rgba(0,0,0,0.4)" }} />
-                ))}
-              </div>
-            ) : (
-              <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink:0 }} />
-            )}
-          </button>
-        );
-      })()}
-
-      {/* 🫂 친구관리 */}
-      <div style={{ display:"flex", marginBottom:6 }}>
+            </button>
+          );
+        })()}
         <FriendTile
           count={myFriends.length}
           reqCount={friendRequests.filter(r => r.toId === profile?.uid && r.status === "pending").length}

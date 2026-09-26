@@ -135,7 +135,7 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
               내 캘린더
             </button>
           ) : (
-            <button onClick={() => setShowFriendPick(true)} title="친구 캘린더"
+            <button onClick={() => setShowFriendPick(true)} title="친구 시네로그"
               style={{ ...iconBtn, width: 34, height: 34, background: M.card, border: `1px solid ${M.border}` }}>
               <Users size={17} color={M.sub} />
             </button>
@@ -146,7 +146,7 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
       {/* 친구 캘린더 표시 배너 */}
       {readOnly && (
         <div style={{ background: M.pinkSoft, border: `1px solid ${M.pink}44`, borderRadius: 12, padding: "9px 14px", marginBottom: 12, fontSize: 12.5, color: M.text }}>
-          <b style={{ color: M.pink }}>{viewName || "친구"}</b>님의 무비캘린더
+          <b style={{ color: M.pink }}>{viewName || "친구"}</b>님의 시네로그
         </div>
       )}
 
@@ -316,7 +316,7 @@ export default function MovieCalendar({ viewUid = null, viewName = null }) {
       {showFriendPick && (
         <Modal onClose={() => setShowFriendPick(false)} width={340}>
           <div style={{ color: M.text }}>
-            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 14 }}>친구 캘린더</div>
+            <div style={{ fontSize: 16, fontWeight: 900, marginBottom: 14 }}>친구 시네로그</div>
             {myFriends.length === 0 ? (
               <div style={{ textAlign: "center", padding: "24px 0", color: M.sub, fontSize: 13, lineHeight: 1.7 }}>
                 아직 친구가 없어요.<br />더보기 › 친구관리에서 추가해봐요.
