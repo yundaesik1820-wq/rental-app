@@ -8,7 +8,7 @@ import Login from "./pages/Login";
 import UpdateGate from "./components/UpdateGate";
 import { Spinner, Avatar } from "./components/UI";
 import { APP_VERSION, compareVersions, pickPlatformVersion } from "./appVersion";
-import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Sparkles, ChevronRight } from "lucide-react";
+import { User, Users, MessageCircle, Clapperboard, Megaphone, Settings as SettingsIcon, LogOut, Sparkles, ChevronRight, Film } from "lucide-react";
 import { db } from "./firebase";
 import { doc, updateDoc, arrayUnion, getDoc } from "firebase/firestore";
 import { Capacitor } from "@capacitor/core";
@@ -54,6 +54,7 @@ const StudentHome    = lazyRetry(() => import("./pages/student/Home"));
 const Profile         = lazyRetry(() => import("./pages/student/Profile"));
 const StudentInquiry = lazyRetry(() => import("./pages/student/Inquiry"));
 const FriendManager  = lazyRetry(() => import("./pages/student/FriendManager"));
+const MovieCalendar  = lazyRetry(() => import("./pages/student/MovieCalendar"));
 
 // Shared
 import { useCollection } from "./hooks/useFirestore";
@@ -239,7 +240,7 @@ function NotifPanel({ onClose, isAdmin, profile, onNavigate, allUsers, pwResets,
 
 // 학생용 더보기 — ejqhrl.png 목업 리디자인 (2026-07-23, 블루·퍼플 액센트)
 // view state는 App이 소유 — 헤더 제목/뒤로가기(Layout)와 동기화 (뒤로가기는 헤더 ‹ 버튼)
-const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", inquiry:"문의하기", notices:"공지사항", settings:"설정" };
+const MYPAGE_TITLES = { profile:"내 정보", friends:"친구관리", moviecal:"무비캘린더", inquiry:"문의하기", notices:"공지사항", settings:"설정" };
 function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
   const { profile, logout } = useAuth();
   // 알림 딥링크 — 친구 요청 알림을 누르면 친구관리 뷰로 바로 진입 후 소비
@@ -247,6 +248,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
 
   if (view === "profile")  return <Profile />;
   if (view === "friends")  return <FriendManager photoMap={photoMap} />;
+  if (view === "moviecal") return <MovieCalendar />;
   if (view === "inquiry")  return <StudentInquiry />;
   if (view === "notices")  return <Notices isAdmin={false} />;
   if (view === "settings") return <StudentSettings />;
@@ -301,6 +303,7 @@ function StudentMyPage({ view, setView, initialView, onConsumed, photoMap }) {
       {/* 메뉴 카드 */}
       <MenuCard onClick={() => setView("profile")}><RowInner icon={User} tint="#3b82f6" tintBg="rgba(59,130,246,0.13)" label="내 정보" sub="프로필·계정 정보 확인" /></MenuCard>
       <MenuCard onClick={() => setView("friends")}><RowInner icon={Users} tint="#a78bfa" tintBg="rgba(167,139,250,0.13)" label="친구관리" sub="친구 추가·요청 목록" /></MenuCard>
+      <MenuCard onClick={() => setView("moviecal")}><RowInner icon={Film} tint="#F472B6" tintBg="rgba(244,114,182,0.13)" label="무비캘린더" sub="본 영화·시리즈·책 기록" /></MenuCard>
       <MenuCard onClick={() => setView("inquiry")}><RowInner icon={MessageCircle} tint="#8b5cf6" tintBg="rgba(139,92,246,0.13)" label="문의하기" sub="궁금한 점을 물어봐요" /></MenuCard>
       <MenuCard onClick={() => setView("notices")}><RowInner icon={Megaphone} tint="#38bdf8" tintBg="rgba(56,189,248,0.13)" label="공지사항" sub="대여실 소식·안내" /></MenuCard>
 
@@ -665,14 +668,14 @@ function AppContent() {
       }
     } else {
       switch (tab) {
-        case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        case "home":     return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} onOpenMovieCal={() => { setNotifTarget({ mypageView: "moviecal" }); setTab("mypage"); }} />;
         case "notices":  return <Notices isAdmin={false} initialNoticeId={notifTarget?.noticeId} onConsumed={() => setNotifTarget(null)} />;
         case "production": return <ProductionScreen key="production" initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("home")} />;
         case "boxoffice": return <Community key="boxoffice" lockRoom="boxoffice" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} onRoomConsumed={() => {}} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "community": return <Community key="community" onExit={() => setTab("home")} onNotif={() => setShowNotif(true)} initialRoom={communityRoom} initialPostId={notifTarget?.postId} initialArticleId={notifTarget?.articleId} onRoomConsumed={() => { setCommunityRoom(null); setNotifTarget(null); }} onOpenProjectStudio={() => { setPsView("create"); setTab("production"); }} />;
         case "projectstudio": return <ProjectStudio initialView={psView} onConsumed={() => setPsView(null)} onExit={() => setTab("community")} />;
         case "mypage":   return <StudentMyPage key={mypageKey} view={mypageView} setView={setMypageView} photoMap={photoMap} initialView={notifTarget?.mypageView} onConsumed={() => setNotifTarget(null)} />;
-        default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} />;
+        default:         return <StudentHome setTab={setTab} photoMap={photoMap} onOpenFriends={() => { setNotifTarget({ mypageView: "friends" }); setTab("mypage"); }} onOpenMovieCal={() => { setNotifTarget({ mypageView: "moviecal" }); setTab("mypage"); }} />;
       }
     }
   };

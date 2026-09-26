@@ -328,7 +328,7 @@ function FriendTile({ count, reqCount, onOpen }) {
   );
 }
 
-export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
+export default function StudentHome({ setTab, onOpenFriends, onOpenMovieCal, photoMap }) {
   const { profile, logout } = useAuth();
   const [nowTick, setNowTick] = useState(0); // 1분마다 갱신 (다음 수업 카운트다운)
   useEffect(() => { const id = setInterval(() => setNowTick(t => t + 1), 60000); return () => clearInterval(id); }, []);
@@ -372,6 +372,8 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
   const { data: comments }          = useCollection("noticeComments",    "createdAt");
   const { data: communityPosts }    = useCollection("communityPosts",    "createdAt");
   const { data: communityComments } = useCollection("communityComments", "createdAt");
+  // 무비캘린더 — 본인 기록(홈 진입카드 미리보기용). where 단독이라 인덱스 불필요.
+  const { data: myMediaLogs } = useCollection("mediaLogs", null, { where: [["userId", "==", profile?.uid || "__none__"]], enabled: !!profile?.uid });
 
   const [selectedNotice,  setSelectedNotice]  = useState(null);
   const [commentText,     setCommentText]     = useState("");
@@ -739,6 +741,42 @@ export default function StudentHome({ setTab, onOpenFriends, photoMap }) {
           </div>
         </div>
       </div>
+
+      {/* 🎬 무비캘린더 진입 카드 */}
+      {(() => {
+        const nowYm = `${new Date().getFullYear()}-${String(new Date().getMonth()+1).padStart(2,"0")}`;
+        const thisMonthCount = myMediaLogs.filter(l => (l.date || "").startsWith(nowYm)).length;
+        const recentPosters = [...myMediaLogs]
+          .filter(l => l.posterUrl)
+          .sort((a,b) => (b.date || "").localeCompare(a.date || ""))
+          .slice(0, 4);
+        return (
+          <button onClick={() => onOpenMovieCal?.()} className="tap-spring"
+            style={{ width:"100%", boxSizing:"border-box", textAlign:"left", cursor:"pointer", marginBottom:6,
+              background:"linear-gradient(140deg,#2a1533 0%,#3d1a4d 100%)", border:"1px solid rgba(244,114,182,0.28)",
+              borderRadius:18, padding:"14px 16px", display:"flex", alignItems:"center", gap:14, fontFamily:"inherit" }}>
+            <span style={{ width:46, height:46, borderRadius:14, background:"linear-gradient(135deg,#F472B6,#c026d3)", display:"grid", placeItems:"center", flexShrink:0 }}>
+              <Film size={22} color="#fff" />
+            </span>
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ fontSize:15, fontWeight:900, color:"#fff" }}>무비캘린더</div>
+              <div style={{ fontSize:12, color:"rgba(255,255,255,0.62)", marginTop:3 }}>
+                {thisMonthCount > 0 ? `이번 달 ${thisMonthCount}편 기록` : "본 영화·시리즈·책을 기록해보세요"}
+              </div>
+            </div>
+            {recentPosters.length > 0 ? (
+              <div style={{ display:"flex", flexShrink:0 }}>
+                {recentPosters.map((p, i) => (
+                  <img key={i} src={p.posterUrl} alt="" style={{ width:26, height:38, borderRadius:4, objectFit:"cover", background:"#000",
+                    marginLeft: i === 0 ? 0 : -9, border:"1.5px solid #2a1533", boxShadow:"0 1px 3px rgba(0,0,0,0.4)" }} />
+                ))}
+              </div>
+            ) : (
+              <ChevronRight size={18} color="rgba(255,255,255,0.4)" style={{ flexShrink:0 }} />
+            )}
+          </button>
+        );
+      })()}
 
       {/* 🫂 친구관리 */}
       <div style={{ display:"flex", marginBottom:6 }}>

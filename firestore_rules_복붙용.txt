@@ -139,6 +139,17 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // 🎬 무비캘린더 — 본 영화/시리즈/책 기록
+    // 읽기: 로그인 누구나(친구 공유 — 친구 여부는 클라에서 판정, 시간표와 동일 정책)
+    // 생성·수정·삭제: 본인 문서만. userId 위조/이전 차단.
+    match /mediaLogs/{docId} {
+      allow read: if isLoggedIn();
+      allow create: if isLoggedIn() && request.resource.data.userId == request.auth.uid;
+      allow update: if isLoggedIn() && resource.data.userId == request.auth.uid
+                    && request.resource.data.userId == resource.data.userId;
+      allow delete: if isLoggedIn() && resource.data.userId == request.auth.uid;
+    }
+
     // 🎬 Project Studio — 프로젝트 접근 판정
     // 소유자이거나, 팀원으로 추가돼 memberIds에 등록된 사용자(입장 권한)
     function psProject(pid) {

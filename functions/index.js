@@ -375,3 +375,65 @@ exports.projectStudioAssistant = functions
     };
   });
 
+// ── 무비캘린더 검색 프록시 (TMDB 영화·시리즈 / 카카오 책) ──────
+// 클라가 { query, kind } 보내면 정규화된 결과 배열을 돌려준다.
+// API 키는 서버 시크릿으로 숨긴다(클라 노출 방지).
+//  - kind "movie" | "tv" → TMDB
+//  - kind "book"         → 카카오 책검색
+// 결과 항목: { sourceId, title, posterUrl, year, subtitle, type }
+exports.searchMedia = functions
+  .runWith({ secrets: ["TMDB_API_KEY", "KAKAO_REST_KEY"], timeoutSeconds: 30, memory: "256MB" })
+  .https.onCall(async (data, context) => {
+    if (!context.auth)
+      throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
+
+    const query = String(data?.query || "").trim().slice(0, 100);
+    const kind  = ["movie", "tv", "book"].includes(data?.kind) ? data.kind : "movie";
+    if (!query) return { results: [] };
+
+    try {
+      if (kind === "book") {
+        const key = process.env.KAKAO_REST_KEY;
+        if (!key) throw new functions.https.HttpsError("failed-precondition", "책 검색 키가 설정되지 않았어요.");
+        const url = `https://dapi.kakao.com/v3/search/book?size=15&query=${encodeURIComponent(query)}`;
+        const resp = await fetch(url, { headers: { Authorization: `KakaoAK ${key}` } });
+        if (!resp.ok) throw new Error(`kakao ${resp.status}`);
+        const json = await resp.json();
+        const results = (json.documents || []).map((d) => ({
+          sourceId: (Array.isArray(d.isbn) ? d.isbn.join(" ") : d.isbn) || d.title,
+          title: d.title || "",
+          posterUrl: d.thumbnail || "",
+          year: (d.datetime || "").slice(0, 4),
+          subtitle: (d.authors || []).join(", "),
+          type: "book",
+        }));
+        return { results };
+      }
+
+      // movie | tv → TMDB
+      const key = process.env.TMDB_API_KEY;
+      if (!key) throw new functions.https.HttpsError("failed-precondition", "영화 검색 키가 설정되지 않았어요.");
+      const url = `https://api.themoviedb.org/3/search/${kind}` +
+        `?api_key=${key}&language=ko-KR&include_adult=false&query=${encodeURIComponent(query)}`;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`tmdb ${resp.status}`);
+      const json = await resp.json();
+      const results = (json.results || []).map((r) => {
+        const date = r.release_date || r.first_air_date || "";
+        return {
+          sourceId: String(r.id),
+          title: (kind === "tv" ? r.name : r.title) || r.original_title || r.original_name || "",
+          posterUrl: r.poster_path ? `https://image.tmdb.org/t/p/w342${r.poster_path}` : "",
+          year: date.slice(0, 4),
+          subtitle: (kind === "tv" ? r.original_name : r.original_title) || "",
+          type: kind,
+        };
+      });
+      return { results };
+    } catch (e) {
+      if (e instanceof functions.https.HttpsError) throw e;
+      console.error("미디어 검색 실패:", e);
+      throw new functions.https.HttpsError("internal", "검색에 실패했어요. 잠시 후 다시 시도해줘.");
+    }
+  });
+
