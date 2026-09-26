@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { Plus, Clapperboard, ChevronLeft, ChevronRight, ChevronDown, Archive, ArchiveRestore } from "lucide-react";
+import { Plus, Clapperboard, ChevronLeft, ChevronRight, ChevronDown, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
-import { useCollection, updateItem } from "../../../hooks/useFirestore";
+import { useCollection, updateItem, deleteItem } from "../../../hooks/useFirestore";
 import { Spinner } from "../../../components/UI";
 import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
@@ -41,6 +41,7 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
   const [shotsSceneId, setShotsSceneId] = useState(null); // "이 장면으로 콘티 만들기" 진입 시 초기 장면
   const [showArchived, setShowArchived] = useState(false);
   const [restoringId, setRestoringId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
   useEffect(() => { if (initialView && onConsumed) onConsumed(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const byNewest = (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
@@ -62,6 +63,21 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
       alert("복구에 실패했어요.");
     }
     setRestoringId(null);
+  };
+
+  // 프로젝트 완전 삭제 — 소유자만(규칙도 ownerId만 허용). 되돌릴 수 없음.
+  const removeProject = async (p, e) => {
+    e?.stopPropagation();
+    if (deletingId || p.ownerId !== uid) return;
+    if (!window.confirm(`'${p.title}' 프로젝트를 완전히 삭제할까요?\n되돌릴 수 없어요.`)) return;
+    setDeletingId(p.id);
+    try {
+      await deleteItem("projects", p.id);
+    } catch (err) {
+      console.warn("project delete error:", err);
+      alert("삭제에 실패했어요.");
+      setDeletingId(null);
+    }
   };
 
   if (view === null) {
@@ -191,6 +207,7 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
                 style={{
                   background: PS.surface, border: `1px solid ${PS.border}`, borderRadius: 16,
                   padding: "15px 16px", cursor: "pointer",
+                  opacity: deletingId === p.id ? 0.5 : 1,
                 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <Ic size={14} color={PS.primaryLight} />
@@ -204,7 +221,15 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
                       참여 중
                     </span>
                   )}
-                  <ChevronRight size={15} color={PS.sub} style={{ marginLeft: "auto" }} />
+                  <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 4 }}>
+                    {p.ownerId === uid && (
+                      <button onClick={(e) => removeProject(p, e)} title="프로젝트 삭제" aria-label="프로젝트 삭제"
+                        style={{ display: "grid", placeItems: "center", width: 30, height: 30, minHeight: 30, borderRadius: 8, background: "transparent", border: "none", cursor: "pointer", padding: 0, flexShrink: 0 }}>
+                        <Trash2 size={15} color={PS.sub} />
+                      </button>
+                    )}
+                    <ChevronRight size={15} color={PS.sub} />
+                  </div>
                 </div>
                 <div style={{ fontSize: 15.5, fontWeight: 800, marginBottom: 10, wordBreak: "keep-all" }}>{p.title}</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -261,6 +286,15 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
                       fontSize: 12, fontWeight: 700, padding: "8px 12px", fontFamily: "inherit",
                     }}>
                     <ArchiveRestore size={14} /> 복구
+                  </button>
+                  <button onClick={() => removeProject(p)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 5, minHeight: 40, flexShrink: 0,
+                      background: `${PS.danger || "#FF6B6B"}1A`, border: `1px solid ${PS.danger || "#FF6B6B"}55`,
+                      borderRadius: 10, color: PS.danger || "#FF6B6B", cursor: "pointer",
+                      fontSize: 12, fontWeight: 700, padding: "8px 12px", fontFamily: "inherit",
+                    }}>
+                    <Trash2 size={14} /> 삭제
                   </button>
                 </div>
               ))}
