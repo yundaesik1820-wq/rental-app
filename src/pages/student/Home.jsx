@@ -330,6 +330,7 @@ function FriendTile({ count, reqCount, onOpen }) {
 export default function StudentHome({ setTab, onOpenFriends, onOpenMovieCal, photoMap }) {
   const { profile, logout } = useAuth();
   const [nowTick, setNowTick] = useState(0); // 1분마다 갱신 (다음 수업 카운트다운)
+  const [cineIconOk, setCineIconOk] = useState(true); // 시네로그 커스텀 아이콘 로드 성공 여부(없으면 폴백)
   useEffect(() => { const id = setInterval(() => setNowTick(t => t + 1), 60000); return () => clearInterval(id); }, []);
 
   // 계정 전환 (학생↔관리자)
@@ -751,9 +752,14 @@ export default function StudentHome({ setTab, onOpenFriends, onOpenMovieCal, pho
               style={{ flex:1, minWidth:0, boxSizing:"border-box", textAlign:"left", cursor:"pointer",
                 background:"linear-gradient(140deg,#2a1533 0%,#3d1a4d 100%)", border:"1px solid rgba(244,114,182,0.28)",
                 borderRadius:18, padding:"13px 14px", display:"flex", alignItems:"center", gap:11, fontFamily:"inherit" }}>
-              <span style={{ width:40, height:40, borderRadius:12, background:"linear-gradient(135deg,#F472B6,#c026d3)", display:"grid", placeItems:"center", flexShrink:0 }}>
-                <Film size={20} color="#fff" />
-              </span>
+              {cineIconOk ? (
+                <img src="/cinelog-icon.png" alt="시네로그" onError={() => setCineIconOk(false)}
+                  style={{ width:40, height:40, borderRadius:"50%", objectFit:"cover", display:"block", border:"2px solid #2a1533", background:"#2a1533", flexShrink:0 }} />
+              ) : (
+                <span style={{ width:40, height:40, borderRadius:"50%", background:"linear-gradient(135deg,#F472B6,#c026d3)", display:"grid", placeItems:"center", flexShrink:0 }}>
+                  <Film size={20} color="#fff" />
+                </span>
+              )}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontSize:14, fontWeight:900, color:"#fff", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>시네로그</div>
                 <div style={{ fontSize:11.5, color:"rgba(255,255,255,0.62)", marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
