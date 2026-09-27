@@ -522,6 +522,9 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
   const canSeeReal = profile?.role === "admin"; // 모든 관리자 실명 확인 가능
   // 관리자 실명 게시 기능 제거됨 — 항상 비활성
   const canUseRealName = false;
+  // 필름 클래스 글쓰기 권한: 슈퍼관리자 + 조교만
+  const canWriteClass = profile?.role === "admin" &&
+    (adminRole === "super" || adminRole === "assistant");
   // 관리자 역할 라벨 (에브리타임에서는 super도 조교로 표시 - 학생 친화적)
   const adminRoleLabel = adminRole === "teacher"   ? "교사"
                        : adminRole === "professor" ? "교수"
@@ -662,7 +665,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
     } else if (isStaffPost) {
       if (writeForm.staffRoles.length === 0) { alert("담당 분야를 1개 이상 선택해주세요."); return; }
     } else if (isClassPost) {
-      if (!canUseRealName) { alert("강좌 등록은 조교·관리자만 가능해요."); return; }
+      if (!canWriteClass) { alert("강좌 등록은 조교·관리자만 가능해요."); return; }
       if (!writeForm.title.trim()) { alert("강좌명을 입력해주세요."); return; }
       if (writeForm.lessons.length === 0) { alert("영상을 1개 이상 추가해주세요."); return; }
     } else if (isContestPost) {
@@ -3023,7 +3026,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
         )}
 
         {/* 🎬 글쓰기 FAB - 게시판 룸에서만 표시, 룸 컬러 사용 (클래스는 조교·관리자만) */}
-        {selectedRoom && selectedRoom !== "tools" && !(selectedRoom === "class" && !canUseRealName) && (
+        {selectedRoom && selectedRoom !== "tools" && !(selectedRoom === "class" && !canWriteClass) && (
         <button
           onClick={() => {
             const defaultCat = (currentRoom?.categories?.includes(cat) ? cat : currentRoom?.categories?.[0]) || "자유";
