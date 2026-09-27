@@ -475,6 +475,19 @@ exports.deleteProject = functions
         if (s.size < 400) break;
       }
     }
+
+    // Storage 업로드 파일 삭제 — 전부 attachments/<컬렉션>/{projectId}/ 프리픽스
+    try {
+      const bucket = admin.storage().bucket("kbas-equipment-rental.firebasestorage.app");
+      const STORAGE_PREFIXES = ["projectFiles", "projectLocations", "projectShots"];
+      for (const p of STORAGE_PREFIXES) {
+        await bucket.deleteFiles({ prefix: `attachments/${p}/${projectId}/` })
+          .catch((err) => console.warn(`storage delete fail [${p}]:`, err.message));
+      }
+    } catch (err) {
+      console.warn("storage cleanup error:", err.message); // Storage 실패해도 문서 삭제는 진행
+    }
+
     await projRef.delete();
     return { ok: true, deleted };
   });
