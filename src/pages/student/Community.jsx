@@ -289,64 +289,6 @@ function ClassCarousel({ list, onOpen }) {
   );
 }
 
-/* 🏆 공모전 카드 캐러셀 */
-function ContestCarousel({ list, onOpen }) {
-  const fmt = (d) => (d || "").split("-").join(".");
-  return (
-    <AutoCarousel list={list} accent="#fb923c" renderSlide={(p) => {
-      const dday = getDday(p.deadline);
-      return (
-        <div onClick={() => onOpen(p)}
-          style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(251,146,60,0.10) 0%, rgba(249,115,22,0.05) 40%, #101018 100%)", border:"1px solid rgba(251,146,60,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
-          {/* 좌: 공모전 이미지 */}
-          <div style={{ width:100, height:76, borderRadius:10, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
-            {p.images?.[0]
-              ? <img loading="lazy" decoding="async" src={p.images[0]} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-              : <span style={{ fontSize:24, opacity:0.5 }}>🏆</span>}
-          </div>
-          {/* 우: 이름 / 기간 / D-day */}
-          <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:5 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, display:"-webkit-box", WebkitLineClamp:2, WebkitBoxOrient:"vertical", overflow:"hidden" }}>{p.title}</div>
-            <div style={{ fontSize:11, color:"#8a8a92" }}>{fmt(p.contestStart)} ~ {fmt(p.deadline)}</div>
-            <span style={{ alignSelf:"flex-start", background:"#fb923c", color:"#0a0a0a", fontSize:9.5, fontWeight:700, padding:"2px 8px", borderRadius:5 }}>
-              {dday === 0 ? "D-DAY" : `D-${dday}`}
-            </span>
-          </div>
-        </div>
-      );
-    }} />
-  );
-}
-
-/* 🎬 오늘의 추천작 카드 캐러셀 */
-function WorkCarousel({ list, onOpen }) {
-  return (
-    <AutoCarousel list={list} accent="#a855f7" renderSlide={(p) => {
-      const ytId = getYouTubeId(p.ytUrl);
-      return (
-        <div onClick={() => onOpen(p)}
-          style={{ display:"flex", alignItems:"center", gap:12, background:"linear-gradient(160deg, rgba(168,85,247,0.10) 0%, rgba(124,58,237,0.05) 40%, #101018 100%)", border:"1px solid rgba(168,85,247,0.25)", borderRadius:16, padding:"10px 12px", cursor:"pointer" }}>
-          {/* 좌: 썸네일 */}
-          <div style={{ position:"relative", width:116, height:65, flexShrink:0, borderRadius:10, overflow:"hidden", background:"#000" }}>
-            <YtThumb id={ytId} style={{ width:"100%", height:"100%", objectFit:"cover", display:"block" }} />
-            <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center" }}>
-              <div style={{ width:28, height:20, borderRadius:5, background:"rgba(220,38,38,0.92)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <span style={{ color:"#fff", fontSize:9, marginLeft:1 }}>▶</span>
-              </div>
-            </div>
-          </div>
-          {/* 우: 제목 / 크레딧 / 러닝타임 */}
-          <div style={{ flex:1, minWidth:0, display:"flex", flexDirection:"column", gap:4 }}>
-            <div style={{ fontSize:13, fontWeight:800, color:"#e7e5e4", lineHeight:1.35, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
-            {p.credits && <div style={{ fontSize:11, color:"#8a8a92", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>🎬 {p.credits}</div>}
-            {p.runtime && <div style={{ fontSize:11, color:"#8a8a92" }}>⏱ {p.runtime}</div>}
-          </div>
-        </div>
-      );
-    }} />
-  );
-}
-
 // 포지션 표시: {role, count} 객체 또는 기존 문자열 모두 지원
 function posLabel(pos) {
   if (typeof pos === "string") return pos;
@@ -1303,18 +1245,6 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
               `linear-gradient(150deg, ${room.color}26 0%, ${room.color}0D 46%, #121216 100%)`;
             return (
               <>
-                {/* 프로젝트 시작 배너 (이미지) → Project Studio (prop 없으면 크루 메이커스 폴백) */}
-                <div onClick={() => onOpenProjectStudio ? onOpenProjectStudio() : openRoom(ROOMS.find(r => r.id === "crew"))}
-                  style={{
-                    marginBottom:14, cursor:"pointer", borderRadius:18, overflow:"hidden",
-                    border:"1px solid #26262b", lineHeight:0, position:"relative",
-                  }}>
-                  <img src="/project-banner.png" alt="나만의 프로젝트를 시작해보세요"
-                    style={{ width:"100%", display:"block" }} />
-                  <ChevronRight size={20} color="#fff" strokeWidth={2.2}
-                    style={{ position:"absolute", right:10, top:"50%", transform:"translateY(-50%)", opacity:0.45 }} />
-                </div>
-
                 {/* 에브리타임(자유) / 질문 — 2열 최신글 카드 */}
                 {(() => {
                   const cRoom = ROOMS.find(r => r.id === "community");
@@ -1347,54 +1277,15 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                             style={{ display:"flex", alignItems:"center", gap:7, padding:"4.5px 0", cursor:"pointer" }}>
                             <span style={{ fontSize:11.5, fontWeight:800, color:"#7e9dff", minWidth:12, flexShrink:0 }}>{i + 1}</span>
                             <span style={{ flex:1, minWidth:0, fontSize:11, color:"#cfcfd6", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</span>
+                            <span style={{ flexShrink:0, fontSize:10.5, color:"#8a8a92" }}>{timeAgo(p.createdAt)}</span>
                           </div>
                         ))}
                       </div>
                     </div>
                   );
-                  const goInfo = () => {
-                    const kRoom = ROOMS.find(r => r.id === "knowledge");
-                    if (kRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(kRoom); return; }
-                    setSelectedRoom("knowledge"); setCat("정보"); setPage(1); setSearch("");
-                  };
-                  const InfoFeed = ({ list, onMore }) => (
-                    <div style={{ marginTop:14 }}>
-                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
-                        <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#34d399" }}>정보 최신글</span>
-                        <span onClick={onMore} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
-                          전체보기 <ChevronRight size={12} color="#8a8a92" />
-                        </span>
-                      </div>
-                      <div style={{ background:"linear-gradient(160deg, rgba(124,58,237,0.10) 0%, rgba(59,130,246,0.05) 40%, #101018 100%)", border:"1px solid rgba(124,58,237,0.22)", borderRadius:16, padding:"5px 12px" }}>
-                        {list.length === 0 ? (
-                          <div style={{ padding:"18px 0", textAlign:"center", color:"#6b6b74", fontSize:11 }}>아직 글이 없어요</div>
-                        ) : list.map((p, i) => {
-                          const thumb = p.images?.[0];
-                          return (
-                            <div key={p.id} onClick={() => openPost(p)}
-                              style={{ display:"flex", alignItems:"center", gap:11, padding:"6px 0", borderTop: i>0 ? "1px solid rgba(255,255,255,0.06)" : "none", cursor:"pointer" }}>
-                              <div style={{ width:46, height:46, borderRadius:9, flexShrink:0, overflow:"hidden", background:"#1a1a1f", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                                {thumb
-                                  ? <img loading="lazy" decoding="async" src={thumb} alt="" style={{ width:"100%", height:"100%", objectFit:"cover" }} />
-                                  : <span style={{ fontSize:19, opacity:0.5 }}>📄</span>}
-                              </div>
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ fontSize:12, fontWeight:700, color:"#e7e5e4", lineHeight:1.3, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.title}</div>
-                              </div>
-                              <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0, fontSize:10.5, color:"#8a8a92" }}>
-                                <span>👁 {p.views||0}</span>
-                                <span>💬 {postComments(p.id).length}</span>
-                                <span style={{ minWidth:46, textAlign:"right" }}>{timeAgo(p.createdAt)}</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
                   return (
                     <>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                      <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
                         <FeedCard title="에타 최신글" titleColor="#fb7185" list={latest("자유")} onMore={() => goCat("자유")} />
                         <FeedCard title="질문 최신글" titleColor="#7e9dff" list={latest("질문")} onMore={() => goCat("질문")} />
                       </div>
@@ -1416,68 +1307,7 @@ export default function Community({ onExit, onNotif, initialRoom, initialPostId,
                         return <CrewMakersSection crews={crews} staffs={staffs} onOpen={openPost} onAll={goCrew} bookmarks={crewBookmarks} onToggleBookmark={toggleCrewBookmark} />;
                       })()}
 
-                      <InfoFeed list={[...posts].filter(p => p.category !== "공모전" && (ROOMS.find(r => r.id === "knowledge")?.categories || []).includes(p.category)).sort((a,b) => (b.createdAt?.seconds||0) - (a.createdAt?.seconds||0)).slice(0,3)} onMore={goInfo} />
-
-                      {/* 🏆 공모전 정보 — 자동 슬라이드 캐러셀 (마감 안 지난 것만, 임박순) */}
-                      {(() => {
-                        const contests = [...posts]
-                          .filter(p => p.category === "공모전" && p.deadline && getDday(p.deadline) >= 0)
-                          .sort((a, b) => getDday(a.deadline) - getDday(b.deadline));
-                        if (contests.length === 0) return null;
-                        const goContest = () => {
-                          const kRoom = ROOMS.find(r => r.id === "knowledge");
-                          if (kRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(kRoom); return; }
-                          setSelectedRoom("knowledge"); setCat("공모전"); setPage(1); setSearch("");
-                        };
-                        return (
-                          <div style={{ marginTop:14 }}>
-                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
-                              <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#fb923c" }}>공모전 정보</span>
-                              <span onClick={goContest} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
-                                전체보기 <ChevronRight size={12} color="#8a8a92" />
-                              </span>
-                            </div>
-                            <ContestCarousel list={contests} onOpen={openPost} />
-                          </div>
-                        );
-                      })()}
-
-                      {/* 🎬 오늘의 추천작 — 매일 00시 기준 날짜 시드 랜덤 (모두에게 같은 작품) */}
-                      {(() => {
-                        const works = posts.filter(p => p.category === "작품공유" && getYouTubeId(p.ytUrl));
-                        if (works.length === 0) return null;
-                        const t = new Date();
-                        const seedStr = `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`;
-                        let seed = 0;
-                        for (let i = 0; i < seedStr.length; i++) seed = (seed * 31 + seedStr.charCodeAt(i)) >>> 0;
-                        // 시드 셔플로 매일 3개 선정 (모두에게 같은 순서, 자정마다 교체)
-                        const sorted = [...works].sort((a, b) => (a.id > b.id ? 1 : -1));
-                        const rand = (() => { let s = seed || 1; return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; })();
-                        for (let i = sorted.length - 1; i > 0; i--) {
-                          const j = Math.floor(rand() * (i + 1));
-                          [sorted[i], sorted[j]] = [sorted[j], sorted[i]];
-                        }
-                        const picks = sorted.slice(0, 3);
-                        const goBoxoffice = () => {
-                          const bRoom = ROOMS.find(r => r.id === "boxoffice");
-                          if (bRoom?.studentOnly && isProfOrTeacher) { setBlockedRoom(bRoom); return; }
-                          runRoomSplash("/boxoffice-splash.webp");
-                          setSelectedRoom("boxoffice"); setPage(1); setSearch("");
-                        };
-                        return (
-                          <div style={{ marginTop:14 }}>
-                            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7, padding:"0 2px" }}>
-                              <span style={{ fontSize:12.5, fontWeight:800, letterSpacing:"-0.02em", color:"#a855f7" }}>오늘의 추천작</span>
-                              <span onClick={goBoxoffice} style={{ display:"flex", alignItems:"center", gap:1, fontSize:10.5, fontWeight:600, color:"#8a8a92", cursor:"pointer", flexShrink:0 }}>
-                                전체보기 <ChevronRight size={12} color="#8a8a92" />
-                              </span>
-                            </div>
-                            <WorkCarousel list={picks} onOpen={openPost} />
-                          </div>
-                        );
-                      })()}
-
-                      {/* 🎓 필름 클래스 — 매일 00시 기준 3개 캐러셀 (오늘의 추천작과 동일 규칙) */}
+                      {/* 🎓 필름 클래스 — 매일 00시 기준 3개 캐러셀 (날짜 시드 랜덤) */}
                       {(() => {
                         const classes = posts.filter(p => p.category === "클래스");
                         if (classes.length === 0) return null;
