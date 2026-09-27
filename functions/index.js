@@ -437,3 +437,45 @@ exports.searchMedia = functions
     }
   });
 
+// ── 프로젝트 완전 삭제 (하위 데이터까지 cascade) ──────────────
+// 소유자만. projects 문서 + 모든 하위 컬렉션의 해당 projectId 문서를 배치 삭제.
+const PS_SUBCOLLECTIONS = [
+  "projectTasks", "scenes", "sceneBreakdowns", "shots", "shootDays",
+  "castMembers", "crewMembers", "psLocations", "props", "budgetItems",
+  "projectFiles", "ideaNotes",
+];
+exports.deleteProject = functions
+  .runWith({ timeoutSeconds: 120, memory: "256MB" })
+  .https.onCall(async (data, context) => {
+    if (!context.auth)
+      throw new functions.https.HttpsError("unauthenticated", "로그인이 필요합니다.");
+    const projectId = String(data?.projectId || "").trim();
+    if (!projectId)
+      throw new functions.https.HttpsError("invalid-argument", "프로젝트 ID가 필요합니다.");
+
+    const db = admin.firestore();
+    const projRef = db.collection("projects").doc(projectId);
+    const snap = await projRef.get();
+    if (!snap.exists) return { ok: true, deleted: 0 }; // 이미 삭제됨
+    if (snap.data().ownerId !== context.auth.uid)
+      throw new functions.https.HttpsError("permission-denied", "소유자만 삭제할 수 있습니다.");
+
+    let deleted = 0;
+    // 하위 컬렉션: projectId로 조회해 페이지 단위 배치 삭제
+    for (const col of PS_SUBCOLLECTIONS) {
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const q = db.collection(col).where("projectId", "==", projectId).limit(400);
+        const s = await q.get();
+        if (s.empty) break;
+        const batch = db.batch();
+        s.docs.forEach((d) => batch.delete(d.ref));
+        await batch.commit();
+        deleted += s.size;
+        if (s.size < 400) break;
+      }
+    }
+    await projRef.delete();
+    return { ok: true, deleted };
+  });
+

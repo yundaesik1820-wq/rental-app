@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Clapperboard, ChevronLeft, ChevronRight, ChevronDown, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuth.jsx";
-import { useCollection, updateItem, deleteItem } from "../../../hooks/useFirestore";
+import { useCollection, updateItem } from "../../../hooks/useFirestore";
 import { Spinner } from "../../../components/UI";
 import { PS, typeLabel, typeIcon, stageLabel } from "./constants";
 import ProjectCreate from "./ProjectCreate";
@@ -65,17 +65,20 @@ export default function ProjectStudio({ initialView, onConsumed, onExit }) {
     setRestoringId(null);
   };
 
-  // 프로젝트 완전 삭제 — 소유자만(규칙도 ownerId만 허용). 되돌릴 수 없음.
+  // 프로젝트 완전 삭제 — 소유자만. 하위 데이터까지 Cloud Function으로 cascade 삭제.
   const removeProject = async (p, e) => {
     e?.stopPropagation();
     if (deletingId || p.ownerId !== uid) return;
-    if (!window.confirm(`'${p.title}' 프로젝트를 완전히 삭제할까요?\n되돌릴 수 없어요.`)) return;
+    if (!window.confirm(`'${p.title}' 프로젝트를 완전히 삭제할까요?\n하위 데이터까지 모두 삭제되며 되돌릴 수 없어요.`)) return;
     setDeletingId(p.id);
     try {
-      await deleteItem("projects", p.id);
+      const { getFunctions, httpsCallable } = await import("firebase/functions");
+      const fn = httpsCallable(getFunctions(undefined, "us-central1"), "deleteProject");
+      await fn({ projectId: p.id });
     } catch (err) {
       console.warn("project delete error:", err);
       alert("삭제에 실패했어요.");
+    } finally {
       setDeletingId(null);
     }
   };
