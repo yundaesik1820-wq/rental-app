@@ -4,7 +4,7 @@ import {
   signOut,
   onAuthStateChanged,
 } from "firebase/auth";
-import { doc, getDoc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc, getDocFromServer, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "../firebase";
 import { APP_VERSION } from "../appVersion";
 
@@ -72,7 +72,9 @@ export function AuthProvider({ children }) {
           }
           localStorage.setItem(ACTIVE_EMAIL_KEY, firebaseUser.email || "");
           const ref  = doc(db, "users", firebaseUser.uid);
-          const snap = await getDoc(ref);
+          // 승인 상태는 서버 기준으로 판정 — getDoc은 영구 캐시에 남은 옛 pending을 돌려줄 수 있음
+          // (승인 후에도 "승인 대기" 로 막히던 버그). 서버 조회 실패 시에만 캐시 폴백.
+          const snap = await getDocFromServer(ref).catch(() => getDoc(ref));
           if (snap.exists()) {
             const p = snap.data();
             // 승인 대기 상태면 로그인 차단
